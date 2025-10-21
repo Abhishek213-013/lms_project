@@ -4,10 +4,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Student; // Add this import
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB; // Add this import for DB facade
 
 class UserController extends Controller
 {
@@ -404,6 +406,133 @@ class UserController extends Controller
                 'message' => 'User not found',
                 'error' => $e->getMessage()
             ], 404);
+        }
+    }
+
+    public function createStudent(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'username' => 'required|string|unique:users|max:255',
+            'email' => 'required|email|unique:users|max:255',
+            'father_name' => 'required|string|max:255',
+            'mother_name' => 'required|string|max:255',
+            'class_id' => 'required|exists:classes,id', // Assuming you have a classes table
+            'country_code' => 'required|string|max:10',
+            'parent_contact' => 'required|string|max:20',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            // Start transaction to ensure both user and student are created
+            DB::beginTransaction();
+
+            // Create user account
+            $user = User::create([
+                'name' => $request->name,
+                'username' => $request->username,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'role' => 'student',
+            ]);
+
+            // Generate roll number (you can customize this logic)
+            $rollNumber = $this->generateRollNumber($request->class_id);
+
+            // Create student record
+            $student = Student::create([
+                'user_id' => $user->id,
+                'class_id' => $request->class_id,
+                'roll_number' => $rollNumber,
+                'father_name' => $request->father_name,
+                'mother_name' => $request->mother_name,
+                'parent_contact' => $request->parent_contact,
+                'country_code' => $request->country_code,
+                'status' => 'active',
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Student registered successfully',
+                'data' => [
+                    'user' => [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'username' => $user->username,
+                        'email' => $user->email,
+                        'role' => $user->role
+                    ],
+                    'student' => [
+                        'id' => $student->id,
+                        'roll_number' => $student->roll_number,
+                        'class_id' => $student->class_id,
+                        'parent_contact' => $student->full_parent_contact
+                    ]
+                ]
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error creating student: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create student',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function generateRollNumber($classId)
+    {
+        $currentYear = date('Y');
+        $classCode = str_pad($classId, 2, '0', STR_PAD_LEFT);
+        
+        // Get the last roll number for this class
+        $lastStudent = Student::where('class_id', $classId)
+            ->orderBy('id', 'desc')
+            ->first();
+            
+        $sequence = $lastStudent ? (int)substr($lastStudent->roll_number, -3) + 1 : 1;
+        $sequenceCode = str_pad($sequence, 3, '0', STR_PAD_LEFT);
+        
+        return "ST{$currentYear}{$classCode}{$sequenceCode}";
+    }
+
+    public function getStudents(Request $request)
+    {
+        try {
+            $students = Student::with(['user', 'class'])
+                ->select([
+                    'id', 'user_id', 'class_id', 'roll_number', 
+                    'father_name', 'mother_name', 'parent_contact',
+                    'country_code', 'status', 'created_at', 'updated_at'
+                ])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $students,
+                'count' => $students->count()
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching students: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch students',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }

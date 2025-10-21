@@ -1,272 +1,341 @@
 <template>
-  <div class="main-area fix" v-if="course">
-    <!-- Course Hero Section -->
-    <section class="course-hero-area section-pt-120 section-pb-80" 
-             :style="{ backgroundImage: 'url(/assets/img/bg/course_hero_bg.jpg)' }">
-      <div class="container">
-        <div class="row align-items-center">
-          <div class="col-lg-8">
-            <div class="course-hero-content">
-              <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                  <li class="breadcrumb-item">
-                    <router-link to="/">Home</router-link>
-                  </li>
-                  <li class="breadcrumb-item">
-                    <router-link to="/courses">Courses</router-link>
-                  </li>
-                  <li class="breadcrumb-item active" aria-current="page">{{ course.name }}</li>
-                </ol>
-              </nav>
-              <h1 class="course-title">{{ course.name }}</h1>
-              <p class="course-description">{{ course.description }}</p>
-              
-              <div class="course-meta">
-                <div class="meta-item">
-                  <div class="meta-icon">
-                    <i class="flaticon-mortarboard"></i>
-                  </div>
-                  <div class="meta-content">
-                    <span>Enrolled Students</span>
-                    <strong>{{ course.studentCount || 0 }}</strong>
-                  </div>
+  <main class="main-area fix">
+    <!-- breadcrumb-area -->
+    <section class="breadcrumb__area breadcrumb__bg" data-background="/assets/img/bg/breadcrumb_bg.jpg" style="background-image: url('/assets/img/bg/breadcrumb_bg.jpg');">
+        <div class="container">
+            <div class="row">
+                <div class="col-12">
+                    <div class="breadcrumb__content">
+                        <h3 class="title">{{ course?.name || 'Course Details' }}</h3>
+                        <nav class="breadcrumb">
+                            <span property="itemListElement" typeof="ListItem">
+                                <router-link to="/">Home</router-link>
+                            </span>
+                            <span class="breadcrumb-separator"><i class="fas fa-angle-right"></i></span>
+                            <span property="itemListElement" typeof="ListItem">
+                                <router-link to="/courses">Courses</router-link>
+                            </span>
+                            <span class="breadcrumb-separator"><i class="fas fa-angle-right"></i></span>
+                            <span property="itemListElement" typeof="ListItem">{{ course?.name || 'Course Details' }}</span>
+                        </nav>
+                    </div>
                 </div>
-                <div class="meta-item">
-                  <div class="meta-icon">
-                    <i class="flaticon-book"></i>
-                  </div>
-                  <div class="meta-content">
-                    <span>Lessons</span>
-                    <strong>{{ course.subjectCount || 0 }}</strong>
-                  </div>
-                </div>
-                <div class="meta-item">
-                  <div class="meta-icon">
-                    <i class="flaticon-clock"></i>
-                  </div>
-                  <div class="meta-content">
-                    <span>Duration</span>
-                    <strong>{{ course.duration || 'Self-paced' }}</strong>
-                  </div>
-                </div>
-                <div class="meta-item">
-                  <div class="meta-icon">
-                    <i class="fas fa-star"></i>
-                  </div>
-                  <div class="meta-content">
-                    <span>Rating</span>
-                    <strong>{{ course.rating || '4.8' }}/5.0</strong>
-                  </div>
-                </div>
-              </div>
-
-              <div class="course-actions">
-                <button class="btn btn-primary" @click="enrollCourse" v-if="!isEnrolled">
-                  <i class="fas fa-shopping-cart"></i>
-                  {{ course.fee ? `Enroll Now - $${course.fee}` : 'Enroll for Free' }}
-                </button>
-                <button class="btn btn-success" disabled v-else>
-                  <i class="fas fa-check"></i>
-                  Already Enrolled
-                </button>
-                <button class="btn btn-outline">
-                  <i class="far fa-heart"></i>
-                  Add to Wishlist
-                </button>
-              </div>
             </div>
-          </div>
-          <div class="col-lg-4">
-            <div class="course-hero-image">
-              <img :src="course.thumbnail || '/assets/img/courses/course_thumb01.png'" :alt="course.name">
-              <div class="course-badge" v-if="course.fee">
-                <span class="badge">Premium</span>
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
+        <div class="breadcrumb__shape-wrap">
+            <img src="/assets/img/banner/breadcrumb_shape01.svg" alt="img" class="alltuchtopdown">
+            <img src="/assets/img/banner/breadcrumb_shape02.svg" alt="img" data-aos="fade-right" data-aos-delay="300">
+            <img src="/assets/img/banner/breadcrumb_shape03.png" alt="img" data-aos="fade-up" data-aos-delay="400">
+            <img src="/assets/img/banner/breadcrumb_shape04.png" alt="img" data-aos="fade-down-left" data-aos-delay="400">
+            <img src="/assets/img/banner/breadcrumb_shape05.svg" alt="img" data-aos="fade-left" data-aos-delay="400">
+        </div>
     </section>
+    <!-- breadcrumb-area-end -->
 
-    <!-- Course Details Section -->
-    <section class="course-details-area section-pb-120">
+    <!-- Loading State -->
+    <div v-if="loading" class="loading-container text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-3">Loading course details...</p>
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="error" class="error-container text-center py-5">
+      <div class="alert alert-danger mx-3">
+        <h4>Unable to Load Course</h4>
+        <p>{{ error }}</p>
+        <button @click="fetchCourse" class="btn btn-primary mt-3">
+          <i class="fas fa-refresh"></i> Try Again
+        </button>
+        <router-link to="/courses" class="btn btn-secondary mt-3 ms-2">
+          <i class="fas fa-arrow-left"></i> Back to Courses
+        </router-link>
+      </div>
+    </div>
+
+    <!-- Course Details -->
+    <section v-else-if="course" class="courses__details-area section-py-120">
       <div class="container">
-        <div class="row">
+        <div class="row g-5">
           <!-- Main Content -->
-          <div class="col-lg-8">
-            <!-- Course Tabs -->
-            <div class="course-tabs">
-              <nav>
-                <div class="nav nav-tabs" id="courseTab" role="tablist">
-                  <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button">
-                    Overview
-                  </button>
-                  <button class="nav-link" id="curriculum-tab" data-bs-toggle="tab" data-bs-target="#curriculum" type="button">
-                    Curriculum
-                  </button>
-                  <button class="nav-link" id="instructor-tab" data-bs-toggle="tab" data-bs-target="#instructor" type="button">
-                    Instructor
-                  </button>
-                  <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button">
-                    Reviews
-                  </button>
+          <div class="col-xl-8 col-lg-7">
+            <div class="courses__details-content">
+              <!-- Course Header -->
+              <div class="course-header mb-4">
+                <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+                  <span class="badge bg-primary">{{ getCourseCategory(course) }}</span>
+                  <div class="rating-badge d-flex align-items-center">
+                    <i class="fas fa-star text-warning me-1"></i>
+                    <span>{{ course.rating || '4.5' }}</span>
+                    <span class="text-muted ms-1">({{ course.totalReviews || '12' }} reviews)</span>
+                  </div>
                 </div>
-              </nav>
+                <h1 class="course-title mb-3">{{ course.name }}</h1>
+                <p class="course-description text-muted mb-4">{{ course.description || getDefaultDescription(course) }}</p>
+                
+                <!-- Course Meta -->
+                <div class="course-meta d-flex flex-wrap gap-4 align-items-center">
+                  <div class="instructor-info d-flex align-items-center">
+                    <img :src="getInstructorAvatar(course.teachers?.[0])" :alt="course.teachers?.[0]?.name" class="instructor-avatar me-2">
+                    <span>By <strong>{{ course.teachers?.[0]?.name || 'Expert Instructor' }}</strong></span>
+                  </div>
+                  <div class="student-count">
+                    <i class="fas fa-users text-muted me-1"></i>
+                    {{ course.studentCount || 0 }} students
+                  </div>
+                  <div class="last-updated">
+                    <i class="fas fa-calendar text-muted me-1"></i>
+                    {{ formatDate(course.updated_at || course.created_at) }}
+                  </div>
+                </div>
+              </div>
 
-              <div class="tab-content" id="courseTabContent">
+              <!-- Course Thumbnail -->
+              <div class="courses__details-thumb mb-5">
+                <img :src="getCourseImage(course)" :alt="course.name" class="w-100 rounded-3 shadow-sm">
+              </div>
+
+              <!-- Tabs Navigation -->
+              <div class="course-tabs mb-4">
+                <ul class="nav nav-pills nav-fill" role="tablist">
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#overview" type="button">
+                      <i class="fas fa-info-circle me-2"></i>Overview
+                    </button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#curriculum" type="button">
+                      <i class="fas fa-book me-2"></i>Curriculum
+                    </button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#subjects" type="button">
+                      <i class="fas fa-book-open me-2"></i>Subjects & Teachers
+                    </button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#instructor" type="button">
+                      <i class="fas fa-user-tie me-2"></i>Instructor
+                    </button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="pill" data-bs-target="#reviews" type="button">
+                      <i class="fas fa-star me-2"></i>Reviews
+                    </button>
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Tabs Content -->
+              <div class="tab-content">
                 <!-- Overview Tab -->
-                <div class="tab-pane fade show active" id="overview" role="tabpanel">
-                  <div class="course-overview">
-                    <h3>Course Description</h3>
-                    <p>{{ course.fullDescription || course.description }}</p>
-                    
-                    <div class="what-you-learn">
-                      <h4>What You'll Learn</h4>
-                      <div class="row">
-                        <div class="col-md-6">
-                          <ul class="learn-list">
-                            <li v-for="(item, index) in learningPoints.slice(0, Math.ceil(learningPoints.length/2))" :key="index">
-                              <i class="fas fa-check"></i> {{ item }}
-                            </li>
-                          </ul>
-                        </div>
-                        <div class="col-md-6">
-                          <ul class="learn-list">
-                            <li v-for="(item, index) in learningPoints.slice(Math.ceil(learningPoints.length/2))" :key="index">
-                              <i class="fas fa-check"></i> {{ item }}
-                            </li>
-                          </ul>
+                <div class="tab-pane fade show active" id="overview">
+                  <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                      <h4 class="card-title mb-4">What you'll learn</h4>
+                      <div class="learning-objectives">
+                        <div class="row g-3">
+                          <div class="col-md-6" v-for="(point, index) in getLearningPoints(course)" :key="index">
+                            <div class="d-flex align-items-start">
+                              <i class="fas fa-check text-success mt-1 me-3"></i>
+                              <span class="learning-point">{{ point }}</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-
-                    <div class="course-requirements">
-                      <h4>Requirements</h4>
-                      <ul>
-                        <li>Basic computer knowledge</li>
-                        <li>Internet connection</li>
-                        <li>Dedication to learn</li>
-                      </ul>
+                      <div class="mt-4">
+                        <p class="text-muted">{{ getAdditionalInfo(course) }}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 <!-- Curriculum Tab -->
-                <div class="tab-pane fade" id="curriculum" role="tabpanel">
-                  <div class="course-curriculum">
-                    <h3>Course Curriculum</h3>
-                    <div class="accordion" id="curriculumAccordion">
-                      <div class="accordion-item" v-for="(module, index) in curriculum" :key="module.id">
-                        <h2 class="accordion-header">
-                          <button class="accordion-button" type="button" :class="{ collapsed: index !== 0 }" 
-                                  data-bs-toggle="collapse" :data-bs-target="`#module${module.id}`">
-                            <span class="module-title">{{ module.title }}</span>
-                            <span class="module-meta">
-                              {{ module.lessons }} lessons • {{ module.duration }}
-                            </span>
-                          </button>
-                        </h2>
-                        <div :id="`module${module.id}`" class="accordion-collapse collapse" :class="{ show: index === 0 }"
-                             data-bs-parent="#curriculumAccordion">
-                          <div class="accordion-body">
-                            <ul class="lesson-list">
-                              <li v-for="lesson in module.lessonsList" :key="lesson.id" 
-                                  :class="{ locked: !isEnrolled && lesson.locked }">
-                                <div class="lesson-info">
-                                  <i class="fas" :class="lesson.icon"></i>
-                                  <span class="lesson-title">{{ lesson.title }}</span>
-                                  <span class="lesson-duration">{{ lesson.duration }}</span>
-                                </div>
-                                <div class="lesson-action">
-                                  <span class="lesson-preview" v-if="lesson.preview">Preview</span>
-                                  <i class="fas fa-lock" v-else-if="!isEnrolled && lesson.locked"></i>
-                                  <i class="fas fa-play" v-else></i>
-                                </div>
-                              </li>
-                            </ul>
+                <div class="tab-pane fade" id="curriculum">
+                  <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                      <h4 class="card-title mb-4">Course Content</h4>
+                      <div class="accordion" id="curriculumAccordion">
+                        <div class="accordion-item border-0 mb-3" v-for="(module, index) in getCourseModules(course)" :key="module.id">
+                          <h3 class="accordion-header">
+                            <button class="accordion-button collapsed bg-light fw-semibold" type="button" data-bs-toggle="collapse" :data-bs-target="`#module${module.id}`">
+                              <i class="fas fa-play-circle me-3 text-primary"></i>
+                              {{ module.title }}
+                              <span class="badge bg-secondary ms-auto me-3">{{ module.lessons.length }} lessons</span>
+                            </button>
+                          </h3>
+                          <div :id="`module${module.id}`" class="accordion-collapse collapse" data-bs-parent="#curriculumAccordion">
+                            <div class="accordion-body p-0">
+                              <div class="list-group list-group-flush">
+                                <a v-for="lesson in module.lessons" :key="lesson.id" 
+                                   :href="lesson.link" 
+                                   class="list-group-item list-group-item-action border-0 d-flex justify-content-between align-items-center py-3"
+                                   @click.prevent="handleLessonClick(lesson)">
+                                  <div class="d-flex align-items-center">
+                                    <i class="fas fa-play-circle text-muted me-3"></i>
+                                    <span>{{ lesson.title }}</span>
+                                  </div>
+                                  <div class="d-flex align-items-center gap-3">
+                                    <span class="text-muted small">{{ lesson.duration }}</span>
+                                    <i v-if="!lesson.preview && !isEnrolled" class="fas fa-lock text-muted"></i>
+                                    <i v-else-if="lesson.preview" class="fas fa-eye text-primary"></i>
+                                  </div>
+                                </a>
+                              </div>
+                            </div>
                           </div>
                         </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Subjects Tab -->
+                <div class="tab-pane fade" id="subjects">
+                  <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                      <h4 class="card-title mb-4">Subjects & Teachers</h4>
+                      
+                      <!-- Loading State for Subjects -->
+                      <div v-if="loadingSubjects" class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                          <span class="visually-hidden">Loading subjects...</span>
+                        </div>
+                        <p class="mt-2">Loading subjects and teachers...</p>
+                      </div>
+
+                      <!-- Subjects Grid with Teachers -->
+                      <div v-else-if="subjects && subjects.length > 0" class="subjects-grid">
+                        <div class="row g-4">
+                          <div class="col-md-6 col-lg-4" v-for="subject in subjects" :key="subject.id">
+                            <div class="subject-card card border-0 shadow-sm h-100">
+                              <div class="card-body p-4">
+                                <!-- Subject Header -->
+                                <div class="subject-header text-center mb-3">
+                                  <div class="subject-icon mb-3">
+                                    <i :class="getSubjectIcon(subject.name)" class="text-primary fa-2x"></i>
+                                  </div>
+                                  <h5 class="subject-name mb-2">{{ subject.name }}</h5>
+                                </div>
+
+                                <!-- Teacher Information -->
+                                <div class="teacher-info mb-3 p-3 bg-light rounded">
+                                  <div class="d-flex align-items-center">
+                                    <img :src="getTeacherAvatar(subject.teacher)" 
+                                         :alt="subject.teacher?.name" 
+                                         class="teacher-avatar rounded-circle me-3"
+                                         width="40"
+                                         height="40">
+                                    <div class="teacher-details flex-grow-1">
+                                      <h6 class="teacher-name mb-1">{{ subject.teacher?.name || 'Expert Teacher' }}</h6>
+                                      <p class="teacher-qualification mb-0 text-muted small">
+                                        {{ subject.teacher?.qualification || 'Subject Expert' }}
+                                      </p>
+                                    </div>
+                                    <div class="teacher-rating">
+                                      <i class="fas fa-star text-warning small"></i>
+                                      <span class="small ms-1">{{ subject.teacher?.rating || '4.8' }}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <!-- Subject Details -->
+                                <div class="subject-details">
+                                  <p class="subject-description text-muted small mb-3">
+                                    {{ subject.description || getSubjectDescription(subject.name) }}
+                                  </p>
+                                  <div class="subject-meta d-flex justify-content-between">
+                                    <small class="text-muted">
+                                      <i class="fas fa-book me-1"></i>
+                                      {{ subject.lesson_count || 12 }} lessons
+                                    </small>
+                                    <small class="text-muted">
+                                      <i class="fas fa-clock me-1"></i>
+                                      {{ subject.duration || '10h 30m' }}
+                                    </small>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- No Subjects State -->
+                      <div v-else class="text-center py-5">
+                        <i class="fas fa-book fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No subjects available</h5>
+                        <p class="text-muted">Subjects for this course will be added soon.</p>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <!-- Instructor Tab -->
-                <div class="tab-pane fade" id="instructor" role="tabpanel">
-                  <div class="course-instructor" v-if="course.teacher">
-                    <div class="instructor-profile">
-                      <div class="instructor-avatar">
-                        <img :src="course.teacher.avatar || '/assets/img/courses/course_author001.png'" :alt="course.teacher.name">
-                      </div>
-                      <div class="instructor-info">
-                        <h3>{{ course.teacher.name }}</h3>
-                        <p class="instructor-title">{{ course.teacher.title || 'Senior Instructor' }}</p>
-                        <div class="instructor-rating">
-                          <div class="rating-stars">
-                            <i class="fas fa-star" v-for="star in 5" :key="star"></i>
-                          </div>
-                          <span class="rating-text">4.8 Instructor Rating</span>
+                <div class="tab-pane fade" id="instructor">
+                  <div class="card border-0 shadow-sm" v-if="course.teachers && course.teachers.length > 0">
+                    <div class="card-body p-4">
+                      <div class="row g-4">
+                        <div class="col-md-3 text-center">
+                          <img :src="getInstructorImage(course.teachers[0])" :alt="course.teachers[0].name" class="instructor-main-img rounded-circle mb-3 w-100" style="max-width: 150px;">
                         </div>
-                        <div class="instructor-stats">
-                          <div class="stat">
-                            <strong>{{ course.teacher.students || '1.2k' }}</strong>
-                            <span>Students</span>
+                        <div class="col-md-9">
+                          <h4 class="card-title">{{ course.teachers[0].name }}</h4>
+                          <p class="text-muted mb-3">{{ course.teachers[0].qualification || 'Expert Instructor' }}</p>
+                          <div class="rating mb-3">
+                            <i class="fas fa-star text-warning"></i>
+                            <span class="ms-1 fw-semibold">{{ course.teachers[0].rating || '4.8' }}</span>
+                            <span class="text-muted ms-1">Instructor Rating</span>
                           </div>
-                          <div class="stat">
-                            <strong>{{ course.teacher.courses || '15' }}</strong>
-                            <span>Courses</span>
-                          </div>
-                          <div class="stat">
-                            <strong>{{ course.teacher.reviews || '2.3k' }}</strong>
-                            <span>Reviews</span>
+                          <p class="mb-4">{{ course.teachers[0].bio || getDefaultInstructorBio(course.teachers[0]) }}</p>
+                          <div class="instructor-social">
+                            <a href="#" class="btn btn-outline-secondary btn-sm me-2">
+                              <i class="fab fa-linkedin"></i>
+                            </a>
+                            <a href="#" class="btn btn-outline-secondary btn-sm me-2">
+                              <i class="fab fa-twitter"></i>
+                            </a>
+                            <a href="#" class="btn btn-outline-secondary btn-sm">
+                              <i class="fab fa-github"></i>
+                            </a>
                           </div>
                         </div>
                       </div>
-                    </div>
-                    <div class="instructor-bio">
-                      <p>{{ course.teacher.bio || 'Experienced instructor with years of teaching experience and industry knowledge.' }}</p>
                     </div>
                   </div>
                 </div>
 
                 <!-- Reviews Tab -->
-                <div class="tab-pane fade" id="reviews" role="tabpanel">
-                  <div class="course-reviews">
-                    <div class="reviews-header">
-                      <div class="rating-overview">
-                        <div class="overview-rating">
-                          <h2>4.8</h2>
-                          <div class="stars">
-                            <i class="fas fa-star" v-for="star in 5" :key="star"></i>
-                          </div>
-                          <p>Course Rating</p>
-                        </div>
-                        <div class="rating-bars">
-                          <div class="rating-bar" v-for="n in 5" :key="n">
-                            <span class="stars">{{ 6 - n }} <i class="fas fa-star"></i></span>
-                            <div class="bar">
-                              <div class="fill" :style="{ width: `${(6 - n) * 20}%` }"></div>
+                <div class="tab-pane fade" id="reviews">
+                  <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                      <h4 class="card-title mb-4">Student Reviews</h4>
+                      <div class="row g-4">
+                        <div class="col-md-4">
+                          <div class="text-center">
+                            <div class="display-4 fw-bold text-primary mb-2">{{ course.ratingValue || '4.8' }}</div>
+                            <div class="rating-stars mb-2">
+                              <i class="fas fa-star text-warning" v-for="star in 5" :key="star"></i>
                             </div>
-                            <span class="percentage">{{ (6 - n) * 20 }}%</span>
+                            <div class="text-muted">Based on {{ course.totalReviews || '12' }} reviews</div>
                           </div>
                         </div>
-                      </div>
-                    </div>
-
-                    <div class="reviews-list">
-                      <div class="review-item" v-for="review in reviews" :key="review.id">
-                        <div class="reviewer-avatar">
-                          <img :src="review.avatar" :alt="review.name">
-                        </div>
-                        <div class="review-content">
-                          <div class="review-header">
-                            <h5>{{ review.name }}</h5>
-                            <div class="review-rating">
-                              <i class="fas fa-star" v-for="star in review.rating" :key="star"></i>
+                        <div class="col-md-8">
+                          <div v-for="review in getCourseReviews(course)" :key="review.id" class="review-item border-bottom pb-3 mb-3">
+                            <div class="d-flex align-items-center mb-2">
+                              <img :src="review.avatar" :alt="review.name" class="review-avatar rounded-circle me-3" width="40">
+                              <div>
+                                <h6 class="mb-0">{{ review.name }}</h6>
+                                <div class="rating-small">
+                                  <i class="fas fa-star text-warning" v-for="star in review.rating" :key="star"></i>
+                                </div>
+                              </div>
+                              <small class="text-muted ms-auto">{{ review.date }}</small>
                             </div>
-                            <span class="review-date">{{ review.date }}</span>
+                            <h6 class="text-primary">{{ review.title }}</h6>
+                            <p class="mb-0 text-muted">{{ review.comment }}</p>
                           </div>
-                          <p>{{ review.comment }}</p>
                         </div>
                       </div>
                     </div>
@@ -277,64 +346,89 @@
           </div>
 
           <!-- Sidebar -->
-          <div class="col-lg-4">
-            <div class="course-sidebar">
-              <div class="sidebar-widget course-features">
-                <h4>Course Features</h4>
-                <ul class="features-list">
-                  <li>
-                    <i class="fas fa-play-circle"></i>
-                    <span>Total Lessons</span>
-                    <strong>{{ course.subjectCount || 0 }}</strong>
-                  </li>
-                  <li>
-                    <i class="fas fa-clock"></i>
-                    <span>Duration</span>
-                    <strong>{{ course.duration || 'Self-paced' }}</strong>
-                  </li>
-                  <li>
-                    <i class="fas fa-sliders-h"></i>
-                    <span>Skill Level</span>
-                    <strong>{{ course.level || 'All Levels' }}</strong>
-                  </li>
-                  <li>
-                    <i class="fas fa-language"></i>
-                    <span>Language</span>
-                    <strong>English</strong>
-                  </li>
-                  <li>
-                    <i class="fas fa-certificate"></i>
-                    <span>Certificate</span>
-                    <strong>Yes</strong>
-                  </li>
-                </ul>
-              </div>
-
-              <div class="sidebar-widget course-price" v-if="course.fee">
-                <div class="price-card">
-                  <div class="price-header">
-                    <h4>Course Price</h4>
-                    <div class="price-amount">${{ course.fee }}</div>
+          <div class="col-xl-4 col-lg-5">
+            <div class="courses__details-sidebar">
+              <div class="sticky-sidebar">
+                <!-- Preview Video -->
+                <div class="card border-0 shadow-sm mb-4">
+                  <div class="card-body p-0">
+                    <div class="preview-video position-relative">
+                      <img :src="getPreviewImage(course)" :alt="course.name" class="w-100 rounded-top">
+                      <a :href="getPreviewVideo(course)" class="video-play-btn position-absolute top-50 start-50 translate-middle" @click.prevent="playPreviewVideo">
+                        <i class="fas fa-play"></i>
+                      </a>
+                    </div>
+                    <div class="p-4">
+                      <div class="price-section text-center mb-3">
+                        <span class="text-muted d-block mb-1">Course Fee</span>
+                        <h3 class="text-primary mb-0">${{ getCoursePrice(course) }}</h3>
+                        <del v-if="hasDiscount(course)" class="text-muted">${{ getOriginalPrice(course) }}</del>
+                      </div>
+                      <button class="btn btn-primary w-100 btn-lg mb-3" @click="enrollCourse" :disabled="isEnrolled || loadingEnroll">
+                        <span v-if="loadingEnroll" class="spinner-border spinner-border-sm me-2"></span>
+                        {{ isEnrolled ? 'Already Enrolled' : 'Enroll Now' }}
+                      </button>
+                      <div class="text-center">
+                        <small class="text-muted">30-day money-back guarantee</small>
+                      </div>
+                    </div>
                   </div>
-                  <ul class="price-features">
-                    <li><i class="fas fa-check"></i> Full Lifetime Access</li>
-                    <li><i class="fas fa-check"></i> Certificate of Completion</li>
-                    <li><i class="fas fa-check"></i> Instructor Support</li>
-                    <li><i class="fas fa-check"></i> Downloadable Resources</li>
-                  </ul>
-                  <button class="btn btn-primary btn-block" @click="enrollCourse">
-                    Enroll Now
-                  </button>
                 </div>
-              </div>
 
-              <div class="sidebar-widget share-widget">
-                <h4>Share This Course</h4>
-                <div class="share-buttons">
-                  <a href="#" class="share-btn facebook"><i class="fab fa-facebook-f"></i></a>
-                  <a href="#" class="share-btn twitter"><i class="fab fa-twitter"></i></a>
-                  <a href="#" class="share-btn linkedin"><i class="fab fa-linkedin-in"></i></a>
-                  <a href="#" class="share-btn whatsapp"><i class="fab fa-whatsapp"></i></a>
+                <!-- Course Features -->
+                <div class="card border-0 shadow-sm mb-4">
+                  <div class="card-body">
+                    <h6 class="card-title mb-3">This course includes:</h6>
+                    <div class="course-features">
+                      <div class="feature-item d-flex align-items-center mb-3" v-for="feature in getCourseFeatures(course)" :key="feature.text">
+                        <i :class="feature.icon" class="text-primary me-3"></i>
+                        <span>{{ feature.text }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Teachers Summary -->
+                <div class="card border-0 shadow-sm mb-4" v-if="subjects && subjects.length > 0">
+                  <div class="card-body">
+                    <h6 class="card-title mb-3">Course Teachers</h6>
+                    <div class="teachers-summary">
+                      <div class="teacher-summary-item d-flex align-items-center mb-3" 
+                           v-for="(teacher, index) in getUniqueTeachers(subjects)" 
+                           :key="teacher.id || index">
+                        <img :src="getTeacherAvatar(teacher)" 
+                             :alt="teacher.name" 
+                             class="teacher-summary-avatar rounded-circle me-3"
+                             width="35"
+                             height="35">
+                        <div class="flex-grow-1">
+                          <h6 class="teacher-summary-name mb-0 small">{{ teacher.name }}</h6>
+                          <small class="text-muted">{{ getTeacherSubjects(teacher, subjects) }}</small>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Share Course -->
+                <div class="card border-0 shadow-sm">
+                  <div class="card-body text-center">
+                    <h6 class="card-title mb-3">Share this course</h6>
+                    <div class="social-sharing d-flex justify-content-center gap-2">
+                      <a href="#" class="btn btn-outline-primary btn-sm rounded-circle">
+                        <i class="fab fa-facebook-f"></i>
+                      </a>
+                      <a href="#" class="btn btn-outline-info btn-sm rounded-circle">
+                        <i class="fab fa-twitter"></i>
+                      </a>
+                      <a href="#" class="btn btn-outline-success btn-sm rounded-circle">
+                        <i class="fab fa-whatsapp"></i>
+                      </a>
+                      <a href="#" class="btn btn-outline-danger btn-sm rounded-circle">
+                        <i class="fab fa-instagram"></i>
+                      </a>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -342,706 +436,1015 @@
         </div>
       </div>
     </section>
-  </div>
-
-  <!-- Loading State -->
-  <div v-else class="loading-section">
-    <div class="container">
-      <div class="row">
-        <div class="col-12 text-center">
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
-          </div>
-          <p>Loading course details...</p>
-        </div>
-      </div>
-    </div>
-  </div>
+  </main>
 </template>
 
 <script>
+import { authService } from '../src/services/authService.js';
+
 export default {
   name: 'CourseSingle',
   data() {
     return {
       course: null,
+      subjects: null,
+      loading: true,
+      loadingSubjects: false,
+      error: null,
       isEnrolled: false,
-      learningPoints: [
-        'Master fundamental concepts and principles',
-        'Develop practical skills through hands-on projects',
-        'Understand advanced techniques and methodologies',
-        'Build confidence in applying knowledge',
-        'Prepare for real-world challenges',
-        'Enhance problem-solving abilities',
-        'Learn from industry experts',
-        'Gain valuable certifications'
-      ],
-      curriculum: [
-        {
-          id: 1,
-          title: 'Introduction to the Course',
-          lessons: 3,
-          duration: '45m',
-          lessonsList: [
-            { id: 1, title: 'Welcome to the Course', duration: '10m', icon: 'fa-play-circle', preview: true },
-            { id: 2, title: 'Course Overview', duration: '15m', icon: 'fa-video', locked: true },
-            { id: 3, title: 'Setting Up Environment', duration: '20m', icon: 'fa-cog', locked: true }
-          ]
-        },
-        {
-          id: 2,
-          title: 'Fundamental Concepts',
-          lessons: 5,
-          duration: '2h 30m',
-          lessonsList: [
-            { id: 4, title: 'Basic Principles', duration: '25m', icon: 'fa-book', locked: true },
-            { id: 5, title: 'Core Concepts', duration: '35m', icon: 'fa-lightbulb', locked: true },
-            { id: 6, title: 'Practical Examples', duration: '45m', icon: 'fa-code', locked: true }
-          ]
-        }
-      ],
-      reviews: [
-        {
-          id: 1,
-          name: 'John Doe',
-          avatar: '/assets/img/avatars/avatar1.jpg',
-          rating: 5,
-          date: '2 weeks ago',
-          comment: 'Excellent course! The instructor explains complex concepts in a very understandable way.'
-        },
-        {
-          id: 2,
-          name: 'Sarah Smith',
-          avatar: '/assets/img/avatars/avatar2.jpg',
-          rating: 4,
-          date: '1 month ago',
-          comment: 'Very comprehensive and well-structured. Learned a lot from this course.'
-        }
-      ]
+      loadingEnroll: false,
+      isTokenInvalid: false
     }
   },
   async mounted() {
-    await this.fetchCourse();
+  await this.fetchCourse();
+  
+  // Temporary debug to see what the API returns
+  await this.debugSubjectsAPI(this.$route.params.id);
+  
+  await this.fetchSubjects();
+  this.checkEnrollment();
   },
   methods: {
     async fetchCourse() {
-      const slug = this.$route.params.slug;
+      this.loading = true;
+      this.error = null;
+      this.isTokenInvalid = false;
+      
       try {
-        const response = await this.$http.get(`/api/courses/${slug}`);
-        this.course = response.data.data || this.getMockCourse(slug);
+        const courseId = this.$route.params.id;
+
+        console.log('🔍 Fetching course details...');
+        console.log('🔍 Course ID:', courseId);
+
+        // Use auth service for API call
+        const data = await authService.apiCall(`/api/courses/${courseId}`);
+        
+        console.log('✅ Course data received:', data);
+
+        if (data.success && data.data) {
+          this.course = data.data;
+          console.log('✅ Successfully fetched course:', this.course);
+        } else {
+          throw new Error(data.message || 'Failed to load course details');
+        }
       } catch (error) {
-        console.error('Error fetching course:', error);
-        this.course = this.getMockCourse(slug);
+        console.error('❌ Error fetching course:', error);
+        this.error = error.message || 'Unable to load course details. Please try again later.';
+        this.isTokenInvalid = error.message.includes('session') || error.message.includes('Authentication');
+        
+        if (this.isTokenInvalid) {
+          setTimeout(() => {
+            this.$router.push('/student-login');
+          }, 2000);
+        }
+      } finally {
+        this.loading = false;
       }
     },
-    getMockCourse(slug) {
-      const mockCourses = {
-        'mathematics-class-10': {
-          id: 1,
-          name: 'Mathematics - Class 10',
-          slug: 'mathematics-class-10',
-          description: 'Comprehensive mathematics course for class 10 students covering algebra, geometry, trigonometry, and statistics.',
-          fullDescription: 'This comprehensive mathematics course is designed specifically for class 10 students. Covering all major topics including algebra, geometry, trigonometry, and statistics, this course provides in-depth explanations, practical examples, and extensive practice problems. Our expert instructors guide you through each concept with clear explanations and real-world applications.',
-          category: 'secondary',
-          type: 'regular',
-          studentCount: 45,
-          subjectCount: 15,
-          rating: '4.8',
-          duration: '30 hours',
-          level: 'Intermediate',
-          teacher: {
-            name: 'John Smith',
-            avatar: '/assets/img/courses/course_author001.png',
-            title: 'Mathematics Expert',
-            bio: 'John has been teaching mathematics for over 10 years. He holds a Masters degree in Mathematics and has helped thousands of students achieve academic excellence.',
-            students: '2.5k',
-            courses: '12',
-            reviews: '1.8k'
-          }
-        },
-        'science-class-8': {
-          id: 2,
-          name: 'Science - Class 8',
-          slug: 'science-class-8',
-          description: 'Interactive science course with practical experiments and demonstrations for class 8 students.',
-          fullDescription: 'Explore the fascinating world of science with our interactive course designed for class 8 students. This course covers physics, chemistry, and biology with engaging experiments, demonstrations, and real-world applications.',
-          category: 'junior',
-          type: 'regular',
-          studentCount: 38,
-          subjectCount: 12,
-          rating: '4.7',
-          duration: '25 hours',
-          level: 'Beginner',
-          teacher: {
-            name: 'Sarah Johnson',
-            avatar: '/assets/img/courses/course_author002.png',
-            title: 'Science Educator',
-            bio: 'Sarah is a passionate science educator with 8 years of experience. She specializes in making complex scientific concepts accessible and exciting for young learners.',
-            students: '1.8k',
-            courses: '8',
-            reviews: '1.2k'
-          }
-        },
-        'life-skills-program': {
-          id: 3,
-          name: 'Life Skills Program',
-          slug: 'life-skills-program',
-          description: 'Essential life skills training for personal and professional development.',
-          fullDescription: 'This comprehensive life skills program covers essential skills needed for personal and professional success. Learn communication, problem-solving, time management, financial literacy, and emotional intelligence from industry experts.',
-          category: 'life-skills',
-          type: 'other',
-          studentCount: 25,
-          subjectCount: 8,
-          rating: '4.9',
-          duration: '20 hours',
-          level: 'All Levels',
-          fee: 99,
-          teacher: {
-            name: 'Mike Wilson',
-            avatar: '/assets/img/courses/course_author003.png',
-            title: 'Life Coach & Trainer',
-            bio: 'Mike is a certified life coach with 15 years of experience in personal development training. He has helped thousands of individuals achieve their personal and professional goals.',
-            students: '3.2k',
-            courses: '15',
-            reviews: '2.1k'
-          }
-        }
-      };
+
+    async fetchSubjects() {
+  this.loadingSubjects = true;
+  
+  try {
+    const courseId = this.$route.params.id;
+
+    if (!authService.isAuthenticated()) {
+      console.log('🔐 Authentication required for subjects');
+      this.subjects = this.getMockSubjectsWithTeachers(courseId);
+      return;
+    }
+
+    console.log('🔍 Attempting to fetch subjects for course:', courseId);
+    
+    // Use the new subjects endpoint
+    try {
+      const response = await authService.apiCall(`/api/courses/${courseId}/subjects`);
+      console.log('✅ Subjects API response:', response);
       
-      return mockCourses[slug] || mockCourses['mathematics-class-10'];
+      // FIX: Check if response.data exists and is an array
+      if (response && response.success && Array.isArray(response.data)) {
+        console.log('✅ Using real subjects data from API');
+        this.subjects = response.data;
+        return;
+      } else {
+        console.warn('⚠️ Subjects API returned invalid data structure:', response);
+        throw new Error('Invalid data structure from API');
+      }
+    } catch (apiError) {
+      console.log('⚠️ Subjects API failed:', apiError.message);
+      // Continue to fallback
+    }
+
+    // Fallback to mock data only if API completely fails
+    console.log('📚 Using mock subjects data as fallback');
+    this.subjects = this.getMockSubjectsWithTeachers(courseId);
+    
+  } catch (error) {
+    console.error('❌ Error in fetchSubjects:', error);
+    console.log('📚 Using mock subjects due to error');
+    this.subjects = this.getMockSubjectsWithTeachers(this.$route.params.id);
+  } finally {
+    this.loadingSubjects = false;
+  }
     },
-    enrollCourse() {
-      if (!this.$store.getters.isAuthenticated) {
-        this.$router.push('/login');
+
+    goToLogin() {
+      this.$router.push('/student-login');
+    },
+
+    // Your existing methods remain the same (getMockSubjectsWithTeachers, getTeacherAvatar, etc.)
+    getMockSubjectsWithTeachers(courseId) {
+  console.log('🎭 Generating mock subjects for course:', courseId);
+  
+  // Ensure mock data matches the API response format exactly
+  const mockSubjects = [
+    {
+      id: courseId + 1,
+      name: 'Mathematics',
+      description: 'Develop problem-solving skills and mathematical thinking',
+      lesson_count: 15,
+      duration: '12h 30m',
+      student_count: 35,
+      teacher: {
+        id: 1,
+        name: 'Dr. Ahmed Rahman',
+        email: 'ahmed.rahman@school.edu',
+        qualification: 'PhD in Mathematics',
+        experience: '10+ years',
+        rating: '4.9',
+        avatar: '/assets/img/teachers/teacher1.jpg'
+      }
+    },
+    {
+      id: courseId + 2,
+      name: 'Science',
+      description: 'Explore scientific concepts and experimental methods',
+      lesson_count: 12,
+      duration: '10h 45m',
+      student_count: 28,
+      teacher: {
+        id: 2,
+        name: 'Ms. Fatima Begum',
+        email: 'fatima.begum@school.edu',
+        qualification: 'MSc in Physics',
+        experience: '8+ years',
+        rating: '4.7',
+        avatar: '/assets/img/teachers/teacher2.jpg'
+      }
+    },
+    {
+      id: courseId + 3,
+      name: 'English',
+      description: 'Improve language proficiency and communication skills',
+      lesson_count: 18,
+      duration: '15h 20m',
+      student_count: 42,
+      teacher: {
+        id: 3,
+        name: 'Mr. Kabir Hossain',
+        email: 'kabir.hossain@school.edu',
+        qualification: 'MA in English Literature',
+        experience: '12+ years',
+        rating: '4.8',
+        avatar: '/assets/img/teachers/teacher3.jpg'
+      }
+    }
+  ];
+
+  console.log('🎭 Mock subjects generated:', mockSubjects);
+  return mockSubjects;
+    },
+
+    getTeacherAvatar(teacher) {
+      if (!teacher) return '/assets/img/teachers/default-teacher.jpg';
+      return teacher.avatar || '/assets/img/teachers/default-teacher.jpg';
+    },
+
+    getUniqueTeachers(subjects) {
+      if (!subjects) return [];
+      const teachersMap = new Map();
+      subjects.forEach(subject => {
+        if (subject.teacher) {
+          teachersMap.set(subject.teacher.id || subject.teacher.name, subject.teacher);
+        }
+      });
+      return Array.from(teachersMap.values());
+    },
+
+    getTeacherSubjects(teacher, subjects) {
+      if (!teacher || !subjects) return '';
+      const teacherSubjects = subjects
+        .filter(subject => subject.teacher && (subject.teacher.id === teacher.id || subject.teacher.name === teacher.name))
+        .map(subject => subject.name);
+      
+      if (teacherSubjects.length <= 2) {
+        return teacherSubjects.join(', ');
+      } else {
+        return `${teacherSubjects.slice(0, 2).join(', ')} +${teacherSubjects.length - 2} more`;
+      }
+    },
+
+    async checkEnrollment() {
+      try {
+        if (!authService.isAuthenticated()) return;
+        // Simulate enrollment check
+        this.isEnrolled = false;
+      } catch (error) {
+        console.error('Error checking enrollment:', error);
+      }
+    },
+
+    async enrollCourse() {
+      if (!authService.isAuthenticated()) {
+        this.$router.push('/student-login');
         return;
       }
+
+      this.loadingEnroll = true;
       
-      if (this.course.fee) {
-        // Redirect to payment page or show payment modal
-        console.log('Redirecting to payment for course:', this.course.name);
-      } else {
-        // Enroll directly for free courses
-        this.isEnrolled = true;
-        this.$toast.success('Successfully enrolled in the course!');
+      try {
+        const courseId = this.course.id;
+        const data = await authService.apiCall(`/api/enrollments/course/${courseId}`, {
+          method: 'POST'
+        });
+
+        if (data.success) {
+          this.isEnrolled = true;
+          alert('Successfully enrolled in the course!');
+        } else {
+          throw new Error(data.message || 'Enrollment failed');
+        }
+      } catch (error) {
+        console.error('Error enrolling in course:', error);
+        
+        if (error.message.includes('session') || error.message.includes('Authentication')) {
+          alert('Your session has expired. Please login again.');
+        } else {
+          alert(error.message || 'Failed to enroll in course. Please try again.');
+        }
+      } finally {
+        this.loadingEnroll = false;
       }
+    },
+
+    // Add this temporary debug method to inspect the API response
+    async debugSubjectsAPI(courseId) {
+  try {
+    console.log('🔍 [DEBUG] Testing subjects API for course:', courseId);
+    const response = await fetch(`/api/courses/${courseId}/subjects`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Accept': 'application/json'
+      }
+    });
+    
+    console.log('🔍 [DEBUG] Raw API response status:', response.status);
+    const rawData = await response.json();
+    console.log('🔍 [DEBUG] Raw API response data:', rawData);
+    
+    return rawData;
+  } catch (error) {
+    console.error('🔍 [DEBUG] API test failed:', error);
+    return null;
+  }
+    },
+
+    // ... All your other existing helper methods remain the same
+    getCourseImage(course) {
+      if (!course) return '/assets/img/courses/courses_details.png';
+      return course.image || '/assets/img/courses/courses_details.png';
+    },
+
+    getPreviewImage(course) {
+      if (!course) return '/assets/img/courses/course_thumb02.png';
+      return course.previewImage || '/assets/img/courses/course_thumb02.png';
+    },
+
+    getPreviewVideo(course) {
+      if (!course) return 'https://www.youtube.com/watch?v=YwrHGratByU';
+      return course.previewVideo || 'https://www.youtube.com/watch?v=YwrHGratByU';
+    },
+
+    getCourseCategory(course) {
+      if (!course) return 'Course';
+      if (course.type === 'regular') {
+        if (course.grade <= 5) return 'Primary';
+        if (course.grade <= 8) return 'Junior';
+        if (course.grade <= 10) return 'Secondary';
+        return 'Higher Secondary';
+      }
+      return course.category || 'Skill Course';
+    },
+
+    getInstructorAvatar(teacher) {
+      if (!teacher) return '/assets/img/courses/course_author001.png';
+      return teacher.avatar || '/assets/img/courses/course_author001.png';
+    },
+
+    getInstructorImage(teacher) {
+      if (!teacher) return '/assets/img/courses/course_instructors.png';
+      return teacher.image || '/assets/img/courses/course_instructors.png';
+    },
+
+    formatDate(dateString) {
+      if (!dateString) return 'Recently';
+      try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-GB');
+      } catch (error) {
+        return 'Recently';
+      }
+    },
+
+    getDefaultDescription(course) {
+      if (!course) return 'Course description not available.';
+      if (course.type === 'regular') {
+        return `Comprehensive ${course.name} curriculum for grade ${course.grade} students. This course covers all essential subjects and prepares students for academic success.`;
+      } else {
+        return `Explore ${course.name} - ${course.category || 'Specialized course'}. Learn essential skills and knowledge from expert instructors.`;
+      }
+    },
+
+    getLearningPoints(course) {
+      const basePoints = [
+        'Comprehensive understanding of core concepts',
+        'Practical application of learned skills',
+        'Interactive learning materials and resources',
+        'Expert guidance and support'
+      ];
+      
+      if (!course) return basePoints;
+      if (course.type === 'regular') {
+        return [
+          `Complete ${course.name} syllabus coverage`,
+          'Problem-solving techniques and strategies',
+          'Exam preparation and practice tests',
+          'Interactive learning activities'
+        ];
+      }
+      return basePoints;
+    },
+
+    getAdditionalInfo(course) {
+      if (!course) return 'This course is designed to provide you with the best learning experience.';
+      return `This course includes ${this.subjects?.length || 'multiple'} subjects designed to provide comprehensive learning. Join thousands of students who have benefited from our structured curriculum and expert instruction.`;
+    },
+
+    getCourseModules(course) {
+      return [
+        {
+          id: 1,
+          title: 'Introduction',
+          lessons: [
+            { id: 1, title: 'Course Overview', duration: '03:03', preview: true, link: 'https://www.youtube.com/watch?v=b2Az7_lLh3g' },
+            { id: 2, title: 'Getting Started', duration: '07:48', preview: false, link: '#' }
+          ]
+        },
+        {
+          id: 2,
+          title: 'Core Concepts',
+          lessons: [
+            { id: 3, title: 'Fundamental Principles', duration: '10:15', preview: false, link: '#' },
+            { id: 4, title: 'Advanced Techniques', duration: '12:30', preview: false, link: '#' }
+          ]
+        }
+      ];
+    },
+
+    getDefaultInstructorBio(teacher) {
+      if (!teacher) return 'Experienced instructor committed to providing quality education.';
+      return `Experienced instructor with expertise in ${teacher.qualification || 'the subject matter'}. Committed to providing quality education and helping students achieve their learning goals.`;
+    },
+
+    getCourseReviews(course) {
+      return [
+        {
+          id: 1,
+          name: 'Student User',
+          avatar: '/assets/img/courses/review-author.png',
+          date: 'Recently',
+          rating: 5,
+          title: 'Excellent Course',
+          comment: 'This course provided comprehensive learning materials and excellent instruction. Highly recommended for anyone looking to improve their skills.'
+        }
+      ];
+    },
+
+    getCoursePrice(course) {
+      return '18.00';
+    },
+
+    getOriginalPrice(course) {
+      return '32.00';
+    },
+
+    hasDiscount(course) {
+      return true;
+    },
+
+    getCourseLevel(course) {
+      if (!course) return 'All Levels';
+      if (course.type === 'regular') {
+        if (course.grade <= 5) return 'Beginner';
+        if (course.grade <= 8) return 'Intermediate';
+        return 'Advanced';
+      }
+      return 'All Levels';
+    },
+
+    getTotalDuration(course) {
+      return '11h 20m';
+    },
+
+    getTotalLessons(course) {
+      return '12';
+    },
+
+    getQuizzesCount(course) {
+      return '8';
+    },
+
+    hasCertificate(course) {
+      return true;
+    },
+
+    handleLessonClick(lesson) {
+      if (lesson.preview) {
+        this.playPreviewVideo(lesson.link);
+      } else if (!this.isEnrolled) {
+        this.$router.push('/student-login');
+      } else {
+        console.log('Navigate to lesson:', lesson.title);
+      }
+    },
+
+    playPreviewVideo(videoUrl = null) {
+      const url = videoUrl || this.getPreviewVideo(this.course);
+      if (url) {
+        window.open(url, '_blank');
+      }
+    },
+
+    getCourseFeatures(course) {
+      return [
+        { icon: 'fas fa-play-circle', text: `${this.getTotalLessons(course)} on-demand videos` },
+        { icon: 'fas fa-file-alt', text: `${this.getQuizzesCount(course)} practice exercises` },
+        { icon: 'fas fa-infinity', text: 'Full lifetime access' },
+        { icon: 'fas fa-mobile-alt', text: 'Access on mobile and TV' },
+        { icon: 'fas fa-trophy', text: 'Certificate of completion' },
+        { icon: 'fas fa-clock', text: `${this.getTotalDuration(course)} total duration` }
+      ];
+    }
+  },
+  computed: {
+    isAuthenticated() {
+      return authService.isAuthenticated();
     }
   }
 }
 </script>
 
 <style scoped>
-.course-hero-area {
-  background-size: cover;
-  background-position: center;
-  position: relative;
+/* Updated styles for subjects with teachers */
+.subjects-grid {
+  margin-top: 1rem;
 }
 
-.course-hero-area::before {
+.subject-card {
+  transition: all 0.3s ease;
+  border: 1px solid #e9ecef;
+}
+
+.subject-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  border-color: #4a6cf7;
+}
+
+.subject-header {
+  border-bottom: 1px solid #e9ecef;
+  padding-bottom: 1rem;
+}
+
+.subject-icon {
+  color: #4a6cf7;
+}
+
+.subject-name {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+/* Teacher Info Styles */
+.teacher-info {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-left: 4px solid #4a6cf7;
+}
+
+.teacher-avatar {
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.teacher-name {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.25rem;
+}
+
+.teacher-qualification {
+  font-size: 0.8rem;
+}
+
+.teacher-rating {
+  background: rgba(255, 193, 7, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+}
+
+/* Subject Details */
+.subject-description {
+  line-height: 1.4;
+  font-size: 0.85rem;
+}
+
+.subject-meta {
+  border-top: 1px solid #e9ecef;
+  padding-top: 0.75rem;
+}
+
+/* Teachers Summary in Sidebar */
+.teacher-summary-item {
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.teacher-summary-item:hover {
+  background-color: #f8f9fa;
+}
+
+.teacher-summary-avatar {
+  border: 2px solid #e9ecef;
+}
+
+.teacher-summary-name {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .subjects-grid .col-md-6 {
+    margin-bottom: 1rem;
+  }
+  
+  .teacher-info {
+    padding: 0.75rem;
+  }
+}
+
+/* Enhanced card hover effects */
+.subject-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.subject-card::before {
   content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, #4a6cf7, #3a5bd9);
+  transition: left 0.3s ease;
+}
+
+.subject-card:hover::before {
+  left: 0;
+}
+
+/* Teacher avatar enhancements */
+.teacher-avatar, .teacher-summary-avatar {
+  object-fit: cover;
+}
+
+/* Rating star enhancements */
+.teacher-rating i {
+  font-size: 0.7rem;
+}
+
+/* Add new styles for subjects */
+.subjects-grid {
+  margin-top: 1rem;
+}
+
+.subject-card {
+  transition: all 0.3s ease;
+  border: 1px solid #e9ecef;
+}
+
+.subject-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  border-color: #4a6cf7;
+}
+
+.subject-icon {
+  color: #4a6cf7;
+}
+
+.subject-name {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.subject-description {
+  line-height: 1.4;
+}
+
+.subjects-summary .small {
+  font-size: 0.85rem;
+}
+
+/* Ensure the new tab content is properly styled */
+.tab-content {
+  min-height: 400px;
+}
+
+/* Responsive adjustments for subjects */
+@media (max-width: 768px) {
+  .subjects-grid .col-md-6 {
+    margin-bottom: 1rem;
+  }
+}
+
+
+/* Improved CSS with better organization and modern design */
+.loading-container, .error-container {
+  min-height: 50vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.error-container .alert {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Course Header */
+.course-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  padding: 2rem;
+  border-radius: 15px;
+  margin-bottom: 2rem;
+}
+
+.course-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  line-height: 1.2;
+}
+
+.course-description {
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+/* Instructor Info */
+.instructor-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Tabs */
+.course-tabs .nav-pills .nav-link {
+  padding: 1rem 1.5rem;
+  font-weight: 600;
+  color: #6c757d;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.course-tabs .nav-pills .nav-link.active {
+  background: #4a6cf7;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(74, 108, 247, 0.3);
+}
+
+/* Learning Objectives */
+.learning-point {
+  line-height: 1.5;
+}
+
+/* Accordion */
+.accordion-button {
+  padding: 1.25rem;
+  font-weight: 600;
+  border: none;
+  box-shadow: none;
+}
+
+.accordion-button:not(.collapsed) {
+  background: #f8f9fa;
+  color: #2c3e50;
+}
+
+/* Instructor Main Image */
+.instructor-main-img {
+  border: 4px solid #e9ecef;
+  padding: 4px;
+}
+
+/* Reviews */
+.rating-stars {
+  font-size: 1.2rem;
+}
+
+.rating-small {
+  font-size: 0.9rem;
+}
+
+.review-avatar {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+}
+
+/* Sidebar */
+.sticky-sidebar {
+  position: sticky;
+  top: 100px;
+}
+
+/* Preview Video */
+.preview-video {
+  border-radius: 15px 15px 0 0;
+  overflow: hidden;
+}
+
+.video-play-btn {
+  width: 70px;
+  height: 70px;
+  background: rgba(74, 108, 247, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.video-play-btn:hover {
+  background: #3a5bd9;
+  transform: scale(1.1);
+  color: white;
+}
+
+/* Price Section */
+.price-section h3 {
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+/* Course Features */
+.feature-item {
+  padding: 0.5rem 0;
+}
+
+/* Social Sharing */
+.social-sharing .btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .course-title {
+    font-size: 2rem;
+  }
+  
+  .course-header {
+    padding: 1.5rem;
+  }
+  
+  .course-tabs .nav-pills .nav-link {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .sticky-sidebar {
+    position: static;
+  }
+}
+
+/* Animation for better UX */
+.card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+}
+
+/* Custom badges */
+.badge {
+  font-size: 0.8rem;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+}
+
+/* Improved button styles */
+.btn-primary {
+  background: linear-gradient(135deg, #4a6cf7 0%, #3a5bd9 100%);
+  border: none;
+  padding: 1rem 2rem;
+  font-weight: 600;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(74, 108, 247, 0.4);
+}
+
+/* Better list group items */
+.list-group-item {
+  border: none;
+  padding: 1rem 1.25rem;
+  transition: all 0.3s ease;
+}
+
+.list-group-item:hover {
+  background: #f8f9fa;
+  transform: translateX(5px);
+}
+
+
+
+/* ==================== */
+/* BREADCRUMB STYLES */
+/* ==================== */
+
+.breadcrumb__area {
+  position: relative;
+  padding: 50px 0 50px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  overflow: hidden;
+  color: #000000;
+}
+
+.breadcrumb__content {
+  text-align: center;
+  position: relative;
+  z-index: 3;
+  color: #000000;
+}
+
+.breadcrumb__content .title {
+  font-size: 48px;
+  font-weight: 700;
+  color: #000000;
+  margin-bottom: 15px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}
+
+.breadcrumb {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  color: #000000;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.breadcrumb a {
+  color: #000000;
+  text-decoration: none;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+.breadcrumb a:hover {
+  opacity: 1;
+  color: #000000;
+}
+
+.breadcrumb-separator {
+  color: #000000;
+  opacity: 0.8;
+  margin: 0 10px;
+  font-size: 14px;
+}
+
+.breadcrumb span:not(.breadcrumb-separator) {
+  color: #000000;
+  opacity: 1;
+  font-weight: 600;
+}
+
+/* ==================== */
+/* BREADCRUMB SHAPE POSITIONING */
+/* ==================== */
+
+.breadcrumb__shape-wrap {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(44, 62, 80, 0.9) 0%, rgba(52, 73, 94, 0.8) 100%);
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
 }
 
-.course-hero-content {
-  position: relative;
-  z-index: 2;
-  color: white;
-}
-
-.breadcrumb {
-  background: transparent;
-  padding: 0;
-  margin-bottom: 20px;
-}
-
-.breadcrumb-item a {
-  color: #bdc3c7;
-  text-decoration: none;
-}
-
-.breadcrumb-item.active {
-  color: #ecf0f1;
-}
-
-.course-title {
-  font-size: 3rem;
-  font-weight: 700;
-  margin-bottom: 20px;
-  color: white;
-}
-
-.course-description {
-  font-size: 1.2rem;
-  margin-bottom: 30px;
-  color: #ecf0f1;
-}
-
-.course-meta {
-  display: flex;
-  gap: 30px;
-  margin-bottom: 30px;
-  flex-wrap: wrap;
-}
-
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.meta-icon {
-  width: 50px;
-  height: 50px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.meta-icon i {
-  font-size: 1.2rem;
-  color: #e74c3c;
-}
-
-.meta-content span {
-  display: block;
-  font-size: 0.9rem;
-  color: #bdc3c7;
-}
-
-.meta-content strong {
-  display: block;
-  font-size: 1.2rem;
-  color: white;
-}
-
-.course-actions {
-  display: flex;
-  gap: 15px;
-  flex-wrap: wrap;
-}
-
-.btn {
-  padding: 12px 30px;
-  border-radius: 5px;
-  font-weight: 600;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.btn-primary {
-  background: #e74c3c;
-  color: white;
-}
-
-.btn-primary:hover {
-  background: #c0392b;
-  transform: translateY(-2px);
-}
-
-.btn-success {
-  background: #27ae60;
-  color: white;
-}
-
-.btn-outline {
-  background: transparent;
-  color: white;
-  border: 2px solid white;
-}
-
-.btn-outline:hover {
-  background: white;
-  color: #2c3e50;
-}
-
-.course-hero-image {
-  position: relative;
-  text-align: center;
-}
-
-.course-hero-image img {
-  max-width: 100%;
-  border-radius: 10px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-}
-
-.course-badge {
+.breadcrumb__shape-wrap img {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  max-width: none;
 }
 
-.badge {
-  background: #e74c3c;
-  color: white;
-  padding: 8px 15px;
-  border-radius: 20px;
-  font-weight: 600;
-  font-size: 0.8rem;
+/* Position each shape individually with pixel values */
+.breadcrumb__shape-wrap img:nth-child(1) {
+  /* breadcrumb_shape01.svg */
+  top: 20%;
+  left: 8%;
+  width: 120px;
+  z-index: 1;
 }
 
-/* Course Tabs */
-.course-tabs {
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+.breadcrumb__shape-wrap img:nth-child(2) {
+  /* breadcrumb_shape02.svg */
+  top: 35%;
+  right: 20%;
+  width: 80px;
+  z-index: 1;
 }
-
-.nav-tabs {
-  border-bottom: 1px solid #e9ecef;
-  padding: 0 20px;
-}
-
-.nav-link {
-  border: none;
-  padding: 20px 25px;
-  color: #6c757d;
-  font-weight: 600;
-  background: transparent;
-}
-
-.nav-link.active {
-  color: #e74c3c;
-  border-bottom: 3px solid #e74c3c;
-}
-
-.tab-content {
-  padding: 30px;
-}
-
-/* Overview Styles */
-.learn-list {
-  list-style: none;
-  padding: 0;
-}
-
-.learn-list li {
-  padding: 8px 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.learn-list li i {
-  color: #27ae60;
-}
-
-/* Curriculum Styles */
-.accordion-button {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 600;
-}
-
-.module-meta {
-  font-size: 0.9rem;
-  color: #6c757d;
-  font-weight: normal;
-}
-
-.lesson-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.lesson-list li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid #f8f9fa;
-}
-
-.lesson-list li:last-child {
-  border-bottom: none;
-}
-
-.lesson-list li.locked {
-  opacity: 0.6;
-}
-
-.lesson-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 1;
-}
-
-.lesson-title {
-  flex: 1;
-}
-
-.lesson-duration {
-  color: #6c757d;
-  font-size: 0.9rem;
-}
-
-.lesson-preview {
-  background: #e74c3c;
-  color: white;
-  padding: 2px 8px;
-  border-radius: 3px;
-  font-size: 0.8rem;
-}
-
-/* Instructor Styles */
-.instructor-profile {
-  display: flex;
-  gap: 20px;
-  align-items: flex-start;
-}
-
-.instructor-avatar {
+.breadcrumb__shape-wrap img:nth-child(3) {
+  /* breadcrumb_shape03.png */
+  bottom: 1%;
+  left: 32%;
   width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  overflow: hidden;
+  z-index: 1;
 }
 
-.instructor-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.breadcrumb__shape-wrap img:nth-child(4) {
+  /* breadcrumb_shape04.png */
+  bottom: 2%;
+  right: 40%;
+  width: 90px;
+  z-index: 1;
 }
 
-.instructor-stats {
-  display: flex;
-  gap: 20px;
-  margin-top: 15px;
+.breadcrumb__shape-wrap img:nth-child(5) {
+  /* breadcrumb_shape05.svg */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 150px;
+  z-index: 1;
 }
 
-.stat {
-  text-align: center;
+/* Animation for specific elements */
+.alltuchtopdown {
+  animation: alltuchtopdown 5s infinite linear;
 }
 
-.stat strong {
-  display: block;
-  font-size: 1.2rem;
-  color: #2c3e50;
-}
-
-.stat span {
-  font-size: 0.9rem;
-  color: #6c757d;
-}
-
-/* Reviews Styles */
-.rating-overview {
-  display: flex;
-  gap: 40px;
-  align-items: center;
-  padding: 30px;
-  background: #f8f9fa;
-  border-radius: 10px;
-  margin-bottom: 30px;
-}
-
-.overview-rating {
-  text-align: center;
-}
-
-.overview-rating h2 {
-  font-size: 3rem;
-  color: #2c3e50;
-  margin: 0;
-}
-
-.rating-bars {
-  flex: 1;
-}
-
-.rating-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-
-.bar {
-  flex: 1;
-  height: 8px;
-  background: #e9ecef;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.fill {
-  height: 100%;
-  background: #f39c12;
-}
-
-.review-item {
-  display: flex;
-  gap: 20px;
-  padding: 20px 0;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.reviewer-avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  overflow: hidden;
-}
-
-.reviewer-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.review-header {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
-}
-
-.review-date {
-  color: #6c757d;
-  font-size: 0.9rem;
-}
-
-/* Sidebar Styles */
-.course-sidebar {
-  position: sticky;
-  top: 100px;
-}
-
-.sidebar-widget {
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  padding: 25px;
-  margin-bottom: 30px;
-}
-
-.features-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.features-list li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid #f8f9fa;
-}
-
-.features-list li:last-child {
-  border-bottom: none;
-}
-
-.features-list li i {
-  color: #e74c3c;
-  width: 20px;
-}
-
-.price-card {
-  text-align: center;
-}
-
-.price-header {
-  margin-bottom: 20px;
-}
-
-.price-amount {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #e74c3c;
-  margin: 10px 0;
-}
-
-.price-features {
-  list-style: none;
-  padding: 0;
-  margin: 20px 0;
-  text-align: left;
-}
-
-.price-features li {
-  padding: 8px 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.price-features li i {
-  color: #27ae60;
-}
-
-.btn-block {
-  width: 100%;
-  justify-content: center;
-}
-
-.share-buttons {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-}
-
-.share-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  text-decoration: none;
-  transition: transform 0.3s ease;
-}
-
-.share-btn:hover {
-  transform: translateY(-3px);
-}
-
-.facebook { background: #3b5998; }
-.twitter { background: #1da1f2; }
-.linkedin { background: #0077b5; }
-.whatsapp { background: #25d366; }
-
-.loading-section {
-  padding: 100px 0;
-  text-align: center;
-}
-
-@media (max-width: 768px) {
-  .course-meta {
-    flex-direction: column;
-    gap: 15px;
+/* Animation keyframes */
+@keyframes alltuchtopdown {
+  0% {
+    transform: translateY(0px);
   }
-  
-  .course-actions {
-    flex-direction: column;
+  50% {
+    transform: translateY(-30px);
   }
-  
-  .instructor-profile {
-    flex-direction: column;
-    text-align: center;
+  100% {
+    transform: translateY(0px);
   }
-  
-  .rating-overview {
-    flex-direction: column;
-    text-align: center;
-  }
+}
+
+/* AOS animations for other shapes */
+.breadcrumb__shape-wrap img[data-aos] {
+  opacity: 0.7;
 }
 </style>

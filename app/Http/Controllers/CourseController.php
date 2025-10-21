@@ -1,6 +1,4 @@
 <?php
-// app/Http/Controllers/CourseController.php
-
 namespace App\Http\Controllers;
 
 use App\Models\ClassModel;
@@ -861,22 +859,29 @@ class CourseController extends Controller
     }
 
     // Get a specific course by ID - UPDATED to handle both regular and other courses
+    /**
+ * Get a specific course by ID
+ */
     public function getCourse($courseId)
     {
         try {
+            Log::info("Fetching course with ID: {$courseId}");
+
             $course = ClassModel::with(['teacher:id,name,email,experience,education_qualification', 'students'])
                 ->find($courseId);
 
             if (!$course) {
+                Log::warning("Course not found with ID: {$courseId}");
                 return response()->json([
                     'success' => false,
                     'message' => 'Course not found'
                 ], 404);
             }
 
+            Log::info("Found course: {$course->name} (ID: {$course->id})");
+
             // Format response based on course type
             if ($course->type === 'other') {
-                // For other courses (Life Skills, Dance, etc.)
                 $formattedCourse = [
                     'id' => $course->id,
                     'name' => $course->name,
@@ -893,10 +898,11 @@ class CourseController extends Controller
                         'experience' => $course->teacher->experience,
                         'qualification' => $course->teacher->education_qualification
                     ]] : [],
-                    'type' => 'other'
+                    'type' => 'other',
+                    'created_at' => $course->created_at,
+                    'updated_at' => $course->updated_at
                 ];
             } else {
-                // For regular classes
                 $formattedCourse = [
                     'id' => $course->id,
                     'name' => $course->name,
@@ -914,19 +920,23 @@ class CourseController extends Controller
                         'experience' => $course->teacher->experience,
                         'qualification' => $course->teacher->education_qualification
                     ]] : [],
-                    'type' => 'regular'
+                    'type' => 'regular',
+                    'created_at' => $course->created_at,
+                    'updated_at' => $course->updated_at
                 ];
             }
 
             return response()->json([
                 'success' => true,
-                'data' => $formattedCourse
+                'data' => $formattedCourse,
+                'message' => 'Course retrieved successfully'
             ]);
+
         } catch (\Exception $e) {
             Log::error('Error fetching course: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch course'
+                'message' => 'Failed to fetch course: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -1402,5 +1412,367 @@ class CourseController extends Controller
         return strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $name)));
     }
 
+    public function getCourseSubjects($courseId)
+    {
+        try {
+            Log::info("🔍 [DEBUG] Fetching subjects for course ID: {$courseId}");
 
+            // First, get the main course
+            $course = ClassModel::find($courseId);
+            
+            if (!$course) {
+                Log::warning("❌ [DEBUG] Course not found with ID: {$courseId}");
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Course not found'
+                ], 404);
+            }
+
+            Log::info("✅ [DEBUG] Found course: {$course->name} (Type: {$course->type})");
+
+            $subjects = [];
+
+            if ($course->type === 'regular') {
+                // For regular classes, get all subjects for this grade/class
+                $subjects = $this->getRegularCourseSubjects($course);
+            } else {
+                // For other courses, get the course itself as a subject
+                $subjects = $this->getOtherCourseSubjects($course);
+            }
+
+            Log::info("✅ [DEBUG] Returning {$subjects->count()} subjects for course");
+
+            return response()->json([
+                'success' => true,
+                'data' => $subjects,
+                'course' => [
+                    'id' => $course->id,
+                    'name' => $course->name,
+                    'type' => $course->type,
+                    'grade' => $course->grade
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('❌ [DEBUG] Error fetching course subjects: ' . $e->getMessage());
+            Log::error('❌ [DEBUG] Stack trace: ' . $e->getTraceAsString());
+            
+            // Return mock data as fallback
+            return $this->getMockCourseSubjects($courseId);
+        }
+    }
+
+
+    private function getRegularCourseSubjects($course)
+    {
+        Log::info("📚 [DEBUG] Getting regular course subjects for: {$course->name}");
+
+        // Get all classes with the same name (for different subjects)
+        $subjectClasses = ClassModel::where('name', $course->name)
+            ->where('type', 'regular')
+            ->with(['teacher:id,name,email,education_qualification,experience,avatar', 'students'])
+            ->get();
+
+        Log::info("📚 [DEBUG] Found {$subjectClasses->count()} subject classes");
+
+        if ($subjectClasses->isEmpty()) {
+            Log::info("📚 [DEBUG] No subject classes found, using mock data");
+            return $this->getMockSubjectsForRegularCourse($course);
+        }
+
+        return $subjectClasses->map(function($class) {
+            return [
+                'id' => $class->id,
+                'name' => $class->subject ?: $class->name,
+                'description' => $class->description ?: $this->getSubjectDescription($class->subject ?: $class->name),
+                'lesson_count' => $class->students->count() > 0 ? rand(10, 20) : rand(5, 15),
+                'duration' => $this->generateRandomDuration(),
+                'student_count' => $class->students->count(),
+                'teacher' => $class->teacher ? [
+                    'id' => $class->teacher->id,
+                    'name' => $class->teacher->name,
+                    'email' => $class->teacher->email,
+                    'qualification' => $class->teacher->education_qualification,
+                    'experience' => $class->teacher->experience,
+                    'rating' => $this->generateTeacherRating(),
+                    'avatar' => $class->teacher->avatar ?: $this->getDefaultTeacherAvatar($class->teacher->name)
+                ] : $this->getMockTeacher($class->subject ?: $class->name)
+            ];
+        });
+    }
+
+    private function getOtherCourseSubjects($course)
+    {
+        Log::info("🎯 [DEBUG] Getting other course subjects for: {$course->name}");
+
+        // For other courses, we might have multiple modules/subjects
+        // For now, return the course itself as the main subject
+        $subjects = collect([$course]);
+
+        // If it's a comprehensive course, break it down into modules
+        if (str_contains(strtolower($course->name), 'programming') || 
+            str_contains(strtolower($course->name), 'development')) {
+            $subjects = $this->getProgrammingCourseSubjects($course);
+        } elseif (str_contains(strtolower($course->name), 'design')) {
+            $subjects = $this->getDesignCourseSubjects($course);
+        } elseif (str_contains(strtolower($course->name), 'language') || 
+                str_contains(strtolower($course->name), 'english')) {
+            $subjects = $this->getLanguageCourseSubjects($course);
+        }
+
+        return $subjects->map(function($subject) use ($course) {
+            return [
+                'id' => $subject->id ?? ($course->id + rand(100, 999)),
+                'name' => $subject->name ?? $subject->subject ?? $course->name,
+                'description' => $subject->description ?? $this->getSubjectDescription($subject->name ?? $course->name),
+                'lesson_count' => rand(8, 25),
+                'duration' => $this->generateRandomDuration(),
+                'student_count' => $subject->students->count() ?? rand(15, 40),
+                'teacher' => $subject->teacher ?? $course->teacher ? [
+                    'id' => $course->teacher->id,
+                    'name' => $course->teacher->name,
+                    'email' => $course->teacher->email,
+                    'qualification' => $course->teacher->education_qualification,
+                    'experience' => $course->teacher->experience,
+                    'rating' => $this->generateTeacherRating(),
+                    'avatar' => $course->teacher->avatar ?: $this->getDefaultTeacherAvatar($course->teacher->name)
+                ] : $this->getMockTeacher($subject->name ?? $course->name)
+            ];
+        });
+    }
+
+    private function getProgrammingCourseSubjects($course)
+    {
+        $subjects = [
+            ['name' => 'HTML & CSS Fundamentals', 'description' => 'Learn the building blocks of web development'],
+            ['name' => 'JavaScript Programming', 'description' => 'Master dynamic web interactions and logic'],
+            ['name' => 'React.js Development', 'description' => 'Build modern user interfaces with React'],
+            ['name' => 'Node.js Backend', 'description' => 'Create server-side applications with Node.js'],
+            ['name' => 'Database Management', 'description' => 'Learn SQL and database design principles'],
+            ['name' => 'Project Development', 'description' => 'Build real-world applications']
+        ];
+
+        return collect($subjects)->map(function($subject, $index) use ($course) {
+            $class = clone $course;
+            $class->id = $course->id + $index + 1;
+            $class->name = $subject['name'];
+            $class->description = $subject['description'];
+            return $class;
+        });
+    }
+
+    private function getDesignCourseSubjects($course)
+{
+    $subjects = [
+        ['name' => 'UI/UX Design Principles', 'description' => 'Learn user-centered design approaches'],
+        ['name' => 'Adobe Photoshop', 'description' => 'Master image editing and graphic design'],
+        ['name' => 'Figma Prototyping', 'description' => 'Create interactive prototypes with Figma'],
+        ['name' => 'Color Theory & Typography', 'description' => 'Understand visual design fundamentals'],
+        ['name' => 'Design Portfolio', 'description' => 'Build a professional design portfolio']
+    ];
+
+    return collect($subjects)->map(function($subject, $index) use ($course) {
+        $class = clone $course;
+        $class->id = $course->id + $index + 1;
+        $class->name = $subject['name'];
+        $class->description = $subject['description'];
+        return $class;
+    });
+}
+
+/**
+ * Generate mock subjects for language courses
+ */
+    private function getLanguageCourseSubjects($course)
+    {
+        $subjects = [
+            ['name' => 'Grammar Fundamentals', 'description' => 'Master essential grammar rules'],
+            ['name' => 'Vocabulary Building', 'description' => 'Expand your word knowledge'],
+            ['name' => 'Speaking Practice', 'description' => 'Improve pronunciation and fluency'],
+            ['name' => 'Listening Comprehension', 'description' => 'Understand native speakers'],
+            ['name' => 'Writing Skills', 'description' => 'Develop effective writing techniques'],
+            ['name' => 'Reading Comprehension', 'description' => 'Understand complex texts']
+        ];
+
+        return collect($subjects)->map(function($subject, $index) use ($course) {
+            $class = clone $course;
+            $class->id = $course->id + $index + 1;
+            $class->name = $subject['name'];
+            $class->description = $subject['description'];
+            return $class;
+        });
+    }
+
+    private function getMockSubjectsForRegularCourse($course)
+{
+    $commonSubjects = [
+        'Mathematics', 'English', 'Science', 'Social Studies', 
+        'Bengali', 'Computer Science', 'Physical Education'
+    ];
+
+    return collect($commonSubjects)->map(function($subject, $index) use ($course) {
+        return [
+            'id' => $course->id + $index + 1,
+            'name' => $subject,
+            'description' => $this->getSubjectDescription($subject),
+            'lesson_count' => rand(12, 24),
+            'duration' => $this->generateRandomDuration(),
+            'student_count' => rand(20, 45),
+            'teacher' => $this->getMockTeacher($subject)
+        ];
+    });
+}
+
+/**
+ * Generate mock course subjects as fallback
+ */
+    private function getMockCourseSubjects($courseId)
+    {
+        Log::info("🎭 [DEBUG] Using mock subjects for course ID: {$courseId}");
+
+        $mockSubjects = [
+            [
+                'id' => $courseId + 1,
+                'name' => 'Mathematics',
+                'description' => 'Develop problem-solving skills and mathematical thinking',
+                'lesson_count' => 15,
+                'duration' => '12h 30m',
+                'student_count' => 35,
+                'teacher' => [
+                    'id' => 1,
+                    'name' => 'Dr. Ahmed Rahman',
+                    'email' => 'ahmed.rahman@school.edu',
+                    'qualification' => 'PhD in Mathematics',
+                    'experience' => '10+ years',
+                    'rating' => '4.9',
+                    'avatar' => '/assets/img/teachers/teacher1.jpg'
+                ]
+            ],
+            [
+                'id' => $courseId + 2,
+                'name' => 'Science',
+                'description' => 'Explore scientific concepts and experimental methods',
+                'lesson_count' => 12,
+                'duration' => '10h 45m',
+                'student_count' => 28,
+                'teacher' => [
+                    'id' => 2,
+                    'name' => 'Ms. Fatima Begum',
+                    'email' => 'fatima.begum@school.edu',
+                    'qualification' => 'MSc in Physics',
+                    'experience' => '8+ years',
+                    'rating' => '4.7',
+                    'avatar' => '/assets/img/teachers/teacher2.jpg'
+                ]
+            ],
+            [
+                'id' => $courseId + 3,
+                'name' => 'English',
+                'description' => 'Improve language proficiency and communication skills',
+                'lesson_count' => 18,
+                'duration' => '15h 20m',
+                'student_count' => 42,
+                'teacher' => [
+                    'id' => 3,
+                    'name' => 'Mr. Kabir Hossain',
+                    'email' => 'kabir.hossain@school.edu',
+                    'qualification' => 'MA in English Literature',
+                    'experience' => '12+ years',
+                    'rating' => '4.8',
+                    'avatar' => '/assets/img/teachers/teacher3.jpg'
+                ]
+            ]
+        ];
+
+        return collect($mockSubjects);
+    }
+
+    private function getSubjectDescription($subjectName)
+    {
+        $descriptions = [
+            'Mathematics' => 'Develop problem-solving skills and mathematical thinking',
+            'English' => 'Improve language proficiency and communication skills',
+            'Science' => 'Explore scientific concepts and experimental methods',
+            'Social Studies' => 'Understand society, culture, and human interactions',
+            'Bengali' => 'Master Bengali language and literature',
+            'Computer Science' => 'Learn programming and computational thinking',
+            'Physical Education' => 'Develop physical fitness and sports skills',
+            'HTML & CSS' => 'Build responsive websites with modern web technologies',
+            'JavaScript' => 'Create interactive web applications and dynamic content',
+            'React.js' => 'Build modern user interfaces with React framework',
+            'Node.js' => 'Create server-side applications with JavaScript',
+            'Database Management' => 'Learn SQL and database design principles',
+            'UI/UX Design' => 'Design user-friendly interfaces and experiences'
+        ];
+
+        return $descriptions[$subjectName] ?? 'Comprehensive learning materials and expert instruction';
+    }
+
+    private function generateRandomDuration()
+    {
+        $hours = rand(5, 20);
+        $minutes = rand(0, 59);
+        return "{$hours}h {$minutes}m";
+    }
+
+    private function generateTeacherRating()
+    {
+        return number_format(4.0 + (rand(0, 10) / 10), 1);
+    }
+
+    private function getMockTeacher($subjectName)
+    {
+        $teachers = [
+            'Mathematics' => [
+                'id' => 1,
+                'name' => 'Dr. Ahmed Rahman',
+                'email' => 'ahmed.rahman@school.edu',
+                'qualification' => 'PhD in Mathematics',
+                'experience' => '10+ years',
+                'rating' => '4.9',
+                'avatar' => '/assets/img/teachers/teacher1.jpg'
+            ],
+            'Science' => [
+                'id' => 2,
+                'name' => 'Ms. Fatima Begum',
+                'email' => 'fatima.begum@school.edu',
+                'qualification' => 'MSc in Physics',
+                'experience' => '8+ years',
+                'rating' => '4.7',
+                'avatar' => '/assets/img/teachers/teacher2.jpg'
+            ],
+            'English' => [
+                'id' => 3,
+                'name' => 'Mr. Kabir Hossain',
+                'email' => 'kabir.hossain@school.edu',
+                'qualification' => 'MA in English Literature',
+                'experience' => '12+ years',
+                'rating' => '4.8',
+                'avatar' => '/assets/img/teachers/teacher3.jpg'
+            ],
+            'default' => [
+                'id' => 4,
+                'name' => 'Expert Teacher',
+                'email' => 'teacher@school.edu',
+                'qualification' => 'Subject Expert',
+                'experience' => '5+ years',
+                'rating' => '4.5',
+                'avatar' => '/assets/img/teachers/default-teacher.jpg'
+            ]
+        ];
+
+        foreach ($teachers as $key => $teacher) {
+            if (str_contains(strtolower($subjectName), strtolower($key))) {
+                return $teacher;
+            }
+        }
+
+        return $teachers['default'];
+    }
+
+    private function getDefaultTeacherAvatar($teacherName)
+    {
+        // You can implement a logic to generate avatars based on teacher name
+        return '/assets/img/teachers/default-teacher.jpg';
+    }
 }

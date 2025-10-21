@@ -3,11 +3,11 @@
     <!-- instructor-details-area -->
     <section class="instructor__details-area section-pt-120 section-pb-90">
       <div class="container">
-        <!-- Loading State -->
+        <!-- Simple Loading State -->
         <div v-if="loading" class="row">
           <div class="col-12 text-center">
-            <div class="loading-spinner">
-              <i class="fas fa-spinner fa-spin fa-3x"></i>
+            <div class="simple-loading">
+              <div class="loading-spinner"></div>
               <p>Loading instructor details...</p>
             </div>
           </div>
@@ -236,7 +236,7 @@
                     @click="openVideoModal(video)"
                   >
                     <div class="video-thumbnail">
-                      <img :src="video.thumbnail" :alt="video.title">
+                      <img :src="video.thumbnail" :alt="video.title" @error="handleVideoThumbnailError">
                       <div class="video-overlay">
                         <div class="play-button">
                           <i class="fas fa-play"></i>
@@ -372,7 +372,7 @@
         </button>
         <div class="video-container">
           <iframe 
-            :src="selectedVideo.videoUrl" 
+            :src="getEmbedUrl(selectedVideo.videoUrl)" 
             frameborder="0" 
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
             allowfullscreen>
@@ -385,6 +385,11 @@
             <span><i class="far fa-clock"></i> {{ selectedVideo.duration }}</span>
             <span><i class="far fa-calendar"></i> {{ formatDate(selectedVideo.created_at) }}</span>
             <span><i class="far fa-eye"></i> {{ selectedVideo.views || '0' }} views</span>
+          </div>
+          <div class="video-actions">
+            <a :href="selectedVideo.videoUrl" target="_blank" class="btn btn-outline">
+              <i class="fab fa-youtube"></i> Watch on YouTube
+            </a>
           </div>
         </div>
       </div>
@@ -612,7 +617,7 @@ export default {
           title: 'Advanced Calculus - Limits and Derivatives',
           description: 'Complete introduction to calculus concepts with practical examples',
           thumbnail: '/assets/img/courses/video_thumb01.jpg',
-          videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+          videoUrl: 'https://www.youtube.com/watch?v=YNstP0ESndU',
           duration: '45:30',
           class: 'Mathematics - Grade 12',
           created_at: '2024-01-15T10:00:00Z',
@@ -625,7 +630,7 @@ export default {
           title: 'Quantum Physics Fundamentals',
           description: 'Understanding the basics of quantum mechanics and wave-particle duality',
           thumbnail: '/assets/img/courses/video_thumb02.jpg',
-          videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+          videoUrl: 'https://youtu.be/p9pPjASnnxw',
           duration: '38:15',
           class: 'Physics - University Level',
           created_at: '2024-01-12T14:30:00Z',
@@ -638,12 +643,51 @@ export default {
           title: 'Python Programming for Beginners',
           description: 'Learn Python from scratch with hands-on coding exercises',
           thumbnail: '/assets/img/courses/video_thumb03.jpg',
-          videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+          videoUrl: 'https://www.youtube.com/watch?v=K5KVEU3aaeQ',
           duration: '52:10',
           class: 'Computer Science - Beginner',
           created_at: '2024-01-10T09:15:00Z',
           views: '2.1K',
           likes: '312',
+          category: 'programming'
+        },
+        {
+          id: 4,
+          title: 'Chemistry - Organic Compounds',
+          description: 'Introduction to organic chemistry and compound structures',
+          thumbnail: '/assets/img/courses/video_thumb04.jpg',
+          videoUrl: 'https://youtu.be/W1h5L_5Z-0A',
+          duration: '35:20',
+          class: 'Chemistry - Grade 11',
+          created_at: '2024-01-08T11:45:00Z',
+          views: '750',
+          likes: '98',
+          category: 'science'
+        },
+        {
+          id: 5,
+          title: 'Algebra Basics - Equations and Functions',
+          description: 'Fundamental concepts of algebra with step-by-step examples',
+          thumbnail: '/assets/img/courses/video_thumb05.jpg',
+          videoUrl: 'https://www.youtube.com/watch?v=GrFO1tq1pUc',
+          duration: '28:45',
+          class: 'Mathematics - Grade 9',
+          created_at: '2024-01-05T08:30:00Z',
+          views: '1.5K',
+          likes: '210',
+          category: 'mathematics'
+        },
+        {
+          id: 6,
+          title: 'Web Development Crash Course',
+          description: 'Build your first website using HTML, CSS and JavaScript',
+          thumbnail: '/assets/img/courses/video_thumb06.jpg',
+          videoUrl: 'https://youtu.be/5YDVJaItmaY',
+          duration: '1:05:15',
+          class: 'Computer Science - Intermediate',
+          created_at: '2024-01-03T16:20:00Z',
+          views: '3.2K',
+          likes: '450',
           category: 'programming'
         }
       ];
@@ -718,19 +762,67 @@ export default {
       ];
     },
 
-    setActiveCategory(categoryId) {
-      this.activeCategory = categoryId;
-      this.currentPage = 1;
+    getEmbedUrl(youtubeUrl) {
+      if (!youtubeUrl) return '';
+      
+      try {
+        // Handle different YouTube URL formats
+        let videoId = '';
+        
+        // Regular YouTube URL: https://www.youtube.com/watch?v=VIDEO_ID
+        if (youtubeUrl.includes('youtube.com/watch?v=')) {
+          const urlParams = new URLSearchParams(new URL(youtubeUrl).search);
+          videoId = urlParams.get('v');
+        }
+        // Short YouTube URL: https://youtu.be/VIDEO_ID
+        else if (youtubeUrl.includes('youtu.be/')) {
+          videoId = youtubeUrl.split('youtu.be/')[1]?.split('?')[0];
+        }
+        // Embed URL: https://www.youtube.com/embed/VIDEO_ID
+        else if (youtubeUrl.includes('youtube.com/embed/')) {
+          videoId = youtubeUrl.split('youtube.com/embed/')[1]?.split('?')[0];
+        }
+        
+        // If we found a video ID, return the embed URL
+        if (videoId) {
+          return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
+        }
+        
+        // If no video ID found, return original URL (might not work in iframe)
+        return youtubeUrl;
+      } catch (error) {
+        console.error('Error parsing YouTube URL:', error);
+        return youtubeUrl;
+      }
+    },
+
+    extractVideoId(youtubeUrl) {
+      // Alternative method to extract YouTube video ID
+      const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+      const match = youtubeUrl.match(regex);
+      return match ? match[1] : null;
     },
 
     openVideoModal(video) {
       this.selectedVideo = video;
       document.body.style.overflow = 'hidden';
+      
+      // Log for debugging
+      console.log('Opening video modal:', {
+        originalUrl: video.videoUrl,
+        embedUrl: this.getEmbedUrl(video.videoUrl),
+        videoId: this.extractVideoId(video.videoUrl)
+      });
     },
 
     closeVideoModal() {
       this.selectedVideo = null;
       document.body.style.overflow = 'auto';
+    },
+
+    setActiveCategory(categoryId) {
+      this.activeCategory = categoryId;
+      this.currentPage = 1;
     },
 
     loadMoreVideos() {
@@ -785,6 +877,18 @@ export default {
 
     handleImageError(event) {
       event.target.src = '/assets/img/instructor/instructor_details_thumb.jpg';
+    },
+
+    handleVideoThumbnailError(event) {
+      // Fallback thumbnail images for videos
+      const thumbnails = [
+        '/assets/img/courses/video_thumb01.jpg',
+        '/assets/img/courses/video_thumb02.jpg',
+        '/assets/img/courses/video_thumb03.jpg',
+        '/assets/img/courses/video_thumb04.jpg'
+      ];
+      const randomThumb = thumbnails[Math.floor(Math.random() * thumbnails.length)];
+      event.target.src = randomThumb;
     },
 
     getInstructorTitle(instructor) {
@@ -1172,11 +1276,30 @@ export default {
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
   cursor: pointer;
+  position: relative;
 }
 
 .video-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+}
+
+.video-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(74, 108, 247, 0.1), rgba(255, 0, 0, 0.1));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.video-card:hover::before {
+  opacity: 1;
 }
 
 .video-thumbnail {
@@ -1194,6 +1317,41 @@ export default {
 
 .video-card:hover .video-thumbnail img {
   transform: scale(1.1);
+}
+
+.video-thumbnail::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  background: #ff0000;
+  border-radius: 50%;
+  opacity: 0.9;
+  transition: all 0.3s ease;
+  z-index: 2;
+}
+
+.video-card:hover .video-thumbnail::after {
+  transform: scale(1.1);
+  opacity: 1;
+}
+
+.video-thumbnail::before {
+  content: '▶';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  z-index: 3;
+  pointer-events: none;
 }
 
 .video-overlay {
@@ -1242,6 +1400,7 @@ export default {
   border-radius: 4px;
   font-size: 12px;
   font-weight: 500;
+  z-index: 2;
 }
 
 .video-content {
@@ -1282,16 +1441,11 @@ export default {
   font-size: 14px;
   line-height: 1.5;
   margin-bottom: 15px;
-  /* Fallback for line-clamp */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  /* Standard line-clamp property */
-  display: -webkit-box;
   line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 .video-stats {
@@ -1466,16 +1620,11 @@ export default {
   font-size: 14px;
   line-height: 1.4;
   margin-bottom: 15px;
-  /* Fallback for line-clamp */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  /* Standard line-clamp property */
-  display: -webkit-box;
   line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 .assignment-meta {
@@ -1561,7 +1710,7 @@ export default {
   line-height: 1.4;
 }
 
-/* Education List - Fixed space-y issue */
+/* Education List */
 .education-list {
   display: flex;
   flex-direction: column;
@@ -1680,18 +1829,45 @@ export default {
   transform: none;
 }
 
-/* Video Modal */
+/* Simple Loading Styles */
+.simple-loading {
+  padding: 80px 0;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid var(--primary-color, #4a6cf7);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+.simple-loading p {
+  margin: 0;
+  font-size: 16px;
+  color: #7f8c8d;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Enhanced Video Modal Styles */
 .video-modal {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 9999;
   padding: 20px;
   animation: fadeIn 0.3s ease;
 }
@@ -1707,19 +1883,20 @@ export default {
 
 .modal-content {
   position: relative;
-  background: #ffffff;
+  background: #1a1a1a;
   border-radius: 15px;
-  max-width: 900px;
+  max-width: 1000px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
   animation: slideUp 0.3s ease;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(30px);
   }
   to {
     opacity: 1;
@@ -1733,8 +1910,8 @@ export default {
   right: 15px;
   width: 40px;
   height: 40px;
-  background: rgba(0, 0, 0, 0.7);
-  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 50%;
   color: #ffffff;
   display: flex;
@@ -1743,11 +1920,13 @@ export default {
   cursor: pointer;
   z-index: 10;
   transition: all 0.3s ease;
-  font-size: 16px;
+  font-size: 18px;
+  backdrop-filter: blur(10px);
 }
 
 .close-modal:hover {
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
   transform: scale(1.1);
 }
 
@@ -1756,6 +1935,8 @@ export default {
   width: 100%;
   padding-bottom: 56.25%; /* 16:9 aspect ratio */
   height: 0;
+  background: #000000;
+  border-radius: 15px 15px 0 0;
 }
 
 .video-container iframe {
@@ -1769,53 +1950,93 @@ export default {
 }
 
 .video-info {
-  padding: 25px;
+  padding: 30px;
+  background: #1a1a1a;
+  color: #ffffff;
 }
 
 .video-info h4 {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
-  color: #2c3e50;
-  margin-bottom: 10px;
+  color: #ffffff;
+  margin-bottom: 15px;
   line-height: 1.3;
 }
 
 .video-info p {
-  color: #7f8c8d;
+  color: #b0b0b0;
   line-height: 1.6;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
+  font-size: 15px;
 }
 
 .video-meta-modal {
   display: flex;
-  gap: 20px;
+  gap: 25px;
   font-size: 14px;
-  color: #7f8c8d;
+  color: #888888;
+  margin-bottom: 25px;
   flex-wrap: wrap;
 }
 
 .video-meta-modal span {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
 }
 
-/* Additional utility classes for line clamping */
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-clamp: 2;
+.video-actions {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
 }
 
-.line-clamp-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-clamp: 3;
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: transparent;
+  border: 2px solid #ff0000;
+  color: #ff0000;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  font-size: 14px;
 }
+
+.btn-outline:hover {
+  background: #ff0000;
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 0, 0, 0.3);
+}
+
+/* Alert Styles */
+.alert {
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.alert-danger {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+.alert h4 {
+  margin-bottom: 10px;
+}
+
+/* Text Utilities */
+.text-gray-400 { color: #9ca3af; }
+.text-gray-500 { color: #6b7280; }
+.text-gray-600 { color: #4b5563; }
+
+.py-8 { padding-top: 2rem; padding-bottom: 2rem; }
+.mb-4 { margin-bottom: 1rem; }
 
 /* Responsive Design */
 @media (max-width: 1199px) {
@@ -1954,9 +2175,22 @@ export default {
     font-size: 18px;
   }
   
+  .video-info p {
+    font-size: 14px;
+  }
+  
   .contact-form input,
   .contact-form textarea {
     padding: 10px 12px;
+  }
+  
+  .video-actions {
+    flex-direction: column;
+  }
+  
+  .btn-outline {
+    width: 100%;
+    justify-content: center;
   }
 }
 
@@ -1975,27 +2209,48 @@ export default {
   .assignment-card {
     border: 1px solid #2c3e50;
   }
+  
+  .close-modal {
+    border-color: #ffffff;
+    background: #000000;
+  }
+  
+  .btn-outline {
+    border-width: 3px;
+  }
 }
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+  .video-modal,
+  .modal-content {
+    animation: none;
   }
   
+  .close-modal:hover,
+  .btn-outline:hover,
+  .video-card:hover .video-thumbnail::after,
   .video-card:hover,
   .class-card:hover,
-  .assignment-card:hover,
-  .instructor__item:hover {
+  .assignment-card:hover {
     transform: none;
   }
   
-  .alltuchtopdown {
+  .video-card:hover .video-thumbnail img {
+    transform: none;
+  }
+  
+  .play-button:hover {
+    transform: none;
+  }
+  
+  .arrow-btn:hover:not(:disabled) {
+    transform: none;
+  }
+  
+  .loading-spinner {
     animation: none;
+    border-top-color: transparent;
   }
 }
 </style>

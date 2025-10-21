@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 // Auth routes
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
+Route::post('/register/student', [UserController::class, 'createStudent']); // ADDED: Student registration
 
 // Frontend public routes
 Route::prefix('frontend')->group(function () {
@@ -99,6 +100,14 @@ Route::middleware('auth:sanctum')->group(function () {
         
         // Teacher-specific user routes
         Route::get('/role/teachers', [UserController::class, 'getTeachers']);
+        
+        // Student management routes - ADDED
+        Route::get('/students', [UserController::class, 'getStudents']);
+        Route::get('/students/active', [UserController::class, 'getActiveStudents']);
+        Route::get('/students/class/{classId}', [UserController::class, 'getStudentsByClass']);
+        Route::get('/students/{id}', [UserController::class, 'getStudent']);
+        Route::put('/students/{id}', [UserController::class, 'updateStudent']);
+        Route::delete('/students/{id}', [UserController::class, 'deleteStudent']);
     });
 
     // Teacher Management Routes - UPDATED
@@ -130,7 +139,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}/performance', [TeacherController::class, 'getTeacherPerformance']);
     });
 
-    // Course Management Routes
+    // Course Management Routes - UPDATED with subjects route
     Route::prefix('courses')->group(function () {
         // Main course listings
         Route::get('/classes', [CourseController::class, 'getClasses']);
@@ -149,6 +158,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('classes')->group(function () {
             Route::get('/{grade}/subjects', [CourseController::class, 'getClassSubjects']);
             Route::get('/{grade}/enrollments', [CourseController::class, 'getClassEnrollments']);
+            Route::get('/{grade}/students', [CourseController::class, 'getClassStudents']); // ADDED
         });
         
         // Subject management (for regular classes)
@@ -173,6 +183,10 @@ Route::middleware('auth:sanctum')->group(function () {
             
             // Enrollment management
             Route::get('/enrollments', [CourseController::class, 'getCourseEnrollments']);
+            Route::get('/students', [CourseController::class, 'getCourseStudents']); // ADDED
+            
+            // Course subjects with teachers - NEW ROUTE ADDED
+            Route::get('/subjects', [CourseController::class, 'getCourseSubjects']);
         });
     });
 
@@ -191,6 +205,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/class/{classId}', [AssignmentController::class, 'createAssignment']);
         Route::put('/{assignmentId}', [AssignmentController::class, 'updateAssignment']);
         Route::delete('/{assignmentId}', [AssignmentController::class, 'deleteAssignment']);
+        
+        // Student assignment routes - ADDED
+        Route::get('/student/my-assignments', [AssignmentController::class, 'getMyAssignments']);
+        Route::post('/{assignmentId}/submit', [AssignmentController::class, 'submitAssignment']);
+        Route::get('/{assignmentId}/submission', [AssignmentController::class, 'getMySubmission']);
     });
 
     // Schedule routes
@@ -199,6 +218,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/class/{classId}', [ScheduleController::class, 'createSchedule']);
         Route::put('/{scheduleId}', [ScheduleController::class, 'updateSchedule']);
         Route::delete('/{scheduleId}', [ScheduleController::class, 'deleteSchedule']);
+        
+        // Student schedule routes - ADDED
+        Route::get('/student/my-schedule', [ScheduleController::class, 'getMySchedule']);
     });
 
     // Enhanced resource routes
@@ -206,6 +228,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/class/{classId}', [TeacherController::class, 'getClassResources']);
         Route::post('/upload/{teacherId}', [TeacherController::class, 'uploadResource']);
         Route::delete('/{resourceId}', [TeacherController::class, 'deleteResource']);
+        
+        // Student resource routes - ADDED
+        Route::get('/student/my-resources', [TeacherController::class, 'getMyResources']);
     });
 
     // Student enrollment routes
@@ -213,6 +238,21 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/course/{courseId}', [CourseController::class, 'enrollStudent']);
         Route::get('/my-courses', [CourseController::class, 'getMyCourses']);
         Route::delete('/course/{courseId}', [CourseController::class, 'unenrollStudent']);
+        
+        // Enhanced enrollment routes - ADDED
+        Route::get('/student/progress', [CourseController::class, 'getMyProgress']);
+        Route::get('/student/certificates', [CourseController::class, 'getMyCertificates']);
+        Route::post('/course/{courseId}/complete-lesson', [CourseController::class, 'completeLesson']);
+    });
+
+    // Student dashboard routes - ADDED
+    Route::prefix('student')->group(function () {
+        Route::get('/dashboard', [UserController::class, 'getStudentDashboard']);
+        Route::get('/profile', [UserController::class, 'getStudentProfile']);
+        Route::put('/profile', [UserController::class, 'updateStudentProfile']);
+        Route::get('/academic-progress', [UserController::class, 'getAcademicProgress']);
+        Route::get('/attendance', [UserController::class, 'getStudentAttendance']);
+        Route::get('/grades', [UserController::class, 'getStudentGrades']);
     });
 
     // Frontend protected routes (for enrolled students)
@@ -224,6 +264,10 @@ Route::middleware('auth:sanctum')->group(function () {
         // Instructor dashboard routes
         Route::get('/instructor/dashboard', [FrontendController::class, 'getInstructorDashboard']);
         Route::get('/instructor/analytics', [FrontendController::class, 'getInstructorAnalytics']);
+        
+        // Student dashboard routes - ADDED
+        Route::get('/student/dashboard', [FrontendController::class, 'getStudentDashboard']);
+        Route::get('/student/profile', [FrontendController::class, 'getStudentProfile']);
     });
 
     // Test auth route
@@ -252,12 +296,13 @@ Route::fallback(function () {
             'public' => [
                 'POST /api/login',
                 'POST /api/register',
+                'POST /api/register/student',
                 'GET /api/frontend/courses',
                 'GET /api/frontend/instructors',
                 'GET /api/frontend/instructors/all',
-                'GET /api/teachers', // ADDED
+                'GET /api/teachers',
                 'GET /api/teachers/public',
-                'GET /api/teachers/all', // ADDED
+                'GET /api/teachers/all',
                 'GET /api/frontend/stats',
                 'POST /api/frontend/contact',
                 'POST /api/frontend/newsletter/subscribe'
@@ -266,9 +311,12 @@ Route::fallback(function () {
                 'GET /api/user',
                 'POST /api/logout',
                 'GET /api/courses/classes',
+                'GET /api/courses/{courseId}/subjects', // ADDED to documentation
                 'GET /api/users/*',
                 'GET /api/teachers/*',
-                'GET /api/admissions/*'
+                'GET /api/admissions/*',
+                'GET /api/students/*',
+                'GET /api/student/*'
             ]
         ]
     ], 404);

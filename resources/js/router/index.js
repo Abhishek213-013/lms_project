@@ -5,6 +5,11 @@ import store from '../store';
 import Login from '../components/Login.vue';
 import Registration from '../components/Registration.vue';
 
+// Student Auth Components
+import StudentLogin from '../views/StudentLogin.vue';
+import StudentRegistration from '../views/Registration.vue';
+import PhoneVerification from '../views/PhoneVerification.vue';
+
 // Admin Dashboard Components
 import SuperAdminDashboard from '../components/SuperAdminDashboard.vue';
 import SuperAdmins from '../components/SuperAdmins.vue';
@@ -66,8 +71,9 @@ const routes = [
         component: Courses,
         meta: { requiresAuth: false, title: 'Courses - SkillGro' }
       },
+      // In your router.js file, update this route:
       {
-        path: '/course/:slug',
+        path: '/course/:id',  // Changed from :slug to :id
         name: 'CourseSingle',
         component: CourseSingle,
         meta: { requiresAuth: false, title: 'Course Details - SkillGro' }
@@ -105,7 +111,27 @@ const routes = [
     ]
   },
 
-  // ============ AUTH ROUTES ============
+  // ============ STUDENT AUTH ROUTES ============
+  {
+    path: '/student-login',
+    name: 'StudentLogin',
+    component: StudentLogin,
+    meta: { requiresAuth: false, title: 'Student Login - SkillGro' }
+  },
+  {
+    path: '/student-registration',
+    name: 'StudentRegistration',
+    component: StudentRegistration,
+    meta: { requiresAuth: false, title: 'Student Registration - SkillGro' }
+  },
+  {
+    path: '/phone-verification',
+    name: 'PhoneVerification',
+    component: PhoneVerification,
+    meta: { requiresAuth: false, title: 'Phone Verification - SkillGro' }
+  },
+
+  // ============ ADMIN AUTH ROUTES ============
   {
     path: '/login',
     name: 'Login',

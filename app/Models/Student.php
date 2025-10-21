@@ -15,9 +15,12 @@ class Student extends Model
         'user_id',
         'class_id',
         'roll_number',
-        'parent_name',
+        'father_name',
+        'mother_name',
         'parent_contact',
-        'address'
+        'country_code',
+        'address',
+        'status'
     ];
 
     /**
@@ -34,5 +37,21 @@ class Student extends Model
     public function class(): BelongsTo
     {
         return $this->belongsTo(ClassModel::class, 'class_id');
+    }
+
+    /**
+     * Get full parent contact number with country code
+     */
+    public function getFullParentContactAttribute(): string
+    {
+        return $this->country_code . $this->parent_contact;
+    }
+
+    /**
+     * Scope active students
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
     }
 }

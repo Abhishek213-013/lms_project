@@ -31,11 +31,11 @@
     <!-- instructor-area -->
     <section class="instructor__area section-py-120">
       <div class="container">
-        <!-- Loading State -->
+        <!-- Simple Loading State -->
         <div v-if="loading" class="row">
           <div class="col-12 text-center">
-            <div class="loading-spinner">
-              <i class="fas fa-spinner fa-spin fa-3x"></i>
+            <div class="simple-loading">
+              <div class="loading-spinner"></div>
               <p>Loading instructors...</p>
             </div>
           </div>
@@ -453,21 +453,31 @@ export default {
   padding: 120px 0;
 }
 
-/* Loading Styles */
-.loading-spinner {
-  padding: 60px 0;
-  color: var(--primary-color, #4a6cf7);
+/* Simple Loading Styles */
+.simple-loading {
+  padding: 80px 0;
   text-align: center;
 }
 
-.loading-spinner i {
-  margin-bottom: 20px;
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid var(--primary-color, #4a6cf7);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
 }
 
-.loading-spinner p {
+.simple-loading p {
   margin: 0;
   font-size: 16px;
   color: #7f8c8d;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* Error Styles */
@@ -943,7 +953,6 @@ export default {
   width: 80px;
   z-index: 1;
 }
-
 .breadcrumb__shape-wrap img:nth-child(3) {
   /* breadcrumb_shape03.png */
   bottom: 1%;
