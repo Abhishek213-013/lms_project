@@ -12,9 +12,292 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class TeacherController extends Controller
 {
+    // ============ INERTIA PAGE METHODS ============
+
+    /**
+     * Display instructors page
+     */
+    public function index(): Response
+    {
+        $teachers = User::where('role', 'teacher')
+            ->select([
+                'id', 'name', 'username', 'email', 'dob',
+                'education_qualification', 'institute', 'experience', 'bio',
+                'created_at'
+            ])
+            ->orderBy('name')
+            ->get();
+
+        return Inertia::render('Frontend/Instructors', [
+            'initialInstructors' => $teachers,
+            'meta' => [
+                'title' => 'Our Instructors - SkillGro',
+                'description' => 'Meet our qualified and experienced instructors dedicated to your learning journey.'
+            ]
+        ]);
+    }
+
+    /**
+     * Display teacher dashboard
+     */
+    public function dashboard(): Response
+    {
+        $teacher = Auth::user();
+        
+        return Inertia::render('Teacher/Portal', [
+            'user' => $teacher,
+            'initialData' => [
+                'stats' => $this->getTeacherStatsData($teacher->id),
+                'recentClasses' => $this->getRecentClassesData($teacher->id),
+                'recentResources' => $this->getRecentResourcesData($teacher->id),
+            ]
+        ]);
+    }
+
+    /**
+     * Display teacher portal - NEW METHOD
+     */
+    public function portal(Request $request): Response
+    {
+        $teacher = Auth::user();
+        
+        // If admin is viewing teacher portal with specific ID
+        if ($request->has('id') && in_array(Auth::user()->role, ['admin', 'super_admin'])) {
+            $teacher = User::findOrFail($request->id);
+        }
+
+        // Get teacher's classes and resources
+        $teacherClasses = $teacher->classes ?? [];
+        $recentResources = $teacher->resources()->latest()->take(5)->get();
+
+        return Inertia::render('Teacher/TeacherPortal', [
+            'teacher' => $teacher,
+            'teacherClasses' => $teacherClasses,
+            'recentResources' => $recentResources,
+        ]);
+    }
+
+    /**
+     * Display class dashboard
+     */
+    public function classDashboard($classId): Response
+    {
+        $class = ClassModel::with([
+                'teacher:id,name', 
+                'students.user:id,name,email'
+            ])
+            ->withCount('students')
+            ->findOrFail($classId);
+
+        // Check if the current user has access to this class
+        $user = Auth::user();
+        if ($user->role === 'teacher' && $class->teacher_id !== $user->id) {
+            abort(403, 'You do not have access to this class.');
+        }
+
+        // Get class stats
+        $resourcesCount = Resource::where('class_id', $classId)->count();
+        $recentActivities = $this->getRecentClassActivities($classId);
+
+        // Format class data for the frontend
+        $classData = [
+            'id' => $class->id,
+            'name' => $class->name,
+            'subject' => $class->subject,
+            'grade' => $class->grade,
+            'studentCount' => $class->students_count,
+            'description' => $class->description,
+            'teacher_name' => $class->teacher->name ?? 'Unknown Teacher',
+            'students' => $class->students->map(function($student) {
+                return [
+                    'id' => $student->id,
+                    'name' => $student->user->name ?? 'Unknown Student',
+                    'email' => $student->user->email ?? 'No email',
+                    'roll_number' => $student->roll_number,
+                ];
+            })
+        ];
+
+        return Inertia::render('Teacher/Class/Dashboard', [
+            'user' => $user,
+            'classData' => $classData,
+            'stats' => [
+                'totalResources' => $resourcesCount,
+                'totalStudents' => $class->students_count,
+                'totalAssignments' => 0, // You can implement this if you have assignments
+                'totalSchedules' => 0, // You can implement this if you have a schedule system
+            ],
+            'recentActivities' => $recentActivities,
+        ]);
+    }
+
+    /**
+     * Display teacher public profile
+     */
+    public function publicProfile($id): Response
+    {
+        $teacher = User::where('role', 'teacher')->findOrFail($id);
+        
+        return Inertia::render('Frontend/InstructorDetails', [
+            'teacher' => $teacher,
+            'teacherCourses' => $this->getTeacherPublicCoursesData($id),
+            'teacherStats' => $this->getTeacherPublicStatsData($id),
+            'meta' => [
+                'title' => $teacher->name . ' - Instructor - SkillGro',
+                'description' => 'Learn from ' . $teacher->name . ', ' . ($teacher->education_qualification ?? 'qualified instructor') . ' at SkillGro.'
+            ]
+        ]);
+    }
+
+    /**
+     * Display class assignments page
+     */
+    public function classAssignments($classId): Response
+    {
+        $class = ClassModel::findOrFail($classId);
+        
+        return Inertia::render('Teacher/Class/Assignments', [
+            'user' => Auth::user(),
+            'classId' => $classId,
+            'initialData' => [
+                'classInfo' => $this->getClassInfo($classId),
+                'assignments' => $this->getClassAssignmentsData($classId),
+                'assignmentStats' => $this->getAssignmentStatsData($classId),
+            ]
+        ]);
+    }
+
+    /**
+     * Display class resources page
+     */
+    public function classResources($classId): Response
+    {
+        $class = ClassModel::findOrFail($classId);
+        
+        // Get resources for the class
+        $resources = Resource::where('class_id', $classId)
+            ->orWhereNull('class_id')
+            ->with(['teacher:id,name,email', 'class:id,name'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($resource) {
+                $fileInfo = [];
+                
+                if ($resource->file_path) {
+                    try {
+                        $fileSize = Storage::disk('public')->size($resource->file_path);
+                        $fileInfo['size'] = $this->formatFileSize($fileSize);
+                    } catch (\Exception $e) {
+                        $fileInfo['size'] = 'Unknown';
+                    }
+                }
+
+                return [
+                    'id' => $resource->id,
+                    'title' => $resource->title,
+                    'type' => $resource->type,
+                    'description' => $resource->description,
+                    'file_info' => $fileInfo,
+                    'file_path' => $resource->file_path,
+                    'thumbnail_path' => $resource->thumbnail_path,
+                    'download_count' => $resource->download_count ?? 0,
+                    'created_at' => $resource->created_at->toISOString(),
+                    'teacher' => $resource->teacher,
+                    'class' => $resource->class ? $resource->class->name : 'General'
+                ];
+            });
+
+        // Always return Inertia response for page requests
+        return Inertia::render('Teacher/Class/Resources', [
+            'user' => Auth::user(),
+            'classId' => $classId,
+            'classData' => [
+                'id' => $class->id,
+                'name' => $class->name,
+                'subject' => $class->subject,
+                'grade' => $class->grade,
+                'teacher_name' => $class->teacher->name ?? 'Unknown Teacher',
+                'student_count' => $class->students_count ?? 0,
+            ],
+            'resources' => $resources,
+        ]);
+    }
+
+    /**
+     * Display class schedule page
+     */
+    public function classSchedule($classId): Response
+    {
+        $class = ClassModel::findOrFail($classId);
+        
+        return Inertia::render('Teacher/Class/Schedule', [
+            'user' => Auth::user(),
+            'classId' => $classId,
+            'initialData' => [
+                'classInfo' => $this->getClassInfo($classId),
+                'schedule' => $this->getClassScheduleData($classId),
+            ]
+        ]);
+    }
+
+    /**
+     * Display create resource page
+     */
+    public function createResource($classId = null): Response
+    {
+        $teacherId = Auth::id();
+        $classes = ClassModel::where('teacher_id', $teacherId)->get(['id', 'name']);
+        
+        return Inertia::render('Teacher/Resources/Create', [
+            'user' => Auth::user(),
+            'classId' => $classId,
+            'initialData' => [
+                'classes' => $classes,
+                'resourceTypes' => [
+                    ['value' => 'video', 'label' => 'Video Link'],
+                ]
+            ]
+        ]);
+    }
+
+    /**
+     * Display teacher analytics
+     */
+    public function analytics(): Response
+    {
+        $teacher = Auth::user();
+        
+        return Inertia::render('Teacher/Analytics', [
+            'user' => $teacher,
+            'initialData' => [
+                'analytics' => $this->getTeacherAnalyticsData($teacher->id),
+            ]
+        ]);
+    }
+
+    /**
+     * Display teacher settings
+     */
+    public function settings(): Response
+    {
+        $teacher = Auth::user();
+        
+        return Inertia::render('Teacher/Settings', [
+            'user' => $teacher,
+            'initialData' => [
+                'profile' => $teacher,
+                'preferences' => $this->getTeacherPreferencesData($teacher->id),
+            ]
+        ]);
+    }
+
+    // ============ API METHODS ============
+
     /**
      * Get all teachers
      */
@@ -26,7 +309,7 @@ class TeacherController extends Controller
             $teachers = User::where('role', 'teacher')
                 ->select([
                     'id', 'name', 'username', 'email', 'dob',
-                    'education_qualification', 'institute', 'experience',
+                    'education_qualification', 'institute', 'experience', 'bio',
                     'created_at'
                 ])
                 ->orderBy('name')
@@ -59,7 +342,7 @@ class TeacherController extends Controller
             $teachers = User::where('role', 'teacher')
                 ->select([
                     'id', 'name', 'username', 'email', 'dob',
-                    'education_qualification', 'institute', 'experience',
+                    'education_qualification', 'institute', 'experience', 'bio',
                     'created_at'
                 ])
                 ->orderBy('name')
@@ -92,7 +375,7 @@ class TeacherController extends Controller
             $teachers = User::where('role', 'teacher')
                 ->select([
                     'id', 'name', 'username', 'email', 'dob',
-                    'education_qualification', 'institute', 'experience',
+                    'education_qualification', 'institute', 'experience', 'bio',
                     'created_at'
                 ])
                 ->orderBy('name')
@@ -125,11 +408,11 @@ class TeacherController extends Controller
             $teachers = User::where('role', 'teacher')
                 ->select([
                     'id', 'name', 'username', 'email', 'dob',
-                    'education_qualification', 'institute', 'experience',
+                    'education_qualification', 'institute', 'experience', 'bio',
                     'created_at'
                 ])
                 ->orderBy('name')
-                ->limit(6) // Limit featured teachers
+                ->limit(6)
                 ->get();
 
             return response()->json([
@@ -148,7 +431,6 @@ class TeacherController extends Controller
         }
     }
 
-
     /**
      * Get teacher public profile
      */
@@ -161,7 +443,7 @@ class TeacherController extends Controller
                 ->where('id', $id)
                 ->select([
                     'id', 'name', 'username', 'email', 'dob',
-                    'education_qualification', 'institute', 'experience',
+                    'education_qualification', 'institute', 'experience', 'bio',
                     'created_at'
                 ])
                 ->first();
@@ -196,27 +478,12 @@ class TeacherController extends Controller
         try {
             Log::info("Fetching public courses for teacher ID: {$id}");
 
-            // Use ClassModel instead of Course
-            $courses = ClassModel::where('teacher_id', $id)
-                ->select(['id', 'name as title', 'description', 'category', 'level', 'created_at'])
-                ->orderBy('created_at', 'desc')
-                ->get()
-                ->map(function($course) {
-                    return [
-                        'id' => $course->id,
-                        'title' => $course->title,
-                        'slug' => $this->generateSlug($course->title),
-                        'description' => $course->description,
-                        'category' => $course->category,
-                        'level' => $course->level,
-                        'created_at' => $course->created_at
-                    ];
-                });
+            $courses = $this->getTeacherPublicCoursesData($id);
 
             return response()->json([
                 'success' => true,
                 'data' => $courses,
-                'count' => $courses->count()
+                'count' => count($courses)
             ]);
 
         } catch (\Exception $e) {
@@ -228,7 +495,6 @@ class TeacherController extends Controller
             ], 500);
         }
     }
-
 
     /**
      * Update teacher profile
@@ -283,180 +549,454 @@ class TeacherController extends Controller
     }
 
     /**
-     * Toggle teacher featured status
+     * Upload resource - SIMPLIFIED FOR YOUTUBE LINKS ONLY
      */
-    public function toggleFeatured($id)
+    public function uploadResource(Request $request, $id)
     {
         try {
-            $teacher = User::where('role', 'teacher')->find($id);
-            
-            if (!$teacher) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Teacher not found'
-                ], 404);
-            }
+            Log::info("📡 [UPLOAD] Starting upload for teacher ID: {$id}");
+            Log::info("📡 [UPLOAD] Request data:", $request->all());
 
-            // If you have a featured field in your users table
-            // $teacher->featured = !$teacher->featured;
-            // $teacher->save();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Teacher featured status updated',
-                'data' => $teacher
+            // Simplified validation - only YouTube links are supported
+            $validator = Validator::make($request->all(), [
+                'title' => 'required|string|max:255',
+                'type' => 'required|in:video', // Only video type for links
+                'description' => 'nullable|string|max:1000',
+                'assigned_class' => 'nullable|exists:classes,id',
+                'content' => 'required|string|url|max:1000', // URL is required
+                'thumbnail' => 'nullable|image|max:2048'
+            ], [
+                'title.required' => 'The title field is required.',
+                'type.required' => 'Please select a resource type.',
+                'type.in' => 'Only video links are supported.',
+                'content.required' => 'Please provide a YouTube URL.',
+                'content.url' => 'Please provide a valid YouTube URL.',
+                'assigned_class.exists' => 'The selected class does not exist.',
+                'thumbnail.image' => 'The thumbnail must be an image.',
+                'thumbnail.max' => 'The thumbnail size must not exceed 2MB.'
             ]);
 
+            if ($validator->fails()) {
+                Log::error("❌ [UPLOAD] Validation failed:", $validator->errors()->toArray());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please check your input and try again.',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            Log::info("✅ [UPLOAD] Validation passed");
+
+            $thumbnailPath = null;
+            $content = $request->content;
+
+            Log::info("🔗 [UPLOAD] Storing video URL: {$content}");
+            
+            // If it's a YouTube URL, generate thumbnail path
+            if ($this->isYouTubeUrl($content)) {
+                $videoId = $this->getYouTubeVideoId($content);
+                if ($videoId) {
+                    $thumbnailPath = "youtube_{$videoId}";
+                    Log::info("✅ [UPLOAD] YouTube video detected, thumbnail: {$thumbnailPath}");
+                }
+            } else {
+                Log::warning("⚠️ [UPLOAD] Non-YouTube URL provided: {$content}");
+            }
+
+            // Handle custom thumbnail upload (optional)
+            if ($request->hasFile('thumbnail') && $request->file('thumbnail')->isValid()) {
+                try {
+                    $thumbnail = $request->file('thumbnail');
+                    $thumbnailName = 'thumb_' . time() . '_' . uniqid() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $thumbnail->getClientOriginalName());
+                    $thumbnailPath = $thumbnail->storeAs('thumbnails', $thumbnailName, 'public');
+                    Log::info("✅ [UPLOAD] Custom thumbnail stored at: {$thumbnailPath}");
+                } catch (\Exception $thumbError) {
+                    Log::error("❌ [UPLOAD] Thumbnail storage error: " . $thumbError->getMessage());
+                }
+            }
+
+            try {
+                $resource = Resource::create([
+                    'title' => $request->title,
+                    'type' => 'video', // Always video for links
+                    'description' => $request->description,
+                    'content' => $content, // Store the YouTube URL
+                    'file_path' => null, // No file path for links
+                    'thumbnail_path' => $thumbnailPath,
+                    'teacher_id' => $id,
+                    'class_id' => $request->assigned_class,
+                    'status' => 'active',
+                    'download_count' => 0
+                ]);
+
+                Log::info("✅ [UPLOAD] Resource created successfully: ID {$resource->id}");
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Video link uploaded successfully',
+                    'data' => [
+                        'id' => $resource->id,
+                        'title' => $resource->title,
+                        'type' => $resource->type,
+                        'description' => $resource->description,
+                        'file_path' => $resource->file_path,
+                        'thumbnail_path' => $resource->thumbnail_path,
+                        'content' => $resource->content,
+                        'download_count' => $resource->download_count,
+                        'created_at' => $resource->created_at
+                    ]
+                ]);
+
+            } catch (\Exception $dbError) {
+                Log::error("❌ [UPLOAD] Database error: " . $dbError->getMessage());
+                
+                // Clean up uploaded thumbnail if any
+                if ($thumbnailPath && Storage::disk('public')->exists($thumbnailPath)) {
+                    Storage::disk('public')->delete($thumbnailPath);
+                }
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to save resource: ' . $dbError->getMessage()
+                ], 500);
+            }
+
         } catch (\Exception $e) {
-            Log::error('Error toggling teacher featured status: ' . $e->getMessage());
+            Log::error('❌ [UPLOAD] Unexpected error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update featured status',
-                'error' => $e->getMessage()
+                'message' => 'An unexpected error occurred: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Get teacher courses
+     * Get class resources
      */
-    public function getTeacherCourses($id)
+    public function getClassResources($classId)
     {
         try {
-            Log::info("Fetching courses for teacher ID: {$id}");
+            Log::info("Fetching resources for class ID: {$classId}");
 
-            // Use ClassModel instead of Course
-            $courses = ClassModel::where('teacher_id', $id)
-                ->select(['id', 'name as title', 'description', 'category', 'level', 'status', 'created_at'])
+            $resources = Resource::where('class_id', $classId)
+                ->orWhereNull('class_id')
+                ->with(['teacher:id,name,email', 'class:id,name'])
                 ->orderBy('created_at', 'desc')
                 ->get()
-                ->map(function($course) {
+                ->map(function ($resource) {
+                    $fileInfo = [];
+                    
+                    if ($resource->file_path) {
+                        try {
+                            $fileSize = Storage::disk('public')->size($resource->file_path);
+                            $fileInfo['size'] = $this->formatFileSize($fileSize);
+                        } catch (\Exception $e) {
+                            $fileInfo['size'] = 'Unknown';
+                        }
+                    }
+
                     return [
-                        'id' => $course->id,
-                        'title' => $course->title,
-                        'slug' => $this->generateSlug($course->title),
-                        'description' => $course->description,
-                        'category' => $course->category,
-                        'level' => $course->level,
-                        'status' => $course->status,
-                        'created_at' => $course->created_at
+                        'id' => $resource->id,
+                        'title' => $resource->title,
+                        'type' => $resource->type,
+                        'description' => $resource->description,
+                        'file_info' => $fileInfo,
+                        'file_path' => $resource->file_path,
+                        'thumbnail_path' => $resource->thumbnail_path,
+                        'download_count' => $resource->download_count ?? 0,
+                        'created_at' => $resource->created_at->toISOString(),
+                        'teacher' => $resource->teacher,
+                        'class' => $resource->class ? $resource->class->name : 'General'
                     ];
                 });
 
             return response()->json([
                 'success' => true,
-                'data' => $courses,
-                'count' => $courses->count()
+                'data' => $resources
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error fetching teacher courses: ' . $e->getMessage());
+            Log::error('Error fetching class resources: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch teacher courses',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-
-    /**
-     * Get teacher enrollments
-     */
-    public function getTeacherEnrollments($id)
-    {
-        try {
-            Log::info("Fetching enrollments for teacher ID: {$id}");
-
-            // This would depend on your enrollment structure
-            $enrollments = []; // Implement based on your database structure
-
-            return response()->json([
-                'success' => true,
-                'data' => $enrollments,
-                'count' => count($enrollments)
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Error fetching teacher enrollments: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch teacher enrollments',
-                'error' => $e->getMessage()
+                'message' => 'Failed to fetch resources'
             ], 500);
         }
     }
 
     /**
-     * Get teacher stats
+     * Delete resource
      */
-    public function getTeacherStats($id)
+    public function deleteResource($resourceId)
     {
         try {
-            Log::info("Fetching stats for teacher ID: {$id}");
+            Log::info("🗑️ [DELETE] Attempting to delete resource ID: {$resourceId}");
 
-            // Use ClassModel instead of Course
-            $coursesCount = ClassModel::where('teacher_id', $id)->count();
-            $classesCount = ClassModel::where('teacher_id', $id)->count();
-            $resourcesCount = Resource::where('teacher_id', $id)->count();
+            $teacherId = Auth::id();
+            Log::info("👨‍🏫 [DELETE] Current teacher ID: {$teacherId}");
+            
+            // Find the resource with teacher relationship
+            $resource = Resource::with('teacher')
+                ->where('id', $resourceId)
+                ->first();
 
-            $stats = [
-                'courses_count' => $coursesCount,
-                'classes_count' => $classesCount,
-                'resources_count' => $resourcesCount,
-                'students_count' => 0, // Implement based on your enrollment structure
-                'rating' => 4.8, // Implement based on your rating system
-            ];
+            if (!$resource) {
+                Log::warning("❌ [DELETE] Resource not found with ID: {$resourceId}");
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Resource not found'
+                ], 404);
+            }
+
+            Log::info("🔍 [DELETE] Found resource - Title: {$resource->title}, Teacher ID: {$resource->teacher_id}");
+
+            // Check if the current teacher owns this resource
+            if ($resource->teacher_id != $teacherId) {
+                Log::warning("🚫 [DELETE] Access denied - Teacher {$teacherId} tried to delete resource owned by teacher {$resource->teacher_id}");
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to delete this resource'
+                ], 403);
+            }
+
+            Log::info("✅ [DELETE] Permission granted, proceeding with deletion");
+
+            // Delete associated files if they exist
+            if ($resource->file_path && Storage::disk('public')->exists($resource->file_path)) {
+                Storage::disk('public')->delete($resource->file_path);
+                Log::info("🗂️ [DELETE] Deleted file: {$resource->file_path}");
+            }
+
+            // Delete custom thumbnail (not YouTube thumbnails)
+            if ($resource->thumbnail_path && 
+                !str_starts_with($resource->thumbnail_path, 'youtube_') && 
+                Storage::disk('public')->exists($resource->thumbnail_path)) {
+                Storage::disk('public')->delete($resource->thumbnail_path);
+                Log::info("🖼️ [DELETE] Deleted custom thumbnail: {$resource->thumbnail_path}");
+            }
+
+            // Delete the resource from database
+            $resource->delete();
+            Log::info("✅ [DELETE] Resource deleted successfully from database");
 
             return response()->json([
                 'success' => true,
-                'data' => $stats
+                'message' => 'Resource deleted successfully'
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error fetching teacher stats: ' . $e->getMessage());
+            Log::error('❌ [DELETE] Error deleting resource: ' . $e->getMessage());
+            Log::error('❌ [DELETE] Stack trace: ' . $e->getTraceAsString());
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch teacher stats',
-                'error' => $e->getMessage()
+                'message' => 'Failed to delete resource: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Get teacher performance
+     * Update download count
      */
-    public function getTeacherPerformance($id)
+    public function updateDownloadCount($resourceId)
     {
         try {
-            Log::info("Fetching performance for teacher ID: {$id}");
+            Log::info("Updating download count for resource ID: {$resourceId}");
 
-            // Implement performance metrics based on your business logic
-            $performance = [
-                'completion_rate' => 85,
-                'student_satisfaction' => 4.8,
-                'engagement_rate' => 78,
-                'resource_utilization' => 92,
-            ];
+            $resource = Resource::find($resourceId);
+            
+            if (!$resource) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Resource not found'
+                ], 404);
+            }
+
+            // Increment download count
+            $resource->increment('download_count');
 
             return response()->json([
                 'success' => true,
-                'data' => $performance
+                'message' => 'Download count updated',
+                'download_count' => $resource->download_count
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error fetching teacher performance: ' . $e->getMessage());
+            Log::error('Error updating download count: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch teacher performance',
-                'error' => $e->getMessage()
+                'message' => 'Failed to update download count'
             ], 500);
         }
     }
 
+    /**
+     * Get all resources for teacher
+     */
+    public function getAllResources()
+    {
+        try {
+            Log::info('Fetching all resources');
 
-    // ============ EXISTING METHODS (Keep these) ============
+            $teacherId = Auth::id();
+            
+            $resources = Resource::where('teacher_id', $teacherId)
+                ->with(['teacher:id,name,email', 'class:id,name'])
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($resource) {
+                    $fileInfo = [];
+                    
+                    if ($resource->file_path) {
+                        try {
+                            $fileSize = Storage::disk('public')->size($resource->file_path);
+                            $fileInfo['size'] = $this->formatFileSize($fileSize);
+                        } catch (\Exception $e) {
+                            $fileInfo['size'] = 'Unknown';
+                        }
+                    }
 
+                    return [
+                        'id' => $resource->id,
+                        'title' => $resource->title,
+                        'type' => $resource->type,
+                        'description' => $resource->description,
+                        'file_info' => $fileInfo,
+                        'file_path' => $resource->file_path,
+                        'thumbnail_path' => $resource->thumbnail_path,
+                        'download_count' => $resource->download_count ?? 0,
+                        'created_at' => $resource->created_at->toISOString(),
+                        'teacher' => $resource->teacher,
+                        'class' => $resource->class ? $resource->class->name : 'General'
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $resources
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching all resources: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch resources'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get teacher resources
+     */
+    public function getTeacherResources($id)
+    {
+        try {
+            Log::info("Fetching resources for teacher ID: {$id}");
+            
+            $teacher = User::find($id);
+            if (!$teacher || $teacher->role !== 'teacher') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Teacher not found',
+                    'data' => []
+                ], 404);
+            }
+
+            $resources = Resource::where('teacher_id', $id)
+                ->with('class')
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get()
+                ->map(function ($resource) {
+                    return [
+                        'id' => $resource->id,
+                        'title' => $resource->title,
+                        'type' => $resource->type,
+                        'description' => $resource->description,
+                        'class' => $resource->class ? $resource->class->name : 'General',
+                        'uploaded_at' => $resource->created_at->format('Y-m-d'),
+                        'status' => $resource->status
+                    ];
+                });
+
+            Log::info("Found {$resources->count()} resources for teacher ID: {$id}");
+            
+            return response()->json([
+                'success' => true,
+                'data' => $resources
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error in getTeacherResources: ' . $e->getMessage());
+            
+            $mockResources = $this->getMockResources();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch resources, using mock data',
+                'data' => $mockResources
+            ]);
+        }
+    }
+
+    /**
+     * Get teacher classes
+     */
+    public function getTeacherClasses($id)
+    {
+        try {
+            Log::info("Fetching classes for teacher ID: {$id}");
+            
+            $teacher = User::find($id);
+            if (!$teacher || $teacher->role !== 'teacher') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Teacher not found',
+                    'data' => []
+                ], 404);
+            }
+
+            $classes = ClassModel::where('teacher_id', $id)
+                ->withCount('students')
+                ->get()
+                ->map(function ($class) {
+                    return [
+                        'id' => $class->id,
+                        'name' => $class->name,
+                        'subject' => $class->subject,
+                        'grade' => $class->grade,
+                        'code' => $class->code,
+                        'studentCount' => $class->students_count,
+                        'capacity' => $class->capacity,
+                        'status' => $class->status,
+                        'description' => $class->description,
+                        'schedule' => $class->schedule ? 'Custom Schedule' : 'Not Scheduled',
+                        'type' => $class->type,
+                        'category' => $class->category
+                    ];
+                });
+
+            Log::info("Found {$classes->count()} classes for teacher ID: {$id}");
+            
+            return response()->json([
+                'success' => true,
+                'data' => $classes
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error in getTeacherClasses: ' . $e->getMessage());
+            
+            $mockClasses = $this->getMockClasses();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch classes, using mock data',
+                'data' => $mockClasses
+            ]);
+        }
+    }
+
+    /**
+     * Get teacher
+     */
     public function getTeacher($id)
     {
         try {
@@ -464,7 +1004,7 @@ class TeacherController extends Controller
             
             $teacher = User::select([
                 'id', 'name', 'username', 'email', 'dob', 
-                'education_qualification', 'institute', 'experience',
+                'education_qualification', 'institute', 'experience', 'bio',
                 'role', 'created_at'
             ])->find($id);
             
@@ -499,276 +1039,600 @@ class TeacherController extends Controller
         }
     }
 
-    public function getTeacherClasses($id)
+    /**
+     * Upload resource files
+     */
+    public function uploadResourceFiles(Request $request)
     {
         try {
-            Log::info("Fetching classes for teacher ID: {$id}");
-            
-            // Check if teacher exists and is actually a teacher
-            $teacher = User::find($id);
-            if (!$teacher || $teacher->role !== 'teacher') {
+            $validator = Validator::make($request->all(), [
+                'file' => 'required|file|max:512000', // 500MB
+            ]);
+
+            if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Teacher not found',
-                    'data' => []
-                ], 404);
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
             }
 
-            // Get classes assigned to this teacher
-            $classes = ClassModel::where('teacher_id', $id)
+            $file = $request->file('file');
+            $fileName = time() . '_' . uniqid() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
+            $filePath = $file->storeAs('uploads', $fileName, 'public');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'File uploaded successfully',
+                'file_path' => $filePath,
+                'file_url' => asset('storage/' . $filePath)
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error uploading resource file: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload file'
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete file
+     */
+    public function deleteFile($filename)
+    {
+        try {
+            if (Storage::disk('public')->exists($filename)) {
+                Storage::disk('public')->delete($filename);
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'File deleted successfully'
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'File not found'
+            ], 404);
+
+        } catch (\Exception $e) {
+            Log::error('Error deleting file: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete file'
+            ], 500);
+        }
+    }
+
+    // ============ NEW API METHODS FOR TEACHER PORTAL ============
+
+    /**
+     * Get teacher portal data for API
+     */
+    public function getTeacherPortalData($id)
+    {
+        try {
+            $teacher = User::findOrFail($id);
+            
+            // Ensure the authenticated user can access this data
+            if (Auth::id() != $id && !in_array(Auth::user()->role, ['admin', 'super_admin'])) {
+                abort(403);
+            }
+
+            $teacherClasses = $teacher->classes ?? [];
+            $recentResources = $teacher->resources()->latest()->take(5)->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'teacher' => $teacher,
+                    'teacherClasses' => $teacherClasses,
+                    'recentResources' => $recentResources,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching teacher portal data: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch teacher portal data'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get teacher stats for dashboard
+     */
+    public function getTeacherStats(Request $request)
+    {
+        try {
+            $teacherId = Auth::id();
+            
+            $stats = [
+                'total_classes' => ClassModel::where('teacher_id', $teacherId)->count(),
+                'total_resources' => Resource::where('teacher_id', $teacherId)->count(),
+                'total_students' => 0, // You'll need to implement this based on your student relationships
+                'upcoming_schedules' => 0, // You'll need to implement this
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $stats
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching teacher stats: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch teacher stats'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get teacher dashboard data
+     */
+    public function getTeacherDashboardData($id)
+    {
+        try {
+            $teacher = User::findOrFail($id);
+            
+            $stats = $this->getTeacherStatsData($id);
+            $recentClasses = $this->getRecentClassesData($id);
+            $recentResources = $this->getRecentResourcesData($id);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'teacher' => $teacher,
+                    'stats' => $stats,
+                    'recentClasses' => $recentClasses,
+                    'recentResources' => $recentResources
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching teacher dashboard data: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch dashboard data'
+            ], 500);
+        }
+    }
+
+    // ============ HELPER METHODS ============
+
+    /**
+     * Get recent activities for a class
+     */
+    private function getRecentClassActivities($classId)
+    {
+        try {
+            $activities = [];
+
+            // Get recent resources
+            $recentResources = Resource::where('class_id', $classId)
+                ->orderBy('created_at', 'desc')
+                ->limit(3)
+                ->get()
+                ->map(function ($resource) {
+                    return [
+                        'id' => 'resource_' . $resource->id,
+                        'type' => 'resource',
+                        'title' => $resource->title,
+                        'description' => 'New resource uploaded',
+                        'status' => 'active',
+                        'created_at' => $resource->created_at->toISOString(),
+                    ];
+                });
+
+            // You can add assignments and other activities here
+            // For now, we'll just return resources as activities
+            return $recentResources->toArray();
+
+        } catch (\Exception $e) {
+            Log::error('Error in getRecentClassActivities: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Get teacher analytics data
+     */
+    private function getTeacherAnalyticsData($teacherId)
+    {
+        try {
+            $coursesCount = ClassModel::where('teacher_id', $teacherId)->count();
+            $resourcesCount = Resource::where('teacher_id', $teacherId)->count();
+            $studentsCount = 0; // You would need to implement student counting logic
+
+            // Get resource type distribution
+            $resourceTypes = Resource::where('teacher_id', $teacherId)
+                ->select('type', DB::raw('count(*) as count'))
+                ->groupBy('type')
+                ->get()
+                ->pluck('count', 'type')
+                ->toArray();
+
+            // Get monthly uploads for the last 6 months
+            $monthlyUploads = Resource::where('teacher_id', $teacherId)
+                ->where('created_at', '>=', now()->subMonths(6))
+                ->select(
+                    DB::raw('YEAR(created_at) as year'),
+                    DB::raw('MONTH(created_at) as month'),
+                    DB::raw('COUNT(*) as count')
+                )
+                ->groupBy('year', 'month')
+                ->orderBy('year', 'desc')
+                ->orderBy('month', 'desc')
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'month' => date('M Y', mktime(0, 0, 0, $item->month, 1, $item->year)),
+                        'count' => $item->count
+                    ];
+                })
+                ->reverse()
+                ->values();
+
+            return [
+                'overview' => [
+                    'total_courses' => $coursesCount,
+                    'total_resources' => $resourcesCount,
+                    'total_students' => $studentsCount,
+                    'completion_rate' => 85, // Mock data
+                ],
+                'resource_distribution' => $resourceTypes,
+                'monthly_uploads' => $monthlyUploads,
+                'popular_resources' => Resource::where('teacher_id', $teacherId)
+                    ->orderBy('download_count', 'desc')
+                    ->limit(5)
+                    ->get()
+                    ->map(function ($resource) {
+                        return [
+                            'id' => $resource->id,
+                            'title' => $resource->title,
+                            'type' => $resource->type,
+                            'downloads' => $resource->download_count ?? 0,
+                            'created_at' => $resource->created_at->format('M d, Y'),
+                        ];
+                    })
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Error in getTeacherAnalyticsData: ' . $e->getMessage());
+            return [
+                'overview' => [
+                    'total_courses' => 0,
+                    'total_resources' => 0,
+                    'total_students' => 0,
+                    'completion_rate' => 0,
+                ],
+                'resource_distribution' => [],
+                'monthly_uploads' => [],
+                'popular_resources' => []
+            ];
+        }
+    }
+
+    /**
+     * Get teacher preferences data
+     */
+    private function getTeacherPreferencesData($teacherId)
+    {
+        try {
+            $teacher = User::find($teacherId);
+            
+            return [
+                'notifications' => [
+                    'email_notifications' => true,
+                    'push_notifications' => true,
+                    'assignment_alerts' => true,
+                    'resource_uploads' => true,
+                    'student_messages' => true,
+                ],
+                'privacy' => [
+                    'profile_visibility' => 'public',
+                    'show_email' => false,
+                    'show_phone' => false,
+                    'allow_messages' => true,
+                ],
+                'appearance' => [
+                    'theme' => 'light',
+                    'language' => 'en',
+                    'timezone' => 'UTC',
+                ],
+                'course_defaults' => [
+                    'auto_approve_students' => false,
+                    'default_resource_visibility' => 'published',
+                    'allow_downloads' => true,
+                    'enable_comments' => true,
+                ]
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Error in getTeacherPreferencesData: ' . $e->getMessage());
+            return [
+                'notifications' => [
+                    'email_notifications' => true,
+                    'push_notifications' => true,
+                    'assignment_alerts' => true,
+                    'resource_uploads' => true,
+                    'student_messages' => true,
+                ],
+                'privacy' => [
+                    'profile_visibility' => 'public',
+                    'show_email' => false,
+                    'show_phone' => false,
+                    'allow_messages' => true,
+                ],
+                'appearance' => [
+                    'theme' => 'light',
+                    'language' => 'en',
+                    'timezone' => 'UTC',
+                ],
+                'course_defaults' => [
+                    'auto_approve_students' => false,
+                    'default_resource_visibility' => 'published',
+                    'allow_downloads' => true,
+                    'enable_comments' => true,
+                ]
+            ];
+        }
+    }
+
+    private function isYouTubeUrl($url)
+    {
+        if (!is_string($url)) return false;
+        
+        $patterns = [
+            '/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/',
+            '/youtu\.be\/([a-zA-Z0-9_-]+)/',
+            '/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/',
+            '/youtube\.com\/v\/([a-zA-Z0-9_-]+)/',
+            '/youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]+)/',
+            '/youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/',
+            '/youtube\.com\/live\/([a-zA-Z0-9_-]+)'
+        ];
+        
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $url)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * Get YouTube video ID from URL
+     */
+    private function getYouTubeVideoId($url)
+    {
+        $patterns = [
+            '/youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/',
+            '/youtu\.be\/([a-zA-Z0-9_-]{11})/',
+            '/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/',
+            '/youtube\.com\/v\/([a-zA-Z0-9_-]{11})/',
+            '/youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/',
+            '/youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/',
+            '/youtube\.com\/live\/([a-zA-Z0-9_-]{11})/'
+        ];
+        
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $url, $matches)) {
+                return $matches[1];
+            }
+        }
+        
+        return null;
+    }
+
+    /**
+     * Format file size in bytes to human readable format
+     */
+    private function formatFileSize($bytes)
+    {
+        if ($bytes === 0) return '0 Bytes';
+        
+        $k = 1024;
+        $sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        $i = floor(log($bytes) / log($k));
+        
+        return round($bytes / pow($k, $i), 2) . ' ' . $sizes[$i];
+    }
+
+    // ============ DATA METHODS FOR INERTIA ============
+
+    private function getTeacherStatsData($teacherId)
+    {
+        try {
+            $coursesCount = ClassModel::where('teacher_id', $teacherId)->count();
+            $resourcesCount = Resource::where('teacher_id', $teacherId)->count();
+
+            return [
+                'courses_count' => $coursesCount,
+                'classes_count' => $coursesCount,
+                'resources_count' => $resourcesCount,
+                'students_count' => 0,
+                'rating' => 4.8,
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error in getTeacherStatsData: ' . $e->getMessage());
+            return [
+                'courses_count' => 0,
+                'classes_count' => 0,
+                'resources_count' => 0,
+                'students_count' => 0,
+                'rating' => 0,
+            ];
+        }
+    }
+
+    private function getRecentClassesData($teacherId)
+    {
+        try {
+            $classes = ClassModel::where('teacher_id', $teacherId)
                 ->withCount('students')
+                ->orderBy('created_at', 'desc')
+                ->limit(5)
                 ->get()
                 ->map(function ($class) {
                     return [
                         'id' => $class->id,
                         'name' => $class->name,
                         'subject' => $class->subject,
-                        'grade' => $class->grade,
-                        'code' => $class->code,
                         'studentCount' => $class->students_count,
-                        'capacity' => $class->capacity,
                         'status' => $class->status,
-                        'description' => $class->description,
-                        'schedule' => $class->schedule ? 'Custom Schedule' : 'Not Scheduled',
-                        'type' => $class->type,
-                        'category' => $class->category
                     ];
                 });
 
-            Log::info("Found {$classes->count()} classes for teacher ID: {$id}");
-            
-            return response()->json([
-                'success' => true,
-                'data' => $classes
-            ]);
-            
+            return $classes;
         } catch (\Exception $e) {
-            Log::error('Error in getTeacherClasses: ' . $e->getMessage());
-            
-            // Return mock data as fallback for development
-            $mockClasses = $this->getMockClasses();
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch classes, using mock data',
-                'data' => $mockClasses
-            ]);
+            Log::error('Error in getRecentClassesData: ' . $e->getMessage());
+            return $this->getMockClasses();
         }
     }
 
-    public function getTeacherResources($id)
+    private function getRecentResourcesData($teacherId)
     {
         try {
-            Log::info("Fetching resources for teacher ID: {$id}");
-            
-            // Check if teacher exists
-            $teacher = User::find($id);
-            if (!$teacher || $teacher->role !== 'teacher') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Teacher not found',
-                    'data' => []
-                ], 404);
-            }
-
-            // Get resources uploaded by this teacher
-            $resources = Resource::where('teacher_id', $id)
+            $resources = Resource::where('teacher_id', $teacherId)
                 ->with('class')
                 ->orderBy('created_at', 'desc')
-                ->limit(10)
+                ->limit(5)
                 ->get()
                 ->map(function ($resource) {
                     return [
                         'id' => $resource->id,
                         'title' => $resource->title,
                         'type' => $resource->type,
-                        'description' => $resource->description,
                         'class' => $resource->class ? $resource->class->name : 'General',
                         'uploaded_at' => $resource->created_at->format('Y-m-d'),
-                        'status' => $resource->status
                     ];
                 });
 
-            Log::info("Found {$resources->count()} resources for teacher ID: {$id}");
-            
-            return response()->json([
-                'success' => true,
-                'data' => $resources
-            ]);
-            
+            return $resources;
         } catch (\Exception $e) {
-            Log::error('Error in getTeacherResources: ' . $e->getMessage());
-            
-            // Return mock data as fallback for development
-            $mockResources = $this->getMockResources();
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch resources, using mock data',
-                'data' => $mockResources
-            ]);
+            Log::error('Error in getRecentResourcesData: ' . $e->getMessage());
+            return $this->getMockResources();
         }
     }
 
-    public function uploadResource(Request $request, $id)
+    private function getTeacherPublicCoursesData($teacherId)
     {
         try {
-            // FORCE PHP configuration at runtime - this overrides everything
-            @ini_set('upload_max_filesize', '512M');
-            @ini_set('post_max_size', '512M');
-            @ini_set('max_execution_time', '600');
-            @ini_set('max_input_time', '600');
-            @ini_set('memory_limit', '1024M');
+            $courses = ClassModel::where('teacher_id', $teacherId)
+                ->select(['id', 'name as title', 'description', 'category', 'level', 'created_at'])
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function($course) {
+                    return [
+                        'id' => $course->id,
+                        'title' => $course->title,
+                        'slug' => $this->generateSlug($course->title),
+                        'description' => $course->description,
+                        'category' => $course->category,
+                        'level' => $course->level,
+                        'created_at' => $course->created_at
+                    ];
+                });
 
-            Log::info("📡 [UPLOAD] Starting upload for teacher ID: {$id}");
-            Log::info("📡 [UPLOAD] Current PHP limits after override:", [
-                'upload_max_filesize' => ini_get('upload_max_filesize'),
-                'post_max_size' => ini_get('post_max_size'),
-                'max_execution_time' => ini_get('max_execution_time'),
-                'memory_limit' => ini_get('memory_limit')
-            ]);
-
-            if ($request->hasFile('file')) {
-                $file = $request->file('file');
-                Log::info("📡 [UPLOAD] File details:", [
-                    'name' => $file->getClientOriginalName(),
-                    'size' => $file->getSize(),
-                    'mime' => $file->getMimeType(),
-                    'extension' => $file->getClientOriginalExtension()
-                ]);
-            }
-
-            // SIMPLIFIED VALIDATION - Remove content validation for now
-            $validator = Validator::make($request->all(), [
-                'title' => 'required|string|max:255',
-                'type' => 'required|in:video,pdf,document,link',
-                'description' => 'nullable|string|max:1000',
-                'assigned_class' => 'nullable|exists:classes,id',
-                'file' => 'required_if:type,pdf,video,document|file|max:512000' // 500MB in KB
-            ], [
-                'title.required' => 'The title field is required.',
-                'type.required' => 'Please select a resource type.',
-                'type.in' => 'Invalid resource type selected.',
-                'file.required_if' => 'Please select a file to upload.',
-                'file.max' => 'The file size must not exceed 500MB.',
-                'file.file' => 'The uploaded file is not valid.',
-                'assigned_class.exists' => 'The selected class does not exist.'
-            ]);
-
-            if ($validator->fails()) {
-                Log::error("❌ [UPLOAD] Validation failed:", $validator->errors()->toArray());
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Please check your input and try again.',
-                    'errors' => $validator->errors(),
-                    'debug_info' => [
-                        'received_fields' => array_keys($request->all()),
-                        'file_uploaded' => $request->hasFile('file'),
-                        'file_size' => $request->hasFile('file') ? $request->file('file')->getSize() : 0,
-                        'teacher_id' => $id,
-                        'php_limits' => [
-                            'upload_max_filesize' => ini_get('upload_max_filesize'),
-                            'post_max_size' => ini_get('post_max_size')
-                        ]
-                    ]
-                ], 422);
-            }
-
-            Log::info("✅ [UPLOAD] Validation passed");
-
-            $filePath = null;
-            $content = $request->content;
-
-            // Handle file upload if present
-            if ($request->hasFile('file') && $request->file('file')->isValid()) {
-                try {
-                    $file = $request->file('file');
-                    
-                    // Generate unique filename
-                    $fileName = time() . '_' . uniqid() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
-                    
-                    // Store file based on type
-                    $folder = $request->type . 's'; // pdfs, videos, documents
-                    $filePath = $file->storeAs($folder, $fileName, 'public');
-                    
-                    Log::info("✅ [UPLOAD] File stored successfully at: {$filePath}");
-                    
-                    // Set content to file path for non-link types
-                    if ($request->type !== 'link') {
-                        $content = $filePath;
-                    }
-                } catch (\Exception $fileError) {
-                    Log::error("❌ [UPLOAD] File storage error: " . $fileError->getMessage());
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Failed to store file: ' . $fileError->getMessage()
-                    ], 500);
-                }
-            }
-
-            // For link type, use the content field directly
-            if ($request->type === 'link' && $request->content) {
-                $content = $request->content;
-            }
-
-            // Create resource record
-            try {
-                $resource = Resource::create([
-                    'title' => $request->title,
-                    'type' => $request->type,
-                    'description' => $request->description,
-                    'content' => $content,
-                    'file_path' => $filePath,
-                    'teacher_id' => $id,
-                    'class_id' => $request->assigned_class,
-                    'status' => 'active'
-                ]);
-
-                Log::info("✅ [UPLOAD] Resource created successfully: {$resource->id} - {$resource->title}");
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Resource uploaded successfully',
-                    'data' => [
-                        'id' => $resource->id,
-                        'title' => $resource->title,
-                        'type' => $resource->type,
-                        'description' => $resource->description,
-                        'file_path' => $resource->file_path,
-                        'content' => $resource->content,
-                        'created_at' => $resource->created_at
-                    ]
-                ]);
-
-            } catch (\Exception $dbError) {
-                Log::error("❌ [UPLOAD] Database error: " . $dbError->getMessage());
-                
-                // Clean up uploaded file if database fails
-                if ($filePath && Storage::disk('public')->exists($filePath)) {
-                    Storage::disk('public')->delete($filePath);
-                }
-                
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to save resource: ' . $dbError->getMessage()
-                ], 500);
-            }
-
+            return $courses;
         } catch (\Exception $e) {
-            Log::error('❌ [UPLOAD] Unexpected error: ' . $e->getMessage());
-            Log::error('❌ [UPLOAD] Stack trace: ' . $e->getTraceAsString());
-            return response()->json([
-                'success' => false,
-                'message' => 'An unexpected error occurred: ' . $e->getMessage()
-            ], 500);
+            Log::error('Error in getTeacherPublicCoursesData: ' . $e->getMessage());
+            return [];
         }
     }
 
-    public function getClassResources($classId)
+    private function getTeacherPublicStatsData($teacherId)
     {
         try {
-            Log::info("Fetching resources for class ID: {$classId}");
+            $coursesCount = ClassModel::where('teacher_id', $teacherId)->count();
+            $resourcesCount = Resource::where('teacher_id', $teacherId)->count();
 
+            return [
+                'courses_count' => $coursesCount,
+                'students_count' => 0,
+                'rating' => 4.8,
+                'experience' => '5+ years',
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error in getTeacherPublicStatsData: ' . $e->getMessage());
+            return [
+                'courses_count' => 0,
+                'students_count' => 0,
+                'rating' => 0,
+                'experience' => 'N/A',
+            ];
+        }
+    }
+
+    private function getClassInfo($classId)
+    {
+        try {
+            $class = ClassModel::with(['teacher:id,name'])->find($classId);
+            
+            if ($class) {
+                return [
+                    'id' => $class->id,
+                    'name' => $class->name,
+                    'subject' => $class->subject,
+                    'grade' => $class->grade,
+                    'teacher_name' => $class->teacher->name ?? 'Unknown Teacher',
+                    'student_count' => $class->students_count ?? 0,
+                ];
+            }
+
+            return [
+                'id' => $classId,
+                'name' => 'Unknown Class',
+                'subject' => 'N/A',
+                'grade' => 'N/A',
+                'teacher_name' => 'Unknown Teacher',
+                'student_count' => 0,
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error in getClassInfo: ' . $e->getMessage());
+            return [
+                'id' => $classId,
+                'name' => 'Class Information Unavailable',
+                'subject' => 'N/A',
+                'grade' => 'N/A',
+                'teacher_name' => 'Unknown Teacher',
+                'student_count' => 0,
+            ];
+        }
+    }
+
+    private function getClassAssignmentsData($classId)
+    {
+        try {
+            // This would be replaced with actual Assignment model data
+            return $this->getMockAssignments();
+        } catch (\Exception $e) {
+            Log::error('Error in getClassAssignmentsData: ' . $e->getMessage());
+            return $this->getMockAssignments();
+        }
+    }
+
+    private function getAssignmentStatsData($classId)
+    {
+        return [
+            'total_assignments' => 5,
+            'active_assignments' => 3,
+            'completed_assignments' => 2,
+            'average_score' => 85,
+        ];
+    }
+
+    private function getClassResourcesData($classId)
+    {
+        try {
             $resources = Resource::where('class_id', $classId)
-                ->orWhereNull('class_id') // General resources
+                ->orWhereNull('class_id')
                 ->with(['teacher:id,name,email', 'class:id,name'])
                 ->orderBy('created_at', 'desc')
                 ->get()
@@ -776,14 +1640,11 @@ class TeacherController extends Controller
                     $fileInfo = [];
                     
                     if ($resource->file_path) {
-                        $fileSize = Storage::disk('public')->size($resource->file_path);
-                        $fileInfo['size'] = $this->formatFileSize($fileSize);
-                        
-                        // Add additional info based on file type
-                        if ($resource->type === 'pdf') {
-                            $fileInfo['pages'] = 'N/A'; // You can use a PDF library to get actual page count
-                        } elseif ($resource->type === 'video') {
-                            $fileInfo['duration'] = 'N/A'; // You can use a video library to get duration
+                        try {
+                            $fileSize = Storage::disk('public')->size($resource->file_path);
+                            $fileInfo['size'] = $this->formatFileSize($fileSize);
+                        } catch (\Exception $e) {
+                            $fileInfo['size'] = 'Unknown';
                         }
                     }
 
@@ -793,67 +1654,44 @@ class TeacherController extends Controller
                         'type' => $resource->type,
                         'description' => $resource->description,
                         'file_info' => $fileInfo,
-                        'download_count' => 0, // You can track downloads separately
+                        'download_count' => 0,
                         'created_at' => $resource->created_at->toISOString(),
                         'teacher' => $resource->teacher,
                         'class' => $resource->class ? $resource->class->name : 'General'
                     ];
                 });
 
-            return response()->json([
-                'success' => true,
-                'data' => $resources
-            ]);
-            
+            return $resources;
         } catch (\Exception $e) {
-            Log::error('Error fetching class resources: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch resources'
-            ], 500);
+            Log::error('Error in getClassResourcesData: ' . $e->getMessage());
+            return $this->getMockResources();
         }
     }
 
-    public function deleteResource($resourceId)
+    private function getResourceStatsData($classId)
     {
-        try {
-            Log::info("Deleting resource ID: {$resourceId}");
-
-            // Get authenticated user ID - FIXED: Use Auth::id() instead of auth()->id()
-            $teacherId = Auth::id();
-            
-            $resource = Resource::where('id', $resourceId)
-                ->where('teacher_id', $teacherId)
-                ->first();
-
-            if (!$resource) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Resource not found or access denied'
-                ], 404);
-            }
-
-            // Delete file from storage if exists
-            if ($resource->file_path && Storage::disk('public')->exists($resource->file_path)) {
-                Storage::disk('public')->delete($resource->file_path);
-            }
-
-            $resource->delete();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Resource deleted successfully'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error deleting resource: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to delete resource'
-            ], 500);
-        }
+        return [
+            'total_resources' => 8,
+            'pdf_count' => 3,
+            'video_count' => 2,
+            'document_count' => 2,
+            'link_count' => 1,
+        ];
     }
 
-    // Mock data methods for development
+    private function getClassScheduleData($classId)
+    {
+        return [
+            'monday' => ['10:00 AM - 11:00 AM', 'Mathematics'],
+            'tuesday' => ['02:00 PM - 03:00 PM', 'Science'],
+            'wednesday' => ['10:00 AM - 11:00 AM', 'Mathematics'],
+            'thursday' => ['02:00 PM - 03:00 PM', 'Science'],
+            'friday' => ['10:00 AM - 11:00 AM', 'Revision'],
+        ];
+    }
+
+    // ============ MOCK DATA METHODS ============
+
     private function getMockClasses()
     {
         return [
@@ -898,13 +1736,30 @@ class TeacherController extends Controller
         ];
     }
 
-    private function formatFileSize($bytes)
+    private function getMockAssignments()
     {
-        if ($bytes === 0) return '0 Bytes';
-        $k = 1024;
-        $sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        $i = floor(log($bytes) / log($k));
-        return round($bytes / pow($k, $i), 2) . ' ' . $sizes[$i];
+        return [
+            [
+                'id' => 1,
+                'title' => 'Mathematics Chapter 1 Exercises',
+                'description' => 'Complete all exercises from chapter 1 of your mathematics textbook.',
+                'points' => 100,
+                'due_date' => now()->addDays(7)->toISOString(),
+                'status' => 'active',
+                'submitted_count' => 15,
+                'graded_count' => 10,
+            ],
+            [
+                'id' => 2,
+                'title' => 'Science Project Proposal',
+                'description' => 'Submit your science project proposal with detailed methodology.',
+                'points' => 50,
+                'due_date' => now()->addDays(3)->toISOString(),
+                'status' => 'active',
+                'submitted_count' => 8,
+                'graded_count' => 5,
+            ],
+        ];
     }
 
     private function generateSlug($name)

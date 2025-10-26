@@ -4,15 +4,122 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Models\Student; // Add this import
+use App\Models\Student;
+use App\Models\ClassModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB; // Add this import for DB facade
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class UserController extends Controller
 {
+    // ============ INERTIA PAGE METHODS ============
+
+    /**
+     * Display super admins management page
+     */
+    public function superAdminsPage(): Response
+    {
+        return Inertia::render('Admin/Users/SuperAdmins', [
+            'user' => Auth::user(),
+            'initialData' => [
+                'superAdmins' => $this->getSuperAdminsData(),
+                'userStats' => $this->getUserStatsData(),
+            ]
+        ]);
+    }
+
+    /**
+     * Display admins management page
+     */
+    public function adminsPage(): Response
+    {
+        return Inertia::render('Admin/Users/Admins', [
+            'user' => Auth::user(),
+            'initialData' => [
+                'admins' => $this->getAdminsData(),
+                'userStats' => $this->getUserStatsData(),
+            ]
+        ]);
+    }
+
+    /**
+     * Display teachers management page
+     */
+    public function teachersPage(): Response
+    {
+        return Inertia::render('Admin/Users/Teachers', [
+            'user' => Auth::user(),
+            'initialData' => [
+                'teachers' => $this->getTeachersData(),
+                'userStats' => $this->getUserStatsData(),
+            ]
+        ]);
+    }
+
+    /**
+     * Display students management page
+     */
+    public function studentsPage(): Response
+    {
+        return Inertia::render('Admin/Users/Students', [
+            'user' => Auth::user(),
+            'initialData' => [
+                'students' => $this->getStudentsData(),
+                'userStats' => $this->getUserStatsData(),
+                'classes' => $this->getClassesData(),
+            ]
+        ]);
+    }
+
+    /**
+     * Display create user page
+     */
+    public function createUserPage($role): Response
+    {
+        $validRoles = ['super_admin', 'admin', 'teacher', 'student'];
+        
+        if (!in_array($role, $validRoles)) {
+            abort(404, 'Invalid user role');
+        }
+
+        return Inertia::render('Admin/Users/CreateUser', [
+            'user' => Auth::user(),
+            'role' => $role,
+            'initialData' => [
+                'qualifications' => $this->getQualifications(),
+                'institutes' => $this->getInstitutes(),
+                'classes' => $role === 'student' ? $this->getClassesData() : [],
+                'countryCodes' => $this->getCountryCodes(),
+            ]
+        ]);
+    }
+
+    /**
+     * Display edit user page
+     */
+    public function editUserPage($id): Response
+    {
+        $user = User::with(['student'])->findOrFail($id);
+        
+        return Inertia::render('Admin/Users/EditUser', [
+            'user' => Auth::user(),
+            'editingUser' => $user,
+            'initialData' => [
+                'qualifications' => $this->getQualifications(),
+                'institutes' => $this->getInstitutes(),
+                'classes' => $user->role === 'student' ? $this->getClassesData() : [],
+                'countryCodes' => $this->getCountryCodes(),
+            ]
+        ]);
+    }
+
+    // ============ API METHODS ============
+
     /**
      * Get all teachers
      */
@@ -21,14 +128,7 @@ class UserController extends Controller
         try {
             Log::info('Fetching all teachers from UserController');
             
-            $teachers = User::where('role', 'teacher')
-                ->select([
-                    'id', 'name', 'username', 'email', 'dob',
-                    'education_qualification', 'institute', 'experience',
-                    'created_at'
-                ])
-                ->orderBy('name')
-                ->get();
+            $teachers = $this->getTeachersData();
 
             return response()->json([
                 'success' => true,
@@ -46,16 +146,12 @@ class UserController extends Controller
         }
     }
 
-    // ============ EXISTING METHODS (Keep these) ============
-
     public function getSuperAdmins(Request $request)
     {
         try {
             Log::info('Fetching super admins...');
             
-            $superAdmins = User::where('role', 'super_admin')
-                ->select('id', 'name', 'username', 'email', 'dob', 'education_qualification', 'institute', 'role', 'created_at')
-                ->get();
+            $superAdmins = $this->getSuperAdminsData();
                 
             Log::info('Found ' . $superAdmins->count() . ' super admins');
                 
@@ -77,13 +173,12 @@ class UserController extends Controller
     public function getAdmins(Request $request)
     {
         try {
-            $admins = User::where('role', 'admin')
-                ->select('id', 'name', 'username', 'email', 'dob', 'education_qualification', 'institute', 'role', 'created_at')
-                ->get();
+            $admins = $this->getAdminsData();
                 
             return response()->json([
                 'success' => true,
-                'data' => $admins
+                'data' => $admins,
+                'count' => $admins->count()
             ]);
         } catch (\Exception $e) {
             Log::error('Error fetching admins: ' . $e->getMessage());
@@ -104,7 +199,8 @@ class UserController extends Controller
                 
             return response()->json([
                 'success' => true,
-                'data' => $otherUsers
+                'data' => $otherUsers,
+                'count' => $otherUsers->count()
             ]);
         } catch (\Exception $e) {
             Log::error('Error fetching other users: ' . $e->getMessage());
@@ -238,6 +334,7 @@ class UserController extends Controller
             'education_qualification' => 'required|in:HSC,BSC,BA,MA,MSC,PhD,Other',
             'institute' => 'required|string|max:255',
             'experience' => 'nullable|string|max:255',
+            'bio' => 'nullable|string|max:1000',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
@@ -258,6 +355,7 @@ class UserController extends Controller
                 'education_qualification' => $request->education_qualification,
                 'institute' => $request->institute,
                 'experience' => $request->experience,
+                'bio' => $request->bio,
                 'password' => Hash::make($request->password),
                 'role' => 'teacher',
             ]);
@@ -274,6 +372,7 @@ class UserController extends Controller
                     'education_qualification' => $user->education_qualification,
                     'institute' => $user->institute,
                     'experience' => $user->experience,
+                    'bio' => $user->bio,
                     'role' => $user->role
                 ]
             ], 201);
@@ -305,6 +404,8 @@ class UserController extends Controller
             'dob' => 'sometimes|required|date',
             'education_qualification' => 'sometimes|required|in:HSC,BSC,BA,MA,MSC,PhD,Other',
             'institute' => 'sometimes|required|string|max:255',
+            'experience' => 'sometimes|nullable|string|max:255',
+            'bio' => 'sometimes|nullable|string|max:1000',
             'password' => 'sometimes|nullable|string|min:8|confirmed',
         ]);
 
@@ -328,7 +429,6 @@ class UserController extends Controller
                 'bio' => $request->bio ?? $user->bio,
             ];
 
-            // Only update password if provided
             if ($request->filled('password')) {
                 $updateData['password'] = Hash::make($request->password);
             }
@@ -373,7 +473,14 @@ class UserController extends Controller
                 ], 404);
             }
 
-            // Simple deletion without auth check for now
+            // Prevent deletion of current user
+            if ($user->id === Auth::id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You cannot delete your own account'
+                ], 422);
+            }
+
             $user->delete();
 
             return response()->json([
@@ -393,7 +500,7 @@ class UserController extends Controller
     public function getUser($id)
     {
         try {
-            $user = User::findOrFail($id);
+            $user = User::with(['student'])->findOrFail($id);
             
             return response()->json([
                 'success' => true,
@@ -417,7 +524,7 @@ class UserController extends Controller
             'email' => 'required|email|unique:users|max:255',
             'father_name' => 'required|string|max:255',
             'mother_name' => 'required|string|max:255',
-            'class_id' => 'required|exists:classes,id', // Assuming you have a classes table
+            'class_id' => 'required|exists:classes,id',
             'country_code' => 'required|string|max:10',
             'parent_contact' => 'required|string|max:20',
             'password' => 'required|string|min:8|confirmed',
@@ -432,10 +539,8 @@ class UserController extends Controller
         }
 
         try {
-            // Start transaction to ensure both user and student are created
             DB::beginTransaction();
 
-            // Create user account
             $user = User::create([
                 'name' => $request->name,
                 'username' => $request->username,
@@ -444,10 +549,8 @@ class UserController extends Controller
                 'role' => 'student',
             ]);
 
-            // Generate roll number (you can customize this logic)
             $rollNumber = $this->generateRollNumber($request->class_id);
 
-            // Create student record
             $student = Student::create([
                 'user_id' => $user->id,
                 'class_id' => $request->class_id,
@@ -492,33 +595,10 @@ class UserController extends Controller
         }
     }
 
-    private function generateRollNumber($classId)
-    {
-        $currentYear = date('Y');
-        $classCode = str_pad($classId, 2, '0', STR_PAD_LEFT);
-        
-        // Get the last roll number for this class
-        $lastStudent = Student::where('class_id', $classId)
-            ->orderBy('id', 'desc')
-            ->first();
-            
-        $sequence = $lastStudent ? (int)substr($lastStudent->roll_number, -3) + 1 : 1;
-        $sequenceCode = str_pad($sequence, 3, '0', STR_PAD_LEFT);
-        
-        return "ST{$currentYear}{$classCode}{$sequenceCode}";
-    }
-
     public function getStudents(Request $request)
     {
         try {
-            $students = Student::with(['user', 'class'])
-                ->select([
-                    'id', 'user_id', 'class_id', 'roll_number', 
-                    'father_name', 'mother_name', 'parent_contact',
-                    'country_code', 'status', 'created_at', 'updated_at'
-                ])
-                ->orderBy('created_at', 'desc')
-                ->get();
+            $students = $this->getStudentsData();
 
             return response()->json([
                 'success' => true,
@@ -532,6 +612,235 @@ class UserController extends Controller
                 'success' => false,
                 'message' => 'Failed to fetch students',
                 'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // ============ DATA METHODS FOR INERTIA ============
+
+    private function getSuperAdminsData()
+    {
+        return User::where('role', 'super_admin')
+            ->select('id', 'name', 'username', 'email', 'dob', 'education_qualification', 'institute', 'role', 'created_at')
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function getAdminsData()
+    {
+        return User::where('role', 'admin')
+            ->select('id', 'name', 'username', 'email', 'dob', 'education_qualification', 'institute', 'role', 'created_at')
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function getTeachersData()
+    {
+        return User::where('role', 'teacher')
+            ->select([
+                'id', 'name', 'username', 'email', 'dob',
+                'education_qualification', 'institute', 'experience', 'bio',
+                'created_at'
+            ])
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function getStudentsData()
+    {
+        return Student::with(['user', 'class'])
+            ->select([
+                'id', 'user_id', 'class_id', 'roll_number', 
+                'father_name', 'mother_name', 'parent_contact',
+                'country_code', 'status', 'created_at', 'updated_at'
+            ])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($student) {
+                return [
+                    'id' => $student->id,
+                    'user_id' => $student->user_id,
+                    'name' => $student->user->name,
+                    'email' => $student->user->email,
+                    'class_name' => $student->class->name ?? 'N/A',
+                    'roll_number' => $student->roll_number,
+                    'father_name' => $student->father_name,
+                    'mother_name' => $student->mother_name,
+                    'parent_contact' => $student->parent_contact,
+                    'status' => $student->status,
+                    'enrolled_date' => $student->created_at->format('Y-m-d'),
+                ];
+            });
+    }
+
+    private function getUserStatsData()
+    {
+        return [
+            'total_users' => User::count(),
+            'super_admins' => User::where('role', 'super_admin')->count(),
+            'admins' => User::where('role', 'admin')->count(),
+            'teachers' => User::where('role', 'teacher')->count(),
+            'students' => User::where('role', 'student')->count(),
+            'active_users' => User::where('status', 'active')->count(),
+        ];
+    }
+
+    private function getClassesData()
+    {
+        return ClassModel::select('id', 'name', 'grade', 'subject')
+            ->orderBy('name')
+            ->get()
+            ->map(function ($class) {
+                return [
+                    'value' => $class->id,
+                    'label' => $class->name . ' (' . $class->grade . ' - ' . $class->subject . ')'
+                ];
+            });
+    }
+
+    private function getQualifications()
+    {
+        return [
+            ['value' => 'HSC', 'label' => 'Higher Secondary Certificate'],
+            ['value' => 'BSC', 'label' => 'Bachelor of Science'],
+            ['value' => 'BA', 'label' => 'Bachelor of Arts'],
+            ['value' => 'MA', 'label' => 'Master of Arts'],
+            ['value' => 'MSC', 'label' => 'Master of Science'],
+            ['value' => 'PhD', 'label' => 'Doctor of Philosophy'],
+            ['value' => 'Other', 'label' => 'Other Qualification'],
+        ];
+    }
+
+    private function getInstitutes()
+    {
+        // You can make this dynamic by querying from the database
+        return [
+            'University of Technology',
+            'Science College',
+            'Arts University',
+            'Engineering Institute',
+            'Medical College',
+            'Business School',
+            'Other Institute',
+        ];
+    }
+
+    private function getCountryCodes()
+    {
+        return [
+            ['value' => '+91', 'label' => '+91 (India)'],
+            ['value' => '+1', 'label' => '+1 (USA/Canada)'],
+            ['value' => '+44', 'label' => '+44 (UK)'],
+            ['value' => '+61', 'label' => '+61 (Australia)'],
+            ['value' => '+65', 'label' => '+65 (Singapore)'],
+            ['value' => '+971', 'label' => '+971 (UAE)'],
+        ];
+    }
+
+    // ============ HELPER METHODS ============
+
+    private function generateRollNumber($classId)
+    {
+        $currentYear = date('Y');
+        $classCode = str_pad($classId, 2, '0', STR_PAD_LEFT);
+        
+        $lastStudent = Student::where('class_id', $classId)
+            ->orderBy('id', 'desc')
+            ->first();
+            
+        $sequence = $lastStudent ? (int)substr($lastStudent->roll_number, -3) + 1 : 1;
+        $sequenceCode = str_pad($sequence, 3, '0', STR_PAD_LEFT);
+        
+        return "ST{$currentYear}{$classCode}{$sequenceCode}";
+    }
+
+    /**
+     * Get user statistics for dashboard
+     */
+    public function getUserStatistics()
+    {
+        try {
+            $stats = $this->getUserStatsData();
+
+            return response()->json([
+                'success' => true,
+                'data' => $stats
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching user statistics: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch user statistics'
+            ], 500);
+        }
+    }
+
+    /**
+     * Bulk user actions (activate, deactivate, delete)
+     */
+    public function bulkUserActions(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'user_ids' => 'required|array',
+            'user_ids.*' => 'exists:users,id',
+            'action' => 'required|in:activate,deactivate,delete'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $userIds = $request->user_ids;
+            $action = $request->action;
+            $currentUserId = Auth::id();
+
+            // Prevent current user from modifying themselves
+            if (in_array($currentUserId, $userIds)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You cannot perform this action on your own account'
+                ], 422);
+            }
+
+            switch ($action) {
+                case 'activate':
+                    User::whereIn('id', $userIds)->update(['status' => 'active']);
+                    $message = 'Users activated successfully';
+                    break;
+                
+                case 'deactivate':
+                    User::whereIn('id', $userIds)->update(['status' => 'inactive']);
+                    $message = 'Users deactivated successfully';
+                    break;
+                
+                case 'delete':
+                    User::whereIn('id', $userIds)->delete();
+                    $message = 'Users deleted successfully';
+                    break;
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'affected_count' => count($userIds)
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error in bulk user actions: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to perform bulk action'
             ], 500);
         }
     }

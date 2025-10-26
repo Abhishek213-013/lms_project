@@ -1,5 +1,4 @@
 <?php
-// app/Models/Student.php
 
 namespace App\Models;
 
@@ -20,7 +19,14 @@ class Student extends Model
         'parent_contact',
         'country_code',
         'address',
+        'admission_date', // Add this
         'status'
+    ];
+
+    protected $dates = [
+        'admission_date', // Add this
+        'created_at',
+        'updated_at'
     ];
 
     /**

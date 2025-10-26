@@ -1,0 +1,207 @@
+<template>
+  <div class="login-page">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+          <div class="login-card">
+            <div class="text-center mb-4">
+              <img src="/assets/img/logo.png" alt="SkillGro" class="logo">
+              <h2 class="mt-3">Student Login</h2>
+              <p class="text-muted">Welcome back to SkillGro</p>
+            </div>
+
+            <!-- Error Message -->
+            <div v-if="form.errors.message" class="alert alert-danger alert-dismissible fade show" role="alert">
+              {{ form.errors.message }}
+              <button type="button" class="btn-close" @click="form.errors.message = ''"></button>
+            </div>
+
+            <!-- Success Message -->
+            <div v-if="status" class="alert alert-success alert-dismissible fade show" role="alert">
+              {{ status }}
+              <button type="button" class="btn-close" @click="status = ''"></button>
+            </div>
+
+            <form @submit.prevent="submit">
+              <div class="mb-3">
+                <label for="login" class="form-label">Username or Email Address *</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="login"
+                  v-model="form.login"
+                  placeholder="Enter your username or email"
+                  required
+                  :class="{ 'is-invalid': form.errors.login }"
+                  :disabled="form.processing"
+                >
+                <div v-if="form.errors.login" class="invalid-feedback">
+                  {{ form.errors.login }}
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="password" class="form-label">Password *</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="password"
+                  v-model="form.password"
+                  placeholder="Enter your password"
+                  required
+                  :class="{ 'is-invalid': form.errors.password }"
+                  :disabled="form.processing"
+                >
+                <div v-if="form.errors.password" class="invalid-feedback">
+                  {{ form.errors.password }}
+                </div>
+              </div>
+
+              <div class="mb-3 form-check">
+                <input 
+                  type="checkbox" 
+                  class="form-check-input" 
+                  id="remember" 
+                  v-model="form.remember"
+                  :disabled="form.processing"
+                >
+                <label class="form-check-label" for="remember">Remember me</label>
+              </div>
+
+              <button type="submit" class="btn btn-primary w-100 mb-3" :disabled="form.processing">
+                <span v-if="form.processing" class="spinner-border spinner-border-sm me-2"></span>
+                {{ form.processing ? 'Logging in...' : 'Login' }}
+              </button>
+
+              <div class="text-center">
+                <a href="/forgot-password" class="text-decoration-none">
+                  Forgot Password?
+                </a>
+              </div>
+            </form>
+
+            <!-- Registration Link -->
+            <div class="text-center mt-4">
+              <p class="mb-0">New to SkillGro?</p>
+              <a href="/phone-verification" class="btn btn-outline-primary mt-2">
+                Create Student Account
+              </a>
+            </div>
+
+            <!-- Admin/Teacher Login Links -->
+            <div class="text-center mt-4 pt-3 border-top">
+              <p class="text-muted small mb-2">Are you an admin or teacher?</p>
+              <div class="d-flex gap-2 justify-content-center">
+                <a href="/login" class="btn btn-sm btn-outline-secondary">
+                  Admin Login
+                </a>
+                <a href="/login" class="btn btn-sm btn-outline-secondary">
+                  Teacher Login
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { useForm } from '@inertiajs/vue3';
+
+const props = defineProps({
+  errors: Object,
+  status: String,
+});
+
+const form = useForm({
+  login: '',
+  password: '',
+  remember: false,
+});
+
+const submit = () => {
+  form.post('/student-login', {
+    onFinish: () => {
+      form.reset('password');
+    },
+  });
+};
+</script>
+
+<style scoped>
+.login-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  display: flex;
+  align-items: center;
+  padding: 20px 0;
+}
+
+.login-card {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 15px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+}
+
+.logo {
+  max-height: 60px;
+}
+
+.form-control {
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 2px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus {
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 0.2rem rgba(231, 76, 60, 0.25);
+}
+
+.form-control.is-invalid {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.alert {
+  border-radius: 10px;
+  border: none;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.form-control:disabled {
+  background-color: #f8f9fa;
+  opacity: 0.7;
+}
+
+.invalid-feedback {
+  display: block;
+  font-size: 0.875em;
+  color: #dc3545;
+}
+
+@media (max-width: 576px) {
+  .login-card {
+    padding: 2rem 1.5rem;
+  }
+}
+
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+}
+</style>

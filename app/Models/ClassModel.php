@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ClassModel extends Model
@@ -42,11 +43,12 @@ class ClassModel extends Model
     }
 
     /**
-     * Get the students for the class.
+     * Get the students for the class (many-to-many relationship).
      */
-    public function students(): HasMany
+    public function students(): BelongsToMany
     {
-        return $this->hasMany(Student::class, 'class_id');
+        return $this->belongsToMany(User::class, 'class_student', 'class_id', 'student_id')
+                    ->withTimestamps();
     }
 
     /**
@@ -55,5 +57,29 @@ class ClassModel extends Model
     public function resources(): HasMany
     {
         return $this->hasMany(Resource::class, 'class_id');
+    }
+
+    /**
+     * Scope for regular classes
+     */
+    public function scopeRegular($query)
+    {
+        return $query->where('type', 'regular');
+    }
+
+    /**
+     * Scope for other courses
+     */
+    public function scopeOther($query)
+    {
+        return $query->where('type', 'other');
+    }
+
+    /**
+     * Scope for active classes
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
     }
 }

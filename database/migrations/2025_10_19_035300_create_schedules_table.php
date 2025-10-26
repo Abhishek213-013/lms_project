@@ -7,7 +7,10 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
     {
         Schema::create('schedules', function (Blueprint $table) {
             $table->id();
@@ -17,18 +20,28 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->date('date');
             $table->time('time');
-            $table->string('duration');
-            $table->enum('type', ['regular', 'extra', 'revision', 'test'])->default('regular');
-            $table->enum('status', ['scheduled', 'cancelled', 'completed'])->default('scheduled');
+            $table->string('duration'); // e.g., '60 minutes', '90 minutes'
+            $table->enum('type', ['regular', 'extra', 'revision', 'test', 'meeting', 'workshop'])->default('regular');
+            $table->enum('status', ['scheduled', 'cancelled', 'completed', 'postponed'])->default('scheduled');
             $table->boolean('recurring')->default(false);
-            $table->string('recurrence_pattern')->nullable();
+            $table->enum('recurrence_pattern', ['daily', 'weekly', 'monthly'])->nullable();
             $table->date('recurrence_end_date')->nullable();
+            $table->string('location')->nullable();
+            $table->integer('max_attendees')->nullable();
             $table->integer('students_attending')->default(0);
             $table->timestamps();
+
+            // Indexes for better performance
+            $table->index(['class_id', 'date']);
+            $table->index(['teacher_id', 'date']);
+            $table->index(['date', 'status']);
         });
     }
 
-    public function down()
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
         Schema::dropIfExists('schedules');
     }

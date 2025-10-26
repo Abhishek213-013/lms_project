@@ -8,11 +8,14 @@
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.7.2",
+    "@inertiajs/progress": "^0.2.7",
+    "@inertiajs/vue3": "^2.2.9",
     "axios": "^1.12.2",
     "bootstrap": "^5.3.8",
     "vue": "^3.5.22",
     "vue-router": "^4.6.3",
-    "vuex": "^4.1.0"
+    "vuex": "^4.1.0",
+    "ziggy-js": "^2.6.0"
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.10",

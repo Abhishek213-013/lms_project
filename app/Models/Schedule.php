@@ -1,5 +1,4 @@
 <?php
-// app/Models/Schedule.php
 
 namespace App\Models;
 
@@ -21,6 +20,8 @@ class Schedule extends Model
         'duration',
         'type',
         'status',
+        'location',
+        'max_attendees',
         'recurring',
         'recurrence_pattern',
         'recurrence_end_date',
@@ -28,7 +29,8 @@ class Schedule extends Model
     ];
 
     protected $casts = [
-        'date' => 'date',
+        'date' => 'date:Y-m-d', // Specify the format
+        'recurrence_end_date' => 'date:Y-m-d', // Specify the format
         'recurring' => 'boolean'
     ];
 

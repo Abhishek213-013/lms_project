@@ -5,7 +5,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+class CreateAssignmentsTable extends Migration
 {
     public function up()
     {
@@ -16,10 +16,13 @@ return new class extends Migration
             $table->string('title');
             $table->text('description')->nullable();
             $table->integer('points')->default(100);
-            $table->datetime('due_date');
-            $table->enum('status', ['draft', 'active', 'completed'])->default('active');
+            $table->timestamp('due_date');
+            $table->enum('status', ['draft', 'active', 'completed', 'archived'])->default('active');
             $table->json('attachments')->nullable();
             $table->timestamps();
+            
+            $table->index(['class_id', 'teacher_id']);
+            $table->index(['due_date', 'status']);
         });
     }
 
@@ -27,4 +30,4 @@ return new class extends Migration
     {
         Schema::dropIfExists('assignments');
     }
-};
+}

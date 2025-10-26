@@ -64,6 +64,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Alias for taughtClasses for backward compatibility
+     */
+    public function classes(): HasMany
+    {
+        return $this->taughtClasses();
+    }
+
+    /**
      * Get the resources uploaded by the teacher.
      */
     public function resources(): HasMany

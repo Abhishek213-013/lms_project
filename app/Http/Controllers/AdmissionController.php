@@ -9,73 +9,59 @@ use App\Models\ClassModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
+use Inertia\Response;
 use Carbon\Carbon;
 
 class AdmissionController extends Controller
 {
-    // Get pending applications
+    // Display applications page
+    public function applications(): Response
+    {
+        return Inertia::render('Admin/Admissions/Applications', [
+            'user' => Auth::user(),
+            'initialData' => [
+                'pendingApplications' => $this->getPendingApplicationsData(),
+                'stats' => $this->getApprovalStatsData(),
+            ]
+        ]);
+    }
+
+    // Display approvals page
+    public function approvals(): Response
+    {
+        return Inertia::render('Admin/Admissions/Approvals', [
+            'user' => Auth::user(),
+            'initialData' => [
+                'approvalStats' => $this->getApprovalStatsData(),
+                'recentApprovals' => $this->getRecentApprovalsData(),
+            ]
+        ]);
+    }
+
+    // Display enrolled students page
+    public function enrolledStudents(): Response
+    {
+        return Inertia::render('Admin/Admissions/EnrolledStudents', [
+            'user' => Auth::user(),
+            'initialData' => [
+                'enrolledStudents' => $this->getEnrolledStudentsData(),
+                'enrollmentStats' => $this->getEnrollmentStatsData(),
+            ]
+        ]);
+    }
+
+    // API: Get pending applications
     public function getPendingApplications()
     {
         try {
-            // In a real application, you might have an applications table
-            // For now, we'll return mock data for pending applications
-            $pendingApplications = [
-                [
-                    'id' => 1,
-                    'name' => 'Rahul Sharma',
-                    'email' => 'rahul.sharma@student.com',
-                    'class_name' => 'Class 10',
-                    'parent_name' => 'Rajesh Sharma',
-                    'parent_contact' => '+91 9876543210',
-                    'applied_date' => now()->subDays(2)->format('Y-m-d H:i:s'),
-                    'status' => 'pending'
-                ],
-                [
-                    'id' => 2,
-                    'name' => 'Priya Patel',
-                    'email' => 'priya.patel@student.com',
-                    'class_name' => 'Class 8',
-                    'parent_name' => 'Mohan Patel',
-                    'parent_contact' => '+91 9876543211',
-                    'applied_date' => now()->subDays(1)->format('Y-m-d H:i:s'),
-                    'status' => 'pending'
-                ],
-                [
-                    'id' => 3,
-                    'name' => 'Amit Kumar',
-                    'email' => 'amit.kumar@student.com',
-                    'class_name' => 'Life Skills',
-                    'parent_name' => 'Sanjay Kumar',
-                    'parent_contact' => '+91 9876543212',
-                    'applied_date' => now()->subHours(6)->format('Y-m-d H:i:s'),
-                    'status' => 'pending'
-                ],
-                [
-                    'id' => 4,
-                    'name' => 'Sneha Gupta',
-                    'email' => 'sneha.gupta@student.com',
-                    'class_name' => 'Class 12',
-                    'parent_name' => 'Vikram Gupta',
-                    'parent_contact' => '+91 9876543213',
-                    'applied_date' => now()->subHours(12)->format('Y-m-d H:i:s'),
-                    'status' => 'pending'
-                ],
-                [
-                    'id' => 5,
-                    'name' => 'Rohan Mehta',
-                    'email' => 'rohan.mehta@student.com',
-                    'class_name' => 'Spoken English',
-                    'parent_name' => 'Anil Mehta',
-                    'parent_contact' => '+91 9876543214',
-                    'applied_date' => now()->subDays(3)->format('Y-m-d H:i:s'),
-                    'status' => 'pending'
-                ]
-            ];
+            $applications = $this->getPendingApplicationsData();
 
             return response()->json([
                 'success' => true,
-                'data' => $pendingApplications,
-                'total' => count($pendingApplications)
+                'data' => $applications,
+                'total' => count($applications)
             ]);
 
         } catch (\Exception $e) {
@@ -87,37 +73,11 @@ class AdmissionController extends Controller
         }
     }
 
-    // Get approval statistics
+    // API: Get approval statistics
     public function getApprovalStats()
     {
         try {
-            $today = Carbon::today();
-            $weekStart = Carbon::now()->startOfWeek();
-            $monthStart = Carbon::now()->startOfMonth();
-
-            // Mock data for approval statistics
-            $stats = [
-                'today' => [
-                    'approved' => 12,
-                    'pending' => 5,
-                    'rejected' => 2
-                ],
-                'this_week' => [
-                    'approved' => 45,
-                    'pending' => 15,
-                    'rejected' => 8
-                ],
-                'this_month' => [
-                    'approved' => 120,
-                    'pending' => 25,
-                    'rejected' => 15
-                ],
-                'total' => [
-                    'approved' => 450,
-                    'pending' => 35,
-                    'rejected' => 45
-                ]
-            ];
+            $stats = $this->getApprovalStatsData();
 
             return response()->json([
                 'success' => true,
@@ -133,39 +93,21 @@ class AdmissionController extends Controller
         }
     }
 
-    // Get enrolled students
+    // API: Get enrolled students
     public function getEnrolledStudents(Request $request)
     {
         try {
-            $students = Student::with(['user', 'class'])
-                ->orderBy('created_at', 'desc')
-                ->get()
-                ->map(function ($student) {
-                    return [
-                        'id' => $student->id,
-                        'name' => $student->user->name,
-                        'email' => $student->user->email,
-                        'class_name' => $student->class->name,
-                        'class_type' => $student->class->type,
-                        'class_category' => $student->class->category,
-                        'roll_number' => $student->roll_number,
-                        'parent_name' => $student->parent_name,
-                        'parent_contact' => $student->parent_contact,
-                        'enrolled_date' => $student->created_at->format('Y-m-d H:i:s'),
-                        'status' => 'enrolled'
-                    ];
-                });
+            $students = $this->getEnrolledStudentsData();
 
             return response()->json([
                 'success' => true,
                 'data' => $students,
-                'total' => $students->count()
+                'total' => count($students)
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error fetching enrolled students: ' . $e->getMessage());
             
-            // Return mock data if database is empty
             return response()->json([
                 'success' => true,
                 'data' => $this->getMockEnrolledStudents(),
@@ -175,7 +117,7 @@ class AdmissionController extends Controller
         }
     }
 
-    // Approve application
+    // API: Approve application
     public function approveApplication(Request $request, $applicationId)
     {
         try {
@@ -213,7 +155,7 @@ class AdmissionController extends Controller
         }
     }
 
-    // Reject application
+    // API: Reject application
     public function rejectApplication(Request $request, $applicationId)
     {
         try {
@@ -237,6 +179,156 @@ class AdmissionController extends Controller
                 'message' => 'Failed to reject application'
             ], 500);
         }
+    }
+
+    // Data methods for Inertia
+    private function getPendingApplicationsData()
+    {
+        return [
+            [
+                'id' => 1,
+                'name' => 'Rahul Sharma',
+                'email' => 'rahul.sharma@student.com',
+                'class_name' => 'Class 10',
+                'parent_name' => 'Rajesh Sharma',
+                'parent_contact' => '+91 9876543210',
+                'applied_date' => now()->subDays(2)->format('Y-m-d H:i:s'),
+                'status' => 'pending'
+            ],
+            [
+                'id' => 2,
+                'name' => 'Priya Patel',
+                'email' => 'priya.patel@student.com',
+                'class_name' => 'Class 8',
+                'parent_name' => 'Mohan Patel',
+                'parent_contact' => '+91 9876543211',
+                'applied_date' => now()->subDays(1)->format('Y-m-d H:i:s'),
+                'status' => 'pending'
+            ],
+            [
+                'id' => 3,
+                'name' => 'Amit Kumar',
+                'email' => 'amit.kumar@student.com',
+                'class_name' => 'Life Skills',
+                'parent_name' => 'Sanjay Kumar',
+                'parent_contact' => '+91 9876543212',
+                'applied_date' => now()->subHours(6)->format('Y-m-d H:i:s'),
+                'status' => 'pending'
+            ],
+            [
+                'id' => 4,
+                'name' => 'Sneha Gupta',
+                'email' => 'sneha.gupta@student.com',
+                'class_name' => 'Class 12',
+                'parent_name' => 'Vikram Gupta',
+                'parent_contact' => '+91 9876543213',
+                'applied_date' => now()->subHours(12)->format('Y-m-d H:i:s'),
+                'status' => 'pending'
+            ],
+            [
+                'id' => 5,
+                'name' => 'Rohan Mehta',
+                'email' => 'rohan.mehta@student.com',
+                'class_name' => 'Spoken English',
+                'parent_name' => 'Anil Mehta',
+                'parent_contact' => '+91 9876543214',
+                'applied_date' => now()->subDays(3)->format('Y-m-d H:i:s'),
+                'status' => 'pending'
+            ]
+        ];
+    }
+
+    private function getApprovalStatsData()
+    {
+        return [
+            'today' => [
+                'approved' => 12,
+                'pending' => 5,
+                'rejected' => 2
+            ],
+            'this_week' => [
+                'approved' => 45,
+                'pending' => 15,
+                'rejected' => 8
+            ],
+            'this_month' => [
+                'approved' => 120,
+                'pending' => 25,
+                'rejected' => 15
+            ],
+            'total' => [
+                'approved' => 450,
+                'pending' => 35,
+                'rejected' => 45
+            ]
+        ];
+    }
+
+    private function getEnrolledStudentsData()
+    {
+        try {
+            $students = Student::with(['user', 'class'])
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($student) {
+                    return [
+                        'id' => $student->id,
+                        'name' => $student->user->name,
+                        'email' => $student->user->email,
+                        'class_name' => $student->class->name ?? 'N/A',
+                        'class_type' => $student->class->type ?? 'regular',
+                        'class_category' => $student->class->category ?? null,
+                        'roll_number' => $student->roll_number,
+                        'parent_name' => $student->parent_name,
+                        'parent_contact' => $student->parent_contact,
+                        'enrolled_date' => $student->created_at->format('Y-m-d H:i:s'),
+                        'status' => 'enrolled'
+                    ];
+                });
+
+            return $students->isNotEmpty() ? $students : $this->getMockEnrolledStudents();
+
+        } catch (\Exception $e) {
+            Log::error('Error in getEnrolledStudentsData: ' . $e->getMessage());
+            return $this->getMockEnrolledStudents();
+        }
+    }
+
+    private function getRecentApprovalsData()
+    {
+        return [
+            [
+                'id' => 101,
+                'name' => 'Karan Singh',
+                'class_name' => 'Class 9',
+                'approved_date' => now()->subHours(2)->format('Y-m-d H:i:s'),
+                'approved_by' => 'Admin User'
+            ],
+            [
+                'id' => 102,
+                'name' => 'Meera Desai',
+                'class_name' => 'Computer Basics',
+                'approved_date' => now()->subHours(5)->format('Y-m-d H:i:s'),
+                'approved_by' => 'Admin User'
+            ],
+            [
+                'id' => 103,
+                'name' => 'Arjun Nair',
+                'class_name' => 'Class 11',
+                'approved_date' => now()->subDays(1)->format('Y-m-d H:i:s'),
+                'approved_by' => 'Super Admin'
+            ]
+        ];
+    }
+
+    private function getEnrollmentStatsData()
+    {
+        return [
+            'total_students' => 450,
+            'active_students' => 420,
+            'new_this_month' => 45,
+            'graduated' => 30
+        ];
     }
 
     // Mock data for enrolled students

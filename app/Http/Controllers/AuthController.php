@@ -1,67 +1,153 @@
 <?php
-// app/Http/Controllers/AuthController.php
 
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use Illuminate\Http\Request; // Add this import
+use App\Models\Student;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Auth; // Add this import
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class AuthController extends Controller
 {
-    public function login(Request $request)
+    /**
+     * Show the admin/teacher login page
+     */
+    public function showLogin()
     {
-        $validator = Validator::make($request->all(), [
-            'username' => 'required|string',
-            'password' => 'required|string',
-            'role' => 'sometimes|in:super_admin,admin,teacher' 
-        ]);
+        return Inertia::render('Auth/Login');
+    }
 
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors()
-            ], 422);
-        }
+    /**
+     * Show the admin/teacher registration page
+     */
+    public function showRegistration(): Response
+    {
+        return Inertia::render('Auth/Registration');
+    }
 
-        $user = User::where('username', $request->username)->first();
+    /**
+     * Show the student login page
+     */
+    public function showStudentLogin(): Response
+    {
+        return Inertia::render('Auth/StudentLogin');
+    }
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid credentials'
-            ], 401);
-        }
-
-        // Check role only if provided
-        if ($request->has('role') && $user->role !== $request->role) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Access denied for this role'
-            ], 403);
-        }
-
-        $token = $user->createToken('LMS-Auth')->plainTextToken;
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Login successful',
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'username' => $user->username,
-                'email' => $user->email,
-                'role' => $user->role
-            ],
-            'token' => $token
+    /**
+     * Show the student registration page
+     */
+    public function showStudentRegistration(): Response
+    {
+        return Inertia::render('Auth/StudentRegistration', [
+            'phone' => request('phone')
         ]);
     }
 
+    /**
+     * Show the phone verification page
+     */
+    public function showPhoneVerification(): Response
+    {
+        return Inertia::render('Auth/PhoneVerification');
+    }
+
+        /**
+ * Handle admin/teacher login request
+ */
+    public function login(Request $request)
+    {
+        // Validate the request
+        $credentials = $request->validate([
+            'username' => 'required|string',
+            'password' => 'required|string',
+        ]);
+
+        // Attempt to authenticate
+        if (Auth::attempt($credentials, $request->remember)) {
+            $request->session()->regenerate();
+
+            // Redirect based on user role
+            $user = Auth::user();
+            
+            if ($user->role === 'super_admin') {
+                return redirect()->intended('/super-admin');
+            } elseif ($user->role === 'admin') {
+                return redirect()->intended('/admin');
+            } elseif ($user->role === 'teacher') {
+                // FIXED: Redirect to teacher portal with actual ID
+                return redirect()->intended("/teacher/portal");
+            } else {
+                return redirect()->intended('/');
+            }
+        }
+
+        // Return back with error
+        return back()->withErrors([
+            'message' => 'The provided credentials do not match our records.',
+        ])->withInput($request->only('username', 'remember'));
+    }
+
+    /**
+     * Handle student login request
+     */
+    public function studentLogin(Request $request)
+    {
+        Log::info('Student login attempt', ['login' => $request->login, 'ip' => $request->ip()]);
+
+        $credentials = $request->validate([
+            'login' => 'required|string',
+            'password' => 'required|string',
+        ]);
+
+        try {
+            // Determine if login is email or username
+            $field = filter_var($credentials['login'], FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+            
+            if (Auth::attempt([
+                $field => $credentials['login'], 
+                'password' => $credentials['password']
+            ], $request->boolean('remember'))) {
+                
+                $request->session()->regenerate();
+                $user = Auth::user();
+
+                Log::info('Student login successful', ['user_id' => $user->id, 'role' => $user->role]);
+
+                // Check if user is a student
+                if ($user->role !== 'student') {
+                    Auth::logout();
+                    return back()->withErrors([
+                        'message' => 'This login is for students only.',
+                    ]);
+                }
+                
+                return redirect()->intended('/');
+            }
+
+            Log::warning('Student login failed - invalid credentials', ['login' => $credentials['login']]);
+            return back()->withErrors([
+                'message' => 'The provided credentials do not match our records.',
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Student login error', ['error' => $e->getMessage(), 'login' => $credentials['login']]);
+            return back()->withErrors([
+                'message' => 'An error occurred during login. Please try again.',
+            ]);
+        }
+    }
+
+  
     public function register(Request $request)
     {
+        Log::info('Registration attempt', ['email' => $request->email, 'role' => $request->role]);
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'username' => 'required|string|unique:users|max:255',
@@ -69,67 +155,346 @@ class AuthController extends Controller
             'dob' => 'required|date',
             'education_qualification' => 'required|in:HSC,BSC,BA,MA,MSC,PhD,Other',
             'institute' => 'required|string|max:255',
+            'experience' => 'nullable|string|max:255',
             'password' => 'required|string|min:8|confirmed',
+            'role' => 'required|in:teacher,admin',
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors()
-            ], 422);
+            Log::warning('Registration validation failed', ['errors' => $validator->errors()->toArray()]);
+            return redirect()->back()->withErrors($validator->errors());
         }
 
-        $user = User::create([
-            'name' => $request->name,
-            'username' => $request->username,
-            'email' => $request->email,
-            'dob' => $request->dob,
-            'education_qualification' => $request->education_qualification,
-            'institute' => $request->institute,
-            'password' => Hash::make($request->password),
-            'role' => 'teacher',
+        try {
+            $user = User::create([
+                'name' => $request->name,
+                'username' => $request->username,
+                'email' => $request->email,
+                'dob' => $request->dob,
+                'education_qualification' => $request->education_qualification,
+                'institute' => $request->institute,
+                'experience' => $request->experience,
+                'password' => Hash::make($request->password),
+                'role' => $request->role,
+            ]);
+
+            Auth::login($user);
+
+            Log::info('Registration successful', ['user_id' => $user->id, 'role' => $user->role]);
+
+            return $this->redirectBasedOnRole($user)
+                ->with('status', 'Registration successful! Welcome to SkillGro.');
+
+        } catch (\Exception $e) {
+            Log::error('Registration failed', ['error' => $e->getMessage(), 'email' => $request->email]);
+            return back()->withErrors([
+                'message' => 'Registration failed. Please try again.',
+            ]);
+        }
+    }
+
+
+     public function studentRegister(Request $request)
+    {
+        Log::info('Student registration attempt', ['email' => $request->email, 'data' => $request->all()]);
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'username' => 'required|string|unique:users|max:255',
+            'email' => 'required|email|unique:users|max:255',
+            'father_name' => 'required|string|max:255',
+            'mother_name' => 'required|string|max:255',
+            'class_id' => 'required|integer',
+            'country_code' => 'required|string|max:10',
+            'parent_contact' => 'required|string|max:20',
+            'password' => 'required|string|min:8|confirmed',
+            'terms' => 'required|accepted',
         ]);
 
-        $token = $user->createToken('LMS-Auth')->plainTextToken;
+        if ($validator->fails()) {
+            Log::warning('Student registration validation failed', ['errors' => $validator->errors()->toArray()]);
+            return back()->withErrors($validator->errors())->withInput();
+        }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Registration successful',
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'username' => $user->username,
-                'email' => $user->email,
-                'role' => $user->role
-            ],
-            'token' => $token
-        ], 201);
-    }
-
-    public function logout(Request $request)
-    {
         try {
-            $request->user()->currentAccessToken()->delete();
+            DB::beginTransaction();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Logout successful'
+            Log::info('Creating user...');
+            
+            // Create user
+            $user = User::create([
+                'name' => $request->name,
+                'username' => $request->username,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'role' => 'student',
+                'status' => 'active',
             ]);
+
+            Log::info('User created successfully', ['user_id' => $user->id]);
+
+            // Generate a unique roll number
+            $rollNumber = $this->generateRollNumber($request->class_id);
+
+            // Create student record
+            $studentData = [
+                'user_id' => $user->id,
+                'class_id' => $request->class_id,
+                'roll_number' => $rollNumber, // Add roll number
+                'father_name' => $request->father_name,
+                'mother_name' => $request->mother_name,
+                'parent_contact' => $request->parent_contact,
+                'country_code' => $request->country_code,
+                'admission_date' => now(),
+                'status' => 'active',
+            ];
+
+            Log::info('Creating student record', ['student_data' => $studentData]);
+
+            $student = Student::create($studentData);
+
+            Log::info('Student record created successfully', ['student_id' => $student->id]);
+
+            DB::commit();
+
+            // Log the user in automatically after registration
+            Auth::login($user);
+
+            Log::info('Student registration successful', [
+                'user_id' => $user->id,
+                'student_id' => $student->id,
+                'authenticated' => Auth::check(),
+                'user_role' => Auth::user()->role ?? 'none'
+            ]);
+
+            // Redirect to home
+            return redirect()->route('home')->with([
+                'success' => 'Registration successful! Welcome to SkillGro.'
+            ]);
+
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Logout failed: ' . $e->getMessage()
-            ], 500);
+            DB::rollBack();
+            Log::error('Student registration failed', [
+                'error' => $e->getMessage(), 
+                'trace' => $e->getTraceAsString(),
+                'email' => $request->email,
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            return back()->withErrors([
+                'message' => 'Registration failed: ' . $e->getMessage(),
+            ])->withInput();
         }
     }
 
-    // Add a method to check current user
+    private function generateRollNumber($classId)
+    {
+        $year = date('Y');
+        $classCode = str_pad($classId, 2, '0', STR_PAD_LEFT);
+        
+        // Get the last roll number for this class and year
+        $lastStudent = Student::where('roll_number', 'like', "{$year}{$classCode}%")
+            ->orderBy('roll_number', 'desc')
+            ->first();
+
+        if ($lastStudent) {
+            $lastNumber = intval(substr($lastStudent->roll_number, -3));
+            $newNumber = $lastNumber + 1;
+        } else {
+            $newNumber = 1;
+        }
+
+        return $year . $classCode . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+    }
+    /**
+     * Handle OTP sending request
+     */
+    public function sendOTP(Request $request)
+    {
+        Log::info('OTP sending attempt', ['phone' => $request->phoneNumber]);
+
+        $validator = Validator::make($request->all(), [
+            'countryCode' => 'required|string|max:10',
+            'phoneNumber' => 'required|string|max:20',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator->errors());
+        }
+
+        try {
+            // For demo purposes, we'll just return success
+            // In production, you would integrate with an SMS service here
+            
+            // Generate OTP (for demo, we'll use 123456)
+            $otp = '123456';
+            
+            // Store OTP in session for verification
+            session([
+                'otp_code' => $otp,
+                'otp_phone' => $request->countryCode . $request->phoneNumber,
+                'otp_expires' => now()->addMinutes(10), // OTP valid for 10 minutes
+            ]);
+
+            Log::info('OTP sent (demo)', [
+                'phone' => $request->countryCode . $request->phoneNumber,
+                'otp' => $otp
+            ]);
+
+            return back()->with('status', 'OTP sent successfully to ' . $request->countryCode . $request->phoneNumber);
+
+        } catch (\Exception $e) {
+            Log::error('OTP sending failed', ['error' => $e->getMessage(), 'phone' => $request->phoneNumber]);
+            return back()->withErrors([
+                'message' => 'Failed to send OTP. Please try again.',
+            ]);
+        }
+    }
+
+    /**
+     * Handle OTP verification request
+     */
+    public function verifyOTP(Request $request)
+    {
+        Log::info('OTP verification attempt', ['otp' => $request->otp]);
+
+        $validator = Validator::make($request->all(), [
+            'otp' => 'required|string|size:6',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator->errors());
+        }
+
+        try {
+            $storedOtp = session('otp_code');
+            $otpPhone = session('otp_phone');
+            $otpExpires = session('otp_expires');
+
+            // Check if OTP exists and is not expired
+            if (!$storedOtp || !$otpExpires || now()->gt($otpExpires)) {
+                return back()->withErrors([
+                    'message' => 'OTP has expired. Please request a new one.',
+                ]);
+            }
+
+            // For demo, accept only 123456
+            if ($request->otp !== '123456') {
+                Log::warning('OTP verification failed - invalid OTP', ['provided' => $request->otp]);
+                return back()->withErrors([
+                    'message' => 'Invalid OTP. Please use 123456 for demo.',
+                ]);
+            }
+
+            // OTP verified successfully
+            session([
+                'phone_verified' => true,
+                'verified_phone' => $otpPhone,
+            ]);
+
+            // Clear OTP data
+            session()->forget(['otp_code', 'otp_phone', 'otp_expires']);
+
+            Log::info('OTP verification successful', ['phone' => $otpPhone]);
+
+            return redirect()->route('student.registration', ['phone' => $otpPhone])
+                ->with('status', 'Phone number verified successfully!');
+
+        } catch (\Exception $e) {
+            Log::error('OTP verification failed', ['error' => $e->getMessage()]);
+            return back()->withErrors([
+                'message' => 'OTP verification failed. Please try again.',
+            ]);
+        }
+    }
+
+    /**
+     * Handle logout request
+     */
+    public function logout(Request $request)
+    {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect('/');
+    }
+
+    /**
+     * Handle forgot password request
+     */
+    public function forgotPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|exists:users,email',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator->errors());
+        }
+
+        try {
+            // In a real application, you would send a password reset email here
+            $user = User::where('email', $request->email)->first();
+
+            // Generate reset token and send email
+            // $token = Str::random(60);
+            // $user->sendPasswordResetNotification($token);
+
+            Log::info('Password reset requested', ['email' => $request->email]);
+
+            return back()->with('status', 'Password reset link has been sent to your email.');
+
+        } catch (\Exception $e) {
+            Log::error('Password reset request failed', ['error' => $e->getMessage(), 'email' => $request->email]);
+            return back()->withErrors([
+                'message' => 'Failed to send password reset link. Please try again.',
+            ]);
+        }
+    }
+
+    /**
+     * Redirect user based on their role
+     */
+    private function redirectBasedOnRole($user)
+    {
+        return match($user->role) {
+            'super_admin' => redirect()->intended('/super-admin'),
+            'admin' => redirect()->intended('/admin'),
+            'teacher' => redirect()->intended('/teacher'),
+            'student' => redirect()->intended('/student'),
+            default => redirect()->intended('/'),
+        };
+    }
+
+    /**
+     * Get current authenticated user
+     */
     public function user(Request $request)
     {
         return response()->json([
-            'success' => true,
-            'user' => $request->user()
+            'user' => $request->user() ? [
+                'id' => $request->user()->id,
+                'name' => $request->user()->name,
+                'email' => $request->user()->email,
+                'username' => $request->user()->username,
+                'role' => $request->user()->role,
+            ] : null
+        ]);
+    }
+
+    /**
+     * Check authentication status
+     */
+    public function checkAuth(Request $request)
+    {
+        return response()->json([
+            'authenticated' => Auth::check(),
+            'user' => Auth::check() ? [
+                'id' => Auth::user()->id,
+                'name' => Auth::user()->name,
+                'role' => Auth::user()->role,
+            ] : null
         ]);
     }
 }
