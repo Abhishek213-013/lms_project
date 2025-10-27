@@ -115,7 +115,7 @@
 
 <script setup>
 import { useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 
 const roles = [
   { label: "Teacher", value: "teacher" },
@@ -124,24 +124,44 @@ const roles = [
 
 const selectedRole = ref('teacher');
 
-// Use Inertia form - it automatically handles CSRF
 const form = useForm({
   username: '',
   password: '',
   remember: false,
 });
 
+// Debug CSRF token
+onMounted(() => {
+  const csrfToken = document.querySelector('meta[name="csrf-token"]');
+  console.log('🔐 CSRF Token available:', !!csrfToken);
+  console.log('🔐 CSRF Token value:', csrfToken?.getAttribute('content'));
+  console.log('🍪 Cookies:', document.cookie);
+});
+
 const submit = () => {
+  console.log('🚀 Submitting login form...');
+  console.log('📤 Form data:', { 
+    username: form.username, 
+    remember: form.remember 
+  });
+
   form.post('/login', {
-    onSuccess: () => {
-      // This will automatically handle the redirect
-      console.log('Login successful');
+    preserveScroll: true,
+    onStart: () => console.log('📨 Request started'),
+    onSuccess: (page) => {
+      console.log('✅ Login successful', page);
     },
     onError: (errors) => {
-      console.log('Login failed:', errors);
+      console.log('❌ Login errors:', errors);
+      console.log('📊 Response status:', form.recentlySuccessful);
+      
+      if (errors.response && errors.response.status === 419) {
+        alert('🔄 Session expired. Refreshing page...');
+        window.location.reload();
+      }
     },
     onFinish: () => {
-      form.reset('password');
+      console.log('🏁 Request finished');
     },
   });
 };

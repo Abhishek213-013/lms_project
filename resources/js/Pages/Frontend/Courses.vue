@@ -5,33 +5,28 @@
         <!-- Show loading state -->
         <div v-if="loading" class="loading-container">
           <div class="spinner"></div>
-          <p>Loading courses...</p>
+          <p>{{ t('Loading courses...') }}</p>
         </div>
 
         <!-- Show courses when available -->
         <div v-else-if="coursesData.length > 0" class="courses-content">
-          <h1 class="title">Available Courses</h1>
-          <p class="text">
-            Explore our wide range of courses and classes
-          </p>
-          
-          <!-- Success Banner -->
-          <div class="info-banner success">
-            <i class="fas fa-check-circle"></i>
-            <span>
-              Successfully loaded {{ coursesData.length }} courses
-            </span>
+          <!-- Header Section - Centered -->
+          <div class="header-section">
+            <h1 class="title">{{ t('Available Courses') }}</h1>
+            <p class="subtitle">
+              {{ t('Explore our wide range of courses and classes') }}
+            </p>
           </div>
           
           <!-- Search and Filter Section -->
-          <div class="search-section">
+          <div class="search-filter-section">
             <div class="search-container">
               <form @submit.prevent="searchCourses" class="search-form">
                 <div class="search-input-group">
                   <input 
                     v-model="searchQuery" 
                     type="text" 
-                    placeholder="Search courses..." 
+                    :placeholder="t('Search courses...')" 
                     class="search-input"
                   >
                   <button type="submit" class="search-button">
@@ -43,70 +38,72 @@
             
             <div class="filter-options">
               <select v-model="courseType" class="filter-select" @change="filterCourses">
-                <option value="">All Course Types</option>
-                <option value="regular">Regular Classes</option>
-                <option value="other">Skill Courses</option>
+                <option value="">{{ t('All Course Types') }}</option>
+                <option value="regular">{{ t('Regular Classes') }}</option>
+                <option value="other">{{ t('Skill Courses') }}</option>
               </select>
               
               <select v-model="sortBy" class="filter-select" @change="sortCourses">
-                <option value="name">Sort by Name</option>
-                <option value="grade">Sort by Grade</option>
-                <option value="studentCount">Sort by Popularity</option>
+                <option value="name">{{ t('Sort by Name') }}</option>
+                <option value="grade">{{ t('Sort by Grade') }}</option>
+                <option value="studentCount">{{ t('Sort by Popularity') }}</option>
               </select>
             </div>
           </div>
 
-          <!-- Courses Grid -->
-          <div class="courses-grid">
-            <div 
-              class="course-card" 
-              v-for="course in filteredCourses" 
-              :key="course.id"
-              @click="viewCourseDetails(course)"
-            >
-              <div class="course-thumb">
-                <img 
-                  :src="getCourseThumbnail(course)" 
-                  :alt="getCourseTitle(course)" 
-                  @error="handleImageError"
-                />
-                <div class="course-type-badge" :class="course.type || 'regular'">
-                  {{ (course.type || 'regular') === 'regular' ? 'Class' : 'Course' }}
-                </div>
-              </div>
-              <div class="course-content">
-                <!-- Updated: Show Class Name - Subject Name format -->
-                <h4 class="course-title">{{ getCourseTitle(course) }}</h4>
-                <p class="course-description">
-                  {{ getCourseDescription(course) }}
-                </p>
-                <div class="course-meta">
-                  <span class="course-category" :class="getCourseCategory(course)">
-                    {{ getCourseCategory(course) }}
-                  </span>
-                  <span class="course-students">
-                    <i class="fas fa-users"></i> {{ course.student_count || course.enrollment_count || course.studentCount || 0 }}
-                  </span>
-                </div>
-                <div class="course-details">
-                  <div v-if="(course.type || 'regular') === 'regular'" class="course-grade">
-                    <i class="fas fa-graduation-cap"></i>
-                    Grade {{ course.grade || 'N/A' }}
+          <!-- Courses Grid Section -->
+          <div class="courses-grid-section">
+            <div class="courses-grid">
+              <div 
+                class="course-card" 
+                v-for="course in filteredCourses" 
+                :key="course.id"
+                @click="viewCourseDetails(course)"
+              >
+                <div class="course-thumb">
+                  <img 
+                    :src="getCourseThumbnail(course)" 
+                    :alt="getCourseTitle(course)" 
+                    @error="handleImageError"
+                  />
+                  <div class="course-type-badge" :class="course.type || 'regular'">
+                    {{ (course.type || 'regular') === 'regular' ? t('Class') : t('Course') }}
                   </div>
-                  <div v-else class="course-category-info">
-                    <i class="fas fa-tag"></i>
-                    {{ course.category || 'Skill Course' }}
+                </div>
+                <div class="course-content">
+                  <!-- Updated: Show Class Name - Subject Name format -->
+                  <h4 class="course-title">{{ getCourseTitle(course) }}</h4>
+                  <p class="course-description">
+                    {{ getCourseDescription(course) }}
+                  </p>
+                  <div class="course-meta">
+                    <span class="course-category" :class="getCourseCategory(course)">
+                      {{ getCourseCategoryText(course) }}
+                    </span>
+                    <span class="course-students">
+                      <i class="fas fa-users"></i> {{ course.student_count || course.enrollment_count || course.studentCount || 0 }}
+                    </span>
                   </div>
-                  <div class="course-status" :class="course.status || 'active'">
-                    {{ course.status || 'active' }}
+                  <div class="course-details">
+                    <div v-if="(course.type || 'regular') === 'regular'" class="course-grade">
+                      <i class="fas fa-graduation-cap"></i>
+                      {{ t('Grade') }} {{ course.grade || 'N/A' }}
+                    </div>
+                    <div v-else class="course-category-info">
+                      <i class="fas fa-tag"></i>
+                      {{ course.category || t('Skill Course') }}
+                    </div>
+                    <div class="course-status" :class="course.status || 'active'">
+                      {{ getStatusText(course.status || 'active') }}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Pagination -->
-          <div v-if="courses.links && courses.links.length > 3" class="pagination">
+          <!-- Pagination Section -->
+          <div v-if="courses.links && courses.links.length > 3" class="pagination-section">
             <div class="pagination-links">
               <template v-for="link in courses.links">
                 <button
@@ -124,16 +121,18 @@
             </div>
           </div>
 
-          <!-- Action Buttons -->
-          <div class="action-buttons">
-            <button @click="clearFilters" class="btn btn-secondary">
-              <i class="fas fa-refresh"></i>
-              Clear Filters
-            </button>
-            <button @click="refreshCourses" class="btn btn-primary">
-              <i class="fas fa-sync"></i>
-              Refresh Courses
-            </button>
+          <!-- Action Buttons Section -->
+          <div class="action-buttons-section">
+            <div class="action-buttons">
+              <button @click="clearFilters" class="btn btn-secondary">
+                <i class="fas fa-refresh"></i>
+                {{ t('Clear Filters') }}
+              </button>
+              <button @click="refreshCourses" class="btn btn-primary">
+                <i class="fas fa-sync"></i>
+                {{ t('Refresh Courses') }}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -142,14 +141,14 @@
           <div class="empty-icon">
             <i class="fas fa-book-open fa-4x"></i>
           </div>
-          <h1 class="title">No Courses Available</h1>
+          <h1 class="title">{{ t('No Courses Available') }}</h1>
           <p class="text">
-            No courses found. Please check back later.
+            {{ t('No courses found. Please check back later.') }}
           </p>
           <div class="action-buttons">
             <button @click="refreshCourses" class="btn btn-primary">
               <i class="fas fa-refresh"></i>
-              Reload Courses
+              {{ t('Reload Courses') }}
             </button>
           </div>
         </div>
@@ -158,10 +157,9 @@
   </FrontendLayout>
 </template>
 
-
 <script>
 import { router } from '@inertiajs/vue3';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, getCurrentInstance } from 'vue';
 import FrontendLayout from '../Layout/FrontendLayout.vue';
 
 export default {
@@ -180,11 +178,120 @@ export default {
     }
   },
   setup(props) {
+    // Get the Vue instance for accessing global properties
+    const { proxy } = getCurrentInstance()
+
     // Reactive data
     const loading = ref(false);
     const searchQuery = ref(props.filters.search || '');
     const courseType = ref(props.filters.type || '');
     const sortBy = ref(props.filters.sort || 'name');
+    const currentLanguage = ref('bn'); // Default to Bengali
+    const currentTheme = ref('light');
+
+    // Define translations object
+    const translations = {
+      en: {
+        'Available Courses': 'Available Courses',
+        'Explore our wide range of courses and classes': 'Explore our wide range of courses and classes',
+        'Search courses...': 'Search courses...',
+        'All Course Types': 'All Course Types',
+        'Regular Classes': 'Regular Classes',
+        'Skill Courses': 'Skill Courses',
+        'Sort by Name': 'Sort by Name',
+        'Sort by Grade': 'Sort by Grade',
+        'Sort by Popularity': 'Sort by Popularity',
+        'Class': 'Class',
+        'Course': 'Course',
+        'Grade': 'Grade',
+        'Skill Course': 'Skill Course',
+        'Primary': 'Primary',
+        'Junior': 'Junior',
+        'Secondary': 'Secondary',
+        'Higher Secondary': 'Higher Secondary',
+        'Active': 'Active',
+        'Inactive': 'Inactive',
+        'Upcoming': 'Upcoming',
+        'Clear Filters': 'Clear Filters',
+        'Refresh Courses': 'Refresh Courses',
+        'No Courses Available': 'No Courses Available',
+        'No courses found. Please check back later.': 'No courses found. Please check back later.',
+        'Reload Courses': 'Reload Courses',
+        'Loading courses...': 'Loading courses...'
+      },
+      bn: {
+        'Available Courses': 'উপলব্ধ কোর্সসমূহ',
+        'Explore our wide range of courses and classes': 'আমাদের বিস্তৃত কোর্স এবং ক্লাস এক্সপ্লোর করুন',
+        'Search courses...': 'কোর্স খুঁজুন...',
+        'All Course Types': 'সমস্ত কোর্সের ধরন',
+        'Regular Classes': 'নিয়মিত ক্লাস',
+        'Skill Courses': 'স্কিল কোর্স',
+        'Sort by Name': 'নাম অনুসারে সাজান',
+        'Sort by Grade': 'গ্রেড অনুসারে সাজান',
+        'Sort by Popularity': 'জনপ্রিয়তা অনুসারে সাজান',
+        'Class': 'ক্লাস',
+        'Course': 'কোর্স',
+        'Grade': 'গ্রেড',
+        'Skill Course': 'স্কিল কোর্স',
+        'Primary': 'প্রাথমিক',
+        'Junior': 'জুনিয়র',
+        'Secondary': 'সেকেন্ডারি',
+        'Higher Secondary': 'উচ্চ মাধ্যমিক',
+        'Active': 'সক্রিয়',
+        'Inactive': 'নিষ্ক্রিয়',
+        'Upcoming': 'শীঘ্রই আসছে',
+        'Clear Filters': 'ফিল্টার সরান',
+        'Refresh Courses': 'কোর্স রিফ্রেশ করুন',
+        'No Courses Available': 'কোন কোর্স উপলব্ধ নেই',
+        'No courses found. Please check back later.': 'কোন কোর্স পাওয়া যায়নি। দয়া করে পরে আবার চেক করুন।',
+        'Reload Courses': 'কোর্স পুনরায় লোড করুন',
+        'Loading courses...': 'কোর্স লোড হচ্ছে...'
+      }
+    }
+
+    // Load language and theme preferences from localStorage
+    onMounted(() => {
+      const savedLang = localStorage.getItem('preferredLanguage')
+      if (savedLang && (savedLang === 'en' || savedLang === 'bn')) {
+        currentLanguage.value = savedLang
+      }
+      
+      const savedTheme = localStorage.getItem('preferredTheme')
+      if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
+        currentTheme.value = savedTheme
+      }
+      
+      // Listen for language changes from other components
+      window.addEventListener('languageChanged', (event) => {
+        currentLanguage.value = event.detail.language
+      })
+
+      // Listen for theme changes
+      window.addEventListener('themeChanged', (event) => {
+        currentTheme.value = event.detail.theme
+      })
+    })
+
+    onUnmounted(() => {
+      window.removeEventListener('languageChanged', () => {})
+      window.removeEventListener('themeChanged', () => {})
+    })
+
+    // Translation function
+    const t = (key, replacements = {}) => {
+      let translated = translations[currentLanguage.value]?.[key] || key
+      
+      Object.keys(replacements).forEach(replacementKey => {
+        translated = translated.replace(`{${replacementKey}}`, replacements[replacementKey])
+      })
+      
+      return translated
+    }
+
+    // Handle theme changes
+    const handleThemeChange = (event) => {
+      currentTheme.value = event.detail.theme;
+    };
 
     // Extract courses data from paginated object or array
     const coursesData = computed(() => {
@@ -208,7 +315,7 @@ export default {
       }
     };
 
-    // NEW: Get course title in "Class Name - Subject Name" format
+    // Get course title in "Class Name - Subject Name" format
     const getCourseTitle = (course) => {
       if (course.type === 'regular') {
         // For regular classes: "Class 1 - Mathematics"
@@ -219,6 +326,17 @@ export default {
         // For other courses: Use the course name directly
         return course.name || course.class_name || 'Untitled Course';
       }
+    };
+
+    // Get translated category text
+    const getCourseCategoryText = (course) => {
+      const category = getCourseCategory(course);
+      return t(category);
+    };
+
+    // Get translated status text
+    const getStatusText = (status) => {
+      return t(status.charAt(0).toUpperCase() + status.slice(1));
     };
 
     // Computed filtered courses
@@ -367,102 +485,87 @@ export default {
       filteredCourses,
       refreshCourses,
       handlePagination,
-      getCourseTitle, // NEW: Export the new method
+      getCourseTitle,
       getCourseThumbnail,
       handleImageError,
       getCourseDescription,
       getCourseCategory,
+      getCourseCategoryText,
+      getStatusText,
       searchCourses,
       filterCourses,
       sortCourses,
       clearFilters,
-      viewCourseDetails
+      viewCourseDetails,
+      currentTheme,
+      t,
+      currentLanguage
     };
   }
 }
 </script>
 
+<!-- Keep your existing CSS styles the same -->
 <style scoped>
 /* ==================== */
 /* LAYOUT & CONTAINERS */
 /* ==================== */
 .page-courses {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background: var(--bg-primary);
   padding: 0;
+  transition: background-color 0.3s ease;
 }
 
 .courses-container {
   max-width: 1400px;
   margin: 0 auto;
   padding: 40px 24px;
-  background: white;
+  background: var(--bg-primary);
   min-height: 100vh;
+  transition: background-color 0.3s ease;
 }
 
 /* ==================== */
-/* HEADER SECTION */
+/* HEADER SECTION - CENTERED */
 /* ==================== */
 .header-section {
   text-align: center;
-  padding: 40px 0 30px;
-  margin-bottom: 40px;
-  border-bottom: 1px solid #e9ecef;
+  padding: 40px 0 50px;
+  margin-bottom: 0;
+  border-bottom: none;
 }
 
 .title {
   font-size: 3rem;
   font-weight: 800;
-  color: #1a202c;
+  color: var(--text-primary);
   margin-bottom: 16px;
   line-height: 1.2;
+  transition: color 0.3s ease;
 }
 
 .subtitle {
   font-size: 1.25rem;
-  color: #718096;
-  margin-bottom: 30px;
+  color: var(--text-secondary);
+  margin-bottom: 0;
   line-height: 1.6;
   max-width: 600px;
   margin-left: auto;
   margin-right: auto;
-}
-
-/* ==================== */
-/* INFO BANNER */
-/* ==================== */
-.info-banner {
-  padding: 16px 24px;
-  border-radius: 12px;
-  margin: 0 auto 30px;
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  font-weight: 600;
-  max-width: 500px;
-  width: 100%;
-  justify-content: center;
-}
-
-.info-banner.success {
-  background: #f0fff4;
-  border: 2px solid #9ae6b4;
-  color: #2f855a;
-}
-
-.info-banner i {
-  font-size: 1.2em;
+  transition: color 0.3s ease;
 }
 
 /* ==================== */
 /* SEARCH & FILTER SECTION */
 /* ==================== */
 .search-filter-section {
-  background: #f8f9fa;
+  background: var(--bg-secondary);
   padding: 32px;
   border-radius: 16px;
-  margin-bottom: 50px;
-  border: 1px solid #e9ecef;
+  margin-bottom: 60px;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
 }
 
 .search-container {
@@ -477,17 +580,17 @@ export default {
 
 .search-input-group {
   display: flex;
-  background: white;
+  background: var(--card-bg);
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow);
   overflow: hidden;
   transition: all 0.3s ease;
   border: 2px solid transparent;
 }
 
 .search-input-group:focus-within {
-  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.12);
-  border-color: #4a6cf7;
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-color);
 }
 
 .search-input {
@@ -497,16 +600,17 @@ export default {
   font-size: 16px;
   outline: none;
   background: transparent;
-  color: #1d1e20;
+  color: var(--text-primary);
+  transition: color 0.3s ease;
 }
 
 .search-input::placeholder {
-  color: #a0a4a8;
+  color: var(--text-muted);
 }
 
 .search-button {
   border: none;
-  background: #4a6cf7;
+  background: var(--primary-color);
   color: white;
   padding: 18px 24px;
   cursor: pointer;
@@ -518,7 +622,7 @@ export default {
 }
 
 .search-button:hover {
-  background: #3a5bd9;
+  background: var(--primary-hover);
 }
 
 .filter-options {
@@ -530,10 +634,10 @@ export default {
 
 .filter-select {
   padding: 14px 20px;
-  border: 2px solid #e9ecef;
+  border: 2px solid var(--border-color);
   border-radius: 10px;
-  background: white;
-  color: #1d1e20;
+  background: var(--card-bg);
+  color: var(--text-primary);
   font-size: 15px;
   cursor: pointer;
   outline: none;
@@ -543,15 +647,15 @@ export default {
 }
 
 .filter-select:focus {
-  border-color: #4a6cf7;
-  box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 20%, transparent);
 }
 
 /* ==================== */
 /* COURSES GRID SECTION */
 /* ==================== */
 .courses-grid-section {
-  padding: 20px 0 35px;
+  padding: 20px 0 50px;
 }
 
 .courses-grid {
@@ -562,20 +666,20 @@ export default {
 }
 
 .course-card {
-  background: white;
+  background: var(--card-bg);
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow);
   transition: all 0.3s ease;
   cursor: pointer;
   text-align: left;
-  border: 1px solid #f1f3f4;
+  border: 1px solid var(--border-color);
 }
 
 .course-card:hover {
   transform: translateY(-8px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-  border-color: #4a6cf7;
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-color);
 }
 
 .course-thumb {
@@ -609,11 +713,11 @@ export default {
 }
 
 .course-type-badge.regular {
-  background: linear-gradient(135deg, #4a6cf7, #3a5bd9);
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
 }
 
 .course-type-badge.other {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, var(--success-color), color-mix(in srgb, var(--success-color) 80%, black));
 }
 
 .course-content {
@@ -623,7 +727,7 @@ export default {
 .course-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #1a202c;
+  color: var(--text-primary);
   margin-bottom: 12px;
   line-height: 1.4;
   min-height: 56px;
@@ -631,10 +735,12 @@ export default {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  /* Standard line-clamp property */
+  line-clamp: 2;
 }
 
 .course-description {
-  color: #718096;
+  color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.6;
   margin-bottom: 20px;
@@ -643,6 +749,8 @@ export default {
   -webkit-box-orient: vertical;
   overflow: hidden;
   min-height: 44px;
+  /* Standard line-clamp property */
+  line-clamp: 2;
 }
 
 .course-meta {
@@ -651,47 +759,50 @@ export default {
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #f1f3f4;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .course-category {
-  background: #e9ecef;
-  color: #495057;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  transition: all 0.3s ease;
 }
 
+/* Category-specific styles with theme support */
 .course-category.Primary {
-  background: linear-gradient(135deg, #fff3cd, #ffeaa7);
-  color: #856404;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--warning-color) 20%, var(--bg-primary)), color-mix(in srgb, var(--warning-color) 40%, var(--bg-primary)));
+  color: color-mix(in srgb, var(--warning-color) 70%, black);
 }
 
 .course-category.Junior {
-  background: linear-gradient(135deg, #d1ecf1, #b8e6f1);
-  color: #0c5460;
+  background: linear-gradient(135deg, color-mix(in srgb, #0c5460 20%, var(--bg-primary)), color-mix(in srgb, #0c5460 40%, var(--bg-primary)));
+  color: color-mix(in srgb, #0c5460 70%, white);
 }
 
 .course-category.Secondary {
-  background: linear-gradient(135deg, #d4edda, #c3e6cb);
-  color: #155724;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--success-color) 20%, var(--bg-primary)), color-mix(in srgb, var(--success-color) 40%, var(--bg-primary)));
+  color: color-mix(in srgb, var(--success-color) 70%, black);
 }
 
 .course-category.Higher {
-  background: linear-gradient(135deg, #e2e3e5, #d6d8db);
-  color: #383d41;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--text-muted) 20%, var(--bg-primary)), color-mix(in srgb, var(--text-muted) 40%, var(--bg-primary)));
+  color: var(--text-primary);
 }
 
 .course-students {
-  color: #6c757d;
+  color: var(--text-muted);
   font-weight: 600;
   font-size: 14px;
   display: flex;
   align-items: center;
   gap: 6px;
+  transition: color 0.3s ease;
 }
 
 .course-details {
@@ -699,7 +810,8 @@ export default {
   justify-content: space-between;
   align-items: center;
   font-size: 13px;
-  color: #6c757d;
+  color: var(--text-muted);
+  transition: color 0.3s ease;
 }
 
 .course-grade, .course-category-info {
@@ -719,18 +831,18 @@ export default {
 }
 
 .course-status.active {
-  background: linear-gradient(135deg, #d4edda, #c3e6cb);
-  color: #155724;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--success-color) 20%, var(--bg-primary)), color-mix(in srgb, var(--success-color) 40%, var(--bg-primary)));
+  color: color-mix(in srgb, var(--success-color) 70%, black);
 }
 
 .course-status.inactive {
-  background: linear-gradient(135deg, #f8d7da, #f5c6cb);
-  color: #721c24;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--error-color) 20%, var(--bg-primary)), color-mix(in srgb, var(--error-color) 40%, var(--bg-primary)));
+  color: color-mix(in srgb, var(--error-color) 70%, black);
 }
 
 .course-status.upcoming {
-  background: linear-gradient(135deg, #fff3cd, #ffeaa7);
-  color: #856404;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--warning-color) 20%, var(--bg-primary)), color-mix(in srgb, var(--warning-color) 40%, var(--bg-primary)));
+  color: color-mix(in srgb, var(--warning-color) 70%, black);
 }
 
 /* ==================== */
@@ -738,8 +850,9 @@ export default {
 /* ==================== */
 .pagination-section {
   padding: 40px 0;
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid var(--border-color);
   margin-top: 20px;
+  transition: border-color 0.3s ease;
 }
 
 .pagination-links {
@@ -751,9 +864,9 @@ export default {
 
 .pagination-link {
   padding: 12px 18px;
-  border: 2px solid #e9ecef;
-  background: white;
-  color: #4a5568;
+  border: 2px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-primary);
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -765,21 +878,22 @@ export default {
 }
 
 .pagination-link:hover:not(.disabled) {
-  background: #4a6cf7;
+  background: var(--primary-color);
   color: white;
-  border-color: #4a6cf7;
+  border-color: var(--primary-color);
   transform: translateY(-2px);
 }
 
 .pagination-link.active {
-  background: #4a6cf7;
+  background: var(--primary-color);
   color: white;
-  border-color: #4a6cf7;
+  border-color: var(--primary-color);
 }
 
 .pagination-link.disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  background: var(--bg-tertiary);
 }
 
 /* ==================== */
@@ -787,7 +901,9 @@ export default {
 /* ==================== */
 .action-buttons-section {
   padding: 50px 0 20px;
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid var(--border-color);
+  margin-top: 30px;
+  transition: border-color 0.3s ease;
 }
 
 .action-buttons {
@@ -800,8 +916,8 @@ export default {
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 20px;
-  padding: 26px 20px;
+  gap: 12px;
+  padding: 16px 32px;
   border: none;
   border-radius: 12px;
   font-size: 16px;
@@ -813,27 +929,27 @@ export default {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #4a6cf7, #3a5bd9);
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
   color: white;
-  box-shadow: 0 4px 15px rgba(74, 108, 247, 0.3);
+  box-shadow: 0 4px 15px color-mix(in srgb, var(--primary-color) 30%, transparent);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #3a5bd9, #2a4bc7);
+  background: linear-gradient(135deg, var(--primary-hover), color-mix(in srgb, var(--primary-hover) 80%, black));
   transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(74, 108, 247, 0.4);
+  box-shadow: 0 8px 25px color-mix(in srgb, var(--primary-color) 40%, transparent);
 }
 
 .btn-secondary {
-  background: linear-gradient(135deg, #6c757d, #5a6268);
+  background: linear-gradient(135deg, var(--text-muted), color-mix(in srgb, var(--text-muted) 80%, black));
   color: white;
-  box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+  box-shadow: 0 4px 15px color-mix(in srgb, var(--text-muted) 30%, transparent);
 }
 
 .btn-secondary:hover {
-  background: linear-gradient(135deg, #5a6268, #495057);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--text-muted) 80%, black), color-mix(in srgb, var(--text-muted) 60%, black));
   transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(108, 117, 125, 0.4);
+  box-shadow: 0 8px 25px color-mix(in srgb, var(--text-muted) 40%, transparent);
 }
 
 /* ==================== */
@@ -845,13 +961,25 @@ export default {
 }
 
 .empty-icon {
-  color: #cbd5e0;
+  color: var(--text-muted);
   margin-bottom: 30px;
   opacity: 0.7;
+  transition: color 0.3s ease;
 }
 
 .empty-icon i {
   font-size: 4rem;
+}
+
+.empty-container .title {
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.empty-container .text {
+  color: var(--text-secondary);
+  margin-bottom: 30px;
+  font-size: 1.125rem;
 }
 
 /* ==================== */
@@ -865,13 +993,20 @@ export default {
   padding: 100px 0;
 }
 
+.loading-container p {
+  color: var(--text-secondary);
+  font-size: 1.125rem;
+  transition: color 0.3s ease;
+}
+
 .spinner {
   width: 60px;
   height: 60px;
-  border: 4px solid #e9ecef;
-  border-top: 4px solid #4a6cf7;
+  border: 4px solid var(--border-color);
+  border-top: 4px solid var(--primary-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
+  transition: border-color 0.3s ease;
 }
 
 @keyframes spin {
@@ -896,7 +1031,7 @@ export default {
   
   .header-section {
     padding: 30px 0 20px;
-    margin-bottom: 30px;
+    margin-bottom: 0;
   }
   
   .title {
@@ -944,6 +1079,7 @@ export default {
   .action-buttons {
     flex-direction: column;
     align-items: center;
+    gap: 16px;
   }
   
   .btn {
@@ -1037,7 +1173,7 @@ export default {
 .filter-select:focus,
 .btn:focus,
 .pagination-link:focus {
-  outline: 3px solid rgba(74, 108, 247, 0.3);
+  outline: 3px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
   outline-offset: 2px;
 }
 
@@ -1064,5 +1200,82 @@ export default {
   .course-card:hover .course-thumb img {
     transform: none;
   }
+}
+
+/* ==================== */
+/* DARK THEME SPECIFIC ENHANCEMENTS */
+/* ==================== */
+.dark-theme .course-card {
+  border-color: var(--border-color);
+}
+
+.dark-theme .search-input-group {
+  background: var(--bg-secondary);
+}
+
+.dark-theme .filter-select {
+  background: var(--bg-secondary);
+}
+
+.dark-theme .course-meta {
+  border-bottom-color: var(--border-color);
+}
+
+.dark-theme .course-category:not(.Primary):not(.Junior):not(.Secondary):not(.Higher) {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Ensure text remains readable in dark mode */
+.dark-theme .course-students,
+.dark-theme .course-details,
+.dark-theme .course-grade,
+.dark-theme .course-category-info {
+  color: var(--text-secondary);
+}
+
+/* Improve contrast for disabled states in dark mode */
+.dark-theme .pagination-link.disabled {
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+}
+
+/* Enhanced focus states for better accessibility */
+.dark-theme .search-input:focus,
+.dark-theme .filter-select:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 40%, transparent);
+}
+
+/* ==================== */
+/* LINE-CLAMP STANDARD PROPERTY */
+/* ==================== */
+@supports (line-clamp: 2) {
+  .course-title,
+  .course-description {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+}
+
+/* ==================== */
+/* LANGUAGE SUPPORT */
+/* ==================== */
+.bn-lang .course-card,
+.bn-lang .search-input,
+.bn-lang .filter-select,
+.bn-lang .btn {
+  font-family: 'Kalpurush', 'SolaimanLipi', 'Siyam Rupali', Arial, sans-serif;
+}
+
+.bn-lang .course-title {
+  line-height: 1.5;
+}
+
+.bn-lang .course-description {
+  line-height: 1.7;
 }
 </style>

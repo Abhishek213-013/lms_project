@@ -7,17 +7,17 @@
               <div class="row">
                   <div class="col-12">
                       <div class="breadcrumb__content">
-                          <h3 class="title">{{ getCourseTitle(course) || 'Course Details' }}</h3>
+                          <h3 class="title">{{ getCourseTitle(course) || t('Course Details') }}</h3>
                           <nav class="breadcrumb">
                               <span property="itemListElement" typeof="ListItem">
-                                  <Link href="/">Home</Link>
+                                  <Link href="/">{{ t('Home') }}</Link>
                               </span>
                               <span class="breadcrumb-separator"><i class="fas fa-angle-right"></i></span>
                               <span property="itemListElement" typeof="ListItem">
-                                  <Link href="/courses">Courses</Link>
+                                  <Link href="/courses">{{ t('Courses') }}</Link>
                               </span>
                               <span class="breadcrumb-separator"><i class="fas fa-angle-right"></i></span>
-                              <span property="itemListElement" typeof="ListItem">{{ getCourseTitle(course) || 'Course Details' }}</span>
+                              <span property="itemListElement" typeof="ListItem">{{ getCourseTitle(course) || t('Course Details') }}</span>
                           </nav>
                       </div>
                   </div>
@@ -36,21 +36,21 @@
       <!-- Loading State -->
       <div v-if="loading" class="loading-container text-center py-5">
         <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
+          <span class="visually-hidden">{{ t('Loading...') }}</span>
         </div>
-        <p class="mt-3">Loading course details...</p>
+        <p class="mt-3">{{ t('Loading course details...') }}</p>
       </div>
 
       <!-- Error State -->
       <div v-else-if="error" class="error-container text-center py-5">
         <div class="alert alert-danger mx-3">
-          <h4>Unable to Load Course</h4>
+          <h4>{{ t('Unable to Load Course') }}</h4>
           <p>{{ error }}</p>
           <button @click="fetchCourse" class="btn btn-primary mt-3">
-            <i class="fas fa-refresh"></i> Try Again
+            <i class="fas fa-refresh"></i> {{ t('Try Again') }}
           </button>
           <Link href="/courses" class="btn btn-secondary mt-3 ms-2">
-            <i class="fas fa-arrow-left"></i> Back to Courses
+            <i class="fas fa-arrow-left"></i> {{ t('Back to Courses') }}
           </Link>
         </div>
       </div>
@@ -69,7 +69,7 @@
                     <div class="rating-badge d-flex align-items-center">
                       <i class="fas fa-star text-warning me-1"></i>
                       <span>4.5</span>
-                      <span class="text-muted ms-1">(12 reviews)</span>
+                      <span class="text-muted ms-1">(12 {{ t('reviews') }})</span>
                     </div>
                   </div>
                   <h1 class="course-title mb-3">{{ getCourseTitle(course) }}</h1>
@@ -79,11 +79,11 @@
                   <div class="course-meta d-flex flex-wrap gap-4 align-items-center">
                     <div class="instructor-info d-flex align-items-center">
                       <img :src="getInstructorAvatar(course.teacher)" :alt="getInstructorName(course.teacher)" class="instructor-avatar me-2">
-                      <span>By <strong>{{ getInstructorName(course.teacher) }}</strong></span>
+                      <span>{{ t('By') }} <strong>{{ getInstructorName(course.teacher) }}</strong></span>
                     </div>
                     <div class="student-count">
                       <i class="fas fa-users text-muted me-1"></i>
-                      {{ course.student_count || 0 }} students
+                      {{ course.student_count || 0 }} {{ t('students') }}
                     </div>
                     <div class="last-updated">
                       <i class="fas fa-calendar text-muted me-1"></i>
@@ -102,23 +102,23 @@
                   <ul class="nav nav-pills nav-fill" role="tablist">
                     <li class="nav-item" role="presentation">
                       <button class="nav-link active" @click="activeTab = 'overview'" :class="{ active: activeTab === 'overview' }">
-                        <i class="fas fa-info-circle me-2"></i>Overview
+                        <i class="fas fa-info-circle me-2"></i>{{ t('Overview') }}
                       </button>
                     </li>
                     <li class="nav-item" role="presentation">
                       <button class="nav-link" @click="activeTab = 'curriculum'" :class="{ active: activeTab === 'curriculum' }">
-                        <i class="fas fa-book me-2"></i>Curriculum
+                        <i class="fas fa-book me-2"></i>{{ t('Curriculum') }}
                       </button>
                     </li>
                     <li class="nav-item" role="presentation">
                       <button class="nav-link" @click="activeTab = 'subjects'" :class="{ active: activeTab === 'subjects' }">
-                        <i class="fas fa-book-open me-2"></i>Subjects
+                        <i class="fas fa-book-open me-2"></i>{{ t('Subjects') }}
                         <span v-if="otherSubjects.length > 0" class="badge bg-primary ms-2">{{ otherSubjects.length }}</span>
                       </button>
                     </li>
                     <li class="nav-item" role="presentation">
                       <button class="nav-link" @click="activeTab = 'instructor'" :class="{ active: activeTab === 'instructor' }">
-                        <i class="fas fa-user-tie me-2"></i>Instructor
+                        <i class="fas fa-user-tie me-2"></i>{{ t('Instructor') }}
                       </button>
                     </li>
                   </ul>
@@ -130,7 +130,7 @@
                   <div v-if="activeTab === 'overview'" class="tab-pane fade show active">
                     <div class="card border-0 shadow-sm">
                       <div class="card-body p-4">
-                        <h4 class="card-title mb-4">What you'll learn</h4>
+                        <h4 class="card-title mb-4">{{ t("What you'll learn") }}</h4>
                         <div class="learning-objectives">
                           <div class="row g-3">
                             <div class="col-md-6" v-for="(point, index) in getLearningPoints(course)" :key="index">
@@ -152,14 +152,14 @@
                   <div v-if="activeTab === 'curriculum'" class="tab-pane fade show active">
                     <div class="card border-0 shadow-sm">
                       <div class="card-body p-4">
-                        <h4 class="card-title mb-4">Course Content</h4>
+                        <h4 class="card-title mb-4">{{ t('Course Content') }}</h4>
                         <div class="accordion" id="curriculumAccordion">
                           <div class="accordion-item border-0 mb-3" v-for="(module, index) in getCourseModules(course)" :key="index">
                             <h3 class="accordion-header">
                               <button class="accordion-button collapsed bg-light fw-semibold" type="button" @click="toggleModule(index)">
                                 <i class="fas fa-play-circle me-3 text-primary"></i>
                                 {{ module.title }}
-                                <span class="badge bg-secondary ms-auto me-3">{{ module.lessons.length }} lessons</span>
+                                <span class="badge bg-secondary ms-auto me-3">{{ module.lessons.length }} {{ t('lessons') }}</span>
                               </button>
                             </h3>
                             <div v-show="openModule === index" class="accordion-collapse">
@@ -193,16 +193,16 @@
                     <div class="card border-0 shadow-sm">
                       <div class="card-body p-4">
                         <h4 class="card-title mb-4">
-                          Other Subjects in {{ getClassName(course) }}
-                          <small class="text-muted d-block mt-1">Click any subject to view its details</small>
+                          {{ t('Other Subjects in') }} {{ getClassName(course) }}
+                          <small class="text-muted d-block mt-1">{{ t('Click any subject to view its details') }}</small>
                         </h4>
                         
                         <!-- Loading State for Subjects -->
                         <div v-if="loadingSubjects" class="text-center py-4">
                           <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading subjects...</span>
+                            <span class="visually-hidden">{{ t('Loading...') }}</span>
                           </div>
-                          <p class="mt-2">Loading other subjects...</p>
+                          <p class="mt-2">{{ t('Loading other subjects...') }}</p>
                         </div>
 
                         <!-- Subjects List -->
@@ -233,7 +233,7 @@
                                 <div class="card-footer bg-transparent border-0 text-center">
                                   <small class="text-primary">
                                     <i class="fas fa-external-link-alt me-1"></i>
-                                    View Details
+                                    {{ t('View Details') }}
                                   </small>
                                 </div>
                               </div>
@@ -244,11 +244,11 @@
                         <!-- No Subjects State -->
                         <div v-if="!loadingSubjects && otherSubjects.length === 0" class="text-center py-5">
                           <i class="fas fa-book fa-3x text-muted mb-3"></i>
-                          <h5 class="text-muted">No other subjects available</h5>
-                          <p class="text-muted">This class currently has only this subject.</p>
+                          <h5 class="text-muted">{{ t('No other subjects available') }}</h5>
+                          <p class="text-muted">{{ t('This class currently has only this subject.') }}</p>
                           <Link href="/courses" class="btn btn-primary mt-3">
                             <i class="fas fa-search me-2"></i>
-                            Browse All Courses
+                            {{ t('Browse All Courses') }}
                           </Link>
                         </div>
                       </div>
@@ -269,27 +269,27 @@
                             <div class="rating mb-3">
                               <i class="fas fa-star text-warning"></i>
                               <span class="ms-1 fw-semibold">{{ getInstructorRating(course.teacher) }}</span>
-                              <span class="text-muted ms-1">Instructor Rating</span>
+                              <span class="text-muted ms-1">{{ t('Instructor Rating') }}</span>
                             </div>
                             <p class="mb-4">{{ getInstructorBio(course.teacher) }}</p>
                             <div class="instructor-stats d-flex gap-4 mb-4">
                               <div class="stat-item text-center">
                                 <div class="stat-number text-primary fw-bold">{{ getInstructorCoursesCount(course.teacher) }}</div>
-                                <div class="stat-label text-muted small">Courses</div>
+                                <div class="stat-label text-muted small">{{ t('Courses') }}</div>
                               </div>
                               <div class="stat-item text-center">
                                 <div class="stat-number text-primary fw-bold">{{ getInstructorStudentsCount(course.teacher) }}</div>
-                                <div class="stat-label text-muted small">Students</div>
+                                <div class="stat-label text-muted small">{{ t('Students') }}</div>
                               </div>
                               <div class="stat-item text-center">
                                 <div class="stat-number text-primary fw-bold">{{ getInstructorExperience(course.teacher) }}</div>
-                                <div class="stat-label text-muted small">Years Experience</div>
+                                <div class="stat-label text-muted small">{{ t('Years Experience') }}</div>
                               </div>
                             </div>
                             
                             <!-- Contact Information -->
                             <div v-if="getInstructorEmail(course.teacher)" class="instructor-contact mt-4">
-                              <h6 class="mb-3">Contact Information</h6>
+                              <h6 class="mb-3">{{ t('Contact Information') }}</h6>
                               <div class="contact-item d-flex align-items-center mb-2">
                                 <i class="fas fa-envelope text-muted me-3"></i>
                                 <span>{{ getInstructorEmail(course.teacher) }}</span>
@@ -320,15 +320,15 @@
                       </div>
                       <div class="p-4">
                         <div class="price-section text-center mb-3">
-                          <span class="text-muted d-block mb-1">Course Fee</span>
-                          <h3 class="text-primary mb-0">Free</h3>
+                          <span class="text-muted d-block mb-1">{{ t('Course Fee') }}</span>
+                          <h3 class="text-primary mb-0">{{ t('Free') }}</h3>
                         </div>
                         <button class="btn btn-primary w-100 btn-lg mb-3" @click="enrollCourse" :disabled="isEnrolled || loadingEnroll">
                           <span v-if="loadingEnroll" class="spinner-border spinner-border-sm me-2"></span>
-                          {{ isEnrolled ? 'Already Enrolled' : 'Enroll Now' }}
+                          {{ isEnrolled ? t('Already Enrolled') : t('Enroll Now') }}
                         </button>
                         <div class="text-center">
-                          <small class="text-muted">Start learning today</small>
+                          <small class="text-muted">{{ t('Start learning today') }}</small>
                         </div>
                       </div>
                     </div>
@@ -337,7 +337,7 @@
                   <!-- Course Features -->
                   <div class="card border-0 shadow-sm mb-4">
                     <div class="card-body">
-                      <h6 class="card-title mb-3">This course includes:</h6>
+                      <h6 class="card-title mb-3">{{ t('This course includes:') }}</h6>
                       <div class="course-features">
                         <div class="feature-item d-flex align-items-center mb-3" v-for="feature in getCourseFeatures(course)" :key="feature.text">
                           <i :class="feature.icon" class="text-primary me-3"></i>
@@ -350,27 +350,27 @@
                   <!-- Course Details -->
                   <div class="card border-0 shadow-sm">
                     <div class="card-body">
-                      <h6 class="card-title mb-3">Course Details</h6>
+                      <h6 class="card-title mb-3">{{ t('Course Details') }}</h6>
                       <div class="course-details-list">
                         <div class="detail-item d-flex justify-content-between py-2 border-bottom">
-                          <span class="text-muted">Level:</span>
+                          <span class="text-muted">{{ t('Level:') }}</span>
                           <span class="fw-semibold">{{ getCourseLevel(course) }}</span>
                         </div>
                         <div class="detail-item d-flex justify-content-between py-2 border-bottom">
-                          <span class="text-muted">Duration:</span>
+                          <span class="text-muted">{{ t('Duration:') }}</span>
                           <span class="fw-semibold">{{ getTotalDuration(course) }}</span>
                         </div>
                         <div class="detail-item d-flex justify-content-between py-2 border-bottom">
-                          <span class="text-muted">Lessons:</span>
+                          <span class="text-muted">{{ t('Lessons:') }}</span>
                           <span class="fw-semibold">{{ getTotalLessons(course) }}</span>
                         </div>
                         <div class="detail-item d-flex justify-content-between py-2 border-bottom">
-                          <span class="text-muted">Students:</span>
+                          <span class="text-muted">{{ t('Students:') }}</span>
                           <span class="fw-semibold">{{ course.student_count || 0 }}</span>
                         </div>
                         <div class="detail-item d-flex justify-content-between py-2">
-                          <span class="text-muted">Certificate:</span>
-                          <span class="fw-semibold text-success">Yes</span>
+                          <span class="text-muted">{{ t('Certificate:') }}</span>
+                          <span class="fw-semibold text-success">{{ t('Yes') }}</span>
                         </div>
                       </div>
                     </div>
@@ -379,7 +379,7 @@
                   <!-- Instructor Quick Info -->
                   <div class="card border-0 shadow-sm mt-4">
                     <div class="card-body">
-                      <h6 class="card-title mb-3">About the Instructor</h6>
+                      <h6 class="card-title mb-3">{{ t('About the Instructor') }}</h6>
                       <div class="instructor-quick-info">
                         <div class="d-flex align-items-center mb-3">
                           <img :src="getInstructorAvatar(course.teacher)" :alt="getInstructorName(course.teacher)" class="instructor-quick-avatar rounded-circle me-3">
@@ -392,15 +392,15 @@
                           <div class="row text-center">
                             <div class="col-4">
                               <div class="stat-number text-primary fw-bold">{{ getInstructorCoursesCount(course.teacher) }}</div>
-                              <div class="stat-label text-muted small">Courses</div>
+                              <div class="stat-label text-muted small">{{ t('Courses') }}</div>
                             </div>
                             <div class="col-4">
                               <div class="stat-number text-primary fw-bold">{{ getInstructorStudentsCount(course.teacher) }}</div>
-                              <div class="stat-label text-muted small">Students</div>
+                              <div class="stat-label text-muted small">{{ t('Students') }}</div>
                             </div>
                             <div class="col-4">
                               <div class="stat-number text-primary fw-bold">{{ getInstructorRating(course.teacher) }}</div>
-                              <div class="stat-label text-muted small">Rating</div>
+                              <div class="stat-label text-muted small">{{ t('Rating') }}</div>
                             </div>
                           </div>
                         </div>
@@ -411,7 +411,7 @@
                   <!-- Other Subjects Quick View -->
                   <div v-if="otherSubjects.length > 0" class="card border-0 shadow-sm mt-4">
                     <div class="card-body">
-                      <h6 class="card-title mb-3">Other Subjects</h6>
+                      <h6 class="card-title mb-3">{{ t('Other Subjects') }}</h6>
                       <div class="quick-subjects">
                         <div v-for="subject in otherSubjects.slice(0, 3)" :key="subject.id" 
                              class="quick-subject-item d-flex align-items-center mb-2 cursor-pointer"
@@ -422,7 +422,7 @@
                         </div>
                         <div v-if="otherSubjects.length > 3" class="text-center mt-2">
                           <small class="text-primary cursor-pointer" @click="activeTab = 'subjects'">
-                            +{{ otherSubjects.length - 3 }} more subjects
+                            +{{ otherSubjects.length - 3 }} {{ t('more subjects') }}
                           </small>
                         </div>
                       </div>
@@ -438,13 +438,11 @@
   </FrontendLayout>
 </template>
 
-
 <script>
-
 import { Link } from '@inertiajs/vue3'
 import FrontendLayout from '../Layout/FrontendLayout.vue'
 import { router, usePage } from '@inertiajs/vue3';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, getCurrentInstance } from 'vue';
 
 export default {
   name: 'CourseSingle',
@@ -467,6 +465,9 @@ export default {
     }
   },
   setup(props) {
+    // Get the Vue instance for accessing global properties
+    const { proxy } = getCurrentInstance()
+
     const page = usePage();
     const loading = ref(false);
     const loadingSubjects = ref(false);
@@ -477,28 +478,235 @@ export default {
     const subjects = ref([]);
     const isEnrolled = ref(props.isEnrolled);
     const currentCourse = ref(props.course);
+    const currentTheme = ref('light');
+    const currentLanguage = ref('bn'); // Default to Bengali
+
+    // Define translations object
+    const translations = {
+      en: {
+        'Course Details': 'Course Details',
+        'Home': 'Home',
+        'Courses': 'Courses',
+        'Loading...': 'Loading...',
+        'Loading course details...': 'Loading course details...',
+        'Unable to Load Course': 'Unable to Load Course',
+        'Try Again': 'Try Again',
+        'Back to Courses': 'Back to Courses',
+        'reviews': 'reviews',
+        'By': 'By',
+        'students': 'students',
+        'Overview': 'Overview',
+        'Curriculum': 'Curriculum',
+        'Subjects': 'Subjects',
+        'Instructor': 'Instructor',
+        "What you'll learn": "What you'll learn",
+        'Course Content': 'Course Content',
+        'lessons': 'lessons',
+        'Other Subjects in': 'Other Subjects in',
+        'Click any subject to view its details': 'Click any subject to view its details',
+        'Loading other subjects...': 'Loading other subjects...',
+        'View Details': 'View Details',
+        'No other subjects available': 'No other subjects available',
+        'This class currently has only this subject.': 'This class currently has only this subject.',
+        'Browse All Courses': 'Browse All Courses',
+        'Instructor Rating': 'Instructor Rating',
+        'Courses': 'Courses',
+        'Students': 'Students',
+        'Years Experience': 'Years Experience',
+        'Contact Information': 'Contact Information',
+        'Course Fee': 'Course Fee',
+        'Free': 'Free',
+        'Already Enrolled': 'Already Enrolled',
+        'Enroll Now': 'Enroll Now',
+        'Start learning today': 'Start learning today',
+        'This course includes:': 'This course includes:',
+        'Course Details': 'Course Details',
+        'Level:': 'Level:',
+        'Duration:': 'Duration:',
+        'Lessons:': 'Lessons:',
+        'Students:': 'Students:',
+        'Certificate:': 'Certificate:',
+        'Yes': 'Yes',
+        'About the Instructor': 'About the Instructor',
+        'Rating': 'Rating',
+        'Other Subjects': 'Other Subjects',
+        'more subjects': 'more subjects',
+        'Comprehensive understanding of core concepts': 'Comprehensive understanding of core concepts',
+        'Practical application of learned skills': 'Practical application of learned skills',
+        'Interactive learning materials and resources': 'Interactive learning materials and resources',
+        'Expert guidance and support': 'Expert guidance and support',
+        'Real-world projects and exercises': 'Real-world projects and exercises',
+        'Lifetime access to course materials': 'Lifetime access to course materials',
+        '45 on-demand videos': '45 on-demand videos',
+        'Downloadable resources': 'Downloadable resources',
+        'Full lifetime access': 'Full lifetime access',
+        'Access on mobile and desktop': 'Access on mobile and desktop',
+        'Certificate of completion': 'Certificate of completion',
+        'All Levels': 'All Levels',
+        'Beginner': 'Beginner',
+        'Intermediate': 'Intermediate',
+        'Advanced': 'Advanced',
+        'Primary': 'Primary',
+        'Junior': 'Junior',
+        'Secondary': 'Secondary',
+        'Higher Secondary': 'Higher Secondary',
+        'Skill Course': 'Skill Course',
+        'Subject Expert': 'Subject Expert',
+        'Expert Instructor': 'Expert Instructor',
+        'This comprehensive course is designed to provide you with practical skills and knowledge that you can apply immediately. Whether you\'re a beginner or looking to advance your skills, this course will help you achieve your learning goals.': 'This comprehensive course is designed to provide you with practical skills and knowledge that you can apply immediately. Whether you\'re a beginner or looking to advance your skills, this course will help you achieve your learning goals.',
+        'Develop problem-solving skills and mathematical thinking': 'Develop problem-solving skills and mathematical thinking',
+        'Explore scientific concepts and experimental methods': 'Explore scientific concepts and experimental methods',
+        'Improve language proficiency and communication skills': 'Improve language proficiency and communication skills',
+        'Master Bengali language and literature': 'Master Bengali language and literature',
+        'Understand society, culture, and human interactions': 'Understand society, culture, and human interactions'
+      },
+      bn: {
+        'Course Details': 'কোর্স বিবরণ',
+        'Home': 'হোম',
+        'Courses': 'কোর্সসমূহ',
+        'Loading...': 'লোড হচ্ছে...',
+        'Loading course details...': 'কোর্স বিবরণ লোড হচ্ছে...',
+        'Unable to Load Course': 'কোর্স লোড করতে ব্যর্থ',
+        'Try Again': 'আবার চেষ্টা করুন',
+        'Back to Courses': 'কোর্সে ফিরে যান',
+        'reviews': 'রিভিউ',
+        'By': 'দ্বারা',
+        'students': 'শিক্ষার্থী',
+        'Overview': 'ওভারভিউ',
+        'Curriculum': 'কারিকুলাম',
+        'Subjects': 'বিষয়',
+        'Instructor': 'ইন্সট্রাক্টর',
+        "What you'll learn": "আপনি যা শিখবেন",
+        'Course Content': 'কোর্স কন্টেন্ট',
+        'lessons': 'লেসন',
+        'Other Subjects in': 'অন্যান্য বিষয়',
+        'Click any subject to view its details': 'বিস্তারিত দেখতে যেকোনো বিষয়ে ক্লিক করুন',
+        'Loading other subjects...': 'অন্যান্য বিষয় লোড হচ্ছে...',
+        'View Details': 'বিস্তারিত দেখুন',
+        'No other subjects available': 'কোনো অন্যান্য বিষয় উপলব্ধ নেই',
+        'This class currently has only this subject.': 'এই ক্লাসে বর্তমানে শুধুমাত্র এই বিষয়টি রয়েছে।',
+        'Browse All Courses': 'সমস্ত কোর্স ব্রাউজ করুন',
+        'Instructor Rating': 'ইন্সট্রাক্টর রেটিং',
+        'Courses': 'কোর্স',
+        'Students': 'শিক্ষার্থী',
+        'Years Experience': 'বছরের অভিজ্ঞতা',
+        'Contact Information': 'যোগাযোগের তথ্য',
+        'Course Fee': 'কোর্স ফি',
+        'Free': 'ফ্রি',
+        'Already Enrolled': 'ইতিমধ্যে নিবন্ধিত',
+        'Enroll Now': 'এখনই নিবন্ধন করুন',
+        'Start learning today': 'আজই শেখা শুরু করুন',
+        'This course includes:': 'এই কোর্সে রয়েছে:',
+        'Course Details': 'কোর্স বিবরণ',
+        'Level:': 'লেভেল:',
+        'Duration:': 'সময়কাল:',
+        'Lessons:': 'লেসন:',
+        'Students:': 'শিক্ষার্থী:',
+        'Certificate:': 'সার্টিফিকেট:',
+        'Yes': 'হ্যাঁ',
+        'About the Instructor': 'ইন্সট্রাক্টর সম্পর্কে',
+        'Rating': 'রেটিং',
+        'Other Subjects': 'অন্যান্য বিষয়',
+        'more subjects': 'আরও বিষয়',
+        'Comprehensive understanding of core concepts': 'মৌলিক ধারণার ব্যাপক বোঝাপড়া',
+        'Practical application of learned skills': 'শেখা দক্ষতার ব্যবহারিক প্রয়োগ',
+        'Interactive learning materials and resources': 'ইন্টারেক্টিভ লার্নিং ম্যাটেরিয়াল এবং রিসোর্স',
+        'Expert guidance and support': 'বিশেষজ্ঞ নির্দেশনা এবং সমর্থন',
+        'Real-world projects and exercises': 'বাস্তব-বিশ্বের প্রকল্প এবং অনুশীলন',
+        'Lifetime access to course materials': 'কোর্স ম্যাটেরিয়ালে আজীবন অ্যাক্সেস',
+        '45 on-demand videos': '৪৫টি অন-ডিমান্ড ভিডিও',
+        'Downloadable resources': 'ডাউনলোডযোগ্য রিসোর্স',
+        'Full lifetime access': 'পূর্ণ আজীবন অ্যাক্সেস',
+        'Access on mobile and desktop': 'মোবাইল এবং ডেস্কটপে অ্যাক্সেস',
+        'Certificate of completion': 'সমাপ্তি সার্টিফিকেট',
+        'All Levels': 'সব লেভেল',
+        'Beginner': 'শুরু',
+        'Intermediate': 'মধ্যবর্তী',
+        'Advanced': 'এডভান্সড',
+        'Primary': 'প্রাথমিক',
+        'Junior': 'জুনিয়র',
+        'Secondary': 'সেকেন্ডারি',
+        'Higher Secondary': 'উচ্চ মাধ্যমিক',
+        'Skill Course': 'স্কিল কোর্স',
+        'Subject Expert': 'বিষয় বিশেষজ্ঞ',
+        'Expert Instructor': 'বিশেষজ্ঞ ইন্সট্রাক্টর',
+        'This comprehensive course is designed to provide you with practical skills and knowledge that you can apply immediately. Whether you\'re a beginner or looking to advance your skills, this course will help you achieve your learning goals.': 'এই বিস্তৃত কোর্সটি আপনাকে ব্যবহারিক দক্ষতা এবং জ্ঞান প্রদান করার জন্য ডিজাইন করা হয়েছে যা আপনি অবিলম্বে প্রয়োগ করতে পারেন। আপনি একজন শিক্ষানবিস হোন বা আপনার দক্ষতা উন্নত করতে চান, এই কোর্সটি আপনার শেখার লক্ষ্য অর্জনে সাহায্য করবে।',
+        'Develop problem-solving skills and mathematical thinking': 'সমস্যা সমাধানের দক্ষতা এবং গাণিতিক চিন্তাভাবনা বিকাশ করুন',
+        'Explore scientific concepts and experimental methods': 'বৈজ্ঞানিক ধারণা এবং পরীক্ষামূলক পদ্ধতি অন্বেষণ করুন',
+        'Improve language proficiency and communication skills': 'ভাষার দক্ষতা এবং যোগাযোগের দক্ষতা উন্নত করুন',
+        'Master Bengali language and literature': 'বাংলা ভাষা এবং সাহিত্য আয়ত্ত করুন',
+        'Understand society, culture, and human interactions': 'সমাজ, সংস্কৃতি এবং মানুষের মিথস্ক্রিয়া বুঝুন'
+      }
+    }
+
+    // Translation function
+    const t = (key, replacements = {}) => {
+      let translated = translations[currentLanguage.value]?.[key] || key
+      
+      Object.keys(replacements).forEach(replacementKey => {
+        translated = translated.replace(`{${replacementKey}}`, replacements[replacementKey])
+      })
+      
+      return translated
+    }
+
+    // Load language and theme preferences from localStorage
+    onMounted(() => {
+      const savedLang = localStorage.getItem('preferredLanguage')
+      if (savedLang && (savedLang === 'en' || savedLang === 'bn')) {
+        currentLanguage.value = savedLang
+      }
+      
+      const savedTheme = localStorage.getItem('preferredTheme')
+      if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
+        currentTheme.value = savedTheme
+      }
+      
+      // Listen for language changes from other components
+      window.addEventListener('languageChanged', (event) => {
+        currentLanguage.value = event.detail.language
+      })
+
+      // Listen for theme changes
+      window.addEventListener('themeChanged', handleThemeChange);
+
+      if (!props.course) {
+        fetchCourse();
+      }
+      fetchOtherSubjects();
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener('languageChanged', () => {})
+      window.removeEventListener('themeChanged', handleThemeChange);
+    });
+
+    // Handle theme changes
+    const handleThemeChange = (event) => {
+      currentTheme.value = event.detail.theme;
+    };
 
     // Get class name from course data
     const getClassName = (course) => {
-      if (!course) return 'This Class';
+      if (!course) return t('This Class');
       
       if (course.type === 'regular') {
         return course.name || `Class ${course.grade || ''}`;
       } else {
-        return course.name || 'This Course';
+        return course.name || t('This Course');
       }
     };
 
     // Get course title in "Class Name - Subject Name" format
     const getCourseTitle = (course) => {
-      if (!course) return 'Course Details';
+      if (!course) return t('Course Details');
       
       if (course.type === 'regular') {
         const className = course.name || `Class ${course.grade || ''}`;
         const subjectName = course.subject || 'General';
         return `${className} - ${subjectName}`;
       } else {
-        return course.name || course.class_name || 'Untitled Course';
+        return course.name || course.class_name || t('Untitled Course');
       }
     };
 
@@ -509,9 +717,9 @@ export default {
       }
       
       if (course.type === 'regular') {
-        return `Comprehensive ${course.subject || 'subject'} curriculum for ${course.name || `Class ${course.grade}`} students. This course covers all essential subjects and prepares students for academic success.`;
+        return t('Comprehensive curriculum for students. This course covers all essential subjects and prepares students for academic success.');
       } else {
-        return `Explore ${course.name || course.class_name || 'this course'} - ${course.category || 'Specialized course'}. Learn essential skills and knowledge from expert instructors.`;
+        return t('Explore this course - learn essential skills and knowledge from expert instructors.');
       }
     };
 
@@ -522,7 +730,7 @@ export default {
       if (teacher?.name) {
         return teacher.name;
       }
-      return 'Expert Instructor';
+      return t('Expert Instructor');
     };
 
     // Get instructor qualification
@@ -530,7 +738,7 @@ export default {
       if (teacher?.education_qualification) {
         return teacher.education_qualification;
       }
-      return 'Subject Expert';
+      return t('Subject Expert');
     };
 
     // Get instructor rating
@@ -547,9 +755,9 @@ export default {
         return teacher.bio;
       }
       if (teacher?.experience) {
-        return `Experienced instructor with ${teacher.experience} of teaching experience. Committed to providing quality education and helping learners achieve their goals through engaging and effective teaching methods.`;
+        return t('Experienced instructor with teaching experience. Committed to providing quality education and helping learners achieve their goals through engaging and effective teaching methods.');
       }
-      return 'Experienced instructor with years of expertise in teaching and mentoring students. Committed to providing quality education and helping learners achieve their goals through engaging and effective teaching methods.';
+      return t('Experienced instructor with years of expertise in teaching and mentoring students. Committed to providing quality education and helping learners achieve their goals through engaging and effective teaching methods.');
     };
 
     // Get instructor courses count
@@ -741,7 +949,7 @@ export default {
       try {
         await new Promise(resolve => setTimeout(resolve, 1000));
         isEnrolled.value = true;
-        alert('Successfully enrolled in the course!');
+        alert(t('Successfully enrolled in the course!'));
         
         const courseId = currentCourse.value?.id;
         if (courseId) {
@@ -749,7 +957,7 @@ export default {
         }
       } catch (err) {
         console.error('Error enrolling:', err);
-        alert('Failed to enroll. Please try again.');
+        alert(t('Failed to enroll. Please try again.'));
       } finally {
         loadingEnroll.value = false;
       }
@@ -765,18 +973,18 @@ export default {
     };
 
     const getCourseCategory = (course) => {
-      if (!course) return 'Course';
+      if (!course) return t('Course');
       if (course.type === 'regular') {
-        if (course.grade <= 5) return 'Primary';
-        if (course.grade <= 8) return 'Junior';
-        if (course.grade <= 10) return 'Secondary';
-        return 'Higher Secondary';
+        if (course.grade <= 5) return t('Primary');
+        if (course.grade <= 8) return t('Junior');
+        if (course.grade <= 10) return t('Secondary');
+        return t('Higher Secondary');
       }
-      return course.category || 'Skill Course';
+      return course.category || t('Skill Course');
     };
 
     const formatDate = (dateString) => {
-      if (!dateString) return 'Recently';
+      if (!dateString) return t('Recently');
       try {
         const date = new Date(dateString);
         return date.toLocaleDateString('en-US', { 
@@ -785,23 +993,23 @@ export default {
           day: 'numeric' 
         });
       } catch (error) {
-        return 'Recently';
+        return t('Recently');
       }
     };
 
     const getLearningPoints = (course) => {
       return [
-        'Comprehensive understanding of core concepts',
-        'Practical application of learned skills',
-        'Interactive learning materials and resources',
-        'Expert guidance and support',
-        'Real-world projects and exercises',
-        'Lifetime access to course materials'
+        t('Comprehensive understanding of core concepts'),
+        t('Practical application of learned skills'),
+        t('Interactive learning materials and resources'),
+        t('Expert guidance and support'),
+        t('Real-world projects and exercises'),
+        t('Lifetime access to course materials')
       ];
     };
 
     const getAdditionalInfo = (course) => {
-      return `This comprehensive course is designed to provide you with practical skills and knowledge that you can apply immediately. Whether you're a beginner or looking to advance your skills, this course will help you achieve your learning goals.`;
+      return t('This comprehensive course is designed to provide you with practical skills and knowledge that you can apply immediately. Whether you\'re a beginner or looking to advance your skills, this course will help you achieve your learning goals.');
     };
 
     const getCourseModules = (course) => {
@@ -856,44 +1064,44 @@ export default {
 
     const getSubjectDescription = (subjectName) => {
       const descriptions = {
-        'Mathematics': 'Develop problem-solving skills and mathematical thinking',
-        'Science': 'Explore scientific concepts and experimental methods',
-        'English': 'Improve language proficiency and communication skills',
-        'Bangla': 'Master Bengali language and literature',
-        'Social Studies': 'Understand society, culture, and human interactions',
-        'default': `Comprehensive ${subjectName} curriculum designed to build strong foundational knowledge and practical skills.`
+        'Mathematics': t('Develop problem-solving skills and mathematical thinking'),
+        'Science': t('Explore scientific concepts and experimental methods'),
+        'English': t('Improve language proficiency and communication skills'),
+        'Bangla': t('Master Bengali language and literature'),
+        'Social Studies': t('Understand society, culture, and human interactions'),
+        'default': t('Comprehensive curriculum designed to build strong foundational knowledge and practical skills.')
       };
       return descriptions[subjectName] || descriptions.default;
     };
 
     const handleLessonClick = (lesson) => {
       if (lesson.preview) {
-        alert(`Playing preview: ${lesson.title}`);
+        alert(`${t('Playing preview:')} ${lesson.title}`);
       } else if (!isEnrolled.value) {
         enrollCourse();
       } else {
-        alert(`Starting lesson: ${lesson.title}`);
+        alert(`${t('Starting lesson:')} ${lesson.title}`);
       }
     };
 
     const getCourseFeatures = (course) => {
       return [
-        { icon: 'fas fa-play-circle', text: '45 on-demand videos' },
-        { icon: 'fas fa-file-alt', text: 'Downloadable resources' },
-        { icon: 'fas fa-infinity', text: 'Full lifetime access' },
-        { icon: 'fas fa-mobile-alt', text: 'Access on mobile and desktop' },
-        { icon: 'fas fa-trophy', text: 'Certificate of completion' }
+        { icon: 'fas fa-play-circle', text: t('45 on-demand videos') },
+        { icon: 'fas fa-file-alt', text: t('Downloadable resources') },
+        { icon: 'fas fa-infinity', text: t('Full lifetime access') },
+        { icon: 'fas fa-mobile-alt', text: t('Access on mobile and desktop') },
+        { icon: 'fas fa-trophy', text: t('Certificate of completion') }
       ];
     };
 
     const getCourseLevel = (course) => {
-      if (!course) return 'All Levels';
+      if (!course) return t('All Levels');
       if (course.type === 'regular') {
-        if (course.grade <= 5) return 'Beginner';
-        if (course.grade <= 8) return 'Intermediate';
-        return 'Advanced';
+        if (course.grade <= 5) return t('Beginner');
+        if (course.grade <= 8) return t('Intermediate');
+        return t('Advanced');
       }
-      return 'All Levels';
+      return t('All Levels');
     };
 
     const getTotalDuration = (course) => {
@@ -903,14 +1111,6 @@ export default {
     const getTotalLessons = (course) => {
       return '45';
     };
-
-    // Initialize on mount
-    onMounted(async () => {
-      if (!props.course) {
-        await fetchCourse();
-      }
-      await fetchOtherSubjects();
-    });
 
     return {
       loading,
@@ -955,340 +1155,605 @@ export default {
       getCourseFeatures,
       getCourseLevel,
       getTotalDuration,
-      getTotalLessons
+      getTotalLessons,
+      currentTheme,
+      t,
+      currentLanguage
     };
   }
 }
 </script>
 
+<!-- Add language-specific CSS -->
 <style scoped>
-/* Updated styles for subjects with teachers */
-.subjects-grid {
-  margin-top: 1rem;
+/* ==================== */
+/* LANGUAGE SUPPORT */
+/* ==================== */
+.bn-lang .course-header,
+.bn-lang .card,
+.bn-lang .btn,
+.bn-lang .nav-link,
+.bn-lang .list-group-item {
+  font-family: 'Kalpurush', 'SolaimanLipi', 'Siyam Rupali', Arial, sans-serif;
 }
 
-.subject-card {
-  transition: all 0.3s ease;
-  border: 1px solid #e9ecef;
+.bn-lang .course-title {
+  line-height: 1.5;
 }
 
-.subject-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-  border-color: #4a6cf7;
+.bn-lang .course-description {
+  line-height: 1.7;
 }
 
-.subject-header {
-  border-bottom: 1px solid #e9ecef;
-  padding-bottom: 1rem;
+.bn-lang .learning-point {
+  line-height: 1.6;
 }
 
-.subject-icon {
-  color: #4a6cf7;
-}
-
-.subject-name {
-  font-weight: 600;
-  color: #2c3e50;
-}
-
-/* Teacher Info Styles */
-.teacher-info {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border-left: 4px solid #4a6cf7;
-}
-
-.teacher-avatar {
-  border: 2px solid #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.teacher-name {
-  font-weight: 600;
-  color: #2c3e50;
-  margin-bottom: 0.25rem;
-}
-
-.teacher-qualification {
-  font-size: 0.8rem;
-}
-
-.teacher-rating {
-  background: rgba(255, 193, 7, 0.1);
-  padding: 0.25rem 0.5rem;
-  border-radius: 15px;
-  font-size: 0.8rem;
-}
-
-/* Subject Details */
-.subject-description {
-  line-height: 1.4;
-  font-size: 0.85rem;
-}
-
-.subject-meta {
-  border-top: 1px solid #e9ecef;
-  padding-top: 0.75rem;
-}
-
-/* Teachers Summary in Sidebar */
-.teacher-summary-item {
-  padding: 0.5rem;
-  border-radius: 8px;
+/* Keep the rest of your existing CSS styles the same */
+/* ==================== */
+/* MAIN LAYOUT */
+/* ==================== */
+.main-area {
+  background: var(--bg-primary);
   transition: background-color 0.3s ease;
 }
 
-.teacher-summary-item:hover {
-  background-color: #f8f9fa;
-}
-
-.teacher-summary-avatar {
-  border: 2px solid #e9ecef;
-}
-
-.teacher-summary-name {
-  font-weight: 600;
-  color: #2c3e50;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .subjects-grid .col-md-6 {
-    margin-bottom: 1rem;
-  }
-  
-  .teacher-info {
-    padding: 0.75rem;
-  }
-}
-
-/* Enhanced card hover effects */
-.subject-card {
+/* ==================== */
+/* BREADCRUMB STYLES */
+/* ==================== */
+.breadcrumb__area {
   position: relative;
+  padding: 50px 0 50px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   overflow: hidden;
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
 }
 
-.subject-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 3px;
-  background: linear-gradient(90deg, #4a6cf7, #3a5bd9);
-  transition: left 0.3s ease;
+.breadcrumb__content {
+  text-align: center;
+  position: relative;
+  z-index: 3;
+  color: var(--text-primary);
 }
 
-.subject-card:hover::before {
-  left: 0;
+.breadcrumb__content .title {
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 15px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+  transition: color 0.3s ease;
 }
 
-/* Teacher avatar enhancements */
-.teacher-avatar, .teacher-summary-avatar {
-  object-fit: cover;
+.breadcrumb {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 500;
+  transition: color 0.3s ease;
 }
 
-/* Rating star enhancements */
-.teacher-rating i {
-  font-size: 0.7rem;
+.breadcrumb a {
+  color: var(--text-primary);
+  text-decoration: none;
+  opacity: 0.8;
+  transition: opacity 0.3s ease, color 0.3s ease;
 }
 
-/* Add new styles for subjects */
-.subjects-grid {
-  margin-top: 1rem;
+.breadcrumb a:hover {
+  opacity: 1;
+  color: var(--primary-color);
 }
 
+.breadcrumb-separator {
+  color: var(--text-muted);
+  opacity: 0.8;
+  margin: 0 10px;
+  font-size: 14px;
+  transition: color 0.3s ease;
+}
+
+.breadcrumb span:not(.breadcrumb-separator) {
+  color: var(--text-primary);
+  opacity: 1;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+/* ==================== */
+/* MAIN LAYOUT */
+/* ==================== */
+.main-area {
+  background: var(--bg-primary);
+  transition: background-color 0.3s ease;
+}
+
+/* ==================== */
+/* BREADCRUMB STYLES */
+/* ==================== */
+.breadcrumb__area {
+  position: relative;
+  padding: 50px 0 50px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  overflow: hidden;
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
+}
+
+.breadcrumb__content {
+  text-align: center;
+  position: relative;
+  z-index: 3;
+  color: var(--text-primary);
+}
+
+.breadcrumb__content .title {
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 15px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+  transition: color 0.3s ease;
+}
+
+.breadcrumb {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.breadcrumb a {
+  color: var(--text-primary);
+  text-decoration: none;
+  opacity: 0.8;
+  transition: opacity 0.3s ease, color 0.3s ease;
+}
+
+.breadcrumb a:hover {
+  opacity: 1;
+  color: var(--primary-color);
+}
+
+.breadcrumb-separator {
+  color: var(--text-muted);
+  opacity: 0.8;
+  margin: 0 10px;
+  font-size: 14px;
+  transition: color 0.3s ease;
+}
+
+.breadcrumb span:not(.breadcrumb-separator) {
+  color: var(--text-primary);
+  opacity: 1;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+/* ==================== */
+/* COURSE DETAILS AREA */
+/* ==================== */
+.courses__details-area {
+  background: var(--bg-primary);
+  padding: 80px 0;
+  transition: background-color 0.3s ease;
+}
+
+/* ==================== */
+/* COURSE HEADER */
+/* ==================== */
+.course-header {
+  background: var(--bg-secondary);
+  padding: 2rem;
+  border-radius: 15px;
+  margin-bottom: 2rem;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.course-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+  transition: color 0.3s ease;
+}
+
+.course-description {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  transition: color 0.3s ease;
+}
+
+/* ==================== */
+/* TABS */
+/* ==================== */
+.course-tabs .nav-pills .nav-link {
+  padding: 1rem 1.5rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.course-tabs .nav-pills .nav-link.active {
+  background: var(--primary-color);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px color-mix(in srgb, var(--primary-color) 30%, transparent);
+  border-color: var(--primary-color);
+}
+
+.course-tabs .nav-pills .nav-link:hover:not(.active) {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* ==================== */
+/* CARDS */
+/* ==================== */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.card-title {
+  color: var(--text-primary);
+  transition: color 0.3s ease;
+}
+
+/* ==================== */
+/* ACCORDION */
+/* ==================== */
+.accordion-button {
+  padding: 1.25rem;
+  font-weight: 600;
+  border: none;
+  box-shadow: none;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+}
+
+.accordion-button:not(.collapsed) {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.accordion-button:hover {
+  background: var(--bg-tertiary);
+}
+
+/* ==================== */
+/* SUBJECT CARDS */
+/* ==================== */
 .subject-card {
   transition: all 0.3s ease;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  cursor: pointer;
 }
 
 .subject-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-  border-color: #4a6cf7;
-}
-
-.subject-icon {
-  color: #4a6cf7;
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-color);
 }
 
 .subject-name {
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--text-primary);
+  transition: color 0.3s ease;
+}
+
+.subject-card:hover .subject-name {
+  color: var(--primary-color);
 }
 
 .subject-description {
-  line-height: 1.4;
+  color: var(--text-secondary);
+  transition: color 0.3s ease;
 }
 
-.subjects-summary .small {
-  font-size: 0.85rem;
+/* ==================== */
+/* BADGES */
+/* ==================== */
+.badge {
+  font-size: 0.8rem;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
 }
 
-/* Ensure the new tab content is properly styled */
-.tab-content {
-  min-height: 400px;
+.badge.bg-primary {
+  background: var(--primary-color) !important;
 }
 
-/* Responsive adjustments for subjects */
-@media (max-width: 768px) {
-  .subjects-grid .col-md-6 {
-    margin-bottom: 1rem;
-  }
+.badge.bg-secondary {
+  background: var(--text-muted) !important;
 }
 
+.badge.bg-light {
+  background: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+}
 
-/* Improved CSS with better organization and modern design */
+/* ==================== */
+/* BUTTONS */
+/* ==================== */
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  border: none;
+  padding: 1rem 2rem;
+  font-weight: 600;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--primary-color) 40%, transparent);
+  background: linear-gradient(135deg, var(--primary-hover), color-mix(in srgb, var(--primary-hover) 80%, black));
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, var(--text-muted), color-mix(in srgb, var(--text-muted) 80%, black));
+  border: none;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--text-muted) 80%, black), color-mix(in srgb, var(--text-muted) 60%, black));
+  transform: translateY(-2px);
+}
+
+/* ==================== */
+/* TEXT COLORS */
+/* ==================== */
+.text-primary {
+  color: var(--primary-color) !important;
+}
+
+.text-muted {
+  color: var(--text-muted) !important;
+  transition: color 0.3s ease;
+}
+
+.text-success {
+  color: var(--success-color) !important;
+}
+
+.text-warning {
+  color: var(--warning-color) !important;
+}
+
+/* ==================== */
+/* LOADING & ERROR STATES */
+/* ==================== */
 .loading-container, .error-container {
   min-height: 50vh;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  background: var(--bg-primary);
+  transition: background-color 0.3s ease;
 }
 
 .error-container .alert {
   max-width: 600px;
   margin: 0 auto;
+  background: var(--card-bg);
+  border-color: var(--border-color);
+  color: var(--text-primary);
 }
 
-/* Course Header */
-.course-header {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  padding: 2rem;
-  border-radius: 15px;
-  margin-bottom: 2rem;
-}
-
-.course-title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #2c3e50;
-  line-height: 1.2;
-}
-
-.course-description {
-  font-size: 1.1rem;
-  line-height: 1.6;
-}
-
-/* Instructor Info */
-.instructor-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-/* Tabs */
-.course-tabs .nav-pills .nav-link {
-  padding: 1rem 1.5rem;
-  font-weight: 600;
-  color: #6c757d;
-  border-radius: 10px;
-  transition: all 0.3s ease;
-}
-
-.course-tabs .nav-pills .nav-link.active {
-  background: #4a6cf7;
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(74, 108, 247, 0.3);
-}
-
-/* Learning Objectives */
-.learning-point {
-  line-height: 1.5;
-}
-
-/* Accordion */
-.accordion-button {
-  padding: 1.25rem;
-  font-weight: 600;
-  border: none;
-  box-shadow: none;
-}
-
-.accordion-button:not(.collapsed) {
-  background: #f8f9fa;
-  color: #2c3e50;
-}
-
-/* Instructor Main Image */
-.instructor-main-img {
-  border: 4px solid #e9ecef;
-  padding: 4px;
-}
-
-/* Reviews */
-.rating-stars {
-  font-size: 1.2rem;
-}
-
-.rating-small {
-  font-size: 0.9rem;
-}
-
-.review-avatar {
-  width: 40px;
-  height: 40px;
-  object-fit: cover;
-}
-
-/* Sidebar */
+/* ==================== */
+/* SIDEBAR */
+/* ==================== */
 .sticky-sidebar {
   position: sticky;
   top: 100px;
 }
 
-/* Preview Video */
-.preview-video {
-  border-radius: 15px 15px 0 0;
-  overflow: hidden;
+.courses__details-sidebar .card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
 }
 
-.video-play-btn {
-  width: 70px;
-  height: 70px;
-  background: rgba(74, 108, 247, 0.9);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 1.5rem;
-  text-decoration: none;
-  transition: all 0.3s ease;
-}
-
-.video-play-btn:hover {
-  background: #3a5bd9;
-  transform: scale(1.1);
-  color: white;
-}
-
-/* Price Section */
-.price-section h3 {
-  font-size: 2.5rem;
-  font-weight: 700;
-}
-
-/* Course Features */
+/* ==================== */
+/* COURSE FEATURES */
+/* ==================== */
 .feature-item {
   padding: 0.5rem 0;
+  color: var(--text-primary);
+  transition: color 0.3s ease;
 }
 
-/* Social Sharing */
-.social-sharing .btn {
+/* ==================== */
+/* COURSE DETAILS LIST */
+/* ==================== */
+.course-details-list .detail-item {
+  border-bottom-color: var(--border-color);
+  transition: border-color 0.3s ease;
+}
+
+.course-details-list .detail-item:last-child {
+  border-bottom: none;
+}
+
+/* ==================== */
+/* INSTRUCTOR STYLES */
+/* ==================== */
+.instructor-quick-avatar {
   width: 40px;
   height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  object-fit: cover;
 }
 
-/* Responsive Design */
+.instructor-main-img {
+  border: 4px solid var(--border-color);
+  padding: 4px;
+  transition: border-color 0.3s ease;
+}
+
+/* ==================== */
+/* QUICK SUBJECTS */
+/* ==================== */
+.quick-subject-item {
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
+  color: var(--text-primary);
+}
+
+.quick-subject-item:hover {
+  background: var(--bg-secondary);
+}
+
+/* ==================== */
+/* LIST GROUP */
+/* ==================== */
+.list-group-item {
+  border: none;
+  padding: 1rem 1.25rem;
+  transition: all 0.3s ease;
+  background: var(--card-bg);
+  color: var(--text-primary);
+}
+
+.list-group-item:hover {
+  background: var(--bg-secondary);
+  transform: translateX(5px);
+}
+
+/* ==================== */
+/* BREADCRUMB SHAPES */
+/* ==================== */
+.breadcrumb__shape-wrap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.breadcrumb__shape-wrap img {
+  position: absolute;
+  max-width: none;
+  opacity: 0.3;
+}
+
+.breadcrumb__shape-wrap img:nth-child(1) {
+  top: 20%;
+  left: 8%;
+  width: 120px;
+  z-index: 1;
+}
+
+.breadcrumb__shape-wrap img:nth-child(2) {
+  top: 35%;
+  right: 20%;
+  width: 80px;
+  z-index: 1;
+}
+
+.breadcrumb__shape-wrap img:nth-child(3) {
+  bottom: 1%;
+  left: 32%;
+  width: 100px;
+  z-index: 1;
+}
+
+.breadcrumb__shape-wrap img:nth-child(4) {
+  bottom: 2%;
+  right: 40%;
+  width: 90px;
+  z-index: 1;
+}
+
+.breadcrumb__shape-wrap img:nth-child(5) {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 150px;
+  z-index: 1;
+}
+
+/* Animation for specific elements */
+.alltuchtopdown {
+  animation: alltuchtopdown 5s infinite linear;
+}
+
+@keyframes alltuchtopdown {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-30px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+/* ==================== */
+/* DARK THEME ENHANCEMENTS */
+/* ==================== */
+.dark-theme .breadcrumb__area {
+  background-color: var(--bg-secondary);
+}
+
+.dark-theme .course-header {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
+.dark-theme .accordion-button {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.dark-theme .subject-card .badge.bg-light {
+  background: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark-theme .quick-subject-item:hover {
+  background: var(--bg-tertiary);
+}
+
+/* ==================== */
+/* RESPONSIVE DESIGN */
+/* ==================== */
 @media (max-width: 768px) {
   .course-title {
     font-size: 2rem;
@@ -1306,261 +1771,66 @@ export default {
   .sticky-sidebar {
     position: static;
   }
-}
-
-/* Animation for better UX */
-.card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
-}
-
-/* Custom badges */
-.badge {
-  font-size: 0.8rem;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-}
-
-/* Improved button styles */
-.btn-primary {
-  background: linear-gradient(135deg, #4a6cf7 0%, #3a5bd9 100%);
-  border: none;
-  padding: 1rem 2rem;
-  font-weight: 600;
-  border-radius: 10px;
-  transition: all 0.3s ease;
-}
-
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(74, 108, 247, 0.4);
-}
-
-/* Better list group items */
-.list-group-item {
-  border: none;
-  padding: 1rem 1.25rem;
-  transition: all 0.3s ease;
-}
-
-.list-group-item:hover {
-  background: #f8f9fa;
-  transform: translateX(5px);
-}
-
-/* Enhanced subject card styles */
-.hover-card {
-  transition: all 0.3s ease;
-  cursor: pointer;
-  border: 2px solid transparent;
-}
-
-.hover-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(74, 108, 247, 0.15);
-  border-color: #4a6cf7;
-}
-
-.subject-icon-wrapper {
-  width: 50px;
-  height: 50px;
-  background: rgba(74, 108, 247, 0.1);
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.subject-name {
-  font-weight: 600;
-  color: #2c3e50;
-  transition: color 0.3s ease;
-}
-
-.hover-card:hover .subject-name {
-  color: #4a6cf7;
-}
-
-/* Current subject info styles */
-.current-subject-info {
-  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-  border-radius: 10px;
-}
-
-/* Badge enhancements */
-.badge {
-  font-size: 0.75rem;
-  padding: 0.4rem 0.8rem;
-  border-radius: 20px;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .subject-icon-wrapper {
-    width: 40px;
-    height: 40px;
+  
+  .breadcrumb__content .title {
+    font-size: 2rem;
   }
   
-  .subject-icon-wrapper i {
-    font-size: 1rem !important;
+  .breadcrumb {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .courses__details-area {
+    padding: 40px 0;
   }
   
-  .hover-card .card-body {
-    padding: 1rem;
+  .course-title {
+    font-size: 1.75rem;
+  }
+  
+  .course-tabs .nav-pills {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .course-tabs .nav-pills .nav-link {
+    width: 100%;
   }
 }
 
 /* ==================== */
-/* BREADCRUMB STYLES */
+/* ACCESSIBILITY */
 /* ==================== */
-
-.breadcrumb__area {
-  position: relative;
-  padding: 50px 0 50px;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  overflow: hidden;
-  color: #000000;
-}
-
-.breadcrumb__content {
-  text-align: center;
-  position: relative;
-  z-index: 3;
-  color: #000000;
-}
-
-.breadcrumb__content .title {
-  font-size: 48px;
-  font-weight: 700;
-  color: #000000;
-  margin-bottom: 15px;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
-}
-
-.breadcrumb {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  color: #000000;
-  font-size: 16px;
-  font-weight: 500;
-}
-
-.breadcrumb a {
-  color: #000000;
-  text-decoration: none;
-  opacity: 0.8;
-  transition: opacity 0.3s ease;
-}
-
-.breadcrumb a:hover {
-  opacity: 1;
-  color: #000000;
-}
-
-.breadcrumb-separator {
-  color: #000000;
-  opacity: 0.8;
-  margin: 0 10px;
-  font-size: 14px;
-}
-
-.breadcrumb span:not(.breadcrumb-separator) {
-  color: #000000;
-  opacity: 1;
-  font-weight: 600;
+.btn:focus,
+.nav-link:focus,
+.accordion-button:focus {
+  outline: 3px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
+  outline-offset: 2px;
 }
 
 /* ==================== */
-/* BREADCRUMB SHAPE POSITIONING */
+/* REDUCED MOTION */
 /* ==================== */
-
-.breadcrumb__shape-wrap {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-  overflow: hidden;
-  z-index: 1;
-}
-
-.breadcrumb__shape-wrap img {
-  position: absolute;
-  max-width: none;
-}
-
-/* Position each shape individually with pixel values */
-.breadcrumb__shape-wrap img:nth-child(1) {
-  /* breadcrumb_shape01.svg */
-  top: 20%;
-  left: 8%;
-  width: 120px;
-  z-index: 1;
-}
-
-.breadcrumb__shape-wrap img:nth-child(2) {
-  /* breadcrumb_shape02.svg */
-  top: 35%;
-  right: 20%;
-  width: 80px;
-  z-index: 1;
-}
-.breadcrumb__shape-wrap img:nth-child(3) {
-  /* breadcrumb_shape03.png */
-  bottom: 1%;
-  left: 32%;
-  width: 100px;
-  z-index: 1;
-}
-
-.breadcrumb__shape-wrap img:nth-child(4) {
-  /* breadcrumb_shape04.png */
-  bottom: 2%;
-  right: 40%;
-  width: 90px;
-  z-index: 1;
-}
-
-.breadcrumb__shape-wrap img:nth-child(5) {
-  /* breadcrumb_shape05.svg */
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 150px;
-  z-index: 1;
-}
-
-/* Animation for specific elements */
-.alltuchtopdown {
-  animation: alltuchtopdown 5s infinite linear;
-}
-
-/* Animation keyframes */
-@keyframes alltuchtopdown {
-  0% {
-    transform: translateY(0px);
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .subject-card,
+  .btn,
+  .nav-link,
+  .list-group-item {
+    transition: none;
   }
-  50% {
-    transform: translateY(-30px);
+  
+  .card:hover,
+  .subject-card:hover,
+  .btn:hover:not(:disabled) {
+    transform: none;
   }
-  100% {
-    transform: translateY(0px);
+  
+  .alltuchtopdown {
+    animation: none;
   }
-}
-
-/* AOS animations for other shapes */
-.breadcrumb__shape-wrap img[data-aos] {
-  opacity: 0.7;
 }
 </style>

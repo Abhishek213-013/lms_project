@@ -1766,4 +1766,391 @@ class TeacherController extends Controller
     {
         return strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $name)));
     }
+
+
+    // ============ NEW METHODS FOR SIDEBAR NAVIGATION ============
+
+    /**
+     * Display teacher classes list
+     */
+    public function classesList(): Response
+    {
+        $teacher = Auth::user();
+        
+        $classes = ClassModel::where('teacher_id', $teacher->id)
+            ->withCount('students')
+            ->get()
+            ->map(function ($class) {
+                return [
+                    'id' => $class->id,
+                    'name' => $class->name,
+                    'subject' => $class->subject,
+                    'grade' => $class->grade,
+                    'studentCount' => $class->students_count,
+                    'schedule' => $class->schedule ? 'Custom Schedule' : 'Not Scheduled',
+                    'status' => $class->status,
+                    'description' => $class->description,
+                ];
+            });
+
+        return Inertia::render('Teacher/Classes/Index', [
+            'user' => $teacher,
+            'classes' => $classes,
+        ]);
+    }
+
+    /**
+     * Display teacher student roster
+     */
+    public function studentRoster(): Response
+    {
+        $teacher = Auth::user();
+        
+        // Get all classes for this teacher with their students
+        $classesWithStudents = ClassModel::where('teacher_id', $teacher->id)
+            ->with(['students.user:id,name,email,phone'])
+            ->withCount('students')
+            ->get()
+            ->map(function ($class) {
+                return [
+                    'id' => $class->id,
+                    'name' => $class->name,
+                    'subject' => $class->subject,
+                    'grade' => $class->grade,
+                    'studentCount' => $class->students_count,
+                    'students' => $class->students->map(function ($student) {
+                        return [
+                            'id' => $student->id,
+                            'name' => $student->user->name ?? 'Unknown Student',
+                            'email' => $student->user->email ?? 'No email',
+                            'phone' => $student->user->phone ?? 'No phone',
+                            'roll_number' => $student->roll_number,
+                            'enrollment_date' => $student->created_at->format('Y-m-d'),
+                        ];
+                    })
+                ];
+            });
+
+        return Inertia::render('Teacher/Students/Roster', [
+            'user' => $teacher,
+            'classesWithStudents' => $classesWithStudents,
+        ]);
+    }
+
+    /**
+     * Display teacher resources list
+     */
+    public function teacherResources(): Response
+    {
+        $teacher = Auth::user();
+        
+        $resources = Resource::where('teacher_id', $teacher->id)
+            ->with(['class:id,name'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($resource) {
+                $fileInfo = [];
+                
+                if ($resource->file_path) {
+                    try {
+                        $fileSize = Storage::disk('public')->size($resource->file_path);
+                        $fileInfo['size'] = $this->formatFileSize($fileSize);
+                    } catch (\Exception $e) {
+                        $fileInfo['size'] = 'Unknown';
+                    }
+                }
+
+                return [
+                    'id' => $resource->id,
+                    'title' => $resource->title,
+                    'type' => $resource->type,
+                    'description' => $resource->description,
+                    'file_info' => $fileInfo,
+                    'file_path' => $resource->file_path,
+                    'thumbnail_path' => $resource->thumbnail_path,
+                    'content' => $resource->content,
+                    'download_count' => $resource->download_count ?? 0,
+                    'created_at' => $resource->created_at->toISOString(),
+                    'class' => $resource->class ? $resource->class->name : 'General',
+                    'status' => $resource->status,
+                ];
+            });
+
+        return Inertia::render('Teacher/Resources/Index', [
+            'user' => $teacher,
+            'resources' => $resources,
+        ]);
+    }
+
+    /**
+     * Display shared resources
+     */
+    public function sharedResources(): Response
+    {
+        $teacher = Auth::user();
+        
+        // Get resources shared by other teachers (excluding current teacher)
+        $sharedResources = Resource::where('teacher_id', '!=', $teacher->id)
+            ->where('status', 'active')
+            ->with(['teacher:id,name,email', 'class:id,name'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($resource) {
+                $fileInfo = [];
+                
+                if ($resource->file_path) {
+                    try {
+                        $fileSize = Storage::disk('public')->size($resource->file_path);
+                        $fileInfo['size'] = $this->formatFileSize($fileSize);
+                    } catch (\Exception $e) {
+                        $fileInfo['size'] = 'Unknown';
+                    }
+                }
+
+                return [
+                    'id' => $resource->id,
+                    'title' => $resource->title,
+                    'type' => $resource->type,
+                    'description' => $resource->description,
+                    'file_info' => $fileInfo,
+                    'file_path' => $resource->file_path,
+                    'thumbnail_path' => $resource->thumbnail_path,
+                    'content' => $resource->content,
+                    'download_count' => $resource->download_count ?? 0,
+                    'created_at' => $resource->created_at->toISOString(),
+                    'teacher' => $resource->teacher,
+                    'class' => $resource->class ? $resource->class->name : 'General',
+                ];
+            });
+
+        return Inertia::render('Teacher/Resources/Shared', [
+            'user' => $teacher,
+            'sharedResources' => $sharedResources,
+        ]);
+    }
+
+    /**
+     * Store a newly created resource (for the upload form)
+     */
+    public function storeResource(Request $request)
+    {
+        try {
+            Log::info("📡 [RESOURCE STORE] Starting resource creation");
+            Log::info("📡 [RESOURCE STORE] Request data:", $request->all());
+
+            $teacherId = Auth::id();
+
+            $validator = Validator::make($request->all(), [
+                'title' => 'required|string|max:255',
+                'type' => 'required|in:video,pdf,document,link',
+                'description' => 'nullable|string|max:1000',
+                'assigned_class' => 'nullable|exists:classes,id',
+                'content' => 'required_if:type,video,link|string|max:1000',
+                'file' => 'required_if:type,pdf,document|file|max:512000', // 500MB
+                'thumbnail' => 'nullable|image|max:2048'
+            ], [
+                'title.required' => 'The title field is required.',
+                'type.required' => 'Please select a resource type.',
+                'content.required_if' => 'Please provide a URL for video or link resources.',
+                'file.required_if' => 'Please upload a file for PDF or document resources.',
+                'file.max' => 'The file size must not exceed 500MB.',
+                'assigned_class.exists' => 'The selected class does not exist.',
+                'thumbnail.image' => 'The thumbnail must be an image.',
+                'thumbnail.max' => 'The thumbnail size must not exceed 2MB.'
+            ]);
+
+            if ($validator->fails()) {
+                Log::error("❌ [RESOURCE STORE] Validation failed:", $validator->errors()->toArray());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please check your input and try again.',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            Log::info("✅ [RESOURCE STORE] Validation passed");
+
+            $filePath = null;
+            $thumbnailPath = null;
+            $content = $request->content;
+
+            // Handle file upload for PDF and document types
+            if ($request->hasFile('file') && in_array($request->type, ['pdf', 'document'])) {
+                try {
+                    $file = $request->file('file');
+                    $fileName = time() . '_' . uniqid() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
+                    $filePath = $file->storeAs('resources', $fileName, 'public');
+                    Log::info("✅ [RESOURCE STORE] File stored at: {$filePath}");
+                } catch (\Exception $fileError) {
+                    Log::error("❌ [RESOURCE STORE] File storage error: " . $fileError->getMessage());
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Failed to upload file: ' . $fileError->getMessage()
+                    ], 500);
+                }
+            }
+
+            // Handle YouTube thumbnail for video links
+            if ($request->type === 'video' && $this->isYouTubeUrl($content)) {
+                $videoId = $this->getYouTubeVideoId($content);
+                if ($videoId) {
+                    $thumbnailPath = "youtube_{$videoId}";
+                    Log::info("✅ [RESOURCE STORE] YouTube video detected, thumbnail: {$thumbnailPath}");
+                }
+            }
+
+            // Handle custom thumbnail upload (optional)
+            if ($request->hasFile('thumbnail') && $request->file('thumbnail')->isValid()) {
+                try {
+                    $thumbnail = $request->file('thumbnail');
+                    $thumbnailName = 'thumb_' . time() . '_' . uniqid() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $thumbnail->getClientOriginalName());
+                    $thumbnailPath = $thumbnail->storeAs('thumbnails', $thumbnailName, 'public');
+                    Log::info("✅ [RESOURCE STORE] Custom thumbnail stored at: {$thumbnailPath}");
+                } catch (\Exception $thumbError) {
+                    Log::error("❌ [RESOURCE STORE] Thumbnail storage error: " . $thumbError->getMessage());
+                }
+            }
+
+            try {
+                $resource = Resource::create([
+                    'title' => $request->title,
+                    'type' => $request->type,
+                    'description' => $request->description,
+                    'content' => $content,
+                    'file_path' => $filePath,
+                    'thumbnail_path' => $thumbnailPath,
+                    'teacher_id' => $teacherId,
+                    'class_id' => $request->assigned_class,
+                    'status' => 'active',
+                    'download_count' => 0
+                ]);
+
+                Log::info("✅ [RESOURCE STORE] Resource created successfully: ID {$resource->id}");
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Resource uploaded successfully',
+                    'data' => [
+                        'id' => $resource->id,
+                        'title' => $resource->title,
+                        'type' => $resource->type,
+                        'description' => $resource->description,
+                        'file_path' => $resource->file_path,
+                        'thumbnail_path' => $resource->thumbnail_path,
+                        'content' => $resource->content,
+                        'download_count' => $resource->download_count,
+                        'created_at' => $resource->created_at
+                    ]
+                ]);
+
+            } catch (\Exception $dbError) {
+                Log::error("❌ [RESOURCE STORE] Database error: " . $dbError->getMessage());
+                
+                // Clean up uploaded files if any
+                if ($filePath && Storage::disk('public')->exists($filePath)) {
+                    Storage::disk('public')->delete($filePath);
+                }
+                if ($thumbnailPath && Storage::disk('public')->exists($thumbnailPath)) {
+                    Storage::disk('public')->delete($thumbnailPath);
+                }
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to save resource: ' . $dbError->getMessage()
+                ], 500);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('❌ [RESOURCE STORE] Unexpected error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An unexpected error occurred: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Share a resource with other teachers
+     */
+    public function shareResource(Request $request, $resourceId)
+    {
+        try {
+            $resource = Resource::where('id', $resourceId)
+                ->where('teacher_id', Auth::id())
+                ->firstOrFail();
+
+            $resource->update([
+                'is_shared' => true,
+                'shared_at' => now()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Resource shared successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error sharing resource: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to share resource'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get shared resources for API
+     */
+    public function getSharedResources()
+    {
+        try {
+            $teacherId = Auth::id();
+            
+            $sharedResources = Resource::where('teacher_id', '!=', $teacherId)
+                ->where('status', 'active')
+                ->where('is_shared', true)
+                ->with(['teacher:id,name,email', 'class:id,name'])
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($resource) {
+                    $fileInfo = [];
+                    
+                    if ($resource->file_path) {
+                        try {
+                            $fileSize = Storage::disk('public')->size($resource->file_path);
+                            $fileInfo['size'] = $this->formatFileSize($fileSize);
+                        } catch (\Exception $e) {
+                            $fileInfo['size'] = 'Unknown';
+                        }
+                    }
+
+                    return [
+                        'id' => $resource->id,
+                        'title' => $resource->title,
+                        'type' => $resource->type,
+                        'description' => $resource->description,
+                        'file_info' => $fileInfo,
+                        'file_path' => $resource->file_path,
+                        'thumbnail_path' => $resource->thumbnail_path,
+                        'content' => $resource->content,
+                        'download_count' => $resource->download_count ?? 0,
+                        'created_at' => $resource->created_at->toISOString(),
+                        'teacher' => $resource->teacher,
+                        'class' => $resource->class ? $resource->class->name : 'General',
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $sharedResources
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching shared resources: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch shared resources'
+            ], 500);
+        }
+    }
 }

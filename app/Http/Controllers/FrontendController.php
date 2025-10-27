@@ -10,7 +10,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -43,7 +42,6 @@ class FrontendController extends Controller
                     ];
                 });
 
-            // FIXED: Only select columns that exist in users table
             $instructors = User::where('role', 'teacher')
                 ->select(['id', 'name', 'username', 'education_qualification', 'institute', 'experience'])
                 ->limit(8)
@@ -123,8 +121,6 @@ class FrontendController extends Controller
         }
     }
 
-    // Courses page
-    // Courses page
     public function courses(Request $request): Response
     {
         try {
@@ -257,7 +253,7 @@ class FrontendController extends Controller
         }
     }
 
-   private function renderCoursesWithFallback(Request $request): Response
+    private function renderCoursesWithFallback(Request $request): Response
     {
         Log::info('🔄 Using fallback courses data');
         
@@ -392,189 +388,161 @@ class FrontendController extends Controller
     }
 
     public function instructors(Request $request): Response
-    {
-        try {
-            Log::info('🎯 Loading instructors page from database');
+{
+    try {
+        Log::info('🎯 Loading instructors page from database');
 
-            // Get all teachers from database - FIXED: Removed avatar column
-            $teachers = User::where('role', 'teacher')
-                ->select([
-                    'id', 'name', 'username', 'email', // Removed 'avatar'
-                    'education_qualification', 'institute', 'experience',
-                    'bio', 'created_at'
-                ])
-                ->orderBy('name')
-                ->get();
+        // Get all teachers from database
+        $teachers = User::where('role', 'teacher')
+            ->select([
+                'id', 'name', 'username', 'email',
+                'education_qualification', 'institute', 'experience',
+                'bio', 'created_at'
+            ])
+            ->orderBy('name')
+            ->get();
 
-            Log::info("📊 Found {$teachers->count()} teachers in database");
+        Log::info("📊 Found {$teachers->count()} teachers in database");
 
-            // Transform teachers data with additional statistics
-            $instructors = $teachers->map(function ($teacher) {
-                try {
-                    // Count courses taught by this teacher
-                    $coursesCount = ClassModel::where('teacher_id', $teacher->id)->count();
-                    
-                    // Count unique students across all courses taught by this teacher
-                    $totalStudents = DB::table('class_student')
-                        ->join('classes', 'class_student.class_id', '=', 'classes.id')
-                        ->where('classes.teacher_id', $teacher->id)
-                        ->distinct('class_student.student_id')
-                        ->count();
+        // Debug: Check if teachers exist and have IDs
+        $teachers->each(function($teacher) {
+            Log::info("👨‍🏫 Teacher: {$teacher->name} (ID: {$teacher->id})");
+        });
 
-                    Log::info("👨‍🏫 Teacher {$teacher->name}: {$coursesCount} courses, {$totalStudents} students");
-
-                    return [
-                        'id' => $teacher->id,
-                        'name' => $teacher->name ?? 'Unknown Instructor',
-                        'username' => $teacher->username ?? '',
-                        'email' => $teacher->email ?? '',
-                        'avatar' => $this->getInstructorAvatar($teacher), // Use method instead of column
-                        'education_qualification' => $teacher->education_qualification ?? 'Not specified',
-                        'institute' => $teacher->institute ?? 'Not specified',
-                        'experience' => $teacher->experience ?? 'Experienced educator',
-                        'bio' => $teacher->bio ?? 'Professional instructor dedicated to student success.',
-                        'courses_count' => $coursesCount,
-                        'students_count' => $totalStudents,
-                        'rating' => 4.8,
-                        'created_at' => $teacher->created_at ? $teacher->created_at->format('M d, Y') : 'Unknown'
-                    ];
-                } catch (\Exception $e) {
-                    Log::error("❌ Error processing teacher {$teacher->id}: " . $e->getMessage());
-                    // Return basic teacher data even if stats fail
-                    return [
-                        'id' => $teacher->id,
-                        'name' => $teacher->name ?? 'Unknown Instructor',
-                        'username' => $teacher->username ?? '',
-                        'email' => $teacher->email ?? '',
-                        'avatar' => $this->getInstructorAvatar($teacher),
-                        'education_qualification' => $teacher->education_qualification ?? 'Not specified',
-                        'institute' => $teacher->institute ?? 'Not specified',
-                        'experience' => $teacher->experience ?? 'Experienced educator',
-                        'bio' => $teacher->bio ?? 'Professional instructor.',
-                        'courses_count' => 0,
-                        'students_count' => 0,
-                        'rating' => 4.5,
-                        'created_at' => $teacher->created_at ? $teacher->created_at->format('M d, Y') : 'Unknown'
-                    ];
-                }
-            });
-
-            // Get specializations for filter dropdown
-            $specializations = User::where('role', 'teacher')
-                ->whereNotNull('education_qualification')
-                ->where('education_qualification', '!=', '')
-                ->distinct()
-                ->pluck('education_qualification')
-                ->values();
-
-            Log::info("✅ Successfully loaded {$instructors->count()} instructors with data");
-
-            return Inertia::render('Frontend/Instructors', [
-                'instructors' => $instructors->toArray(),
-                'filters' => [
-                    'search' => $request->search ?? '',
-                    'specialization' => $request->specialization ?? '',
-                ],
-                'specializations' => $specializations->toArray(),
-                'pageTitle' => 'Our Instructors - SkillGro',
-                'metaDescription' => 'Meet our team of expert instructors and teachers. Learn from experienced professionals dedicated to your success.'
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('❌ Instructors page error: ' . $e->getMessage());
-            Log::error('📝 Stack trace: ' . $e->getTraceAsString());
-            
-            // Only use fallback if there's a serious error
-            $teachers = User::where('role', 'teacher')->get();
-            
-            if ($teachers->count() > 0) {
-                // If we have teachers but there was an error in processing, return basic data
-                $basicInstructors = $teachers->map(function ($teacher) {
-                    return [
-                        'id' => $teacher->id,
-                        'name' => $teacher->name,
-                        'username' => $teacher->username,
-                        'email' => $teacher->email,
-                        'avatar' => $this->getInstructorAvatar($teacher),
-                        'education_qualification' => $teacher->education_qualification,
-                        'institute' => $teacher->institute,
-                        'experience' => $teacher->experience,
-                        'bio' => $teacher->bio,
-                        'courses_count' => 0,
-                        'students_count' => 0,
-                        'rating' => 4.5,
-                        'created_at' => $teacher->created_at->format('M d, Y')
-                    ];
-                });
+        // Transform teachers data
+        $instructors = $teachers->map(function ($teacher) {
+            try {
+                // DEBUG: Count courses for this teacher
+                $coursesCount = ClassModel::where('teacher_id', $teacher->id)->count();
                 
+                // DEBUG: Check if any classes exist for this teacher
+                $teacherClasses = ClassModel::where('teacher_id', $teacher->id)->get();
+                Log::info("📚 Teacher {$teacher->name} (ID: {$teacher->id}): {$coursesCount} courses found");
+                
+                if ($coursesCount > 0) {
+                    Log::info("   Classes: " . $teacherClasses->pluck('name')->implode(', '));
+                }
+
+                // Count unique students
+                $totalStudents = DB::table('class_student')
+                    ->join('classes', 'class_student.class_id', '=', 'classes.id')
+                    ->where('classes.teacher_id', $teacher->id)
+                    ->distinct('class_student.student_id')
+                    ->count();
+
+                Log::info("   Students: {$totalStudents} students");
+
+                return [
+                    'id' => $teacher->id,
+                    'name' => $teacher->name ?? 'Unknown Instructor',
+                    'username' => $teacher->username ?? '',
+                    'email' => $teacher->email ?? '',
+                    'avatar' => $this->getInstructorAvatar($teacher),
+                    'education_qualification' => $teacher->education_qualification ?? 'Not specified',
+                    'institute' => $teacher->institute ?? 'Not specified',
+                    'experience' => $teacher->experience ?? 'Experienced educator',
+                    'bio' => $teacher->bio ?? 'Professional instructor dedicated to student success.',
+                    'courses_count' => $coursesCount,
+                    'students_count' => $totalStudents,
+                    'rating' => 4.8,
+                    'created_at' => $teacher->created_at ? $teacher->created_at->format('M d, Y') : 'Unknown'
+                ];
+            } catch (\Exception $e) {
+                Log::error("❌ Error processing teacher {$teacher->id}: " . $e->getMessage());
+                return [
+                    'id' => $teacher->id,
+                    'name' => $teacher->name ?? 'Unknown Instructor',
+                    'username' => $teacher->username ?? '',
+                    'email' => $teacher->email ?? '',
+                    'avatar' => $this->getInstructorAvatar($teacher),
+                    'education_qualification' => $teacher->education_qualification ?? 'Not specified',
+                    'institute' => $teacher->institute ?? 'Not specified',
+                    'experience' => $teacher->experience ?? 'Experienced educator',
+                    'bio' => $teacher->bio ?? 'Professional instructor.',
+                    'courses_count' => 0,
+                    'students_count' => 0,
+                    'rating' => 4.5,
+                    'created_at' => $teacher->created_at ? $teacher->created_at->format('M d, Y') : 'Unknown'
+                ];
+            }
+        });
+
+                // Get specializations for filter dropdown
+                $specializations = User::where('role', 'teacher')
+                    ->whereNotNull('education_qualification')
+                    ->where('education_qualification', '!=', '')
+                    ->distinct()
+                    ->pluck('education_qualification')
+                    ->values();
+
+                Log::info("✅ Successfully loaded {$instructors->count()} instructors with data");
+
                 return Inertia::render('Frontend/Instructors', [
-                    'instructors' => $basicInstructors->toArray(),
+                    'instructors' => $instructors->toArray(),
                     'filters' => [
                         'search' => $request->search ?? '',
                         'specialization' => $request->specialization ?? '',
                     ],
-                    'specializations' => [],
+                    'specializations' => $specializations->toArray(),
+                    'pageTitle' => 'Our Instructors - SkillGro',
+                    'metaDescription' => 'Meet our team of expert instructors and teachers. Learn from experienced professionals dedicated to your success.'
+                ]);
+
+            } catch (\Exception $e) {
+                Log::error('❌ Instructors page error: ' . $e->getMessage());
+                Log::error('📝 Stack trace: ' . $e->getTraceAsString());
+                
+                // Only use fallback if there's a serious error
+                $teachers = User::where('role', 'teacher')->get();
+                
+                if ($teachers->count() > 0) {
+                    // If we have teachers but there was an error in processing, return basic data
+                    $basicInstructors = $teachers->map(function ($teacher) {
+                        return [
+                            'id' => $teacher->id,
+                            'name' => $teacher->name,
+                            'username' => $teacher->username,
+                            'email' => $teacher->email,
+                            'avatar' => $this->getInstructorAvatar($teacher),
+                            'education_qualification' => $teacher->education_qualification,
+                            'institute' => $teacher->institute,
+                            'experience' => $teacher->experience,
+                            'bio' => $teacher->bio,
+                            'courses_count' => 0,
+                            'students_count' => 0,
+                            'rating' => 4.5,
+                            'created_at' => $teacher->created_at->format('M d, Y')
+                        ];
+                    });
+                    
+                    return Inertia::render('Frontend/Instructors', [
+                        'instructors' => $basicInstructors->toArray(),
+                        'filters' => [
+                            'search' => $request->search ?? '',
+                            'specialization' => $request->specialization ?? '',
+                        ],
+                        'specializations' => [],
+                        'pageTitle' => 'Our Instructors - SkillGro',
+                        'metaDescription' => 'Meet our team of expert instructors.'
+                    ]);
+                }
+                
+                // Only use mock data as last resort
+                $fallbackInstructors = $this->getFallbackInstructors();
+                
+                return Inertia::render('Frontend/Instructors', [
+                    'instructors' => $fallbackInstructors,
+                    'filters' => [
+                        'search' => $request->search ?? '',
+                        'specialization' => $request->specialization ?? '',
+                    ],
+                    'specializations' => ['HSC', 'BSC', 'BA', 'MA', 'MSC', 'PhD', 'Other'],
                     'pageTitle' => 'Our Instructors - SkillGro',
                     'metaDescription' => 'Meet our team of expert instructors.'
                 ]);
             }
-            
-            // Only use mock data as last resort
-            $fallbackInstructors = $this->getFallbackInstructors();
-            
-            return Inertia::render('Frontend/Instructors', [
-                'instructors' => $fallbackInstructors,
-                'filters' => [
-                    'search' => $request->search ?? '',
-                    'specialization' => $request->specialization ?? '',
-                ],
-                'specializations' => ['HSC', 'BSC', 'BA', 'MA', 'MSC', 'PhD', 'Other'],
-                'pageTitle' => 'Our Instructors - SkillGro',
-                'metaDescription' => 'Meet our team of expert instructors.'
-            ]);
-        }
     }
 
-
-    private function getFallbackInstructors()
-    {
-        return [
-            [
-                'id' => 1,
-                'name' => 'Dr. Sarah Johnson',
-                'username' => 'sarahj',
-                'email' => 'sarah@example.com',
-                'avatar' => '/assets/img/instructor/instructor01.png',
-                'education_qualification' => 'PhD',
-                'institute' => 'Harvard University',
-                'experience' => '15 years teaching experience',
-                'bio' => 'Expert educator with extensive experience in curriculum development and student mentoring.',
-                'courses_count' => 8,
-                'students_count' => 245,
-                'rating' => 4.9,
-                'created_at' => 'Jan 15, 2023'
-            ],
-            [
-                'id' => 2,
-                'name' => 'Prof. Michael Chen',
-                'username' => 'michaelc',
-                'email' => 'michael@example.com',
-                'avatar' => '/assets/img/instructor/instructor02.png',
-                'education_qualification' => 'MSC',
-                'institute' => 'Stanford University',
-                'experience' => '12 years in education',
-                'bio' => 'Passionate about making complex concepts accessible to all students.',
-                'courses_count' => 6,
-                'students_count' => 189,
-                'rating' => 4.8,
-                'created_at' => 'Mar 22, 2023'
-            ]
-        ];
-    }
-
-    // In FrontendController.php - update the instructorDetails method
-
-    // Instructor details page - with debugging
     public function instructorDetails($id): Response
     {
         try {
@@ -626,7 +594,7 @@ class FrontendController extends Controller
                     ];
                 });
 
-            // UPDATED: Get instructor's demo videos from resources table
+            // Get instructor's demo videos from resources table
             Log::info("📹 Fetching videos for teacher_id: {$id}");
             
             $videos = Resource::where('teacher_id', $id)
@@ -646,7 +614,7 @@ class FrontendController extends Controller
                 ])
                 ->orderBy('created_at', 'desc')
                 ->get()
-                ->map(function($video) use ($classes) {
+                ->map(function($video) {
                     Log::info("🎥 Processing video: {$video->title} (ID: {$video->id})");
                     
                     // Create a Resource model instance to access the accessors
@@ -673,8 +641,8 @@ class FrontendController extends Controller
                         'thumbnail' => $this->getVideoThumbnail($resource),
                         'videoUrl' => $video->content,
                         'duration' => $this->generateVideoDuration($video->id),
-                        'class_id' => $video->class_id, // Add class_id
-                        'class_name' => $video->class ? $video->class->name : 'General Education', // Add class name
+                        'class_id' => $video->class_id,
+                        'class_name' => $video->class ? $video->class->name : 'General Education',
                         'created_at' => $video->created_at->format('Y-m-d\TH:i:s\Z'),
                         'views' => $this->generateVideoViews($video->id),
                         'likes' => $this->generateVideoLikes($video->id),
@@ -749,220 +717,7 @@ class FrontendController extends Controller
         }
     }
 
-    // NEW: Helper method to get video thumbnail
-    private function getVideoThumbnail($resource)
-    {
-        // Use the thumbnail_path if available
-        if ($resource->thumbnail_path) {
-            // Check if it's a YouTube thumbnail reference
-            if (str_starts_with($resource->thumbnail_path, 'youtube_')) {
-                $videoId = str_replace('youtube_', '', $resource->thumbnail_path);
-                return "https://img.youtube.com/vi/{$videoId}/hqdefault.jpg";
-            }
-            
-            // Check if it's a stored file
-            if (file_exists(storage_path('app/public/' . $resource->thumbnail_path))) {
-                return asset('storage/' . $resource->thumbnail_path);
-            }
-        }
-        
-        // For YouTube videos without thumbnail_path, generate from content
-        if ($this->isYouTubeVideo($resource->content)) {
-            $videoId = $this->extractYouTubeId($resource->content);
-            if ($videoId) {
-                return "https://img.youtube.com/vi/{$videoId}/hqdefault.jpg";
-            }
-        }
-        
-        // Default thumbnail
-        return '/assets/img/courses/video_thumb01.jpg';
-    }
-
-    // NEW: Check if content is a YouTube URL
-    private function isYouTubeVideo($content)
-    {
-        if (!$content) return false;
-        
-        $patterns = [
-            '/youtube\.com\/watch\?v=/',
-            '/youtu\.be\//',
-            '/youtube\.com\/embed\//',
-        ];
-        
-        foreach ($patterns as $pattern) {
-            if (preg_match($pattern, $content)) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
-
-    // NEW: Extract YouTube video ID
-    private function extractYouTubeId($url)
-    {
-        $patterns = [
-            '/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/',
-            '/youtu\.be\/([a-zA-Z0-9_-]+)/',
-            '/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/',
-        ];
-        
-        foreach ($patterns as $pattern) {
-            if (preg_match($pattern, $url, $matches)) {
-                return $matches[1];
-            }
-        }
-        
-        return null;
-    }
-
-    // NEW: Determine video category based on title and description
-    private function determineVideoCategory($title, $description)
-    {
-        $text = strtolower($title . ' ' . ($description ?? ''));
-        
-        if (str_contains($text, 'math') || str_contains($text, 'calculus') || str_contains($text, 'algebra')) {
-            return 'mathematics';
-        } elseif (str_contains($text, 'physics')) {
-            return 'physics';
-        } elseif (str_contains($text, 'programming') || str_contains($text, 'python') || str_contains($text, 'javascript') || str_contains($text, 'coding')) {
-            return 'programming';
-        } elseif (str_contains($text, 'chemistry') || str_contains($text, 'biology') || str_contains($text, 'science')) {
-            return 'science';
-        } else {
-            return 'all';
-        }
-    }
-
-    // NEW: Extract class name from title and description
-    private function extractClassName($title, $description)
-    {
-        $text = strtolower($title . ' ' . ($description ?? ''));
-        
-        $keywords = [
-            'mathematics' => 'Mathematics',
-            'math' => 'Mathematics',
-            'calculus' => 'Mathematics',
-            'algebra' => 'Mathematics',
-            'physics' => 'Physics',
-            'chemistry' => 'Chemistry',
-            'biology' => 'Biology',
-            'programming' => 'Computer Science',
-            'python' => 'Computer Science',
-            'javascript' => 'Computer Science',
-            'web development' => 'Computer Science',
-            'english' => 'English Language',
-            'literature' => 'English Literature'
-        ];
-        
-        foreach ($keywords as $keyword => $className) {
-            if (str_contains($text, $keyword)) {
-                return $className . ' - Demo Class';
-            }
-        }
-        
-        return 'General Education - Demo Class';
-    }
-
-    // NEW: Generate realistic video duration
-    private function generateVideoDuration($videoId)
-    {
-        $durations = ['15:30', '22:45', '35:20', '28:15', '45:30', '52:10', '1:05:15'];
-        return $durations[$videoId % count($durations)];
-    }
-
-    // NEW: Generate realistic view count
-    private function generateVideoViews($videoId)
-    {
-        $views = ['250', '480', '750', '890', '1.2K', '1.5K', '2.1K', '3.2K'];
-        return $views[$videoId % count($views)];
-    }
-
-    // NEW: Generate realistic like count
-    private function generateVideoLikes($videoId)
-    {
-        $likes = ['45', '78', '98', '156', '210', '245', '312', '450'];
-        return $likes[$videoId % count($likes)];
-    }
-
-    // ... keep your existing helper methods ...
-
-    private function getExpertiseFromClasses($classes)
-    {
-        if ($classes->count() > 0) {
-            $subjects = array_unique(array_column($classes->toArray(), 'subject'));
-            return implode(', ', $subjects);
-        }
-        
-        return 'Mathematics, Physics, Computer Science';
-    }
-
-    private function generateTeachingPhilosophy($instructor)
-    {
-        return "{$instructor->name} believes in creating an engaging learning environment where students feel empowered to explore and discover knowledge. With a focus on practical applications and real-world examples, {$instructor->name} ensures that every student can grasp complex concepts and develop a lifelong love for learning.";
-    }
-
-    private function extractExperienceYears($experience)
-    {
-        if (!$experience) return 5;
-        
-        preg_match('/(\d+)/', $experience, $matches);
-        return $matches ? (int)$matches[1] : 5;
-    }
-
-    private function generateBio($instructor)
-    {
-        $qualification = $instructor->education_qualification ?? 'qualified';
-        $institute = $instructor->institute ?? 'reputable institution';
-        $experience = $instructor->experience ?? 'experienced';
-        
-        return "{$instructor->name} is a {$qualification} educator from {$institute} with {$experience}. Dedicated to providing quality education and helping students achieve their academic goals.";
-    }
-
-    private function getInstructorAvatar($instructor)
-    {
-        $defaultAvatars = [
-            '/assets/img/instructor/instructor01.png',
-            '/assets/img/instructor/instructor02.png',
-            '/assets/img/instructor/instructor03.png',
-            '/assets/img/instructor/instructor04.png',
-        ];
-
-        $nameHash = crc32($instructor->name ?? 'default');
-        $index = $nameHash % count($defaultAvatars);
-
-        return $defaultAvatars[$index];
-    }
-
-    private function getCourseThumbnail($course)
-    {
-        $defaultThumbnails = [
-            '/assets/img/courses/course_thumb01.png',
-            '/assets/img/courses/course_thumb02.png',
-            '/assets/img/courses/course_thumb03.png',
-            '/assets/img/courses/course_thumb04.png'
-        ];
-
-        $index = 0;
-        if ($course->type === 'regular') {
-            $index = (($course->grade ?? 1) - 1) % 4;
-        } else {
-            $categoryHash = crc32($course->category ?? 'default');
-            $index = $categoryHash % 4;
-        }
-
-        return $defaultThumbnails[$index] ?? $defaultThumbnails[0];
-    }
-
-    private function renderNotFound(string $message = ''): Response
-    {
-        return Inertia::render('Frontend/Errors/404', [
-            'message' => $message,
-            'pageTitle' => 'Page Not Found - SkillGro'
-        ]);
-    }
-
-    // About page - FIXED: Removed status filter
+    // About page
     public function about(): Response
     {
         $stats = [
@@ -1041,13 +796,238 @@ class FrontendController extends Controller
         ]);
     }
 
-    
+    // Blog page
+    public function blog(): Response
+    {
+        return Inertia::render('Frontend/Blog', [
+            'pageTitle' => 'Blog - SkillGro',
+            'metaDescription' => 'Read the latest articles, tips, and insights about education, learning strategies, and career development.'
+        ]);
+    }
+
+    // Blog post page
+    public function blogPost($slug): Response
+    {
+        return Inertia::render('Frontend/BlogPost', [
+            'slug' => $slug,
+            'pageTitle' => 'Blog Post - SkillGro',
+            'metaDescription' => 'Educational insights and learning strategies.'
+        ]);
+    }
 
     // Helper methods
+    private function getFallbackInstructors()
+    {
+        return [
+            [
+                'id' => 1,
+                'name' => 'Dr. Sarah Johnson',
+                'username' => 'sarahj',
+                'email' => 'sarah@example.com',
+                'avatar' => '/assets/img/instructor/instructor01.png',
+                'education_qualification' => 'PhD',
+                'institute' => 'Harvard University',
+                'experience' => '15 years teaching experience',
+                'bio' => 'Expert educator with extensive experience in curriculum development and student mentoring.',
+                'courses_count' => 8,
+                'students_count' => 245,
+                'rating' => 4.9,
+                'created_at' => 'Jan 15, 2023'
+            ],
+            [
+                'id' => 2,
+                'name' => 'Prof. Michael Chen',
+                'username' => 'michaelc',
+                'email' => 'michael@example.com',
+                'avatar' => '/assets/img/instructor/instructor02.png',
+                'education_qualification' => 'MSC',
+                'institute' => 'Stanford University',
+                'experience' => '12 years in education',
+                'bio' => 'Passionate about making complex concepts accessible to all students.',
+                'courses_count' => 6,
+                'students_count' => 189,
+                'rating' => 4.8,
+                'created_at' => 'Mar 22, 2023'
+            ]
+        ];
+    }
+
+    private function getInstructorAvatar($instructor)
+    {
+        $defaultAvatars = [
+            '/assets/img/instructor/instructor01.png',
+            '/assets/img/instructor/instructor02.png',
+            '/assets/img/instructor/instructor03.png',
+            '/assets/img/instructor/instructor04.png',
+        ];
+
+        $nameHash = crc32($instructor->name ?? 'default');
+        $index = $nameHash % count($defaultAvatars);
+
+        return $defaultAvatars[$index];
+    }
+
+    private function getCourseThumbnail($course)
+    {
+        $defaultThumbnails = [
+            '/assets/img/courses/h5_course_thumb01.jpg',
+            '/assets/img/courses/h5_course_thumb02.jpg',
+            '/assets/img/courses/h5_course_thumb03.jpg',
+            '/assets/img/courses/h5_course_thumb04.jpg'
+        ];
+
+        $index = 0;
+        if ($course->type === 'regular') {
+            $index = (($course->grade ?? 1) - 1) % 4;
+        } else {
+            $categoryHash = crc32($course->category ?? 'default');
+            $index = $categoryHash % 4;
+        }
+
+        return $defaultThumbnails[$index] ?? $defaultThumbnails[0];
+    }
+
+    private function getVideoThumbnail($resource)
+    {
+        // Use the thumbnail_path if available
+        if ($resource->thumbnail_path) {
+            // Check if it's a YouTube thumbnail reference
+            if (str_starts_with($resource->thumbnail_path, 'youtube_')) {
+                $videoId = str_replace('youtube_', '', $resource->thumbnail_path);
+                return "https://img.youtube.com/vi/{$videoId}/hqdefault.jpg";
+            }
+            
+            // Check if it's a stored file
+            if (file_exists(storage_path('app/public/' . $resource->thumbnail_path))) {
+                return asset('storage/' . $resource->thumbnail_path);
+            }
+        }
+        
+        // For YouTube videos without thumbnail_path, generate from content
+        if ($this->isYouTubeVideo($resource->content)) {
+            $videoId = $this->extractYouTubeId($resource->content);
+            if ($videoId) {
+                return "https://img.youtube.com/vi/{$videoId}/hqdefault.jpg";
+            }
+        }
+        
+        // Default thumbnail
+        return '/assets/img/courses/video_thumb01.jpg';
+    }
+
+    private function isYouTubeVideo($content)
+    {
+        if (!$content) return false;
+        
+        $patterns = [
+            '/youtube\.com\/watch\?v=/',
+            '/youtu\.be\//',
+            '/youtube\.com\/embed\//',
+        ];
+        
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $content)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    private function extractYouTubeId($url)
+    {
+        $patterns = [
+            '/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/',
+            '/youtu\.be\/([a-zA-Z0-9_-]+)/',
+            '/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/',
+        ];
+        
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $url, $matches)) {
+                return $matches[1];
+            }
+        }
+        
+        return null;
+    }
+
+    private function determineVideoCategory($title, $description)
+    {
+        $text = strtolower($title . ' ' . ($description ?? ''));
+        
+        if (str_contains($text, 'math') || str_contains($text, 'calculus') || str_contains($text, 'algebra')) {
+            return 'mathematics';
+        } elseif (str_contains($text, 'physics')) {
+            return 'physics';
+        } elseif (str_contains($text, 'programming') || str_contains($text, 'python') || str_contains($text, 'javascript') || str_contains($text, 'coding')) {
+            return 'programming';
+        } elseif (str_contains($text, 'chemistry') || str_contains($text, 'biology') || str_contains($text, 'science')) {
+            return 'science';
+        } else {
+            return 'all';
+        }
+    }
+
+    private function generateVideoDuration($videoId)
+    {
+        $durations = ['15:30', '22:45', '35:20', '28:15', '45:30', '52:10', '1:05:15'];
+        return $durations[$videoId % count($durations)];
+    }
+
+    private function generateVideoViews($videoId)
+    {
+        $views = ['250', '480', '750', '890', '1.2K', '1.5K', '2.1K', '3.2K'];
+        return $views[$videoId % count($views)];
+    }
+
+    private function generateVideoLikes($videoId)
+    {
+        $likes = ['45', '78', '98', '156', '210', '245', '312', '450'];
+        return $likes[$videoId % count($likes)];
+    }
+
+    private function getExpertiseFromClasses($classes)
+    {
+        if ($classes->count() > 0) {
+            $subjects = array_unique(array_column($classes->toArray(), 'subject'));
+            return implode(', ', $subjects);
+        }
+        
+        return 'Mathematics, Physics, Computer Science';
+    }
+
+    private function generateTeachingPhilosophy($instructor)
+    {
+        return "{$instructor->name} believes in creating an engaging learning environment where students feel empowered to explore and discover knowledge. With a focus on practical applications and real-world examples, {$instructor->name} ensures that every student can grasp complex concepts and develop a lifelong love for learning.";
+    }
+
+    private function extractExperienceYears($experience)
+    {
+        if (!$experience) return 5;
+        
+        preg_match('/(\d+)/', $experience, $matches);
+        return $matches ? (int)$matches[1] : 5;
+    }
+
+    private function generateBio($instructor)
+    {
+        $qualification = $instructor->education_qualification ?? 'qualified';
+        $institute = $instructor->institute ?? 'reputable institution';
+        $experience = $instructor->experience ?? 'experienced';
+        
+        return "{$instructor->name} is a {$qualification} educator from {$institute} with {$experience}. Dedicated to providing quality education and helping students achieve their academic goals.";
+    }
+
     private function generateSlug($name)
     {
         return strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $name)));
     }
 
-
+    private function renderNotFound(string $message = ''): Response
+    {
+        return Inertia::render('Frontend/Errors/404', [
+            'message' => $message,
+            'pageTitle' => 'Page Not Found - SkillGro'
+        ]);
+    }
 }

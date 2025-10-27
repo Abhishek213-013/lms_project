@@ -7,13 +7,13 @@
           <div class="row">
             <div class="col-12">
               <div class="breadcrumb__content">
-                <h3 class="title">All Instructors</h3>
+                <h3 class="title">{{ t('All Instructors') }}</h3>
                 <nav class="breadcrumb">
                   <span property="itemListElement" typeof="ListItem">
-                    <Link href="/">Home</Link>
+                    <Link href="/">{{ t('Home') }}</Link>
                   </span>
                   <span class="breadcrumb-separator"><i class="fas fa-angle-right"></i></span>
-                  <span property="itemListElement" typeof="ListItem">Instructors</span>
+                  <span property="itemListElement" typeof="ListItem">{{ t('Instructors') }}</span>
                 </nav>
               </div>
             </div>
@@ -41,7 +41,7 @@
                     <input 
                       v-model="filters.search" 
                       type="text" 
-                      placeholder="Search instructors by name, qualification, or institute..." 
+                      :placeholder="t('Search instructors by name, qualification, or institute...')" 
                       class="search-input"
                     >
                     <button type="submit" class="search-button">
@@ -54,7 +54,7 @@
             <div class="col-lg-3">
               <div class="filter-box">
                 <select v-model="filters.specialization" @change="filterInstructors" class="filter-select">
-                  <option value="">All Specializations</option>
+                  <option value="">{{ t('All Specializations') }}</option>
                   <option v-for="specialization in specializations" :key="specialization" :value="specialization">
                     {{ specialization }}
                   </option>
@@ -63,7 +63,7 @@
             </div>
             <div class="col-lg-3">
               <div class="results-count">
-                Showing {{ displayedInstructors.length }} of {{ instructors.length }} instructors
+                {{ t('Showing') }} {{ displayedInstructors.length }} {{ t('of') }} {{ instructors.length }} {{ t('instructors') }}
               </div>
             </div>
           </div>
@@ -73,23 +73,22 @@
             <div class="col-12 text-center">
               <div class="simple-loading">
                 <div class="loading-spinner"></div>
-                <p>Loading instructors...</p>
+                <p>{{ t('Loading instructors...') }}</p>
               </div>
             </div>
           </div>
 
-          <!-- Instructors Grid - Updated Tile Layout -->
+          <!-- Instructors Grid -->
           <div v-else class="row">
             <div class="col-12">
               <div class="instructors-header mb-4">
                 <h4 class="instructors-count">
-                  Meet Our Expert Instructors 
-                  <span class="count-badge">({{ instructors.length }} instructors)</span>
+                  {{ t('Meet Our Expert Instructors') }}
+                  <span class="count-badge">({{ instructors.length }} {{ t('instructors') }})</span>
                 </h4>
               </div>
             </div>
 
-            <!-- Updated Tile Layout -->
             <div class="col-xl-3 col-lg-4 col-md-6" v-for="instructor in displayedInstructors" :key="instructor.id">
               <div class="instructor-tile">
                 <!-- Profile Image -->
@@ -108,13 +107,13 @@
 
                 <!-- Expertise -->
                 <div class="tile-section expertise-section">
-                  <div class="section-label">Expertise</div>
+                  <div class="section-label">{{ t('Expertise') }}</div>
                   <p class="expertise-text">{{ getExpertise(instructor) }}</p>
                 </div>
 
                 <!-- Education -->
                 <div class="tile-section education-section">
-                  <div class="section-label">Education</div>
+                  <div class="section-label">{{ t('Education') }}</div>
                   <p class="education-text">{{ getEducation(instructor) }}</p>
                 </div>
 
@@ -122,42 +121,24 @@
                 <div class="tile-section stats-section">
                   <div class="stats-grid">
                     <div class="stat-item">
-                      <div class="stat-number">{{ instructor.courses_count || 0 }}</div>
-                      <div class="stat-label">Courses</div>
+                      <div class="stat-number">{{ instructor.courses_count }}</div>
+                      <div class="stat-label">{{ t('Courses') }}</div>
                     </div>
                     <div class="stat-item">
-                      <div class="stat-number">{{ instructor.students_count || 0 }}</div>
-                      <div class="stat-label">Students</div>
+                      <div class="stat-number">{{ instructor.students_count }}</div>
+                      <div class="stat-label">{{ t('Students') }}</div>
                     </div>
                     <div class="stat-item">
-                      <div class="stat-number">{{ instructor.rating || '4.8' }}</div>
-                      <div class="stat-label">Rating</div>
+                      <div class="stat-number">{{ instructor.rating }}</div>
+                      <div class="stat-label">{{ t('Rating') }}</div>
                     </div>
-                  </div>
-                </div>
-
-                <!-- Social Links -->
-                <div class="tile-section social-section">
-                  <div class="social-links">
-                    <a href="#" class="social-link">
-                      <i class="fab fa-facebook-f"></i>
-                    </a>
-                    <a href="#" class="social-link">
-                      <i class="fab fa-twitter"></i>
-                    </a>
-                    <a href="#" class="social-link">
-                      <i class="fab fa-linkedin-in"></i>
-                    </a>
-                    <a href="#" class="social-link">
-                      <i class="fab fa-instagram"></i>
-                    </a>
                   </div>
                 </div>
 
                 <!-- Action Buttons -->
                 <div class="tile-actions">
                   <Link :href="`/instructor/${instructor.id}`" class="btn-view-profile">
-                    View Full Profile
+                    {{ t('View Full Profile') }}
                   </Link>
                 </div>
               </div>
@@ -169,10 +150,10 @@
             <div class="col-12">
               <div class="no-instructors text-center">
                 <i class="fas fa-users fa-4x mb-3"></i>
-                <h4>No Instructors Found</h4>
-                <p>We couldn't find any instructors matching your criteria.</p>
+                <h4>{{ t('No Instructors Found') }}</h4>
+                <p>{{ t('We couldn\'t find any instructors matching your criteria.') }}</p>
                 <button class="btn btn-primary" @click="clearFilters">
-                  Clear Filters
+                  {{ t('Clear Filters') }}
                 </button>
               </div>
             </div>
@@ -183,8 +164,8 @@
             <div class="col-12">
               <div class="instructor__load-more text-center mt-50">
                 <button class="btn btn-two" @click="loadMore" :disabled="loadingMore">
-                  <span class="text" v-if="!loadingMore">Load More Instructors</span>
-                  <span class="text" v-else>Loading...</span>
+                  <span class="text" v-if="!loadingMore">{{ t('Load More Instructors') }}</span>
+                  <span class="text" v-else>{{ t('Loading...') }}</span>
                 </button>
               </div>
             </div>
@@ -202,18 +183,18 @@
                 <div class="cta__icon">
                   <i class="fas fa-chalkboard-teacher fa-3x"></i>
                 </div>
-                <h2 class="cta__title">Become an Instructor Today</h2>
-                <p>Join our team of expert educators and share your knowledge with thousands of eager learners worldwide.</p>
-                <Link href="/become-instructor" class="btn btn-two">
-                  <span class="text">Join as Instructor</span>
-                </Link>
+                <h2 class="cta__title">{{ t('Become an Instructor Today') }}</h2>
+                <p>{{ t('Join our team of expert educators and share your knowledge with thousands of eager learners worldwide.') }}</p>
+                <button @click="showInstructorModal = true" class="btn btn-two">
+                  <span class="text">{{ t('Join as Instructor') }}</span>
+                </button>
               </div>
             </div>
             <div class="col-lg-6">
               <div class="cta__images">
                 <div class="cta__placeholder">
                   <i class="fas fa-users fa-5x"></i>
-                  <p>Join Our Teaching Community</p>
+                  <p>{{ t('Join Our Teaching Community') }}</p>
                 </div>
               </div>
             </div>
@@ -227,7 +208,7 @@
 
 <script>
 import { Link } from '@inertiajs/vue3';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, getCurrentInstance } from 'vue';
 import { router } from '@inertiajs/vue3';
 import FrontendLayout from '../Layout/FrontendLayout.vue';
 
@@ -255,18 +236,134 @@ export default {
     }
   },
   setup(props) {
+    // Get the Vue instance for accessing global properties
+    const { proxy } = getCurrentInstance()
+
     const loading = ref(false);
     const loadingMore = ref(false);
     const visibleCount = ref(8);
     const itemsPerPage = 8;
+    const showInstructorModal = ref(false);
+    const currentLanguage = ref('bn'); // Default to Bengali
+    const currentTheme = ref('light');
 
     const localFilters = ref({ ...props.filters });
+
+    // Load language and theme preferences from localStorage
+    onMounted(() => {
+      const savedLang = localStorage.getItem('preferredLanguage')
+      if (savedLang && (savedLang === 'en' || savedLang === 'bn')) {
+        currentLanguage.value = savedLang
+      }
+      
+      const savedTheme = localStorage.getItem('preferredTheme')
+      if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
+        currentTheme.value = savedTheme
+      }
+      
+      // Listen for language changes from other components
+      window.addEventListener('languageChanged', (event) => {
+        currentLanguage.value = event.detail.language
+      })
+
+      // Listen for theme changes
+      window.addEventListener('themeChanged', (event) => {
+        currentTheme.value = event.detail.theme
+      })
+    })
+
+    onUnmounted(() => {
+      window.removeEventListener('languageChanged', () => {})
+      window.removeEventListener('themeChanged', () => {})
+    })
+
+    // Define translations object
+    const translations = {
+      en: {
+        'All Instructors': 'All Instructors',
+        'Home': 'Home',
+        'Instructors': 'Instructors',
+        'Search instructors by name, qualification, or institute...': 'Search instructors by name, qualification, or institute...',
+        'All Specializations': 'All Specializations',
+        'Showing': 'Showing',
+        'of': 'of',
+        'instructors': 'instructors',
+        'Loading instructors...': 'Loading instructors...',
+        'Meet Our Expert Instructors': 'Meet Our Expert Instructors',
+        'Expertise': 'Expertise',
+        'Education': 'Education',
+        'Courses': 'Courses',
+        'Students': 'Students',
+        'Rating': 'Rating',
+        'View Full Profile': 'View Full Profile',
+        'No Instructors Found': 'No Instructors Found',
+        'We couldn\'t find any instructors matching your criteria.': 'We couldn\'t find any instructors matching your criteria.',
+        'Clear Filters': 'Clear Filters',
+        'Load More Instructors': 'Load More Instructors',
+        'Loading...': 'Loading...',
+        'Become an Instructor Today': 'Become an Instructor Today',
+        'Join our team of expert educators and share your knowledge with thousands of eager learners worldwide.': 'Join our team of expert educators and share your knowledge with thousands of eager learners worldwide.',
+        'Join as Instructor': 'Join as Instructor',
+        'Join Our Teaching Community': 'Join Our Teaching Community',
+        'Science': 'Science',
+        'English': 'English',
+        'Mathematics': 'Mathematics',
+        'Bangla': 'Bangla',
+        'Sports': 'Sports',
+        'Teaching Specialist': 'Teaching Specialist',
+        'Teaching Degree': 'Teaching Degree'
+      },
+      bn: {
+        'All Instructors': 'সমস্ত ইন্সট্রাক্টর',
+        'Home': 'হোম',
+        'Instructors': 'ইন্সট্রাক্টর',
+        'Search instructors by name, qualification, or institute...': 'নাম, যোগ্যতা বা প্রতিষ্ঠান দ্বারা ইন্সট্রাক্টর খুঁজুন...',
+        'All Specializations': 'সমস্ত বিশেষীকরণ',
+        'Showing': 'দেখানো হচ্ছে',
+        'of': 'এর',
+        'instructors': 'ইন্সট্রাক্টর',
+        'Loading instructors...': 'ইন্সট্রাক্টর লোড হচ্ছে...',
+        'Meet Our Expert Instructors': 'আমাদের বিশেষজ্ঞ ইন্সট্রাক্টরদের সাথে পরিচিত হোন',
+        'Expertise': 'দক্ষতা',
+        'Education': 'শিক্ষা',
+        'Courses': 'কোর্স',
+        'Students': 'শিক্ষার্থী',
+        'Rating': 'রেটিং',
+        'View Full Profile': 'সম্পূর্ণ প্রোফাইল দেখুন',
+        'No Instructors Found': 'কোন ইন্সট্রাক্টর পাওয়া যায়নি',
+        'We couldn\'t find any instructors matching your criteria.': 'আপনার শর্তের সাথে মিলে এমন কোন ইন্সট্রাক্টর আমরা খুঁজে পাইনি।',
+        'Clear Filters': 'ফিল্টার সরান',
+        'Load More Instructors': 'আরও ইন্সট্রাক্টর লোড করুন',
+        'Loading...': 'লোড হচ্ছে...',
+        'Become an Instructor Today': 'আজই একজন ইন্সট্রাক্টর হোন',
+        'Join our team of expert educators and share your knowledge with thousands of eager learners worldwide.': 'আমাদের বিশেষজ্ঞ শিক্ষকদের দলে যোগ দিন এবং বিশ্বব্যাপী হাজার হাজার আগ্রহী শিক্ষার্থীর সাথে আপনার জ্ঞান শেয়ার করুন।',
+        'Join as Instructor': 'ইন্সট্রাক্টর হিসেবে যোগ দিন',
+        'Join Our Teaching Community': 'আমাদের শিক্ষণ সম্প্রদায়ে যোগ দিন',
+        'Science': 'বিজ্ঞান',
+        'English': 'ইংরেজি',
+        'Mathematics': 'গণিত',
+        'Bangla': 'বাংলা',
+        'Sports': 'ক্রীড়া',
+        'Teaching Specialist': 'শিক্ষণ বিশেষজ্ঞ',
+        'Teaching Degree': 'শিক্ষণ ডিগ্রী'
+      }
+    }
+
+    // Translation function - use local translations only
+    const t = (key, replacements = {}) => {
+      let translated = translations[currentLanguage.value]?.[key] || key
+      
+      Object.keys(replacements).forEach(replacementKey => {
+        translated = translated.replace(`{${replacementKey}}`, replacements[replacementKey])
+      })
+      
+      return translated
+    }
 
     // Computed properties
     const displayedInstructors = computed(() => {
       let filtered = props.instructors || [];
 
-      // Apply search filter
       if (localFilters.value.search) {
         const query = localFilters.value.search.toLowerCase();
         filtered = filtered.filter(instructor => {
@@ -278,7 +375,6 @@ export default {
         });
       }
 
-      // Apply specialization filter
       if (localFilters.value.specialization) {
         filtered = filtered.filter(instructor => 
           instructor.education_qualification === localFilters.value.specialization
@@ -354,21 +450,20 @@ export default {
     };
 
     const getExpertise = (instructor) => {
-      // Extract expertise from qualification or use default
       const qual = instructor.education_qualification || '';
-      if (qual.includes('Science')) return 'Science';
-      if (qual.includes('English')) return 'English';
-      if (qual.includes('Mathematics')) return 'Mathematics';
-      if (qual.includes('Bangla')) return 'Bangla';
-      if (qual.includes('Sports ')) return 'Sports ';
-      return 'Teaching Specialist';
+      if (qual.includes('Science')) return t('Science');
+      if (qual.includes('English')) return t('English');
+      if (qual.includes('Mathematics')) return t('Mathematics');
+      if (qual.includes('Bangla')) return t('Bangla');
+      if (qual.includes('Sports')) return t('Sports');
+      return t('Teaching Specialist');
     };
 
     const getEducation = (instructor) => {
       if (instructor.education_qualification && instructor.education_qualification !== 'Not specified') {
         return instructor.education_qualification;
       }
-      return 'Teaching Degree';
+      return t('Teaching Degree');
     };
 
     return {
@@ -378,6 +473,10 @@ export default {
       visibleCount,
       displayedInstructors,
       showLoadMore,
+      showInstructorModal,
+      t,
+      currentLanguage,
+      currentTheme,
       searchInstructors,
       filterInstructors,
       clearFilters,
@@ -385,23 +484,108 @@ export default {
       getInstructorAvatar,
       handleImageError,
       getExpertise,
-      getEducation
+      getEducation,
     };
   }
 }
 </script>
 
 <style scoped>
-/* Instructor Area */
+/* ==================== */
+/* MAIN LAYOUT */
+/* ==================== */
+.main-area {
+  background: var(--bg-primary);
+  transition: background-color 0.3s ease;
+}
+
+/* ==================== */
+/* BREADCRUMB STYLES */
+/* ==================== */
+.breadcrumb__area {
+  position: relative;
+  padding: 4px 0 4px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  overflow: hidden;
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
+  transition: all 0.3s ease;
+}
+
+.breadcrumb__content {
+  text-align: center;
+  position: relative;
+  z-index: 3;
+  color: var(--text-primary);
+}
+
+.breadcrumb__content .title {
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 15px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+  transition: color 0.3s ease;
+}
+
+.breadcrumb {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.breadcrumb a {
+  color: var(--text-primary);
+  text-decoration: none;
+  opacity: 0.8;
+  transition: opacity 0.3s ease, color 0.3s ease;
+}
+
+.breadcrumb a:hover {
+  opacity: 1;
+  color: var(--primary-color);
+}
+
+.breadcrumb-separator {
+  color: var(--text-muted);
+  opacity: 0.8;
+  margin: 0 10px;
+  font-size: 14px;
+  transition: color 0.3s ease;
+}
+
+.breadcrumb span:not(.breadcrumb-separator) {
+  color: var(--text-primary);
+  opacity: 1;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+/* ==================== */
+/* INSTRUCTOR AREA */
+/* ==================== */
 .instructor__area {
   position: relative;
+  background: var(--bg-primary);
+  transition: background-color 0.3s ease;
 }
 
 .section-py-120 {
   padding: 120px 0;
 }
 
-/* Loading Styles */
+/* ==================== */
+/* LOADING STYLES */
+/* ==================== */
 .simple-loading {
   padding: 80px 0;
   text-align: center;
@@ -410,11 +594,17 @@ export default {
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid var(--primary-color, #4a6cf7);
+  border: 3px solid var(--border-color);
+  border-top: 3px solid var(--primary-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 20px;
+  transition: border-color 0.3s ease;
+}
+
+.simple-loading p {
+  color: var(--text-secondary);
+  transition: color 0.3s ease;
 }
 
 @keyframes spin {
@@ -422,15 +612,17 @@ export default {
   100% { transform: rotate(360deg); }
 }
 
-/* Updated Tile Layout Styles */
+/* ==================== */
+/* INSTRUCTOR TILES */
+/* ==================== */
 .instructor-tile {
-  background: #ffffff;
+  background: var(--card-bg);
   border-radius: 15px;
   padding: 0;
   margin-bottom: 30px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow);
   transition: all 0.3s ease;
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--border-color);
   text-align: center;
   overflow: hidden;
   height: 100%;
@@ -438,12 +630,17 @@ export default {
 
 .instructor-tile:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-color);
 }
 
 /* Profile Image */
 .tile-image {
   padding: 30px 30px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
 }
 
 .tile-image img {
@@ -451,19 +648,20 @@ export default {
   height: 120px;
   border-radius: 50%;
   object-fit: cover;
-  border: 4px solid #f8f9fa;
+  border: 4px solid var(--bg-secondary);
   transition: all 0.3s ease;
 }
 
 .instructor-tile:hover .tile-image img {
-  border-color: var(--primary-color, #4a6cf7);
+  border-color: var(--primary-color);
   transform: scale(1.05);
 }
 
 /* Tile Sections */
 .tile-section {
   padding: 15px 25px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--border-light);
+  transition: border-color 0.3s ease;
 }
 
 /* Name Section */
@@ -475,19 +673,21 @@ export default {
 .instructor-name {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: var(--text-primary);
   margin: 0;
   line-height: 1.3;
+  transition: color 0.3s ease;
 }
 
 /* Section Labels */
 .section-label {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #7f8c8d;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 5px;
+  transition: color 0.3s ease;
 }
 
 /* Expertise Section */
@@ -499,9 +699,10 @@ export default {
 .expertise-text {
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--primary-color, #4a6cf7);
+  color: var(--primary-color);
   margin: 0;
   line-height: 1.4;
+  transition: color 0.3s ease;
 }
 
 /* Education Section */
@@ -512,16 +713,18 @@ export default {
 
 .education-text {
   font-size: 0.85rem;
-  color: #5d6d7e;
+  color: var(--text-secondary);
   margin: 0;
   line-height: 1.4;
   font-weight: 500;
+  transition: color 0.3s ease;
 }
 
 /* Stats Section */
 .stats-section {
   padding: 20px 25px;
-  background: #f8f9fa;
+  background: var(--bg-secondary);
+  transition: background-color 0.3s ease;
 }
 
 .stats-grid {
@@ -538,50 +741,18 @@ export default {
 .stat-number {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: var(--text-primary);
   margin-bottom: 2px;
+  transition: color 0.3s ease;
 }
 
 .stat-label {
   font-size: 0.75rem;
-  color: #7f8c8d;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 600;
-}
-
-/* Social Section */
-.social-section {
-  padding: 15px 25px;
-  background: #f8f9fa;
-}
-
-.social-links {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-}
-
-.social-link {
-  width: 36px;
-  height: 36px;
-  background: #ffffff;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #7f8c8d;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  border: 1px solid #e9ecef;
-  font-size: 14px;
-}
-
-.social-link:hover {
-  background: var(--primary-color, #4a6cf7);
-  color: #ffffff;
-  transform: translateY(-2px);
-  border-color: var(--primary-color, #4a6cf7);
+  transition: color 0.3s ease;
 }
 
 /* Action Buttons */
@@ -592,7 +763,7 @@ export default {
 .btn-view-profile {
   display: block;
   width: 100%;
-  background: var(--primary-color, #4a6cf7);
+  background: var(--primary-color);
   color: white;
   border: none;
   padding: 12px 20px;
@@ -606,23 +777,27 @@ export default {
 }
 
 .btn-view-profile:hover {
-  background: #3a5bd9;
+  background: var(--primary-hover);
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(74, 108, 247, 0.3);
+  box-shadow: 0 5px 15px color-mix(in srgb, var(--primary-color) 30%, transparent);
 }
 
-/* Header and Count */
+/* ==================== */
+/* HEADER AND COUNT */
+/* ==================== */
 .instructors-header {
-  background: white;
+  background: var(--card-bg);
   padding: 25px;
   border-radius: 15px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow);
   margin-bottom: 30px;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
 }
 
 .instructors-count {
   margin: 0;
-  color: #2c3e50;
+  color: var(--text-primary);
   font-size: 1.5rem;
   font-weight: 600;
   display: flex;
@@ -630,17 +805,20 @@ export default {
   justify-content: center;
   flex-wrap: wrap;
   gap: 10px;
+  transition: color 0.3s ease;
 }
 
 .count-badge {
-  background: var(--primary-color, #4a6cf7);
+  background: var(--primary-color);
   color: white;
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 0.9rem;
 }
 
-/* Search and Filter */
+/* ==================== */
+/* SEARCH AND FILTER */
+/* ==================== */
 .search-box {
   margin-bottom: 20px;
 }
@@ -658,16 +836,22 @@ export default {
 .search-input {
   width: 100%;
   padding: 12px 20px;
-  border: 2px solid #e9ecef;
+  border: 2px solid var(--border-color);
   border-radius: 10px;
   font-size: 0.9rem;
   transition: all 0.3s ease;
+  background: var(--card-bg);
+  color: var(--text-primary);
 }
 
 .search-input:focus {
   outline: none;
-  border-color: var(--primary-color, #4a6cf7);
-  box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 20%, transparent);
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
 }
 
 .search-button {
@@ -675,9 +859,14 @@ export default {
   right: 10px;
   background: none;
   border: none;
-  color: #7f8c8d;
+  color: var(--text-muted);
   cursor: pointer;
   padding: 8px;
+  transition: color 0.3s ease;
+}
+
+.search-button:hover {
+  color: var(--primary-color);
 }
 
 .filter-box {
@@ -687,53 +876,72 @@ export default {
 .filter-select {
   width: 100%;
   padding: 12px 20px;
-  border: 2px solid #e9ecef;
+  border: 2px solid var(--border-color);
   border-radius: 10px;
   font-size: 0.9rem;
-  background: white;
+  background: var(--card-bg);
+  color: var(--text-primary);
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .filter-select:focus {
   outline: none;
-  border-color: var(--primary-color, #4a6cf7);
-  box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 20%, transparent);
 }
 
 .results-count {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  color: #7f8c8d;
+  color: var(--text-muted);
   font-size: 0.9rem;
   font-weight: 500;
+  transition: color 0.3s ease;
 }
 
-/* No Instructors */
+/* ==================== */
+/* NO INSTRUCTORS */
+/* ==================== */
 .no-instructors {
   padding: 80px 20px;
-  color: #7f8c8d;
+  color: var(--text-muted);
   text-align: center;
+  background: var(--card-bg);
+  border-radius: 15px;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
 }
 
 .no-instructors i {
-  color: #bdc3c7;
+  color: var(--text-muted);
   margin-bottom: 20px;
+  opacity: 0.7;
+  transition: color 0.3s ease;
 }
 
 .no-instructors h4 {
-  color: #2c3e50;
+  color: var(--text-primary);
   margin-bottom: 10px;
+  transition: color 0.3s ease;
 }
 
-/* Load More Button */
+.no-instructors p {
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  transition: color 0.3s ease;
+}
+
+/* ==================== */
+/* LOAD MORE BUTTON */
+/* ==================== */
 .instructor__load-more {
   margin-top: 50px;
 }
 
 .btn-two {
-  background: var(--primary-color, #4a6cf7);
+  background: var(--primary-color);
   color: #ffffff;
   padding: 15px 35px;
   border-radius: 50px;
@@ -746,113 +954,59 @@ export default {
 }
 
 .btn-two:hover:not(:disabled) {
-  background: #3a5bd9;
+  background: var(--primary-hover);
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(74, 108, 247, 0.3);
+  box-shadow: 0 10px 25px color-mix(in srgb, var(--primary-color) 30%, transparent);
 }
 
-/* CTA Section */
+/* ==================== */
+/* CTA SECTION */
+/* ==================== */
 .cta__area {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
   padding: 100px 0;
+  transition: background 0.3s ease;
 }
 
 .cta__icon {
   margin-bottom: 20px;
+  color: var(--primary-color);
+  transition: color 0.3s ease;
 }
 
 .cta__title {
   font-size: 36px;
   font-weight: 700;
-  color: #2c3e50;
+  color: var(--text-primary);
   margin-bottom: 15px;
+  transition: color 0.3s ease;
 }
 
 .cta__content p {
   font-size: 18px;
-  color: #7f8c8d;
+  color: var(--text-secondary);
   margin-bottom: 30px;
+  transition: color 0.3s ease;
 }
 
 .cta__placeholder {
   text-align: center;
-  color: #bdc3c7;
+  color: var(--text-muted);
+  transition: color 0.3s ease;
 }
 
 .cta__placeholder i {
   margin-bottom: 20px;
 }
 
-/* ==================== */
-/* BREADCRUMB STYLES */
-/* ==================== */
-
-.breadcrumb__area {
-  position: relative;
-  padding: 50px 0 50px;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  overflow: hidden;
-  color: #000000;
-}
-
-.breadcrumb__content {
-  text-align: center;
-  position: relative;
-  z-index: 3;
-  color: #000000;
-}
-
-.breadcrumb__content .title {
-  font-size: 48px;
-  font-weight: 700;
-  color: #000000;
-  margin-bottom: 15px;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
-}
-
-.breadcrumb {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  color: #000000;
-  font-size: 16px;
-  font-weight: 500;
-}
-
-.breadcrumb a {
-  color: #000000;
-  text-decoration: none;
-  opacity: 0.8;
-  transition: opacity 0.3s ease;
-}
-
-.breadcrumb a:hover {
-  opacity: 1;
-  color: #000000;
-}
-
-.breadcrumb-separator {
-  color: #000000;
-  opacity: 0.8;
-  margin: 0 10px;
-  font-size: 14px;
-}
-
-.breadcrumb span:not(.breadcrumb-separator) {
-  color: #000000;
-  opacity: 1;
-  font-weight: 600;
+.cta__placeholder p {
+  color: var(--text-secondary);
+  transition: color 0.3s ease;
 }
 
 /* ==================== */
-/* BREADCRUMB SHAPE POSITIONING */
+/* BREADCRUMB SHAPES */
 /* ==================== */
-
 .breadcrumb__shape-wrap {
   position: absolute;
   top: 0;
@@ -867,11 +1021,10 @@ export default {
 .breadcrumb__shape-wrap img {
   position: absolute;
   max-width: none;
+  opacity: 0.3;
 }
 
-/* Position each shape individually with pixel values */
 .breadcrumb__shape-wrap img:nth-child(1) {
-  /* breadcrumb_shape01.svg */
   top: 20%;
   left: 8%;
   width: 120px;
@@ -879,14 +1032,13 @@ export default {
 }
 
 .breadcrumb__shape-wrap img:nth-child(2) {
-  /* breadcrumb_shape02.svg */
   top: 35%;
   right: 20%;
   width: 80px;
   z-index: 1;
 }
+
 .breadcrumb__shape-wrap img:nth-child(3) {
-  /* breadcrumb_shape03.png */
   bottom: 1%;
   left: 32%;
   width: 100px;
@@ -894,7 +1046,6 @@ export default {
 }
 
 .breadcrumb__shape-wrap img:nth-child(4) {
-  /* breadcrumb_shape04.png */
   bottom: 2%;
   right: 40%;
   width: 90px;
@@ -902,7 +1053,6 @@ export default {
 }
 
 .breadcrumb__shape-wrap img:nth-child(5) {
-  /* breadcrumb_shape05.svg */
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -915,7 +1065,6 @@ export default {
   animation: alltuchtopdown 5s infinite linear;
 }
 
-/* Animation keyframes */
 @keyframes alltuchtopdown {
   0% {
     transform: translateY(0px);
@@ -928,12 +1077,52 @@ export default {
   }
 }
 
-/* AOS animations for other shapes */
-.breadcrumb__shape-wrap img[data-aos] {
-  opacity: 0.7;
+/* ==================== */
+/* DARK THEME ENHANCEMENTS */
+/* ==================== */
+.dark-theme .instructor-tile:hover {
+  border-color: var(--primary-color);
 }
 
-/* Responsive Design */
+.dark-theme .search-input,
+.dark-theme .filter-select {
+  background: var(--bg-secondary);
+}
+
+.dark-theme .stats-section {
+  background: var(--bg-tertiary);
+}
+
+.dark-theme .no-instructors {
+  background: var(--bg-secondary);
+}
+
+/* ==================== */
+/* LANGUAGE SUPPORT */
+/* ==================== */
+.bn-lang .instructor-tile,
+.bn-lang .instructors-header,
+.bn-lang .search-input,
+.bn-lang .filter-select {
+  font-family: 'Kalpurush', 'SolaimanLipi', 'Siyam Rupali', Arial, sans-serif;
+}
+
+.bn-lang .instructor-name {
+  line-height: 1.4;
+}
+
+.bn-lang .expertise-text,
+.bn-lang .education-text {
+  line-height: 1.6;
+}
+
+.bn-lang .section-label {
+  letter-spacing: 0;
+}
+
+/* ==================== */
+/* RESPONSIVE DESIGN */
+/* ==================== */
 @media (max-width: 1199px) {
   .cta__title {
     font-size: 32px;
@@ -973,19 +1162,14 @@ export default {
     padding: 12px 20px;
   }
   
-  .social-links {
-    gap: 8px;
-  }
-  
-  .social-link {
-    width: 32px;
-    height: 32px;
-    font-size: 12px;
-  }
-  
   .results-count {
     justify-content: flex-start;
     margin-top: 10px;
+  }
+  
+  .search-input-group,
+  .filter-select {
+    margin-bottom: 15px;
   }
 }
 
@@ -1018,6 +1202,48 @@ export default {
   
   .stat-label {
     font-size: 0.7rem;
+  }
+  
+  .breadcrumb__content .title {
+    font-size: 2rem;
+  }
+  
+  .breadcrumb {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+}
+
+/* ==================== */
+/* ACCESSIBILITY */
+/* ==================== */
+.btn:focus,
+.search-input:focus,
+.filter-select:focus,
+.btn-view-profile:focus {
+  outline: 3px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
+  outline-offset: 2px;
+}
+
+/* ==================== */
+/* REDUCED MOTION */
+/* ==================== */
+@media (prefers-reduced-motion: reduce) {
+  .instructor-tile,
+  .btn,
+  .btn-view-profile,
+  .tile-image img {
+    transition: none;
+  }
+  
+  .instructor-tile:hover,
+  .btn:hover:not(:disabled),
+  .btn-view-profile:hover {
+    transform: none;
+  }
+  
+  .alltuchtopdown {
+    animation: none;
   }
 }
 </style>

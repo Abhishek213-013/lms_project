@@ -4,7 +4,7 @@
     <div class="flex justify-between items-center mb-6">
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Resources - {{ classData.name }}</h1>
-        <p class="text-gray-600">Share YouTube video links with your students</p>
+        <p class="text-gray-600">Share video links with your students</p>
       </div>
       <div class="flex space-x-3">
         <button 
@@ -94,19 +94,27 @@
                     </span>
                   </div>
                   
-                  <!-- YouTube Link -->
+                  <!-- Debug Info (only in development) -->
+                  <div v-if="isDevelopment" class="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                    <p class="font-semibold">Debug Info:</p>
+                    <p>Content: {{ resource.content }}</p>
+                    <p>File Path: {{ resource.file_path }}</p>
+                    <p>Type: {{ resource.type }}</p>
+                    <p>Video Found: {{ !!getVideoContent(resource) }}</p>
+                  </div>
+                  
+                  <!-- Video Link -->
                   <div class="mt-2">
                     <div class="flex items-center space-x-2">
-                      <svg class="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+                      <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
                       </svg>
                       <a 
-                        :href="getVideoContent(resource)" 
-                        target="_blank" 
+                        href="#" 
+                        @click.prevent="playVideo(resource)"
                         class="text-blue-600 hover:text-blue-800 text-sm"
-                        @click.stop
                       >
-                        Watch on YouTube
+                        Watch Video
                       </a>
                     </div>
                   </div>
@@ -152,7 +160,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
             </svg>
             <p class="text-lg font-medium mb-2">No video resources yet</p>
-            <p class="text-sm mb-4">Share your first YouTube video link to get started</p>
+            <p class="text-sm mb-4">Share your first video link to get started</p>
             <button 
               @click="showVideoUpload = true"
               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -164,71 +172,76 @@
       </div>
     </div>
 
-    <!-- Video Player Modal -->
+    <!-- Video Player Modal - Safe Version -->
     <div v-if="showVideoPlayer && currentVideo" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-50">
-      <div class="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-white">
-          <h3 class="text-lg font-semibold text-gray-800">{{ currentVideo.title }}</h3>
-          <button 
-            @click="closeVideoPlayer" 
-            class="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
-          >
+      <div class="bg-black rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        <!-- Custom Header -->
+        <div class="px-6 py-3 bg-black flex justify-between items-center border-b border-gray-800">
+          <h3 class="text-lg font-semibold text-white">{{ currentVideo.title }}</h3>
+          <button @click="closeVideoPlayer" class="text-gray-300 hover:text-white transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
           </button>
         </div>
         
-        <div class="bg-black flex items-center justify-center min-h-[400px]">
-          <!-- YouTube Video -->
-          <div v-if="currentVideo.embedUrl" class="w-full aspect-video">
-            <iframe 
-              :src="currentVideo.embedUrl"
-              class="w-full h-full"
-              frameborder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowfullscreen
-            ></iframe>
-          </div>
-          
-          <!-- Direct Video File -->
-          <div v-else-if="currentVideo.isDirectVideo" class="w-full aspect-video">
+        <div class="bg-black flex items-center justify-center">
+          <!-- Pure Video Player for direct streams -->
+          <div v-if="currentVideo.directVideoUrl" class="w-full aspect-video">
             <video 
+              ref="videoPlayer"
               controls
               autoplay
               class="w-full h-full"
+              :poster="currentVideo.thumbnail"
             >
-              <source :src="currentVideo.videoContent" type="video/mp4">
-              <source :src="currentVideo.videoContent" type="video/webm">
-              <source :src="currentVideo.videoContent" type="video/ogg">
+              <source :src="currentVideo.directVideoUrl" type="video/mp4">
               Your browser does not support the video tag.
             </video>
           </div>
           
-          <!-- Fallback - Show debug info -->
-          <div v-else class="w-full aspect-video flex flex-col items-center justify-center text-white p-8 text-center">
-            <svg class="w-16 h-16 mx-auto mb-4 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-            </svg>
-            <p class="text-lg mb-2">Unable to Play Video</p>
-            <p class="text-sm text-gray-300 mb-4">The video URL could not be processed.</p>
+          <!-- Ultra-clean YouTube embed as fallback -->
+          <div v-else-if="currentVideo.ultraCleanUrl" class="w-full aspect-video relative">
+            <iframe 
+              :src="currentVideo.ultraCleanUrl"
+              class="w-full h-full"
+              frameborder="0"
+              allow="autoplay; encrypted-media"
+              allowfullscreen
+            ></iframe>
             
-            <!-- Debug Information -->
-            <div class="text-xs text-gray-400 mt-4 p-4 bg-gray-800 rounded text-left max-w-md">
-              <p><strong>Debug Information:</strong></p>
-              <p>Video Content: {{ currentVideo.videoContent }}</p>
-              <p>Embed URL: {{ currentVideo.embedUrl }}</p>
-              <p>Is Direct Video: {{ currentVideo.isDirectVideo }}</p>
-              <p>YouTube Video ID: {{ currentVideo.videoId }}</p>
+            <!-- Aggressive overlay to hide YouTube UI -->
+            <div class="absolute inset-0 pointer-events-none">
+              <div class="absolute top-0 left-0 w-full h-16 bg-black pointer-events-auto"></div>
+              <div class="absolute bottom-0 left-0 w-full h-20 bg-black pointer-events-auto"></div>
+              <div class="absolute top-0 right-0 w-24 h-24 bg-black pointer-events-auto"></div>
             </div>
-            
-            <button 
-              v-if="currentVideo.videoContent"
-              @click="openInNewTab(currentVideo.videoContent)"
-              class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Open Video Link
-            </button>
+          </div>
+          
+          <!-- Error state -->
+          <div v-else class="w-full h-full flex items-center justify-center text-white">
+            <div class="text-center">
+              <svg class="w-16 h-16 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+              </svg>
+              <p class="text-lg mb-2">Unable to load video</p>
+              <p class="text-sm text-gray-300 mb-4">The video could not be loaded.</p>
+              <div class="flex space-x-2 justify-center">
+                <button 
+                  @click="closeVideoPlayer"
+                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Close
+                </button>
+                <button 
+                  v-if="currentVideo.originalUrl"
+                  @click="openInNewTab(currentVideo.originalUrl)"
+                  class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Open Original
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -238,7 +251,7 @@
     <div v-if="showVideoUpload" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div class="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-          <h3 class="text-lg font-semibold text-gray-800">Add YouTube Video</h3>
+          <h3 class="text-lg font-semibold text-gray-800">Add Video</h3>
           <button @click="showVideoUpload = false" class="text-gray-400 hover:text-gray-600">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -277,7 +290,7 @@
           <!-- YouTube URL Input -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
-              YouTube URL <span class="text-red-500">*</span>
+              Video URL <span class="text-red-500">*</span>
             </label>
             <input 
               v-model="videoForm.url"
@@ -287,18 +300,18 @@
               placeholder="https://www.youtube.com/watch?v=..."
               :disabled="uploading"
             >
-            <p class="text-xs text-gray-500 mt-2">Paste any YouTube video URL</p>
+            <p class="text-xs text-gray-500 mt-2">Paste any video URL</p>
             
-            <!-- YouTube Thumbnail Preview -->
+            <!-- Video Thumbnail Preview -->
             <div v-if="videoForm.url && isYouTubeUrl(videoForm.url)" class="mt-4 p-4 bg-gray-50 rounded-lg border">
               <p class="text-sm font-medium text-gray-700 mb-2">Preview:</p>
               <img 
                 :src="getYouTubeThumbnail(videoForm.url)" 
-                alt="YouTube Thumbnail"
+                alt="Video Thumbnail"
                 class="w-48 h-36 object-cover rounded-lg shadow-sm"
                 @error="handlePreviewImageError"
               >
-              <p class="text-xs text-gray-500 mt-2">YouTube auto-generated thumbnail</p>
+              <p class="text-xs text-gray-500 mt-2">Auto-generated thumbnail</p>
             </div>
           </div>
 
@@ -357,7 +370,15 @@ const showVideoUpload = ref(false)
 const showVideoPlayer = ref(false)
 const currentVideo = ref(null)
 const uploading = ref(false)
+const videoPlayer = ref(null);
 const loading = ref(!props.resources)
+let youtubePlayer = null;
+const isPlaying = ref(false);
+
+// Check if we're in development mode
+const isDevelopment = computed(() => {
+  return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+})
 
 // Use Inertia form for proper CSRF handling
 const videoForm = useForm({
@@ -373,185 +394,189 @@ const goBack = () => {
   router.get(`/teacher/class/${props.classId}`)
 }
 
-const debugResourceData = () => {
-  console.log('🔍 [DEBUG] Checking all resources data:')
+// Debug function to check resource structure
+const debugResources = () => {
+  console.log('🔍 [DEBUG] Resources Analysis:');
   
   if (resources.value.length === 0) {
-    console.log('❌ No resources found')
-    return
+    console.log('❌ No resources found');
+    return;
   }
   
   resources.value.forEach((resource, index) => {
-    console.log(`\n📹 Resource ${index + 1}: "${resource.title}"`)
-    console.log('   📋 Raw resource data:', {
-      id: resource.id,
-      type: resource.type,
-      content: resource.content,
-      description: resource.description,
-      file_path: resource.file_path,
-      thumbnail_path: resource.thumbnail_path
-    })
+    console.log(`\n📹 Resource ${index + 1}: "${resource.title}"`);
+    console.log('📋 Full resource data:', JSON.parse(JSON.stringify(resource)));
     
-    const videoContent = getVideoContent(resource)
-    console.log('   🎬 Extracted video content:', videoContent)
-    console.log('   🔍 Is YouTube URL:', isYouTubeUrl(videoContent))
-    console.log('   🆔 YouTube Video ID:', getYouTubeVideoId(videoContent))
-    console.log('   🔗 YouTube Embed URL:', getYouTubeEmbedUrl(videoContent))
-  })
-}
+    // Check all possible URL fields
+    const urlFields = ['content', 'file_path', 'url', 'video_url', 'link', 'source'];
+    urlFields.forEach(field => {
+      if (resource[field]) {
+        console.log(`   📍 ${field}:`, resource[field]);
+      }
+    });
+    
+    // Try to extract video content
+    const videoContent = getVideoContent(resource);
+    console.log('   🎬 Extracted video content:', videoContent);
+    
+    if (videoContent) {
+      console.log('   🔍 Is YouTube URL:', isYouTubeUrl(videoContent));
+      console.log('   🆔 YouTube Video ID:', getYouTubeVideoId(videoContent));
+    } else {
+      console.log('   ❌ NO VIDEO CONTENT FOUND');
+    }
+  });
+};
 
-// Get video content from resource - FIXED VERSION
+// Enhanced getVideoContent function
 const getVideoContent = (resource) => {
-  if (!resource) {
-    console.log('❌ Resource is null or undefined')
-    return null
-  }
+  if (!resource) return null;
   
-  console.log('🔍 [getVideoContent] Processing resource:', resource.title)
-  console.log('📋 [getVideoContent] Full resource data:', JSON.parse(JSON.stringify(resource)))
+  console.log('🔍 [getVideoContent] Processing:', resource.title);
   
-  // Priority 1: Check content field (this should be the main field for YouTube URLs)
-  if (resource.content && typeof resource.content === 'string' && resource.content.trim()) {
-    const content = resource.content.trim()
-    console.log('✅ [getVideoContent] Found content field:', content)
-    
-    // Check if it's a YouTube URL
-    if (isYouTubeUrl(content)) {
-      console.log('✅ [getVideoContent] Content is YouTube URL')
-      return content
-    }
-    
-    // Check if it's any HTTP URL
-    if (content.startsWith('http')) {
-      console.log('✅ [getVideoContent] Content is HTTP URL (not YouTube)')
-      return content
-    }
-    
-    // Check if it's a storage path that might contain a YouTube URL
-    if (content.includes('youtube') || content.includes('youtu.be')) {
-      console.log('✅ [getVideoContent] Content contains YouTube reference')
-      const extractedUrl = extractYouTubeUrlFromText(content)
-      if (extractedUrl) return extractedUrl
-    }
-  }
+  // Check all possible fields that might contain the URL
+  const possibleFields = [
+    'content',           // Primary field
+    'file_path',         // Alternative field
+    'url',               // Direct URL field
+    'video_url',         // Video-specific field
+    'link',              // Link field
+    'source',            // Source field
+    'video_content',     // Video content field
+    'youtube_url',       // YouTube-specific field
+    'resource_url'       // Resource URL field
+  ];
   
-  // Priority 2: Check if file_path contains a YouTube URL (sometimes URLs are stored here)
-  if (resource.file_path && typeof resource.file_path === 'string' && resource.file_path.trim()) {
-    const filePath = resource.file_path.trim()
-    console.log('📁 [getVideoContent] Checking file_path:', filePath)
-    
-    // Check if file_path actually contains a URL
-    if (filePath.startsWith('http')) {
-      console.log('✅ [getVideoContent] file_path contains HTTP URL')
-      if (isYouTubeUrl(filePath)) {
-        return filePath
-      }
-      return filePath
-    }
-    
-    // Check if file_path contains YouTube reference
-    if (filePath.includes('youtube') || filePath.includes('youtu.be')) {
-      console.log('✅ [getVideoContent] file_path contains YouTube reference')
-      const extractedUrl = extractYouTubeUrlFromText(filePath)
-      if (extractedUrl) return extractedUrl
-    }
-  }
-  
-  // Priority 3: Check description for embedded URLs
-  if (resource.description && typeof resource.description === 'string') {
-    console.log('📝 [getVideoContent] Checking description for URLs')
-    const youtubeUrl = extractYouTubeUrlFromText(resource.description)
-    if (youtubeUrl) {
-      console.log('✅ [getVideoContent] Found YouTube URL in description:', youtubeUrl)
-      return youtubeUrl
-    }
-  }
-  
-  // Priority 4: Check other possible URL fields
-  const possibleUrlFields = ['url', 'video_url', 'video_link', 'link', 'source']
-  for (const field of possibleUrlFields) {
-    if (resource[field] && typeof resource[field] === 'string' && resource[field].trim()) {
-      const url = resource[field].trim()
-      console.log(`🔍 [getVideoContent] Checking field "${field}":`, url)
+  for (const field of possibleFields) {
+    if (resource[field] && typeof resource[field] === 'string') {
+      const value = resource[field].trim();
+      console.log(`   📍 Checking field "${field}":`, value);
       
-      if (url.startsWith('http')) {
-        console.log(`✅ [getVideoContent] Found HTTP URL in "${field}"`)
-        return url
+      if (value.startsWith('http')) {
+        console.log(`   ✅ Found HTTP URL in "${field}":`, value);
+        return value;
+      }
+      
+      // Check if it contains YouTube pattern but missing protocol
+      if ((value.includes('youtube.com') || value.includes('youtu.be')) && !value.startsWith('http')) {
+        const fullUrl = 'https://' + value.replace(/^\/\//, '');
+        console.log(`   ✅ Reconstructed YouTube URL from "${field}":`, fullUrl);
+        return fullUrl;
       }
     }
   }
   
-  console.log('❌ [getVideoContent] No video URL found in resource')
-  console.log('📊 [getVideoContent] Resource summary:', {
-    hasContent: !!resource.content,
-    contentValue: resource.content,
-    hasFilePath: !!resource.file_path,
-    filePathValue: resource.file_path,
-    hasDescription: !!resource.description,
-    type: resource.type,
-    allFields: Object.keys(resource)
-  })
+  // Check if description contains YouTube URL
+  if (resource.description && typeof resource.description === 'string') {
+    console.log('   📝 Checking description for URLs...');
+    const youtubeUrl = extractYouTubeUrlFromText(resource.description);
+    if (youtubeUrl) {
+      console.log('   ✅ Found YouTube URL in description:', youtubeUrl);
+      return youtubeUrl;
+    }
+  }
   
-  return null
-}
+  console.log('   ❌ No video URL found in any field');
+  return null;
+};
 
-// Get resource thumbnail - FIXED VERSION
+// Enhanced YouTube URL extraction
+const extractYouTubeUrlFromText = (text) => {
+  if (!text) return null;
+  
+  console.log('🔍 [extractYouTubeUrlFromText] Searching in text:', text);
+  
+  // More comprehensive YouTube URL patterns
+  const youtubePatterns = [
+    /(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+    /(https?:\/\/)?(www\.)?youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+    /(https?:\/\/)?(www\.)?youtube\.com\/v\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
+    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+    /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+  ];
+  
+  for (const pattern of youtubePatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      let url = match[0];
+      // Ensure it has http protocol
+      if (!url.startsWith('http')) {
+        url = 'https://' + url;
+      }
+      console.log('✅ [extractYouTubeUrlFromText] Found URL:', url);
+      return url;
+    }
+  }
+  
+  // Also try simple URL extraction
+  const urlMatch = text.match(/(https?:\/\/[^\s]+)/);
+  if (urlMatch && (urlMatch[0].includes('youtube.com') || urlMatch[0].includes('youtu.be'))) {
+    console.log('✅ [extractYouTubeUrlFromText] Found via simple URL match:', urlMatch[0]);
+    return urlMatch[0];
+  }
+  
+  console.log('❌ [extractYouTubeUrlFromText] No YouTube URL found');
+  return null;
+};
+
+// Get resource thumbnail
 const getResourceThumbnail = (resource) => {
-  console.log('🖼️ Getting thumbnail for resource:', resource)
+  console.log('🖼️ Getting thumbnail for resource:', resource);
   
   // If resource has a stored thumbnail_path
   if (resource.thumbnail_path) {
-    console.log('📁 Found thumbnail_path:', resource.thumbnail_path)
+    console.log('📁 Found thumbnail_path:', resource.thumbnail_path);
     
-    // Check if it's a YouTube thumbnail reference (starts with youtube_)
+    // Check if it's a YouTube thumbnail reference
     if (resource.thumbnail_path.startsWith('youtube_')) {
-      const videoId = resource.thumbnail_path.replace('youtube_', '')
-      const youtubeThumbnail = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
-      console.log('🎬 YouTube thumbnail URL:', youtubeThumbnail)
-      return youtubeThumbnail
+      const videoId = resource.thumbnail_path.replace('youtube_', '');
+      const youtubeThumbnail = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+      console.log('🎬 YouTube thumbnail URL:', youtubeThumbnail);
+      return youtubeThumbnail;
     }
     
     // Check if it's a custom uploaded thumbnail
     if (resource.thumbnail_path.startsWith('thumbnails/')) {
-      const customThumbnail = `/storage/${resource.thumbnail_path}`
-      console.log('🖼️ Custom thumbnail URL:', customThumbnail)
-      return customThumbnail
+      const customThumbnail = `/storage/${resource.thumbnail_path}`;
+      console.log('🖼️ Custom thumbnail URL:', customThumbnail);
+      return customThumbnail;
     }
   }
   
   // Fallback: Try to get thumbnail from YouTube URL
-  const videoContent = getVideoContent(resource)
+  const videoContent = getVideoContent(resource);
   if (videoContent && isYouTubeUrl(videoContent)) {
-    const youtubeThumbnail = getYouTubeThumbnail(videoContent)
-    console.log('🔍 Fallback YouTube thumbnail:', youtubeThumbnail)
-    return youtubeThumbnail
+    const youtubeThumbnail = getYouTubeThumbnail(videoContent);
+    console.log('🔍 Fallback YouTube thumbnail:', youtubeThumbnail);
+    return youtubeThumbnail;
   }
   
   // Final fallback: Default thumbnail
-  console.log('⚡ Using default thumbnail')
-  return '/images/default-video-thumbnail.jpg'
-}
+  console.log('⚡ Using default thumbnail');
+  return '/images/default-video-thumbnail.jpg';
+};
 
 // Handle image loading errors
 const handleImageError = (event) => {
-  console.log('❌ Image failed to load, using default')
-  event.target.src = '/images/default-video-thumbnail.jpg'
-}
+  console.log('❌ Image failed to load, using default');
+  event.target.src = '/images/default-video-thumbnail.jpg';
+};
 
 const handlePreviewImageError = (event) => {
-  console.log('❌ Preview image failed to load')
-  event.target.src = '/images/default-video-thumbnail.jpg'
-}
+  console.log('❌ Preview image failed to load');
+  event.target.src = '/images/default-video-thumbnail.jpg';
+};
 
 // YouTube URL detection and helper functions
 const isYouTubeUrl = (url) => {
   if (!url || typeof url !== 'string') {
-    console.log('❌ Invalid URL for YouTube detection:', url)
-    return false
+    console.log('❌ Invalid URL for YouTube detection:', url);
+    return false;
   }
   
-  const cleanUrl = url.trim()
-  console.log('🔍 Checking if URL is YouTube:', cleanUrl)
+  const cleanUrl = url.trim();
+  console.log('🔍 Checking if URL is YouTube:', cleanUrl);
   
   const youtubePatterns = [
     /youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/,
@@ -561,20 +586,19 @@ const isYouTubeUrl = (url) => {
     /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]+)/,
     /youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/,
     /youtube\.com\/live\/([a-zA-Z0-9_-]+)/
-  ]
+  ];
   
-  const isYouTube = youtubePatterns.some(pattern => pattern.test(cleanUrl))
-  console.log('🔍 YouTube detection result:', isYouTube)
-  return isYouTube
-}
+  const isYouTube = youtubePatterns.some(pattern => pattern.test(cleanUrl));
+  console.log('🔍 YouTube detection result:', isYouTube);
+  return isYouTube;
+};
 
 const getYouTubeVideoId = (url) => {
-  if (!url || typeof url !== 'string') return null
+  if (!url || typeof url !== 'string') return null;
   
-  const cleanUrl = url.trim()
-  console.log('🔍 Extracting video ID from:', cleanUrl)
+  const cleanUrl = url.trim();
+  console.log('🔍 Extracting video ID from:', cleanUrl);
   
-  // Different YouTube URL patterns with more specific matching
   const patterns = [
     /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
     /youtu\.be\/([a-zA-Z0-9_-]{11})/,
@@ -583,170 +607,350 @@ const getYouTubeVideoId = (url) => {
     /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/,
     /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
     /youtube\.com\/live\/([a-zA-Z0-9_-]{11})/
-  ]
+  ];
   
   for (const pattern of patterns) {
-    const match = cleanUrl.match(pattern)
+    const match = cleanUrl.match(pattern);
     if (match && match[1]) {
-      console.log('✅ Found YouTube video ID:', match[1])
-      return match[1]
+      console.log('✅ Found YouTube video ID:', match[1]);
+      return match[1];
     }
   }
   
-  console.log('❌ No YouTube video ID found in URL:', cleanUrl)
-  return null
-}
+  console.log('❌ No YouTube video ID found in URL:', cleanUrl);
+  return null;
+};
 
 const getYouTubeThumbnail = (url) => {
-  const videoId = getYouTubeVideoId(url)
+  const videoId = getYouTubeVideoId(url);
   if (!videoId) {
-    console.log('❌ Cannot get thumbnail - no video ID found')
-    return '/images/default-video-thumbnail.jpg'
+    console.log('❌ Cannot get thumbnail - no video ID found');
+    return '/images/default-video-thumbnail.jpg';
   }
   
-  console.log('✅ Generating thumbnail for video ID:', videoId)
-  // Return high quality thumbnail
-  return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
-}
+  console.log('✅ Generating thumbnail for video ID:', videoId);
+  return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+};
 
-const getYouTubeEmbedUrl = (url) => {
-  const videoId = getYouTubeVideoId(url)
-  if (!videoId) return null
+// Generate clean embed URL that hides YouTube branding
+const generateCleanEmbedUrl = (videoId) => {
+  const params = new URLSearchParams({
+    'autoplay': '1',
+    'rel': '0',
+    'modestbranding': '1',
+    'controls': '1',
+    'showinfo': '0',
+    'iv_load_policy': '3',
+    'fs': '1',
+    'disablekb': '1',
+    'playsinline': '1',
+    'enablejsapi': '1',
+    'origin': window.location.origin,
+    'widget_referrer': window.location.origin,
+    'cc_load_policy': '0',
+    'color': 'white'
+  });
   
-  return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`
-}
+  return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
+};
 
-// EMERGENCY FIX: More aggressive YouTube URL extraction
-const extractYouTubeUrlFromText = (text) => {
-  if (!text) return null
+// Emergency fallback mapping for resources without proper URLs
+const emergencyVideoMapping = {
+  // Add manual mappings here if needed
+  // 'resource_title': 'youtube_url'
+};
+
+
+// Enhanced video content extraction with fallbacks
+const getVideoContentWithFallback = (resource) => {
+  // First try normal extraction
+  const normalContent = getVideoContent(resource);
+  if (normalContent) return normalContent;
   
-  console.log('🔍 [extractYouTubeUrlFromText] Searching in text:', text)
+  // Then try emergency mapping
+  if (emergencyVideoMapping[resource.title]) {
+    console.log('🚨 Using emergency mapping for:', resource.title);
+    return emergencyVideoMapping[resource.title];
+  }
   
-  // More comprehensive patterns
-  const youtubePatterns = [
-    /(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
-    /(https?:\/\/)?(www\.)?youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
-    /(https?:\/\/)?(www\.)?youtube\.com\/v\/([a-zA-Z0-9_-]{11})/,
-    /(https?:\/\/)?(www\.)?youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
-    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
-    // More flexible patterns
-    /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
-    /(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?.*v=([a-zA-Z0-9_-]{11})/
-  ]
-  
-  for (const pattern of youtubePatterns) {
-    const match = text.match(pattern)
-    if (match) {
-      let url = match[0]
-      // Ensure it has http protocol
-      if (!url.startsWith('http')) {
-        url = 'https://' + url
-      }
-      console.log('✅ [extractYouTubeUrlFromText] Found URL:', url)
-      return url
+  // Finally, try to extract from any text field using raw JSON
+  try {
+    const allText = JSON.stringify(resource).toLowerCase();
+    const youtubeMatch = allText.match(/(youtube\.com\/watch\?v=|youtu\.be\/)([a-za-z0-9_-]{11})/);
+    if (youtubeMatch) {
+      const videoId = youtubeMatch[2];
+      const reconstructedUrl = `https://www.youtube.com/watch?v=${videoId}`;
+      console.log('🔧 Reconstructed URL from raw data:', reconstructedUrl);
+      return reconstructedUrl;
     }
+  } catch (error) {
+    console.log('❌ Error extracting from raw data:', error);
   }
   
-  // Also try a simple string search
-  if (text.includes('youtube.com/watch?v=') || text.includes('youtu.be/')) {
-    const urlMatch = text.match(/(https?:\/\/[^\s]+)/)
-    if (urlMatch) {
-      console.log('✅ [extractYouTubeUrlFromText] Found via string search:', urlMatch[0])
-      return urlMatch[0]
-    }
-  }
-  
-  console.log('❌ [extractYouTubeUrlFromText] No YouTube URL found')
-  return null
-}
+  return null;
+};
 
-// Video player functions - IMPROVED VERSION
-const playVideo = (resource) => {
-  console.log('🎬 [playVideo] Attempting to play video:', resource.title)
-  console.log('🎬 [playVideo] Full resource data:', JSON.parse(JSON.stringify(resource)))
+// Enhanced playVideo function with better error handling
+const playVideo = async (resource) => {
+  console.log('🎬 [playVideo] Attempting to play video:', resource.title);
   
-  if (resource.type === 'video') {
-    // Get the actual video content
-    const videoContent = getVideoContent(resource)
-    console.log('🎬 [playVideo] Video content found:', videoContent)
+  const videoContent = getVideoContentWithFallback(resource);
+  
+  if (!videoContent) {
+    alert(`No video content found for: ${resource.title}`);
+    return;
+  }
+  
+  if (isYouTubeUrl(videoContent)) {
+    const videoId = getYouTubeVideoId(videoContent);
     
-    if (videoContent) {
-      console.log('🎬 [playVideo] Checking if YouTube URL...')
-      const isYT = isYouTubeUrl(videoContent)
-      console.log('🎬 [playVideo] Is YouTube URL:', isYT)
+    if (videoId) {
+      console.log('✅ Playing YouTube video with ID:', videoId);
       
-      if (isYT) {
-        const videoId = getYouTubeVideoId(videoContent)
-        console.log('🎬 [playVideo] YouTube Video ID:', videoId)
-        
-        if (videoId) {
-          console.log('✅ [playVideo] Valid YouTube video detected')
-          
-          // Create enhanced resource object with the video content
-          currentVideo.value = {
-            ...resource,
-            videoContent: videoContent,
-            actualContent: videoContent,
-            videoId: videoId,
-            embedUrl: getYouTubeEmbedUrl(videoContent)
-          }
-          
-          showVideoPlayer.value = true
-          console.log('✅ [playVideo] Video player opened successfully')
-          return
-        } else {
-          console.error('❌ [playVideo] Could not extract YouTube video ID')
-          alert('Unable to play video: Could not extract YouTube video ID from URL')
-          return
-        }
+      // Try to get direct video stream first
+      const directVideoUrl = await getDirectVideoStream(videoId);
+      
+      if (directVideoUrl) {
+        console.log('🎯 Using direct video stream');
+        // Use direct video stream (pure video, no YouTube UI)
+        currentVideo.value = {
+          ...resource,
+          directVideoUrl: directVideoUrl,
+          videoId: videoId,
+          thumbnail: getYouTubeThumbnail(videoContent),
+          isDirectStream: true
+        };
       } else {
-        console.log('⚠️ [playVideo] Not a YouTube URL, but has video content:', videoContent)
-        
-        // For non-YouTube URLs, still try to play if it's a direct video URL
-        if (videoContent.match(/\.(mp4|webm|ogg|mov|avi|wmv)$/i)) {
-          console.log('✅ [playVideo] Direct video file detected')
-          currentVideo.value = {
-            ...resource,
-            videoContent: videoContent,
-            actualContent: videoContent,
-            isDirectVideo: true
-          }
-          showVideoPlayer.value = true
-          return
-        } else {
-          console.error('❌ [playVideo] Not a valid video URL format')
-          alert('This is not a valid video URL. Please use YouTube URLs or direct video file links.')
-          return
-        }
+        console.log('🔄 Using ultra-clean embed as fallback');
+        // Fallback to ultra-clean embed
+        currentVideo.value = {
+          ...resource,
+          ultraCleanUrl: generateUltraCleanEmbedUrl(videoId),
+          videoId: videoId,
+          originalUrl: videoContent,
+          isEmbed: true
+        };
       }
-    } else {
-      console.error('❌ [playVideo] No video content found')
       
-      // Show detailed debug info
-      const debugInfo = `
-Unable to find video content in this resource.
-
-Resource Details:
-- Title: ${resource.title}
-- Type: ${resource.type}
-- Content Field: ${resource.content || 'Empty'}
-- File Path: ${resource.file_path || 'Empty'}
-- Description: ${resource.description ? resource.description.substring(0, 100) + '...' : 'Empty'}
-
-Please check if the resource was properly uploaded with a YouTube URL.
-      `
-      alert(debugInfo)
+      showVideoPlayer.value = true;
+      
+    } else {
+      alert('Could not extract YouTube video ID from the URL.');
     }
   } else {
-    console.error('❌ [playVideo] Resource is not a video type')
-    alert('This resource is not a video')
+    // Handle non-YouTube URLs (direct video files)
+    console.log('🎯 Using direct video file');
+    currentVideo.value = {
+      ...resource,
+      directVideoUrl: videoContent,
+      isDirectVideo: true
+    };
+    showVideoPlayer.value = true;
   }
-}
+};
+
+
+// Updated method to get direct video stream
+const getDirectVideoStream = async (videoId) => {
+  try {
+    console.log('🔍 Getting direct video stream for:', videoId);
+    
+    // Method 1: Try our new backend API first
+    try {
+      const response = await fetch(`/api/youtube-direct-stream?videoId=${videoId}`);
+      const data = await response.json();
+      
+      if (data.success && data.directUrl) {
+        console.log('✅ Got direct video stream from API:', data.directUrl);
+        return data.directUrl;
+      }
+    } catch (apiError) {
+      console.log('❌ API method failed, trying proxy...');
+    }
+    
+    // Method 2: Use our proxy as fallback
+    const proxyUrl = `/api/video-proxy/${videoId}`;
+    console.log('🔄 Using proxy URL:', proxyUrl);
+    
+    // Test if proxy URL is accessible
+    try {
+      const testResponse = await fetch(proxyUrl, { method: 'HEAD' });
+      if (testResponse.ok) {
+        console.log('✅ Proxy URL is accessible');
+        return proxyUrl;
+      }
+    } catch (proxyError) {
+      console.log('❌ Proxy URL not accessible');
+    }
+    
+    // Method 3: Fallback to ultra-clean embed
+    console.log('🔄 Falling back to ultra-clean embed');
+    return null;
+    
+  } catch (error) {
+    console.error('❌ Error getting direct video stream:', error);
+    return null;
+  }
+};
+
+// Helper function to open URLs in new tab
+const openInNewTab = (url) => {
+  window.open(url, '_blank', 'noopener,noreferrer');
+};
+
+
+const getYouTubeDirectStream = async (videoId) => {
+  try {
+    // This would call your backend service that fetches direct video URLs
+    const response = await fetch(`/api/youtube-direct-stream?videoId=${videoId}`);
+    const data = await response.json();
+    
+    if (data.success && data.directUrl) {
+      return data.directUrl;
+    }
+    return null;
+  } catch (error) {
+    console.log('External service failed, trying proxy...');
+    return null;
+  }
+};
+
+// Method 2: Use backend proxy to serve video
+const getVideoThroughProxy = async (videoId) => {
+  try {
+    // Your backend would handle fetching and serving the video
+    return `/api/video-proxy/${videoId}`;
+  } catch (error) {
+    console.log('Proxy method failed');
+    return null;
+  }
+};
+
+// Generate ultra-clean YouTube embed as fallback
+const generateUltraCleanEmbedUrl = (videoId) => {
+  // Maximum parameters to hide everything
+  const params = new URLSearchParams({
+    'autoplay': '1',
+    'rel': '0',
+    'modestbranding': '1',
+    'controls': '0', // No controls
+    'showinfo': '0',
+    'iv_load_policy': '3',
+    'fs': '0', // No fullscreen
+    'disablekb': '1',
+    'playsinline': '1',
+    'enablejsapi': '1',
+    'origin': window.location.origin,
+    'widget_referrer': window.location.origin,
+    'cc_load_policy': '0',
+    'color': 'white',
+    'hl': 'en',
+    'cc_lang_pref': 'en',
+    'version': '3',
+    'loop': '0',
+    'playlist': videoId,
+    'mute': '0',
+    'start': '0',
+    'end': '0'
+  });
+  
+  return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
+};
 
 const closeVideoPlayer = () => {
-  showVideoPlayer.value = false
-  currentVideo.value = null
+  // Stop video if playing (only if videoPlayer ref exists)
+  if (videoPlayer.value && videoPlayer.value.pause) {
+    videoPlayer.value.pause();
+    videoPlayer.value.currentTime = 0;
+  }
+  
+  showVideoPlayer.value = false;
+  currentVideo.value = null;
+};
+
+// Enhanced upload function with URL normalization
+const uploadVideoFinal = async () => {
+  if (!videoForm.title || !videoForm.url) {
+    alert('Please provide both title and video URL');
+    return;
+  }
+
+  // Validate and normalize YouTube URL
+  let youtubeUrl = videoForm.url.trim();
+  
+  // Ensure URL has proper protocol
+  if (!youtubeUrl.startsWith('http')) {
+    youtubeUrl = 'https://' + youtubeUrl;
+  }
+  
+  // Validate it's a YouTube URL
+  if (!isYouTubeUrl(youtubeUrl)) {
+    alert('Please provide a valid YouTube URL (youtube.com or youtu.be)');
+    return;
+  }
+
+  uploading.value = true;
+
+  try {
+    const formData = new FormData()
+    formData.append('title', videoForm.title)
+    formData.append('description', videoForm.description || '')
+    formData.append('type', 'video')
+    formData.append('content', youtubeUrl) // Make sure this is the normalized YouTube URL
+    
+    // Also store in multiple fields for redundancy
+    formData.append('url', youtubeUrl)
+    formData.append('video_url', youtubeUrl)
+    
+    if (props.classId) {
+      formData.append('assigned_class', props.classId)
+    }
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+    
+    if (!csrfToken) {
+      throw new Error('CSRF token not found')
+    }
+
+    console.log('📡 [UPLOAD] Sending YouTube URL:', youtubeUrl)
+
+    const response = await fetch(`/api/teachers/${getCurrentTeacherId()}/resources`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-TOKEN': csrfToken,
+      },
+      body: formData,
+      credentials: 'include'
+    })
+
+    const data = await response.json()
+    console.log('📥 [UPLOAD] Response:', data)
+
+    if (data.success) {
+      showVideoUpload.value = false
+      resetVideoForm()
+      showNotification('Video added successfully!', 'success')
+      
+      // Refresh the page to get updated resources
+      router.reload()
+    } else {
+      let errorMessage = 'Failed to add video: '
+      if (data.errors) {
+        const errorMessages = Object.values(data.errors).flat()
+        errorMessage += errorMessages.join(', ')
+      } else if (data.message) {
+        errorMessage += data.message
+      }
+      alert(errorMessage)
+    }
+  } catch (error) {
+    console.error('❌ Upload error:', error)
+    alert('Network error. Please try again.')
+  } finally {
+    uploading.value = false
+  }
 }
 
 // Fetch resources
@@ -754,6 +958,15 @@ const fetchResources = async () => {
   if (props.resources) {
     resources.value = props.resources
     loading.value = false
+    
+    // Debug: Log all resources to see their structure
+    console.log('📦 All resources data:', resources.value)
+    resources.value.forEach((resource, index) => {
+      console.log(`📹 Resource ${index + 1}:`, resource)
+      const videoContent = getVideoContent(resource)
+      console.log(`🎬 Extracted video content for resource ${index + 1}:`, videoContent)
+    })
+    
     return
   }
 
@@ -771,6 +984,7 @@ const fetchResources = async () => {
       const data = await response.json()
       if (data.success) {
         resources.value = data.data
+        console.log('📦 Fetched resources:', resources.value)
       } else {
         resources.value = []
       }
@@ -784,82 +998,13 @@ const fetchResources = async () => {
   }
 }
 
-// UPDATED: Upload video link using Inertia form (proper CSRF handling)
-const uploadVideoFinal = async () => {
-  if (!videoForm.title || !videoForm.url) {
-    alert('Please provide both title and YouTube URL')
-    return
-  }
-
-  uploading.value = true
-
-  try {
-    const formData = new FormData()
-    formData.append('title', videoForm.title)
-    formData.append('description', videoForm.description || '')
-    formData.append('type', 'video')
-    formData.append('content', videoForm.url)
-    
-    if (props.classId) {
-      formData.append('assigned_class', props.classId)
-    }
-
-    // Get CSRF token from meta tag
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-
-    const response = await fetch(`/api/teachers/${getCurrentTeacherId()}/resources`, {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-CSRF-TOKEN': csrfToken,
-      },
-      body: formData,
-      credentials: 'include'
-    })
-
-    const data = await response.json()
-
-    if (data.success) {
-      showVideoUpload.value = false
-      resetVideoForm()
-      showNotification('Video added successfully!', 'success')
-      
-      // Refresh the resources list
-      if (!props.resources) {
-        await fetchResources()
-      } else {
-        // Reload the page to get updated resources from server
-        router.reload()
-      }
-    } else {
-      // Handle validation errors
-      let errorMessage = 'Failed to add video: '
-      if (data.errors) {
-        // Extract all error messages
-        const errorMessages = Object.values(data.errors).flat()
-        errorMessage += errorMessages.join(', ')
-      } else if (data.message) {
-        errorMessage += data.message
-      } else {
-        errorMessage += 'Unknown error occurred'
-      }
-      alert(errorMessage)
-    }
-  } catch (error) {
-    console.error('Upload error:', error)
-    alert('Network error. Please check your connection and try again.')
-  } finally {
-    uploading.value = false
-  }
-}
-
 // Share resource
 const shareResource = async (resource) => {
+  const videoContent = getVideoContentWithFallback(resource)
   const shareData = {
     title: resource.title,
     text: resource.description,
-    url: getVideoContent(resource) || window.location.href
+    url: videoContent || window.location.href
   }
 
   if (navigator.share) {
@@ -871,7 +1016,7 @@ const shareResource = async (resource) => {
       }
     }
   } else {
-    const shareText = `${resource.title}\n${resource.description}\n\nWatch: ${getVideoContent(resource)}`
+    const shareText = `${resource.title}\n${resource.description}\n\nWatch: ${videoContent}`
     try {
       await navigator.clipboard.writeText(shareText)
       showNotification('Video link copied to clipboard!', 'success')
@@ -881,7 +1026,7 @@ const shareResource = async (resource) => {
   }
 }
 
-// Delete resource with debug logging
+// Delete resource
 const deleteResource = async (resourceId) => {
   console.log('🗑️ [FRONTEND] Attempting to delete resource ID:', resourceId)
   
@@ -941,7 +1086,10 @@ const showNotification = (message, type = 'info') => {
 
 // Reset form
 const resetVideoForm = () => {
-  videoForm.reset()
+  videoForm.title = ''
+  videoForm.description = ''
+  videoForm.url = ''
+  videoForm.assigned_class = props.classId || null
 }
 
 // Helper methods
@@ -957,11 +1105,27 @@ const formatDate = (dateString) => {
 onMounted(async () => {
   if (!props.resources) {
     await fetchResources()
+  } else {
+    // Debug existing resources
+    console.log('📦 Props resources:', props.resources)
+    resources.value.forEach((resource, index) => {
+      console.log(`🔍 Resource ${index + 1} structure:`, resource)
+      const videoContent = getVideoContent(resource)
+      console.log(`🎬 Video content for resource ${index + 1}:`, videoContent)
+    })
   }
   
-  // Debug the resources data after loading
+  // Run debug analysis after a short delay
   setTimeout(() => {
-    debugResourceData()
+    debugResources()
   }, 1000)
 })
 </script>
+
+<style scoped>
+/* Custom styles for clean video player */
+iframe {
+  border-radius: 0;
+  background: #000;
+}
+</style>

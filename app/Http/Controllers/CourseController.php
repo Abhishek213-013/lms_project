@@ -435,83 +435,110 @@ class CourseController extends Controller
     /**
      * Get all classes (grades 1-12 and other courses)
      */
-    public function getClasses()
+    public function getClasses(Request $request)
     {
         try {
             // Check if classes table exists and has data
             if (!Schema::hasTable('classes')) {
-                return $this->getMockClasses();
+                $response = $this->getMockClasses();
+            } else {
+                // Get all classes from database
+                $databaseClasses = ClassModel::select('id', 'name', 'subject', 'grade', 'teacher_id', 'status', 'type', 'category', 'capacity')
+                    ->with(['teacher:id,name,email', 'students'])
+                    ->get();
+
+                // If no classes in database, return mock data
+                if ($databaseClasses->isEmpty()) {
+                    $response = $this->getMockClasses();
+                } else {
+                    $formattedClasses = [];
+
+                    // Separate regular classes and other courses
+                    $regularClasses = $databaseClasses->where('type', 'regular');
+                    $otherCourses = $databaseClasses->where('type', 'other');
+
+                    // Process regular classes - group by name to handle multiple subjects
+                    $groupedRegularClasses = $regularClasses->groupBy('name');
+
+                    foreach ($groupedRegularClasses as $className => $classes) {
+                        $firstClass = $classes->first();
+                        
+                        $formattedClasses[] = [
+                            'id' => $firstClass->id,
+                            'grade' => $firstClass->grade,
+                            'name' => $className,
+                            'subjectCount' => $classes->unique('subject')->count(),
+                            'studentCount' => $classes->sum(function($class) {
+                                return $class->students->count();
+                            }),
+                            'teachers' => $classes->pluck('teacher')->filter()->unique()->values()->toArray(),
+                            'status' => $firstClass->status,
+                            'type' => 'regular',
+                            'capacity' => $firstClass->capacity,
+                            'description' => $firstClass->description
+                        ];
+                    }
+
+                    // Process other courses
+                    foreach ($otherCourses as $course) {
+                        $formattedClasses[] = [
+                            'id' => $course->id,
+                            'name' => $course->name,
+                            'category' => $course->category,
+                            'studentCount' => $course->students->count(),
+                            'teachers' => $course->teacher ? [[
+                                'id' => $course->teacher->id,
+                                'name' => $course->teacher->name,
+                                'email' => $course->teacher->email
+                            ]] : [],
+                            'status' => $course->status,
+                            'type' => 'other',
+                            'capacity' => $course->capacity,
+                            'description' => $course->description
+                        ];
+                    }
+
+                    $response = response()->json([
+                        'success' => true,
+                        'data' => $formattedClasses,
+                        'source' => 'database',
+                        'total_classes' => count($formattedClasses),
+                        'regular_count' => $groupedRegularClasses->count(),
+                        'other_count' => $otherCourses->count()
+                    ]);
+                }
             }
 
-            // Get all classes from database
-            $databaseClasses = ClassModel::select('id', 'name', 'subject', 'grade', 'teacher_id', 'status', 'type', 'category', 'capacity')
-                ->with(['teacher:id,name,email', 'students'])
-                ->get();
-
-            // If no classes in database, return mock data
-            if ($databaseClasses->isEmpty()) {
-                return $this->getMockClasses();
+            // If this is an Inertia request, return proper Inertia response
+            if ($request->header('X-Inertia')) {
+                $data = json_decode($response->getContent(), true);
+                return Inertia::render('Admin/Courses/AllCourses', [
+                    'classes' => $data['data'] ?? [],
+                    'source' => $data['source'] ?? 'mock',
+                    'total_classes' => $data['total_classes'] ?? 0,
+                    'regular_count' => $data['regular_count'] ?? 0,
+                    'other_count' => $data['other_count'] ?? 0
+                ]);
             }
 
-            $formattedClasses = [];
+            // Otherwise return JSON response
+            return $response;
 
-            // Separate regular classes and other courses
-            $regularClasses = $databaseClasses->where('type', 'regular');
-            $otherCourses = $databaseClasses->where('type', 'other');
-
-            // Process regular classes - group by name to handle multiple subjects
-            $groupedRegularClasses = $regularClasses->groupBy('name');
-
-            foreach ($groupedRegularClasses as $className => $classes) {
-                $firstClass = $classes->first();
-                
-                $formattedClasses[] = [
-                    'id' => $firstClass->id,
-                    'grade' => $firstClass->grade,
-                    'name' => $className,
-                    'subjectCount' => $classes->unique('subject')->count(),
-                    'studentCount' => $classes->sum(function($class) {
-                        return $class->students->count();
-                    }),
-                    'teachers' => $classes->pluck('teacher')->filter()->unique()->values()->toArray(),
-                    'status' => $firstClass->status,
-                    'type' => 'regular',
-                    'capacity' => $firstClass->capacity,
-                    'description' => $firstClass->description
-                ];
-            }
-
-            // Process other courses
-            foreach ($otherCourses as $course) {
-                $formattedClasses[] = [
-                    'id' => $course->id,
-                    'name' => $course->name,
-                    'category' => $course->category,
-                    'studentCount' => $course->students->count(),
-                    'teachers' => $course->teacher ? [[
-                        'id' => $course->teacher->id,
-                        'name' => $course->teacher->name,
-                        'email' => $course->teacher->email
-                    ]] : [],
-                    'status' => $course->status,
-                    'type' => 'other',
-                    'capacity' => $course->capacity,
-                    'description' => $course->description
-                ];
-            }
-
-            return response()->json([
-                'success' => true,
-                'data' => $formattedClasses,
-                'source' => 'database',
-                'total_classes' => count($formattedClasses),
-                'regular_count' => $groupedRegularClasses->count(),
-                'other_count' => $otherCourses->count()
-            ]);
         } catch (\Exception $e) {
             Log::error('Error fetching classes: ' . $e->getMessage());
-            // Return mock data if there's an error
-            return $this->getMockClasses();
+            
+            if ($request->header('X-Inertia')) {
+                return Inertia::render('Admin/Courses/AllCourses', [
+                    'classes' => [],
+                    'source' => 'error',
+                    'error' => 'Failed to load classes'
+                ]);
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch classes'
+            ], 500);
         }
     }
 

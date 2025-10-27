@@ -19,22 +19,51 @@
                 <!-- Desktop Navigation -->
                 <div class="desktop-menu">
                   <ul class="navigation">
-                    <li><Link href="/">Home</Link></li>
-                    <li><Link href="/courses">Courses</Link></li>
-                    <li><Link href="/instructors">Instructors</Link></li>
-                    <li><Link href="/about">About</Link></li>
-                    <li><Link href="/blog">Blog</Link></li>
-                    <li><Link href="/contact">Contact</Link></li>
+                    <li><Link href="/">{{ t('Home') }}</Link></li>
+                    <li><Link href="/courses">{{ t('Courses') }}</Link></li>
+                    <li><Link href="/instructors">{{ t('Instructors') }}</Link></li>
+                    <li><Link href="/about">{{ t('About') }}</Link></li>
                     
                     <!-- Search Bar -->
                     <li class="search-nav-item">
                       <div class="nav-search">
                         <form @submit.prevent="searchCourses">
                           <div class="search-input-group">
-                            <input v-model="searchQuery" type="text" placeholder="Search Courses...">
+                            <input v-model="searchQuery" type="text" :placeholder="t('Search Courses...')">
                             <button type="submit"><i class="fas fa-search"></i></button>
                           </div>
                         </form>
+                      </div>
+                    </li>
+
+                    <!-- Theme Toggle -->
+                    <li class="theme-nav-item">
+                      <div class="theme-switcher-nav">
+                        <button 
+                          @click="toggleTheme"
+                          class="theme-btn-nav"
+                          :title="currentTheme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'"
+                        >
+                          <i class="fas" :class="themeIcon"></i>
+                        </button>
+                      </div>
+                    </li>
+
+                    <!-- Language Switcher -->
+                    <li class="language-nav-item">
+                      <div class="language-switcher-nav">
+                        <button 
+                          @click="switchLanguage('bn')"
+                          :class="['lang-btn-nav', { 'active': currentLanguage === 'bn' }]"
+                        >
+                          Bn
+                        </button>
+                        <button 
+                          @click="switchLanguage('en')"
+                          :class="['lang-btn-nav', { 'active': currentLanguage === 'en' }]"
+                        >
+                          En
+                        </button>
                       </div>
                     </li>
                     
@@ -57,23 +86,34 @@
                               </div>
                             </div>
                           </div>
+                          
                           <div class="dropdown-divider"></div>
-                          <Link href="/student-profile" class="dropdown-item" @click="closeAll">
-                            <i class="fas fa-user"></i>My Profile
-                          </Link>
-                          <Link href="/my-courses" class="dropdown-item" @click="closeAll">
-                            <i class="fas fa-book"></i>My Courses
-                          </Link>
-                          <Link href="/learning-progress" class="dropdown-item" @click="closeAll">
-                            <i class="fas fa-chart-line"></i>Learning Progress
-                          </Link>
-                          <Link href="/settings" class="dropdown-item" @click="closeAll">
-                            <i class="fas fa-cog"></i>Settings
-                          </Link>
-                          <div class="dropdown-divider"></div>
-                          <button class="dropdown-item logout" @click="logout">
-                            <i class="fas fa-sign-out-alt"></i>Logout
-                          </button>
+                          
+                          <div class="dropdown-menu-items">
+                            <button @click="navigateToProfile" class="dropdown-item">
+                              <i class="fas fa-user"></i>
+                              <span class="dropdown-text">{{ t('My Profile') }}</span>
+                            </button>
+                            <button @click="navigateToMyCourses" class="dropdown-item">
+                              <i class="fas fa-book"></i>
+                              <span class="dropdown-text">{{ t('My Courses') }}</span>
+                            </button>
+                            <button @click="navigateToLearningProgress" class="dropdown-item">
+                              <i class="fas fa-chart-line"></i>
+                              <span class="dropdown-text">{{ t('Learning Progress') }}</span>
+                            </button>
+                            <button @click="navigateToSettings" class="dropdown-item">
+                              <i class="fas fa-cog"></i>
+                              <span class="dropdown-text">{{ t('Settings') }}</span>
+                            </button>
+                            
+                            <div class="dropdown-divider"></div>
+                            
+                            <button class="dropdown-item logout" @click="logout">
+                              <i class="fas fa-sign-out-alt"></i>
+                              <span class="dropdown-text">{{ t('Logout') }}</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </li>
@@ -81,8 +121,8 @@
                     <!-- Login/Register -->
                     <li v-else class="auth-nav-item">
                       <div class="auth-buttons">
-                        <Link href="/student-login" class="btn-login">Login</Link>
-                        <Link href="/phone-verification" class="btn-primary">Get Started</Link>
+                        <Link href="/student-login" class="btn-login">{{ t('Login') }}</Link>
+                        <Link href="/phone-verification" class="btn-primary">{{ t('Get Started') }}</Link>
                       </div>
                     </li>
                   </ul>
@@ -107,6 +147,37 @@
                       </div>
                     </Link>
                   </div>
+                  
+                  <!-- Theme and Language Switchers in Mobile -->
+                  <div class="mobile-controls">
+                    <!-- Theme Toggle in Mobile -->
+                    <div class="mobile-theme-switcher">
+                      <button 
+                        @click="toggleTheme"
+                        class="theme-btn-mobile"
+                        :title="currentTheme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'"
+                      >
+                        <i class="fas" :class="themeIcon"></i>
+                      </button>
+                    </div>
+                    
+                    <!-- Language Switcher in Mobile -->
+                    <div class="mobile-language-switcher">
+                      <button 
+                        @click="switchLanguage('bn')"
+                        :class="['lang-btn-mobile', { 'active': currentLanguage === 'bn' }]"
+                      >
+                        Bn
+                      </button>
+                      <button 
+                        @click="switchLanguage('en')"
+                        :class="['lang-btn-mobile', { 'active': currentLanguage === 'en' }]"
+                      >
+                        En
+                      </button>
+                    </div>
+                  </div>
+                  
                   <div class="mobile-menu-close" @click="closeAll">
                     <i class="fas fa-times"></i>
                   </div>
@@ -114,19 +185,17 @@
                 
                 <div class="mobile-search">
                   <form @submit.prevent="searchCourses">
-                    <input v-model="searchQuery" type="text" placeholder="Search courses...">
+                    <input v-model="searchQuery" type="text" :placeholder="t('Search Courses...')">
                     <button type="submit"><i class="fas fa-search"></i></button>
                   </form>
                 </div>
                 
                 <div class="mobile-navigation">
                   <ul class="mobile-nav-list">
-                    <li><Link href="/" @click="closeAll">Home</Link></li>
-                    <li><Link href="/courses" @click="closeAll">Courses</Link></li>
-                    <li><Link href="/instructors" @click="closeAll">Instructors</Link></li>
-                    <li><Link href="/about" @click="closeAll">About</Link></li>
-                    <li><Link href="/blog" @click="closeAll">Blog</Link></li>
-                    <li><Link href="/contact" @click="closeAll">Contact</Link></li>
+                    <li><Link href="/" @click="closeAll">{{ t('Home') }}</Link></li>
+                    <li><Link href="/courses" @click="closeAll">{{ t('Courses') }}</Link></li>
+                    <li><Link href="/instructors" @click="closeAll">{{ t('Instructors') }}</Link></li>
+                    <li><Link href="/about" @click="closeAll">{{ t('About') }}</Link></li>
                     
                     <template v-if="$page.props.auth.user">
                       <li class="mobile-profile-section">
@@ -140,15 +209,15 @@
                           </div>
                         </div>
                       </li>
-                      <li><Link href="/student-profile" @click="closeAll"><i class="fas fa-user"></i>My Profile</Link></li>
-                      <li><Link href="/my-courses" @click="closeAll"><i class="fas fa-book"></i>My Courses</Link></li>
-                      <li><Link href="/learning-progress" @click="closeAll"><i class="fas fa-chart-line"></i>Learning Progress</Link></li>
-                      <li><Link href="/settings" @click="closeAll"><i class="fas fa-cog"></i>Settings</Link></li>
-                      <li><button @click="logoutMobile" class="mobile-logout-btn"><i class="fas fa-sign-out-alt"></i>Logout</button></li>
+                      <li><button @click="navigateToProfileMobile" class="mobile-nav-btn"><i class="fas fa-user"></i>{{ t('My Profile') }}</button></li>
+                      <li><button @click="navigateToMyCoursesMobile" class="mobile-nav-btn"><i class="fas fa-book"></i>{{ t('My Courses') }}</button></li>
+                      <li><button @click="navigateToLearningProgressMobile" class="mobile-nav-btn"><i class="fas fa-chart-line"></i>{{ t('Learning Progress') }}</button></li>
+                      <li><button @click="navigateToSettingsMobile" class="mobile-nav-btn"><i class="fas fa-cog"></i>{{ t('Settings') }}</button></li>
+                      <li><button @click="logoutMobile" class="mobile-logout-btn"><i class="fas fa-sign-out-alt"></i>{{ t('Logout') }}</button></li>
                     </template>
                     <template v-else>
-                      <li><Link href="/student-login" @click="closeAll">Login</Link></li>
-                      <li><Link href="/phone-verification" @click="closeAll">Get Started</Link></li>
+                      <li><Link href="/student-login" @click="closeAll">{{ t('Login') }}</Link></li>
+                      <li><Link href="/phone-verification" @click="closeAll">{{ t('Get Started') }}</Link></li>
                     </template>
                   </ul>
                 </div>
@@ -165,12 +234,208 @@
 
 <script setup>
 import { Link, router } from '@inertiajs/vue3'
-import { ref } from 'vue'
+import { ref, onMounted, getCurrentInstance, computed, watch } from 'vue'
+
+// Get the Vue instance for accessing global properties
+const { proxy } = getCurrentInstance()
 
 // Reactive data
 const mobileOpen = ref(false)
 const profileOpen = ref(false)
 const searchQuery = ref('')
+const currentLanguage = ref('bn')
+const currentTheme = ref('light')
+
+// Enhanced theme management
+const applyTheme = (theme) => {
+  currentTheme.value = theme
+  
+  // Remove all theme classes first
+  document.documentElement.classList.remove('light-theme', 'dark-theme')
+  document.body.classList.remove('light-theme', 'dark-theme')
+  
+  // Add the current theme class
+  if (theme === 'dark') {
+    document.documentElement.classList.add('dark-theme')
+    document.body.classList.add('dark-theme')
+  } else {
+    document.documentElement.classList.add('light-theme')
+    document.body.classList.add('light-theme')
+  }
+  
+  localStorage.setItem('preferredTheme', theme)
+}
+
+// Watch for theme changes and apply immediately
+watch(currentTheme, (newTheme) => {
+  applyTheme(newTheme)
+})
+
+// Computed property for theme icon
+const themeIcon = computed(() => {
+  return currentTheme.value === 'light' ? 'fa-moon' : 'fa-sun'
+})
+
+onMounted(() => {
+  // Load language preference
+  const savedLang = localStorage.getItem('preferredLanguage')
+  if (savedLang && (savedLang === 'en' || savedLang === 'bn')) {
+    currentLanguage.value = savedLang
+  }
+  
+  // Load theme preference and apply immediately
+  const savedTheme = localStorage.getItem('preferredTheme')
+  if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
+    currentTheme.value = savedTheme
+    applyTheme(savedTheme)
+  } else {
+    // Check system preference
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    currentTheme.value = systemPrefersDark ? 'dark' : 'light'
+    applyTheme(currentTheme.value)
+  }
+  
+  // Listen for system theme changes
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    if (!localStorage.getItem('preferredTheme')) {
+      const newTheme = e.matches ? 'dark' : 'light'
+      currentTheme.value = newTheme
+      applyTheme(newTheme)
+      window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: newTheme } }))
+    }
+  })
+  
+  // Listen for theme changes from other components
+  window.addEventListener('themeChanged', (event) => {
+    currentTheme.value = event.detail.theme
+    applyTheme(event.detail.theme)
+  })
+})
+
+// Enhanced toggle theme function
+const toggleTheme = () => {
+  const newTheme = currentTheme.value === 'light' ? 'dark' : 'light'
+  currentTheme.value = newTheme
+  applyTheme(newTheme)
+  
+  // Dispatch global event for other components
+  window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: newTheme } }))
+  
+  closeAll()
+}
+
+// Translation function
+const t = (key, replacements = {}) => {
+  // Try to use global t function first
+  if (proxy && typeof proxy.t === 'function') {
+    return proxy.t(key, replacements)
+  }
+  
+  // Fallback translation
+  const translations = {
+    en: {
+      'Home': 'Home',
+      'Courses': 'Courses',
+      'Instructors': 'Instructors',
+      'About': 'About',
+      'Search Courses...': 'Search Courses...',
+      'My Profile': 'My Profile',
+      'My Courses': 'My Courses',
+      'Learning Progress': 'Learning Progress',
+      'Settings': 'Settings',
+      'Logout': 'Logout',
+      'Login': 'Login',
+      'Get Started': 'Get Started',
+    },
+    bn: {
+      'Home': 'হোম',
+      'Courses': 'কোর্সসমূহ',
+      'Instructors': 'ইন্সট্রাক্টর',
+      'About': 'আমাদের সম্পর্কে',
+      'Search Courses...': 'কোর্স খুঁজুন...',
+      'My Profile': 'আমার প্রোফাইল',
+      'My Courses': 'আমার কোর্সসমূহ',
+      'Learning Progress': 'শেখার অগ্রগতি',
+      'Settings': 'সেটিংস',
+      'Logout': 'লগআউট',
+      'Login': 'লগইন',
+      'Get Started': 'শুরু করুন',
+    }
+  }
+  
+  let translated = translations[currentLanguage.value]?.[key] || key
+  
+  Object.keys(replacements).forEach(replacementKey => {
+    translated = translated.replace(`{${replacementKey}}`, replacements[replacementKey])
+  })
+  
+  return translated
+}
+
+// Switch language
+const switchLanguage = (lang) => {
+  currentLanguage.value = lang
+  localStorage.setItem('preferredLanguage', lang)
+  
+  // Update body class
+  if (lang === 'bn') {
+    document.body.classList.add('bn-lang')
+  } else {
+    document.body.classList.remove('bn-lang')
+  }
+  
+  // Update page title
+  document.title = lang === 'bn' 
+    ? 'স্কিলগ্রো - অনলাইন লার্নিং প্ল্যাটফর্ম'
+    : 'SkillGro - Online Learning Platform'
+  
+  // Dispatch event for other components
+  window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: lang } }))
+  
+  closeAll()
+}
+
+// Profile Dropdown Navigation Methods
+const navigateToProfile = () => {
+  closeAll()
+  router.get('/student-profile')
+}
+
+const navigateToMyCourses = () => {
+  closeAll()
+  router.get('/my-courses')
+}
+
+const navigateToLearningProgress = () => {
+  closeAll()
+  router.get('/learning-progress')
+}
+
+const navigateToSettings = () => {
+  closeAll()
+  router.get('/settings')
+}
+
+// Mobile Navigation Methods
+const navigateToProfileMobile = () => {
+  closeAll()
+  router.get('/student-profile')
+}
+
+const navigateToMyCoursesMobile = () => {
+  closeAll()
+  router.get('/my-courses')
+}
+
+const navigateToLearningProgressMobile = () => {
+  closeAll()
+  router.get('/learning-progress')
+}
+
+const navigateToSettingsMobile = () => {
+  closeAll()
+  router.get('/settings')
+}
 
 // Methods
 const toggleProfileDropdown = (event) => {
@@ -226,16 +491,17 @@ const vClickOutside = {
 </script>
 
 <style scoped>
-/* Base Styles */
+/* Base header styles using CSS variables */
 .header-area {
-  background: #ffffff;
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+  background: var(--header-bg);
+  box-shadow: var(--shadow);
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 1000;
   width: 100%;
+  transition: all 0.3s ease;
 }
 
 .menu-wrap {
@@ -263,8 +529,9 @@ const vClickOutside = {
   align-items: center;
   font-size: 24px;
   font-weight: 700;
-  color: #4a6cf7;
+  color: var(--primary-color);
   text-decoration: none;
+  transition: color 0.3s ease;
 }
 
 .logo-text i {
@@ -281,14 +548,14 @@ const vClickOutside = {
   display: flex;
   align-items: center;
   list-style: none;
-  gap: 30px;
+  gap: 20px;
   margin: 0;
   padding: 0;
 }
 
 .navigation li a {
   text-decoration: none;
-  color: #2c3e50;
+  color: var(--text-primary);
   font-weight: 500;
   font-size: 16px;
   padding: 12px 0;
@@ -297,7 +564,7 @@ const vClickOutside = {
 }
 
 .navigation li a:hover {
-  color: #4a6cf7;
+  color: var(--primary-color);
 }
 
 /* Search Bar */
@@ -312,11 +579,12 @@ const vClickOutside = {
 .search-input-group {
   display: flex;
   align-items: center;
-  background: #f8f9fa;
+  background: var(--bg-secondary);
   border-radius: 20px;
   padding: 6px 15px;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--border-color);
   min-width: 200px;
+  transition: all 0.3s ease;
 }
 
 .search-input-group input {
@@ -327,15 +595,90 @@ const vClickOutside = {
   width: 100%;
   font-size: 14px;
   flex: 1;
+  color: var(--text-primary);
+}
+
+.search-input-group input::placeholder {
+  color: var(--text-muted);
 }
 
 .search-input-group button {
   border: none;
   background: transparent;
-  color: #4a6cf7;
+  color: var(--primary-color);
   cursor: pointer;
   padding: 4px;
   margin-left: 6px;
+  transition: color 0.3s ease;
+}
+
+/* Theme Switcher */
+.theme-nav-item {
+  margin-left: 5px;
+}
+
+.theme-switcher-nav {
+  display: flex;
+}
+
+.theme-btn-nav {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 16px;
+  background: var(--bg-secondary);
+  color: var(--primary-color);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+}
+
+.theme-btn-nav:hover {
+  background: var(--bg-tertiary);
+  transform: scale(1.05);
+}
+
+/* Language Switcher */
+.language-nav-item {
+  margin-left: 5px;
+}
+
+.language-switcher-nav {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-secondary);
+  border-radius: 20px;
+  padding: 2px;
+  transition: all 0.3s ease;
+}
+
+.lang-btn-nav {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 16px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 40px;
+  color: var(--text-primary);
+}
+
+.lang-btn-nav.active {
+  background: var(--primary-color);
+  color: white;
+}
+
+.lang-btn-nav:hover {
+  background: var(--bg-tertiary);
+}
+
+.lang-btn-nav.active:hover {
+  background: var(--primary-hover);
 }
 
 /* Profile Dropdown */
@@ -347,11 +690,11 @@ const vClickOutside = {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #f8f9fa;
-  padding: 8px 15px;
+  background: var(--bg-secondary);
+  padding: 8px 16px;
   border-radius: 20px;
-  border: 1px solid #e9ecef;
-  color: #2c3e50;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   font-weight: 500;
   font-size: 16px;
   cursor: pointer;
@@ -363,12 +706,12 @@ const vClickOutside = {
 }
 
 .profile-trigger:hover {
-  background: #e9ecef;
+  background: var(--bg-tertiary);
 }
 
 .profile-trigger i.fa-user-circle {
   font-size: 18px;
-  color: #4a6cf7;
+  color: var(--primary-color);
 }
 
 .profile-trigger .fa-chevron-down {
@@ -384,19 +727,21 @@ const vClickOutside = {
   position: absolute;
   top: 100%;
   right: 0;
-  background: white;
-  min-width: 280px;
-  border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  background: var(--bg-primary);
+  min-width: 300px;
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
   padding: 0;
-  margin-top: 5px;
+  margin-top: 8px;
   z-index: 1001;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
 }
 
 .dropdown-header {
-  padding: 16px 20px;
-  background: #f8f9fa;
-  border-radius: 8px 8px 0 0;
+  padding: 20px 24px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .student-info {
@@ -407,7 +752,7 @@ const vClickOutside = {
 
 .student-avatar {
   font-size: 40px;
-  color: #4a6cf7;
+  color: var(--primary-color);
 }
 
 .student-details {
@@ -418,7 +763,7 @@ const vClickOutside = {
 .student-name {
   font-weight: 600;
   font-size: 16px;
-  color: #2c3e50;
+  color: var(--text-primary);
   margin-bottom: 4px;
   white-space: nowrap;
   overflow: hidden;
@@ -427,18 +772,22 @@ const vClickOutside = {
 
 .student-email {
   font-size: 12px;
-  color: #6c757d;
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.dropdown-menu-items {
+  padding: 10px 10px;
+}
+
 .dropdown-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 20px;
-  color: #2c3e50;
+  gap: 12px;
+  padding: 14px 24px;
+  color: var(--text-primary);
   text-decoration: none;
   transition: all 0.3s ease;
   font-size: 14px;
@@ -447,26 +796,35 @@ const vClickOutside = {
   width: 100%;
   text-align: left;
   cursor: pointer;
+  margin: 0;
 }
 
 .dropdown-item:hover {
-  background: #f8f9fa;
-  color: #4a6cf7;
+  background: var(--bg-secondary);
+  color: var(--primary-color);
 }
 
 .dropdown-item i {
   width: 16px;
-  color: #6c757d;
+  color: var(--text-muted);
+  font-size: 14px;
+  text-align: center;
 }
 
 .dropdown-item:hover i {
-  color: #4a6cf7;
+  color: var(--primary-color);
+}
+
+.dropdown-text {
+  flex: 1;
+  font-weight: 500;
 }
 
 .dropdown-divider {
   height: 1px;
-  background: #e9ecef;
-  margin: 0;
+  background: var(--border-color);
+  margin: 8px 0;
+  border: none;
 }
 
 .logout {
@@ -475,6 +833,15 @@ const vClickOutside = {
 
 .logout:hover {
   background: #fef2f2;
+  color: #dc2626;
+}
+
+.dark-theme .logout:hover {
+  background: #7f1d1d;
+  color: #fca5a5;
+}
+
+.logout:hover i {
   color: #dc2626;
 }
 
@@ -491,14 +858,14 @@ const vClickOutside = {
   text-decoration: none;
   font-weight: 500;
   font-size: 14px;
-  border: 2px solid #4a6cf7;
+  border: 2px solid var(--primary-color);
   background: transparent;
-  color: #4a6cf7;
+  color: var(--primary-color);
   transition: all 0.3s ease;
 }
 
 .btn-login:hover {
-  background: #4a6cf7;
+  background: var(--primary-color);
   color: white;
 }
 
@@ -508,15 +875,15 @@ const vClickOutside = {
   text-decoration: none;
   font-weight: 500;
   font-size: 14px;
-  border: 2px solid #4a6cf7;
-  background: #4a6cf7;
+  border: 2px solid var(--primary-color);
+  background: var(--primary-color);
   color: white;
   transition: all 0.3s ease;
 }
 
 .btn-primary:hover {
-  background: #3a5bd9;
-  border-color: #3a5bd9;
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
 }
 
 /* Mobile Menu */
@@ -524,8 +891,9 @@ const vClickOutside = {
   display: none;
   cursor: pointer;
   font-size: 24px;
-  color: #2c3e50;
+  color: var(--text-primary);
   padding: 8px;
+  transition: color 0.3s ease;
 }
 
 .mobile-menu {
@@ -534,10 +902,10 @@ const vClickOutside = {
   left: -100%;
   width: 320px;
   height: 100vh;
-  background: white;
+  background: var(--bg-primary);
   z-index: 1002;
   transition: left 0.3s ease;
-  box-shadow: 5px 0 25px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-lg);
 }
 
 .mobile-menu.open {
@@ -555,27 +923,95 @@ const vClickOutside = {
   justify-content: space-between;
   align-items: center;
   padding: 20px;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .mobile-menu-close {
   cursor: pointer;
   font-size: 20px;
-  color: #2c3e50;
+  color: var(--text-primary);
   padding: 8px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.mobile-menu-close:hover {
+  background: var(--bg-secondary);
+}
+
+/* Mobile Controls */
+.mobile-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 10px;
+}
+
+.mobile-theme-switcher {
+  display: flex;
+}
+
+.theme-btn-mobile {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 16px;
+  background: var(--bg-secondary);
+  color: var(--primary-color);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+}
+
+.theme-btn-mobile:hover {
+  background: var(--bg-tertiary);
+  transform: scale(1.05);
+}
+
+.mobile-language-switcher {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-secondary);
+  border-radius: 20px;
+  padding: 2px;
+}
+
+.lang-btn-mobile {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 16px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 40px;
+  color: var(--text-primary);
+}
+
+.lang-btn-mobile.active {
+  background: var(--primary-color);
+  color: white;
+}
+
+.lang-btn-mobile:hover {
+  background: var(--bg-tertiary);
 }
 
 .mobile-search {
   padding: 20px;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .mobile-search form {
   display: flex;
-  background: #f8f9fa;
+  background: var(--bg-secondary);
   border-radius: 20px;
   padding: 8px 15px;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--border-color);
 }
 
 .mobile-search input {
@@ -584,12 +1020,17 @@ const vClickOutside = {
   flex: 1;
   outline: none;
   font-size: 14px;
+  color: var(--text-primary);
+}
+
+.mobile-search input::placeholder {
+  color: var(--text-muted);
 }
 
 .mobile-search button {
   border: none;
   background: transparent;
-  color: #4a6cf7;
+  color: var(--primary-color);
   cursor: pointer;
   margin-left: 8px;
 }
@@ -607,7 +1048,7 @@ const vClickOutside = {
 }
 
 .mobile-nav-list li {
-  border-bottom: 1px solid #f1f3f4;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .mobile-nav-list li:last-child {
@@ -615,12 +1056,13 @@ const vClickOutside = {
 }
 
 .mobile-nav-list a,
+.mobile-nav-btn,
 .mobile-logout-btn {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 14px 20px;
-  color: #2c3e50;
+  color: var(--text-primary);
   text-decoration: none;
   transition: all 0.3s ease;
   border: none;
@@ -632,13 +1074,14 @@ const vClickOutside = {
 }
 
 .mobile-nav-list a:hover,
+.mobile-nav-btn:hover,
 .mobile-logout-btn:hover {
-  background: #f8f9fa;
-  color: #4a6cf7;
+  background: var(--bg-secondary);
+  color: var(--primary-color);
 }
 
 .mobile-profile-section {
-  background: #f8f9fa;
+  background: var(--bg-secondary);
 }
 
 .mobile-profile-header {
@@ -653,7 +1096,7 @@ const vClickOutside = {
 
 .mobile-student-info i {
   font-size: 32px;
-  color: #4a6cf7;
+  color: var(--primary-color);
 }
 
 .mobile-student-details {
@@ -664,7 +1107,7 @@ const vClickOutside = {
 .mobile-student-name {
   font-weight: 600;
   font-size: 16px;
-  color: #2c3e50;
+  color: var(--text-primary);
   margin-bottom: 4px;
   white-space: nowrap;
   overflow: hidden;
@@ -673,7 +1116,7 @@ const vClickOutside = {
 
 .mobile-student-email {
   font-size: 12px;
-  color: #6c757d;
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -717,6 +1160,10 @@ const vClickOutside = {
     max-width: 150px;
     font-size: 14px;
     padding: 6px 12px;
+  }
+  
+  .mobile-controls {
+    gap: 6px;
   }
 }
 

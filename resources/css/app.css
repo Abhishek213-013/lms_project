@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* Import theme styles */
+@import './theme.css';
 
 @import 'bootstrap/dist/css/bootstrap.min.css';
 @import '@fortawesome/fontawesome-free/css/all.min.css';
@@ -106,4 +108,49 @@
 
 .frontend-content {
     flex: 1;
+}
+
+
+/* Add this to your global CSS file or main style section */
+:root {
+  --primary-color: #4a6cf7;
+  --primary-dark: #3a5bd9;
+  --secondary-color: #2c3e50;
+  --text-light: #6c757d;
+  --text-dark: #2c3e50;
+  --bg-light: #ffffff;
+  --bg-dark: #1f2937;
+  --card-bg-light: #ffffff;
+  --card-bg-dark: #334155;
+  --border-light: #e9ecef;
+  --border-dark: #475569;
+}
+
+.light-theme {
+  --bg-primary: var(--bg-light);
+  --bg-secondary: #f8f9fa;
+  --text-primary: var(--text-dark);
+  --text-secondary: var(--text-light);
+  --card-bg: var(--card-bg-light);
+  --border-color: var(--border-light);
+}
+
+.dark-theme {
+  --bg-primary: var(--bg-dark);
+  --bg-secondary: #374151;
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --card-bg: var(--card-bg-dark);
+  --border-color: var(--border-dark);
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Smooth transitions for all elements */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }

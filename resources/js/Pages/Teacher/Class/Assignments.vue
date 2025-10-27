@@ -169,6 +169,7 @@
                 <input 
                   type="text" 
                   placeholder="Search..." 
+                  v-model="searchQuery"
                   class="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64 bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors duration-200"
                 >
                 <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -213,11 +214,14 @@
               </button>
 
               <!-- Notifications -->
-              <button class="relative p-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex-shrink-0 transition-colors duration-200">
+              <button 
+                @click="toggleNotifications"
+                class="relative p-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex-shrink-0 transition-colors duration-200"
+              >
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM10.5 3.75a6 6 0 010 11.25"></path>
                 </svg>
-                <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                <span v-if="unreadNotifications > 0" class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
 
               <!-- User Menu -->
@@ -544,10 +548,12 @@ const props = defineProps({
   flash: Object
 })
 
-// Sidebar and navbar state
+// ==================== NAVBAR & SIDEBAR STATE ====================
 const activeMenu = ref('')
 const userMenuOpen = ref(false)
 const isDark = ref(localStorage.getItem('darkMode') === 'true')
+const searchQuery = ref('')
+const unreadNotifications = ref(3)
 
 // Current user data
 const currentUser = computed(() => {
@@ -565,7 +571,7 @@ const userInitials = computed(() => {
     .slice(0, 2)
 })
 
-// Original component state
+// ==================== ASSIGNMENTS STATE ====================
 const classData = ref({
   id: props.classId,
   name: 'Loading...',
@@ -589,48 +595,19 @@ const assignmentForm = ref({
 
 const fileInput = ref(null)
 
-// Watch dark mode changes
+// ==================== NAVBAR & SIDEBAR METHODS ====================
+
+// Theme management
 watch(isDark, (newVal) => {
   localStorage.setItem('darkMode', newVal)
   document.documentElement.classList.toggle('dark', newVal)
 })
 
-// ==================== SIDEBAR NAVIGATION METHODS ====================
-
-// My Classes submenu
-const navigateToClassSchedule = () => {
-  router.visit(`/teacher/class/${props.classId}/schedule`)
-}
-
-const navigateToStudentRoster = () => {
-  alert(`Showing student roster for ${classData.value.name}`)
-}
-
-// Resources submenu
-const navigateToSharedResources = () => {
-  alert('Navigating to shared resources page...')
-}
-
-// Assessments submenu
-const navigateToGradeAssignments = () => {
-  alert(`Navigating to grade assignments for ${classData.value.name}`)
-}
-
-const navigateToStudentProgress = () => {
-  alert(`Showing student progress for ${classData.value.name}`)
-}
-
-// Settings navigation
-const navigateToSettings = () => {
-  router.visit('/teacher/settings')
-}
-
-// ==================== NAVBAR METHODS ====================
-
 const toggleTheme = () => {
   isDark.value = !isDark.value
 }
 
+// Menu management
 const toggleMenu = (menu) => {
   activeMenu.value = activeMenu.value === menu ? null : menu
 }
@@ -639,12 +616,42 @@ const toggleUserMenu = () => {
   userMenuOpen.value = !userMenuOpen.value
 }
 
+const toggleNotifications = () => {
+  console.log('Toggle notifications')
+  // Implement notifications logic here
+}
+
+// Navigation methods
+const navigateToClassSchedule = () => {
+  router.visit(`/teacher/class/${props.classId}/schedule`)
+}
+
+const navigateToStudentRoster = () => {
+  alert(`Showing student roster for ${classData.value.name}`)
+}
+
+const navigateToSharedResources = () => {
+  alert('Navigating to shared resources page...')
+}
+
+const navigateToGradeAssignments = () => {
+  alert(`Navigating to grade assignments for ${classData.value.name}`)
+}
+
+const navigateToStudentProgress = () => {
+  alert(`Showing student progress for ${classData.value.name}`)
+}
+
+const navigateToSettings = () => {
+  router.visit('/teacher/settings')
+}
+
 const goBackToAdmin = () => {
   router.visit('/admin/users/other-users')
 }
 
 const editProfile = () => {
-  alert('Edit profile functionality would open here')
+  router.visit('/teacher/profile/edit')
 }
 
 const logout = async () => {
@@ -672,7 +679,7 @@ const handleClickOutside = (event) => {
   }
 }
 
-// ==================== ORIGINAL ASSIGNMENT METHODS ====================
+// ==================== ASSIGNMENTS METHODS ====================
 
 // Fetch assignments from API
 const fetchAssignments = async () => {
@@ -684,12 +691,10 @@ const fetchAssignments = async () => {
       assignments.value = response.data.data
     } else {
       console.error('Failed to fetch assignments:', response.data.message)
-      // Fallback to empty array
       assignments.value = []
     }
   } catch (error) {
     console.error('Error fetching assignments:', error)
-    // Fallback to empty array
     assignments.value = []
   } finally {
     loading.value = false
@@ -709,7 +714,6 @@ const fetchClassData = async () => {
     }
   } catch (error) {
     console.error('Error fetching class data:', error)
-    // Set fallback data
     classData.value = {
       id: props.classId,
       name: `Class ${props.classId}`,
@@ -741,7 +745,7 @@ const saveAssignment = async () => {
     }
 
     if (response.data.success) {
-      await fetchAssignments() // Refresh the list
+      await fetchAssignments()
       closeModal()
     } else {
       alert('Failed to save assignment: ' + response.data.message)
@@ -760,7 +764,7 @@ const deleteAssignment = async (assignmentId) => {
     try {
       const response = await apiClient.delete(`/assignments/${assignmentId}/class/${props.classId}`)
       if (response.data.success) {
-        await fetchAssignments() // Refresh the list
+        await fetchAssignments()
       } else {
         alert('Failed to delete assignment: ' + response.data.message)
       }
@@ -781,7 +785,7 @@ const handleFileUpload = (event) => {
       file: file
     })
   })
-  event.target.value = '' // Reset file input
+  event.target.value = ''
 }
 
 // Remove attachment
@@ -793,7 +797,7 @@ const removeAttachment = (index) => {
 const editAssignment = (assignment) => {
   assignmentForm.value = { 
     ...assignment,
-    due_date: assignment.due_date.slice(0, 16) // Convert to datetime-local format
+    due_date: assignment.due_date.slice(0, 16)
   }
   showEditModal.value = true
 }
@@ -820,7 +824,6 @@ const resetForm = () => {
 // View submissions (placeholder)
 const viewSubmissions = (assignmentId) => {
   console.log('View submissions for assignment:', assignmentId)
-  // You can implement this later
 }
 
 // Helper methods
@@ -843,19 +846,15 @@ const formatDate = (dateString) => {
   })
 }
 
-// Initialize
+// ==================== LIFECYCLE ====================
 onMounted(async () => {
-  // Add click outside listener for user menu
   document.addEventListener('click', handleClickOutside)
-  
-  // Set initial dark mode
   document.documentElement.classList.toggle('dark', isDark.value)
   
   await fetchClassData()
   await fetchAssignments()
 })
 
-// Cleanup
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
 })

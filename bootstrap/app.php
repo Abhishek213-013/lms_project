@@ -1,11 +1,8 @@
 <?php
 
-use App\Http\Middleware\CheckRole;
-use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -14,18 +11,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Laravel 12 automatically includes essential middleware
+        // Just add Inertia to the web group
         $middleware->web(append: [
-            HandleInertiaRequests::class,
-            AddLinkHeadersForPreloadedAssets::class,
+            \App\Http\Middleware\HandleInertiaRequests::class,
         ]);
 
-        // Register alias for role middleware
+        // Add your custom middleware aliases
         $middleware->alias([
-            'role' => CheckRole::class,
-            'auth' => \App\Http\Middleware\Authenticate::class,
+            'role' => \App\Http\Middleware\CheckRole::class,
         ]);
-
-        // If you don't have Authenticate middleware, create it or use default
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

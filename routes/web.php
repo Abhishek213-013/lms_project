@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Http\Request;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TeacherController;
@@ -10,9 +11,14 @@ use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\InstructorRequestController;
+use App\Http\Controllers\VideoProxyController;
+use App\Http\Controllers\VideoController;
 use Illuminate\Support\Facades\Route;
 
-// Frontend Routes - These should return Inertia responses
+// ============ PUBLIC ROUTES ============
+
+// Frontend Routes
 Route::get('/', [FrontendController::class, 'home'])->name('home');
 Route::get('/courses', [FrontendController::class, 'courses'])->name('courses');
 Route::get('/course/{id}', [FrontendController::class, 'courseSingle'])->name('course.single');
@@ -34,7 +40,6 @@ Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/registration', [AuthController::class, 'showRegistration'])->name('registration');
 Route::post('/register', [AuthController::class, 'register'])->name('register');
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::get('/student-login', [AuthController::class, 'showStudentLogin'])->name('student.login');
 Route::post('/student-login', [AuthController::class, 'studentLogin'])->name('student.login.post');
@@ -44,8 +49,55 @@ Route::get('/phone-verification', [AuthController::class, 'showPhoneVerification
 Route::post('/send-otp', [AuthController::class, 'sendOTP'])->name('send.otp');
 Route::post('/verify-otp', [AuthController::class, 'verifyOTP'])->name('verify.otp');
 
-// Protected Admin Routes
+// Public API Routes
+Route::prefix('api')->middleware('web')->group(function () {
+    Route::get('/public/courses', [CourseController::class, 'getPublicCourses']);
+    Route::get('/public/teachers', [TeacherController::class, 'getPublicTeachers']);
+    Route::get('/public/courses/{id}', [CourseController::class, 'getPublicCourseDetails']);
+    Route::get('/public/teachers/{id}', [TeacherController::class, 'getTeacherPublicProfile']);
+    Route::get('/public/categories', [CourseController::class, 'getPublicCategories']);
+    
+    // Instructor Request Public Route
+    Route::post('/public/instructor-requests', [InstructorRequestController::class, 'submitRequest'])->name('api.instructor-requests.submit');
+    
+    // Admission public routes
+    Route::post('/public/admissions/apply', [AdmissionController::class, 'storeApplication']);
+    Route::get('/public/admissions/status/{token}', [AdmissionController::class, 'checkApplicationStatus']);
+    
+    // Video Proxy Public Routes
+    Route::get('/video-proxy', [VideoProxyController::class, 'proxy']);
+    Route::get('/video-player', [VideoProxyController::class, 'player']);
+    
+    // NEW: Direct Video Stream Routes
+    Route::get('/youtube-direct-stream', [VideoController::class, 'getYouTubeDirectStream']);
+    Route::get('/video-proxy/{videoId}', [VideoController::class, 'proxyVideo']);
+    
+    // Health check
+    Route::get('/health', function () {
+        return response()->json(['status' => 'OK', 'timestamp' => now()]);
+    });
+});
+
+// Custom Video Player Route
+Route::get('/custom-video-player', function (Request $request) {
+    $videoId = $request->get('videoId');
+    $title = $request->get('title', 'Video Player');
+    
+    if (!$videoId) {
+        abort(400, 'Video ID is required');
+    }
+    
+    return view('custom-video-player', [
+        'videoId' => $videoId,
+        'title' => $title
+    ]);
+})->name('custom.video.player');
+
 Route::middleware(['auth'])->group(function () {
+    
+    // Logout route
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
     // Super Admin Routes
     Route::middleware(['role:super_admin'])->group(function () {
         Route::get('/super-admin', [AdminController::class, 'superAdmin'])->name('super.admin');
@@ -65,6 +117,11 @@ Route::middleware(['auth'])->group(function () {
             Route::put('/{id}', [AdminController::class, 'updateAdmin'])->name('admins.update');
             Route::delete('/{id}', [AdminController::class, 'destroyAdmin'])->name('admins.destroy');
         });
+
+        // Instructor Requests Management
+        Route::prefix('/admin/instructor-requests')->group(function () {
+            Route::get('/pending', [InstructorRequestController::class, 'pendingRequests'])->name('admin.instructor-requests.pending');
+        });
     });
 
     // Admin Routes
@@ -79,7 +136,7 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/{id}', [AdminController::class, 'deleteTeacher'])->name('teachers.destroy');
         });
         
-        // Teacher Portal Route - FIXED: Use the authenticated teacher's ID
+        // Teacher Portal Route
         Route::get('/admin/teacher-portal/{id?}', [AdminController::class, 'teacherPortal'])->name('teacher.portal');
         
         // Course Management
@@ -104,23 +161,71 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/approvals', [AdmissionController::class, 'approvals'])->name('admissions.approvals');
             Route::get('/enrolled-students', [AdmissionController::class, 'enrolledStudents'])->name('admissions.enrolled');
         });
+
+        // Instructor Requests Management (for admins too)
+        Route::prefix('/admin/instructor-requests')->group(function () {
+            Route::get('/pending', [InstructorRequestController::class, 'pendingRequests'])->name('admin.instructor-requests.pending');
+        });
     });
 
-    // Teacher Routes - FIXED: Added proper teacher portal route
+    // Teacher Routes - UPDATED WITH FUNCTIONAL SIDEBAR NAVIGATION
     Route::middleware(['role:teacher,admin,super_admin'])->group(function () {
-        // Teacher Portal Dashboard - FIXED: Use authenticated user's ID
+        // Teacher Portal Dashboard
         Route::get('/teacher', [TeacherController::class, 'dashboard'])->name('teacher.dashboard');
         Route::get('/teacher/portal', [TeacherController::class, 'portal'])->name('teacher.portal');
         
-        // Class Management Routes
+        // ============ MY CLASSES SECTION ============
+        Route::prefix('/teacher/classes')->group(function () {
+            // All Classes List
+            Route::get('/', [TeacherController::class, 'classesList'])->name('teacher.classes');
+            
+            // Class Schedule
+            Route::get('/schedule', [ScheduleController::class, 'teacherSchedule'])->name('teacher.class-schedule');
+            
+            // Student Roster
+            Route::get('/students', [TeacherController::class, 'studentRoster'])->name('teacher.student-roster');
+        });
+
+        // ============ RESOURCES SECTION ============
+        Route::prefix('/teacher/resources')->group(function () {
+            // My Resources List
+            Route::get('/', [TeacherController::class, 'teacherResources'])->name('teacher.resources');
+            
+            // Shared Resources
+            Route::get('/shared', [TeacherController::class, 'sharedResources'])->name('teacher.shared-resources');
+            
+            // Upload Resources
+            Route::get('/upload', [TeacherController::class, 'createResource'])->name('teacher.resources.upload');
+            Route::post('/upload', [TeacherController::class, 'storeResource'])->name('teacher.resources.store');
+        });
+
+        // ============ ASSESSMENTS SECTION ============
+        Route::prefix('/teacher/assignments')->group(function () {
+            // Grade Assignments List
+            Route::get('/', [AssignmentController::class, 'teacherAssignments'])->name('teacher.assignments');
+            
+            // Student Progress
+            Route::get('/progress', [AssignmentController::class, 'studentProgress'])->name('teacher.student-progress');
+            
+            // Create Assignment
+            Route::get('/create', [AssignmentController::class, 'create'])->name('teacher.assignments.create');
+            Route::post('/create', [AssignmentController::class, 'store'])->name('teacher.assignments.store');
+        });
+
+        // ============ INDIVIDUAL CLASS MANAGEMENT ============
         Route::prefix('/teacher/class/{classId}')->group(function () {
+            // Class Dashboard
             Route::get('/', [TeacherController::class, 'classDashboard'])->name('teacher.class.dashboard');
+            
+            // Class-specific Assignments
             Route::get('/assignments', [AssignmentController::class, 'classAssignments'])->name('teacher.class.assignments');
             Route::get('/assignments/create', [AssignmentController::class, 'createAssignmentPage'])->name('teacher.class.assignments.create');
             Route::get('/assignments/{assignmentId}/edit', [AssignmentController::class, 'editAssignmentPage'])->name('teacher.class.assignments.edit');
+            
+            // Class-specific Resources
             Route::get('/resources', [TeacherController::class, 'classResources'])->name('teacher.class.resources');
             
-            // Schedule Routes
+            // Class Schedule
             Route::get('/schedule', [ScheduleController::class, 'classSchedule'])->name('teacher.class.schedule');
             Route::post('/schedules', [ScheduleController::class, 'storeSchedule'])->name('teacher.class.schedules.store');
             Route::put('/schedules/{scheduleId}', [ScheduleController::class, 'updateSchedule'])->name('teacher.class.schedules.update');
@@ -128,11 +233,6 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/schedule/create', [ScheduleController::class, 'createSchedulePage'])->name('teacher.class.schedule.create');
             Route::get('/schedule/{scheduleId}/edit', [ScheduleController::class, 'editSchedulePage'])->name('teacher.class.schedule.edit');
             Route::get('/schedule/calendar', [ScheduleController::class, 'calendarView'])->name('teacher.class.schedule.calendar');
-        });
-        
-        // Resource Management Routes
-        Route::prefix('/teacher/resources')->group(function () {
-            Route::get('/create/{classId?}', [TeacherController::class, 'createResource'])->name('teacher.resources.create');
         });
 
         // Analytics & Settings
@@ -151,189 +251,211 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/student/progress', [StudentController::class, 'progress'])->name('student.progress');
         Route::get('/student/settings', [StudentController::class, 'settings'])->name('student.settings');
     });
+
+    // ============ PROTECTED API ROUTES ============
+    
+    Route::prefix('api')->middleware('web')->group(function () {
+
+        Route::get('/video-proxy', [VideoProxyController::class, 'proxy']);
+        Route::get('/video-player', [VideoProxyController::class, 'player']);
+        
+        // ADD THE NEW VIDEO STREAM ROUTES HERE:
+        Route::get('/youtube-direct-stream', [VideoController::class, 'getYouTubeDirectStream']);
+        Route::get('/video-proxy/{videoId}', [VideoController::class, 'proxyVideo']);
+
+        // Course API Routes
+        Route::prefix('courses')->group(function () {
+            Route::get('/classes', [CourseController::class, 'getClasses']);
+            Route::post('/classes', [CourseController::class, 'createClass']);
+            Route::get('/class/{grade}/subjects', [CourseController::class, 'getClassSubjects']);
+            Route::get('/subject/{subjectId}/teachers', [CourseController::class, 'getSubjectTeachers']);
+            Route::post('/subject/{subjectId}/assign-teacher', [CourseController::class, 'assignTeacher']);
+            Route::delete('/subject/{subjectId}/teacher/{teacherId}', [CourseController::class, 'removeTeacher']);
+            Route::get('/{courseId}', [CourseController::class, 'getCourse']);
+            Route::get('/class/{grade}/enrollments', [CourseController::class, 'getClassEnrollments']);
+            Route::get('/categories', [CourseController::class, 'getCourseCategories']);
+            Route::get('/category/{category}/classes', [CourseController::class, 'getCategoryClasses']);
+            Route::get('/academic-classes', [CourseController::class, 'getAcademicClasses']);
+            Route::get('/other-courses', [CourseController::class, 'getOtherCourses']);
+            Route::get('/all-classes', [CourseController::class, 'getAllClasses']);
+            Route::put('/{courseId}', [CourseController::class, 'updateCourse']);
+            Route::delete('/{courseId}', [CourseController::class, 'deleteCourse']);
+            Route::get('/{courseId}/teachers', [CourseController::class, 'getCourseTeachers']);
+            Route::post('/{courseId}/assign-teacher', [CourseController::class, 'assignTeacherToCourse']);
+            Route::delete('/{courseId}/teacher/{teacherId}', [CourseController::class, 'removeTeacherFromCourse']);
+            Route::post('/{courseId}/enroll', [CourseController::class, 'enrollStudent']);
+            Route::post('/{courseId}/unenroll', [CourseController::class, 'unenrollStudent']);
+            Route::get('/user/my-courses', [CourseController::class, 'getMyCourses']);
+            Route::get('/{courseId}/subjects', [CourseController::class, 'getCourseSubjects']);
+            
+            // Teacher classes
+            Route::get('/teacher/classes', [CourseController::class, 'getTeacherClasses'])->name('api.teacher.classes');
+            
+            // Debug route for course issues
+            Route::get('/debug/courses', [CourseController::class, 'debugCourses']);
+        });
+
+        // User API Routes
+        Route::prefix('users')->group(function () {
+            Route::get('/other-users', [UserController::class, 'getOtherUsers']);
+            Route::get('/profile', [UserController::class, 'getProfile']);
+            Route::put('/profile', [UserController::class, 'updateProfile']);
+            Route::get('/students', [UserController::class, 'getStudents'])->name('users.students');
+            Route::get('/teachers', [UserController::class, 'getTeachers'])->name('users.teachers');
+            Route::get('/admins', [UserController::class, 'getAdmins'])->name('users.admins');
+        });
+
+        // Teacher API Routes
+        Route::prefix('teachers')->group(function () {
+            Route::get('/', [TeacherController::class, 'getAllTeachers']);
+            Route::get('/public', [TeacherController::class, 'getPublicTeachers']);
+            Route::get('/active', [TeacherController::class, 'getActiveTeachers']);
+            Route::get('/featured', [TeacherController::class, 'getFeaturedTeachers']);
+            Route::get('/{id}', [TeacherController::class, 'getTeacher']);
+            Route::get('/{id}/classes', [TeacherController::class, 'getTeacherClasses']);
+            Route::get('/{id}/resources', [TeacherController::class, 'getTeacherResources']);
+            Route::post('/{id}/resources', [TeacherController::class, 'uploadResource'])->name('teachers.upload.resource');
+            Route::put('/{id}/profile', [TeacherController::class, 'updateTeacherProfile']);
+            Route::get('/{id}/public-profile', [TeacherController::class, 'getTeacherPublicProfile']);
+            Route::get('/{id}/public-courses', [TeacherController::class, 'getTeacherPublicCourses']);
+            Route::get('/{id}/portal-data', [TeacherController::class, 'getTeacherPortalData']);
+            
+            // Teacher roster and schedule
+            Route::get('/{id}/roster', [TeacherController::class, 'getTeacherRoster'])->name('api.teacher.roster');
+            Route::get('/{id}/schedule', [ScheduleController::class, 'getTeacherSchedule'])->name('api.teacher.schedule');
+        });
+        
+        // Class API Routes
+        Route::prefix('classes')->group(function () {
+            Route::get('/{classId}/resources', [TeacherController::class, 'getClassResources']);
+            Route::get('/{classId}/students', [CourseController::class, 'getClassStudents']);
+            Route::get('/{classId}/info', [CourseController::class, 'getClassInfo']);
+            Route::get('/{classId}/schedule', [ScheduleController::class, 'getClassSchedule']);
+            
+            // Teacher class roster
+            Route::get('/{classId}/roster', [CourseController::class, 'getClassRoster'])->name('api.class.roster');
+        });
+        
+        // Resource API Routes
+        Route::prefix('resources')->group(function () {
+            // Get resources
+            Route::get('/', [TeacherController::class, 'getAllResources']);
+            Route::get('/class/{classId}', [TeacherController::class, 'getClassResources']);
+            Route::get('/teacher/{teacherId}', [TeacherController::class, 'getTeacherResources'])->name('api.teacher.resources');
+            Route::get('/shared', [TeacherController::class, 'getSharedResources'])->name('api.resources.shared');
+            
+            // Upload resources
+            Route::post('/', [TeacherController::class, 'uploadResource']);
+            Route::post('/upload/{teacherId}', [TeacherController::class, 'uploadResource']);
+            
+            // Manage resources
+            Route::delete('/{resourceId}', [TeacherController::class, 'deleteResource']);
+            Route::post('/{resourceId}/download', [TeacherController::class, 'updateDownloadCount']);
+            Route::post('/{resourceId}/share', [TeacherController::class, 'shareResource'])->name('api.resources.share');
+        });
+
+        // Assignment API Routes
+        Route::prefix('assignments')->group(function () {
+            // Get assignments for a class
+            Route::get('/class/{classId}', [AssignmentController::class, 'getClassAssignments']);
+            
+            // Get teacher assignments
+            Route::get('/teacher', [AssignmentController::class, 'getTeacherAssignments'])->name('api.teacher.assignments');
+            
+            // Get student progress
+            Route::get('/teacher/progress', [AssignmentController::class, 'getStudentProgress'])->name('api.teacher.progress');
+            
+            // Create new assignment
+            Route::post('/class/{classId}', [AssignmentController::class, 'storeAssignment']);
+            Route::post('/teacher/create', [AssignmentController::class, 'storeTeacherAssignment'])->name('api.teacher.assignments.store');
+            
+            // Update assignment
+            Route::put('/{assignmentId}/class/{classId}', [AssignmentController::class, 'updateAssignment']);
+            
+            // Delete assignment
+            Route::delete('/{assignmentId}/class/{classId}', [AssignmentController::class, 'destroyAssignment']);
+            
+            // Get assignment statistics
+            Route::get('/class/{classId}/stats', [AssignmentController::class, 'getAssignmentStats']);
+            Route::get('/{assignmentId}/class/{classId}/stats', [AssignmentController::class, 'getAssignmentStats']);
+            
+            // Assignment submissions
+            Route::get('/{assignmentId}/submissions', [AssignmentController::class, 'getSubmissions']);
+            Route::post('/{assignmentId}/submissions', [AssignmentController::class, 'storeSubmission']);
+            Route::put('/{assignmentId}/submissions/{submissionId}', [AssignmentController::class, 'gradeSubmission']);
+        });
+
+        // Schedule API Routes
+        Route::prefix('schedules')->group(function () {
+            // Get schedules for a class
+            Route::get('/class/{classId}', [ScheduleController::class, 'getClassSchedules']);
+            
+            // Get teacher schedule
+            Route::get('/teacher', [ScheduleController::class, 'getTeacherSchedules'])->name('api.teacher.schedules');
+            
+            // Get calendar schedules
+            Route::get('/class/{classId}/calendar', [ScheduleController::class, 'getCalendarSchedules']);
+            
+            // Create new schedule
+            Route::post('/class/{classId}', [ScheduleController::class, 'storeSchedule']);
+            
+            // Update schedule
+            Route::put('/{scheduleId}', [ScheduleController::class, 'updateSchedule']);
+            
+            // Delete schedule
+            Route::delete('/{scheduleId}', [ScheduleController::class, 'destroySchedule']);
+            
+            // Bulk update schedules
+            Route::post('/class/{classId}/bulk-update', [ScheduleController::class, 'bulkUpdateSchedules']);
+            
+            // Get upcoming schedules for teacher
+            Route::get('/upcoming', [ScheduleController::class, 'getUpcomingSchedules']);
+        });
+
+        // Admission API Routes
+        Route::prefix('admissions')->group(function () {
+            Route::get('/applications', [AdmissionController::class, 'getApplications']);
+            Route::get('/approvals', [AdmissionController::class, 'getApprovals']);
+            Route::get('/enrolled-students', [AdmissionController::class, 'getEnrolledStudents']);
+            Route::post('/applications/{id}/approve', [AdmissionController::class, 'approveApplication']);
+            Route::post('/applications/{id}/reject', [AdmissionController::class, 'rejectApplication']);
+            Route::post('/applications', [AdmissionController::class, 'storeApplication']);
+            Route::get('/applications/{id}', [AdmissionController::class, 'getApplication']);
+        });
+
+        // Instructor Request API Routes
+        Route::prefix('instructor-requests')->group(function () {
+            Route::get('/pending', [InstructorRequestController::class, 'getPendingRequests']);
+            Route::get('/stats', [InstructorRequestController::class, 'getRequestStats']);
+            Route::post('/{id}/approve', [InstructorRequestController::class, 'approveRequest']);
+            Route::post('/{id}/reject', [InstructorRequestController::class, 'rejectRequest']);
+        });
+
+        // Video Proxy Protected API Routes
+        Route::prefix('video-proxy')->group(function () {
+            Route::get('/embed-url', [VideoProxyController::class, 'getEmbedUrl']);
+            Route::post('/process-video', [VideoProxyController::class, 'processVideo']);
+        });
+
+        // File Upload Routes
+        Route::prefix('upload')->group(function () {
+            Route::post('/assignment-attachments', [AssignmentController::class, 'uploadAttachments']);
+            Route::post('/resource-files', [TeacherController::class, 'uploadResourceFiles']);
+            Route::delete('/files/{filename}', [TeacherController::class, 'deleteFile']);
+            Route::post('/profile-image', [UserController::class, 'uploadProfileImage']);
+        });
+
+        // Dashboard and Analytics API Routes
+        Route::prefix('dashboard')->group(function () {
+            Route::get('/stats', [AdminController::class, 'getDashboardStats']);
+            Route::get('/teacher-stats', [TeacherController::class, 'getTeacherStats']);
+            Route::get('/admin-stats', [AdminController::class, 'getAdminStats']);
+            Route::get('/student-stats', [StudentController::class, 'getStudentStats']);
+        });
+    });
 });
 
-// API Routes - Return JSON responses
-Route::middleware(['auth'])->prefix('api')->group(function () {
-    // Course API Routes
-    Route::prefix('courses')->group(function () {
-        Route::get('/classes', [CourseController::class, 'getClasses']);
-        Route::post('/classes', [CourseController::class, 'createClass']);
-        Route::get('/class/{grade}/subjects', [CourseController::class, 'getClassSubjects']);
-        Route::get('/subject/{subjectId}/teachers', [CourseController::class, 'getSubjectTeachers']);
-        Route::post('/subject/{subjectId}/assign-teacher', [CourseController::class, 'assignTeacher']);
-        Route::delete('/subject/{subjectId}/teacher/{teacherId}', [CourseController::class, 'removeTeacher']);
-        Route::get('/{courseId}', [CourseController::class, 'getCourse']);
-        Route::get('/class/{grade}/enrollments', [CourseController::class, 'getClassEnrollments']);
-        Route::get('/categories', [CourseController::class, 'getCourseCategories']);
-        Route::get('/category/{category}/classes', [CourseController::class, 'getCategoryClasses']);
-        Route::get('/academic-classes', [CourseController::class, 'getAcademicClasses']);
-        Route::get('/other-courses', [CourseController::class, 'getOtherCourses']);
-        Route::get('/all-classes', [CourseController::class, 'getAllClasses']);
-        Route::put('/{courseId}', [CourseController::class, 'updateCourse']);
-        Route::delete('/{courseId}', [CourseController::class, 'deleteCourse']);
-        Route::get('/{courseId}/teachers', [CourseController::class, 'getCourseTeachers']);
-        Route::post('/{courseId}/assign-teacher', [CourseController::class, 'assignTeacherToCourse']);
-        Route::delete('/{courseId}/teacher/{teacherId}', [CourseController::class, 'removeTeacherFromCourse']);
-        Route::post('/{courseId}/enroll', [CourseController::class, 'enrollStudent']);
-        Route::post('/{courseId}/unenroll', [CourseController::class, 'unenrollStudent']);
-        Route::get('/user/my-courses', [CourseController::class, 'getMyCourses']);
-        Route::get('/{courseId}/subjects', [CourseController::class, 'getCourseSubjects']);
-        
-        // Debug route for course issues
-        Route::get('/debug/courses', [CourseController::class, 'debugCourses']);
-    });
-
-    // User API Routes
-    Route::prefix('users')->group(function () {
-        Route::get('/other-users', [UserController::class, 'getOtherUsers']);
-        Route::get('/profile', [UserController::class, 'getProfile']);
-        Route::put('/profile', [UserController::class, 'updateProfile']);
-        Route::get('/students', [UserController::class, 'getStudents'])->name('users.students');
-        Route::get('/teachers', [UserController::class, 'getTeachers'])->name('users.teachers');
-        Route::get('/admins', [UserController::class, 'getAdmins'])->name('users.admins');
-    });
-
-    // Teacher API Routes
-    Route::prefix('teachers')->group(function () {
-        Route::get('/', [TeacherController::class, 'getAllTeachers']);
-        Route::get('/public', [TeacherController::class, 'getPublicTeachers']);
-        Route::get('/active', [TeacherController::class, 'getActiveTeachers']);
-        Route::get('/featured', [TeacherController::class, 'getFeaturedTeachers']);
-        Route::get('/{id}', [TeacherController::class, 'getTeacher']);
-        Route::get('/{id}/classes', [TeacherController::class, 'getTeacherClasses']);
-        Route::get('/{id}/resources', [TeacherController::class, 'getTeacherResources']);
-        Route::post('/{id}/resources', [TeacherController::class, 'uploadResource']);
-        Route::put('/{id}/profile', [TeacherController::class, 'updateTeacherProfile']);
-        Route::get('/{id}/public-profile', [TeacherController::class, 'getTeacherPublicProfile']);
-        Route::get('/{id}/public-courses', [TeacherController::class, 'getTeacherPublicCourses']);
-        
-        // FIXED: Add teacher portal data route
-        Route::get('/{id}/portal-data', [TeacherController::class, 'getTeacherPortalData']);
-    });
-    
-    // Class API Routes
-    Route::prefix('classes')->group(function () {
-        Route::get('/{classId}/resources', [TeacherController::class, 'getClassResources']);
-        Route::get('/{classId}/students', [CourseController::class, 'getClassStudents']);
-        Route::get('/{classId}/info', [CourseController::class, 'getClassInfo']);
-        Route::get('/{classId}/schedule', [ScheduleController::class, 'getClassSchedule']);
-    });
-    
-    // Resource API Routes - Complete set
-    Route::prefix('resources')->group(function () {
-        // Get resources
-        Route::get('/', [TeacherController::class, 'getAllResources']);
-        Route::get('/class/{classId}', [TeacherController::class, 'getClassResources']);
-        
-        // Upload resources
-        Route::post('/', [TeacherController::class, 'uploadResource']);
-        Route::post('/upload/{teacherId}', [TeacherController::class, 'uploadResource']);
-        
-        // Manage resources
-        Route::delete('/{resourceId}', [TeacherController::class, 'deleteResource']);
-        Route::post('/{resourceId}/download', [TeacherController::class, 'updateDownloadCount']);
-    });
-
-    // Assignment API Routes
-    Route::prefix('assignments')->group(function () {
-        // Get assignments for a class
-        Route::get('/class/{classId}', [AssignmentController::class, 'getClassAssignments']);
-        
-        // Create new assignment
-        Route::post('/class/{classId}', [AssignmentController::class, 'storeAssignment']);
-        
-        // Update assignment
-        Route::put('/{assignmentId}/class/{classId}', [AssignmentController::class, 'updateAssignment']);
-        
-        // Delete assignment
-        Route::delete('/{assignmentId}/class/{classId}', [AssignmentController::class, 'destroyAssignment']);
-        
-        // Get assignment statistics
-        Route::get('/class/{classId}/stats', [AssignmentController::class, 'getAssignmentStats']);
-        Route::get('/{assignmentId}/class/{classId}/stats', [AssignmentController::class, 'getAssignmentStats']);
-        
-        // Assignment submissions
-        Route::get('/{assignmentId}/submissions', [AssignmentController::class, 'getSubmissions']);
-        Route::post('/{assignmentId}/submissions', [AssignmentController::class, 'storeSubmission']);
-        Route::put('/{assignmentId}/submissions/{submissionId}', [AssignmentController::class, 'gradeSubmission']);
-    });
-
-    // Schedule API Routes
-    Route::prefix('schedules')->group(function () {
-        // Get schedules for a class
-        Route::get('/class/{classId}', [ScheduleController::class, 'getClassSchedules']);
-        
-        // Get calendar schedules
-        Route::get('/class/{classId}/calendar', [ScheduleController::class, 'getCalendarSchedules']);
-        
-        // Create new schedule
-        Route::post('/class/{classId}', [ScheduleController::class, 'storeSchedule']);
-        
-        // Update schedule
-        Route::put('/{scheduleId}', [ScheduleController::class, 'updateSchedule']);
-        
-        // Delete schedule
-        Route::delete('/{scheduleId}', [ScheduleController::class, 'destroySchedule']);
-        
-        // Bulk update schedules
-        Route::post('/class/{classId}/bulk-update', [ScheduleController::class, 'bulkUpdateSchedules']);
-        
-        // Get upcoming schedules for teacher
-        Route::get('/upcoming', [ScheduleController::class, 'getUpcomingSchedules']);
-    });
-
-    // Admission API Routes
-    Route::prefix('admissions')->group(function () {
-        Route::get('/applications', [AdmissionController::class, 'getApplications']);
-        Route::get('/approvals', [AdmissionController::class, 'getApprovals']);
-        Route::get('/enrolled-students', [AdmissionController::class, 'getEnrolledStudents']);
-        Route::post('/applications/{id}/approve', [AdmissionController::class, 'approveApplication']);
-        Route::post('/applications/{id}/reject', [AdmissionController::class, 'rejectApplication']);
-        Route::post('/applications', [AdmissionController::class, 'storeApplication']);
-        Route::get('/applications/{id}', [AdmissionController::class, 'getApplication']);
-    });
-
-    // File Upload Routes
-    Route::prefix('upload')->group(function () {
-        Route::post('/assignment-attachments', [AssignmentController::class, 'uploadAttachments']);
-        Route::post('/resource-files', [TeacherController::class, 'uploadResourceFiles']);
-        Route::delete('/files/{filename}', [TeacherController::class, 'deleteFile']);
-        Route::post('/profile-image', [UserController::class, 'uploadProfileImage']);
-    });
-
-    // Dashboard and Analytics API Routes
-    Route::prefix('dashboard')->group(function () {
-        Route::get('/stats', [AdminController::class, 'getDashboardStats']);
-        Route::get('/teacher-stats', [TeacherController::class, 'getTeacherStats']);
-        Route::get('/admin-stats', [AdminController::class, 'getAdminStats']);
-        Route::get('/student-stats', [StudentController::class, 'getStudentStats']);
-    });
-});
-
-// Public API Routes (No auth required)
-Route::prefix('api')->group(function () {
-    Route::get('/public/courses', [CourseController::class, 'getPublicCourses']);
-    Route::get('/public/teachers', [TeacherController::class, 'getPublicTeachers']);
-    Route::get('/public/courses/{id}', [CourseController::class, 'getPublicCourseDetails']);
-    Route::get('/public/teachers/{id}', [TeacherController::class, 'getTeacherPublicProfile']);
-    Route::get('/public/categories', [CourseController::class, 'getPublicCategories']);
-    
-    // Admission public routes
-    Route::post('/public/admissions/apply', [AdmissionController::class, 'storeApplication']);
-    Route::get('/public/admissions/status/{token}', [AdmissionController::class, 'checkApplicationStatus']);
-    
-    // Health check and CSRF
-    Route::get('/health', function () {
-        return response()->json(['status' => 'OK', 'timestamp' => now()]);
-    });
-    
-    Route::get('/sanctum/csrf-cookie', function () {
-        return response()->json(['message' => 'CSRF cookie set']);
-    });
-});
-
-// Public file access routes (if needed)
+// Public file access routes
 Route::get('/storage/resources/{filename}', function ($filename) {
     $path = storage_path('app/public/resources/' . $filename);
     
@@ -354,7 +476,20 @@ Route::get('/storage/assignments/{filename}', function ($filename) {
     return response()->file($path);
 })->name('storage.assignments');
 
-// Fallback route for SPA - Make sure this is the last route
+// Fallback route for SPA
 Route::get('/{any}', function () {
     return view('app');
-})->where('any', '^(?!api|storage|assets).*$'); // Exclude API and storage routes from SPA catch-all
+})->where('any', '^(?!api|storage|assets).*$');
+
+// Add to routes/web.php temporarily
+Route::get('/debug-session', function() {
+    session(['debug_test' => 'session_working']);
+    
+    return response()->json([
+        'session_id' => session()->getId(),
+        'session_test' => session('debug_test'),
+        'csrf_token' => csrf_token(),
+        'session_status' => session()->isStarted() ? 'started' : 'not_started',
+        'all_cookies' => request()->cookies->all()
+    ]);
+});
