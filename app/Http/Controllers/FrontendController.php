@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Models\Content;
 
 class FrontendController extends Controller
 {
@@ -19,6 +20,9 @@ class FrontendController extends Controller
     public function home(): Response
     {
         try {
+            // Get home page content from database
+            $content = Content::getHomeContent();
+            
             $featuredCourses = ClassModel::where('status', 'active')
                 ->with(['teacher:id,name', 'students'])
                 ->select(['id', 'name', 'subject', 'type', 'category', 'description', 'grade', 'created_at'])
@@ -95,18 +99,33 @@ class FrontendController extends Controller
             ];
 
             return Inertia::render('Frontend/Home', [
+                'content' => $content, // Add content to the props
                 'featuredCourses' => $featuredCourses,
                 'instructors' => $instructors,
                 'stats' => $stats,
                 'testimonials' => $testimonials,
                 'pageTitle' => 'SkillGro - Learn with Expert Teachers',
-                'metaDescription' => 'Discover quality education with SkillGro. Learn from expert teachers, explore diverse courses, and transform your learning journey.'
+                'metaDescription' => 'Discover quality education with SkillGro. Learn from expert teachers, explore diverse courses, and transform your learning journey.',
+                'auth' => [
+                    'user' => Auth::check() ? [
+                        'id' => Auth::user()->id,
+                        'name' => Auth::user()->name,
+                        'role' => Auth::user()->role,
+                    ] : null
+                ]
             ]);
 
         } catch (\Exception $e) {
             Log::error('Home page error: ' . $e->getMessage());
             
+            // Get default content as fallback
+            $defaultContent = Content::getDefaultContent();
+            $homeContent = array_filter($defaultContent, function($key) {
+                return strpos($key, 'home_') === 0;
+            }, ARRAY_FILTER_USE_KEY);
+            
             return Inertia::render('Frontend/Home', [
+                'content' => $homeContent,
                 'featuredCourses' => [],
                 'instructors' => [],
                 'stats' => [
@@ -119,6 +138,19 @@ class FrontendController extends Controller
                 'pageTitle' => 'SkillGro - Learn with Expert Teachers'
             ]);
         }
+    }
+
+    // ... rest of your existing methods remain the same
+
+    // About page
+    public function about()
+    {
+        // Get about page content from database
+        $content = Content::getAboutContent();
+
+        return Inertia::render('Frontend/About', [
+            'content' => $content
+        ]);
     }
 
     public function courses(Request $request): Response
@@ -717,67 +749,6 @@ class FrontendController extends Controller
         }
     }
 
-    // About page
-    public function about(): Response
-    {
-        $stats = [
-            'total_students' => Student::count() ?: 1200,
-            'total_instructors' => User::where('role', 'teacher')->count() ?: 45,
-            'total_courses' => ClassModel::where('status', 'active')->count() ?: 85,
-            'total_enrollments' => DB::table('class_student')->count() ?: 2500,
-            'success_rate' => 95
-        ];
-
-        $team = [
-            [
-                'name' => 'Dr. Sarah Wilson',
-                'role' => 'Founder & CEO',
-                'image' => '/assets/img/team/1.jpg',
-                'bio' => 'Education expert with 15+ years of experience in transforming learning through technology.',
-                'social' => ['linkedin' => '#', 'twitter' => '#']
-            ],
-            [
-                'name' => 'Mike Johnson',
-                'role' => 'CTO',
-                'image' => '/assets/img/team/2.jpg',
-                'bio' => 'Technology enthusiast and edtech innovator with a passion for creating seamless learning experiences.',
-                'social' => ['linkedin' => '#', 'github' => '#']
-            ],
-            [
-                'name' => 'Emily Chen',
-                'role' => 'Head of Education',
-                'image' => '/assets/img/team/3.jpg',
-                'bio' => 'Curriculum development specialist focused on creating engaging and effective learning materials.',
-                'social' => ['linkedin' => '#', 'twitter' => '#']
-            ]
-        ];
-
-        $values = [
-            [
-                'title' => 'Quality Education',
-                'description' => 'We believe in providing high-quality, accessible education to everyone.',
-                'icon' => 'fas fa-graduation-cap'
-            ],
-            [
-                'title' => 'Innovation',
-                'description' => 'We continuously innovate to enhance the learning experience.',
-                'icon' => 'fas fa-lightbulb'
-            ],
-            [
-                'title' => 'Student Success',
-                'description' => 'Our success is measured by the success of our students.',
-                'icon' => 'fas fa-trophy'
-            ]
-        ];
-
-        return Inertia::render('Frontend/About', [
-            'stats' => $stats,
-            'team' => $team,
-            'values' => $values,
-            'pageTitle' => 'About Us - SkillGro',
-            'metaDescription' => 'Learn about SkillGro\'s mission, team, and values. Discover how we\'re transforming education through innovative learning solutions.'
-        ]);
-    }
 
     // Contact page
     public function contact(): Response

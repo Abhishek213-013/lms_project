@@ -123,10 +123,12 @@
               <div class="mb-3">
                 <label for="parent_contact" class="form-label">Parent's Contact Number *</label>
                 <div class="input-group">
-                  <select class="form-select country-code" v-model="form.country_code">
+                  <select class="form-select country-code" v-model="form.country_code" :class="{ 'is-invalid': form.errors.country_code }">
                     <option value="+880">Bangladesh (+880)</option>
                     <option value="+91">India (+91)</option>
                     <option value="+1">USA (+1)</option>
+                    <option value="+44">UK (+44)</option>
+                    <option value="+971">UAE (+971)</option>
                   </select>
                   <input
                     type="tel"
@@ -140,6 +142,9 @@
                 </div>
                 <div v-if="form.errors.parent_contact" class="invalid-feedback">
                   {{ form.errors.parent_contact }}
+                </div>
+                <div v-if="form.errors.country_code" class="invalid-feedback">
+                  {{ form.errors.country_code }}
                 </div>
               </div>
 
@@ -196,6 +201,14 @@
                 Already have an account? Login here
               </a>
             </div>
+
+            <!-- Admin/Teacher Registration Link -->
+            <div class="text-center mt-4 pt-3 border-top">
+              <p class="text-muted small mb-2">Are you an admin or teacher?</p>
+              <a href="/registration" class="btn btn-sm btn-outline-secondary">
+                Admin/Teacher Registration
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -224,13 +237,16 @@ const form = useForm({
   password: '',
   password_confirmation: '',
   terms: false,
-  role: 'student',
 });
 
 const submit = () => {
   form.post('/student-registration', {
-    onFinish: () => {
-      form.reset('password', 'password_confirmation');
+    preserveScroll: true,
+    onSuccess: () => {
+      console.log('✅ Student registration successful');
+    },
+    onError: (errors) => {
+      console.log('❌ Student registration errors:', errors);
     },
   });
 };

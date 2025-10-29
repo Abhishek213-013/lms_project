@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/UserController.php
 
 namespace App\Http\Controllers;
 
@@ -242,6 +241,7 @@ class UserController extends Controller
                 'institute' => $request->institute,
                 'password' => Hash::make($request->password),
                 'role' => 'super_admin',
+                'status' => 'active',
             ]);
 
             return response()->json([
@@ -298,6 +298,7 @@ class UserController extends Controller
                 'institute' => $request->institute,
                 'password' => Hash::make($request->password),
                 'role' => 'admin',
+                'status' => 'active',
             ]);
 
             return response()->json([
@@ -358,11 +359,12 @@ class UserController extends Controller
                 'bio' => $request->bio,
                 'password' => Hash::make($request->password),
                 'role' => 'teacher',
+                'status' => 'pending', // Teachers need approval
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Teacher created successfully',
+                'message' => 'Teacher created successfully and submitted for approval',
                 'user' => [
                     'id' => $user->id,
                     'name' => $user->name,
@@ -373,7 +375,8 @@ class UserController extends Controller
                     'institute' => $user->institute,
                     'experience' => $user->experience,
                     'bio' => $user->bio,
-                    'role' => $user->role
+                    'role' => $user->role,
+                    'status' => $user->status
                 ]
             ], 201);
         } catch (\Exception $e) {
@@ -407,6 +410,7 @@ class UserController extends Controller
             'experience' => 'sometimes|nullable|string|max:255',
             'bio' => 'sometimes|nullable|string|max:1000',
             'password' => 'sometimes|nullable|string|min:8|confirmed',
+            'status' => 'sometimes|required|in:active,pending,inactive,rejected',
         ]);
 
         if ($validator->fails()) {
@@ -427,6 +431,7 @@ class UserController extends Controller
                 'institute' => $request->institute ?? $user->institute,
                 'experience' => $request->experience ?? $user->experience,
                 'bio' => $request->bio ?? $user->bio,
+                'status' => $request->status ?? $user->status,
             ];
 
             if ($request->filled('password')) {
@@ -448,7 +453,8 @@ class UserController extends Controller
                     'institute' => $user->institute,
                     'experience' => $user->experience,
                     'bio' => $user->bio,
-                    'role' => $user->role
+                    'role' => $user->role,
+                    'status' => $user->status
                 ]
             ]);
         } catch (\Exception $e) {
@@ -479,6 +485,11 @@ class UserController extends Controller
                     'success' => false,
                     'message' => 'You cannot delete your own account'
                 ], 422);
+            }
+
+            // If deleting a student, also delete the student record
+            if ($user->role === 'student') {
+                Student::where('user_id', $user->id)->delete();
             }
 
             $user->delete();
@@ -516,6 +527,9 @@ class UserController extends Controller
         }
     }
 
+    /**
+     * Create student from admin panel
+     */
     public function createStudent(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -541,16 +555,20 @@ class UserController extends Controller
         try {
             DB::beginTransaction();
 
+            // Create user with student role
             $user = User::create([
                 'name' => $request->name,
                 'username' => $request->username,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'role' => 'student',
+                'status' => 'active',
             ]);
 
+            // Generate roll number
             $rollNumber = $this->generateRollNumber($request->class_id);
 
+            // Create student record
             $student = Student::create([
                 'user_id' => $user->id,
                 'class_id' => $request->class_id,
@@ -560,13 +578,14 @@ class UserController extends Controller
                 'parent_contact' => $request->parent_contact,
                 'country_code' => $request->country_code,
                 'status' => 'active',
+                'admission_date' => now(),
             ]);
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Student registered successfully',
+                'message' => 'Student created successfully',
                 'data' => [
                     'user' => [
                         'id' => $user->id,
@@ -621,7 +640,7 @@ class UserController extends Controller
     private function getSuperAdminsData()
     {
         return User::where('role', 'super_admin')
-            ->select('id', 'name', 'username', 'email', 'dob', 'education_qualification', 'institute', 'role', 'created_at')
+            ->select('id', 'name', 'username', 'email', 'dob', 'education_qualification', 'institute', 'role', 'status', 'created_at')
             ->orderBy('name')
             ->get();
     }
@@ -629,7 +648,7 @@ class UserController extends Controller
     private function getAdminsData()
     {
         return User::where('role', 'admin')
-            ->select('id', 'name', 'username', 'email', 'dob', 'education_qualification', 'institute', 'role', 'created_at')
+            ->select('id', 'name', 'username', 'email', 'dob', 'education_qualification', 'institute', 'role', 'status', 'created_at')
             ->orderBy('name')
             ->get();
     }
@@ -640,7 +659,7 @@ class UserController extends Controller
             ->select([
                 'id', 'name', 'username', 'email', 'dob',
                 'education_qualification', 'institute', 'experience', 'bio',
-                'created_at'
+                'status', 'created_at'
             ])
             ->orderBy('name')
             ->get();
@@ -661,12 +680,15 @@ class UserController extends Controller
                     'id' => $student->id,
                     'user_id' => $student->user_id,
                     'name' => $student->user->name,
+                    'username' => $student->user->username,
                     'email' => $student->user->email,
                     'class_name' => $student->class->name ?? 'N/A',
                     'roll_number' => $student->roll_number,
                     'father_name' => $student->father_name,
                     'mother_name' => $student->mother_name,
                     'parent_contact' => $student->parent_contact,
+                    'country_code' => $student->country_code,
+                    'full_parent_contact' => $student->full_parent_contact,
                     'status' => $student->status,
                     'enrolled_date' => $student->created_at->format('Y-m-d'),
                 ];
@@ -682,6 +704,7 @@ class UserController extends Controller
             'teachers' => User::where('role', 'teacher')->count(),
             'students' => User::where('role', 'student')->count(),
             'active_users' => User::where('status', 'active')->count(),
+            'pending_users' => User::where('status', 'pending')->count(),
         ];
     }
 
@@ -713,7 +736,6 @@ class UserController extends Controller
 
     private function getInstitutes()
     {
-        // You can make this dynamic by querying from the database
         return [
             'University of Technology',
             'Science College',
@@ -822,6 +844,13 @@ class UserController extends Controller
                     break;
                 
                 case 'delete':
+                    // If deleting students, also delete student records
+                    $students = User::whereIn('id', $userIds)->where('role', 'student')->get();
+                    if ($students->count() > 0) {
+                        $studentUserIds = $students->pluck('id')->toArray();
+                        Student::whereIn('user_id', $studentUserIds)->delete();
+                    }
+                    
                     User::whereIn('id', $userIds)->delete();
                     $message = 'Users deleted successfully';
                     break;

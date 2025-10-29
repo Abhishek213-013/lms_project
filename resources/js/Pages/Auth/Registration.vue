@@ -12,6 +12,30 @@
       <h2 class="text-2xl font-bold text-center text-gray-800 mb-1">Sign Up</h2>
       <p class="text-center text-gray-500 mb-6">Create your account today</p>
 
+      <!-- Role Selection -->
+      <div class="mb-6">
+        <label class="block text-gray-700 text-sm font-medium mb-2">Account Type</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button
+            v-for="role in roles"
+            :key="role.value"
+            type="button"
+            :class="[
+              'py-2 px-3 rounded border text-sm font-medium transition-colors',
+              form.role === role.value
+                ? 'bg-indigo-600 text-white border-indigo-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            ]"
+            @click="form.role = role.value"
+          >
+            {{ role.label }}
+          </button>
+        </div>
+        <p class="text-xs text-gray-500 mt-2" v-if="form.role === 'teacher'">
+          Teacher accounts require admin approval before activation
+        </p>
+      </div>
+
       <!-- Registration Form -->
       <form @submit.prevent="submit">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -25,8 +49,9 @@
               required
               placeholder="Full name"
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              :class="{ 'border-red-500': form.errors.name }"
             />
-            <div v-if="errors.name" class="text-red-500 text-xs mt-1">{{ errors.name }}</div>
+            <div v-if="form.errors.name" class="text-red-500 text-xs mt-1">{{ form.errors.name }}</div>
           </div>
 
           <!-- Username -->
@@ -39,8 +64,9 @@
               required
               placeholder="Choose a username"
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              :class="{ 'border-red-500': form.errors.username }"
             />
-            <div v-if="errors.username" class="text-red-500 text-xs mt-1">{{ errors.username }}</div>
+            <div v-if="form.errors.username" class="text-red-500 text-xs mt-1">{{ form.errors.username }}</div>
           </div>
 
           <!-- Email -->
@@ -53,8 +79,9 @@
               required
               placeholder="name@example.com"
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              :class="{ 'border-red-500': form.errors.email }"
             />
-            <div v-if="errors.email" class="text-red-500 text-xs mt-1">{{ errors.email }}</div>
+            <div v-if="form.errors.email" class="text-red-500 text-xs mt-1">{{ form.errors.email }}</div>
           </div>
 
           <!-- Date of Birth -->
@@ -66,8 +93,9 @@
               v-model="form.dob"
               required
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              :class="{ 'border-red-500': form.errors.dob }"
             />
-            <div v-if="errors.dob" class="text-red-500 text-xs mt-1">{{ errors.dob }}</div>
+            <div v-if="form.errors.dob" class="text-red-500 text-xs mt-1">{{ form.errors.dob }}</div>
           </div>
 
           <!-- Education Qualification -->
@@ -78,6 +106,7 @@
               v-model="form.education_qualification"
               required
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              :class="{ 'border-red-500': form.errors.education_qualification }"
             >
               <option value="">Select Qualification</option>
               <option value="HSC">HSC</option>
@@ -88,7 +117,7 @@
               <option value="PhD">PhD</option>
               <option value="Other">Other</option>
             </select>
-            <div v-if="errors.education_qualification" class="text-red-500 text-xs mt-1">{{ errors.education_qualification }}</div>
+            <div v-if="form.errors.education_qualification" class="text-red-500 text-xs mt-1">{{ form.errors.education_qualification }}</div>
           </div>
 
           <!-- Institute -->
@@ -101,8 +130,37 @@
               required
               placeholder="Current institute"
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              :class="{ 'border-red-500': form.errors.institute }"
             />
-            <div v-if="errors.institute" class="text-red-500 text-xs mt-1">{{ errors.institute }}</div>
+            <div v-if="form.errors.institute" class="text-red-500 text-xs mt-1">{{ form.errors.institute }}</div>
+          </div>
+
+          <!-- Experience (for teachers) -->
+          <div v-if="form.role === 'teacher'">
+            <label for="experience" class="block text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide">Teaching Experience</label>
+            <input
+              id="experience"
+              type="text"
+              v-model="form.experience"
+              placeholder="e.g., 5 years"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              :class="{ 'border-red-500': form.errors.experience }"
+            />
+            <div v-if="form.errors.experience" class="text-red-500 text-xs mt-1">{{ form.errors.experience }}</div>
+          </div>
+
+          <!-- Bio (for teachers) -->
+          <div v-if="form.role === 'teacher'">
+            <label for="bio" class="block text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide">Bio</label>
+            <textarea
+              id="bio"
+              v-model="form.bio"
+              placeholder="Tell us about yourself..."
+              rows="3"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              :class="{ 'border-red-500': form.errors.bio }"
+            ></textarea>
+            <div v-if="form.errors.bio" class="text-red-500 text-xs mt-1">{{ form.errors.bio }}</div>
           </div>
 
           <!-- Password -->
@@ -115,8 +173,9 @@
               required
               placeholder="Password"
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              :class="{ 'border-red-500': form.errors.password }"
             />
-            <div v-if="errors.password" class="text-red-500 text-xs mt-1">{{ errors.password }}</div>
+            <div v-if="form.errors.password" class="text-red-500 text-xs mt-1">{{ form.errors.password }}</div>
           </div>
 
           <!-- Confirm Password -->
@@ -129,7 +188,9 @@
               required
               placeholder="Confirm Password"
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              :class="{ 'border-red-500': form.errors.password_confirmation }"
             />
+            <div v-if="form.errors.password_confirmation" class="text-red-500 text-xs mt-1">{{ form.errors.password_confirmation }}</div>
           </div>
         </div>
 
@@ -157,9 +218,23 @@
           </p>
         </div>
 
-        <!-- Success Message -->
+        <!-- Student Registration Link -->
+        <div class="text-center mt-4 pt-4 border-t border-gray-200">
+          <p class="text-sm text-gray-600">
+            Are you a student?
+            <a href="/student-registration" class="text-indigo-600 hover:text-indigo-800 font-medium">
+              Student Registration
+            </a>
+          </p>
+        </div>
+
+        <!-- Success/Error Messages -->
         <div v-if="status" class="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
           <p class="text-green-600 text-sm text-center">{{ status }}</p>
+        </div>
+        
+        <div v-if="form.errors.message" class="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+          <p class="text-red-600 text-sm text-center">{{ form.errors.message }}</p>
         </div>
       </form>
     </div>
@@ -169,10 +244,10 @@
 <script setup>
 import { useForm } from '@inertiajs/vue3';
 
-defineProps({
-  errors: Object,
-  status: String,
-});
+const roles = [
+  { label: "Teacher", value: "teacher" },
+  { label: "Administrator", value: "admin" }
+];
 
 const form = useForm({
   name: '',
@@ -181,15 +256,22 @@ const form = useForm({
   dob: '',
   education_qualification: '',
   institute: '',
+  experience: '',
+  bio: '',
   password: '',
   password_confirmation: '',
-  role: 'teacher', // Default role for registration
+  role: 'teacher',
 });
 
 const submit = () => {
   form.post('/register', {
-    onFinish: () => {
-      form.reset('password', 'password_confirmation');
+    preserveScroll: true,
+    onSuccess: () => {
+      // Form will be reset and redirect handled by backend
+      console.log('✅ Registration successful');
+    },
+    onError: (errors) => {
+      console.log('❌ Registration errors:', errors);
     },
   });
 };

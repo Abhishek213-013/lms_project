@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Student;
+use App\Models\ClassModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -57,9 +58,9 @@ class AuthController extends Controller
         return Inertia::render('Auth/PhoneVerification');
     }
 
-        /**
- * Handle admin/teacher login request
- */
+    /**
+     * Handle admin/teacher login request
+     */
     public function login(Request $request)
     {
         // Validate the request
@@ -80,7 +81,6 @@ class AuthController extends Controller
             } elseif ($user->role === 'admin') {
                 return redirect()->intended('/admin');
             } elseif ($user->role === 'teacher') {
-                // FIXED: Redirect to teacher portal with actual ID
                 return redirect()->intended("/teacher/portal");
             } else {
                 return redirect()->intended('/');
@@ -93,9 +93,6 @@ class AuthController extends Controller
         ])->withInput($request->only('username', 'remember'));
     }
 
-    /**
-     * Handle student login request
-     */
     public function studentLogin(Request $request)
     {
         Log::info('Student login attempt', ['login' => $request->login, 'ip' => $request->ip()]);
@@ -127,6 +124,7 @@ class AuthController extends Controller
                     ]);
                 }
                 
+                // FIX: Redirect to home page instead of student dashboard
                 return redirect()->intended('/');
             }
 
@@ -143,7 +141,9 @@ class AuthController extends Controller
         }
     }
 
-  
+    /**
+     * Handle admin/teacher registration
+     */
     public function register(Request $request)
     {
         Log::info('Registration attempt', ['email' => $request->email, 'role' => $request->role]);
@@ -176,6 +176,7 @@ class AuthController extends Controller
                 'experience' => $request->experience,
                 'password' => Hash::make($request->password),
                 'role' => $request->role,
+                'status' => $request->role === 'teacher' ? 'pending' : 'active', // Teachers need approval
             ]);
 
             Auth::login($user);
@@ -183,7 +184,9 @@ class AuthController extends Controller
             Log::info('Registration successful', ['user_id' => $user->id, 'role' => $user->role]);
 
             return $this->redirectBasedOnRole($user)
-                ->with('status', 'Registration successful! Welcome to SkillGro.');
+                ->with('status', $request->role === 'teacher' 
+                    ? 'Registration submitted for approval!' 
+                    : 'Registration successful! Welcome to SkillGro.');
 
         } catch (\Exception $e) {
             Log::error('Registration failed', ['error' => $e->getMessage(), 'email' => $request->email]);
@@ -193,8 +196,10 @@ class AuthController extends Controller
         }
     }
 
-
-     public function studentRegister(Request $request)
+    /**
+     * Handle student registration
+     */
+    public function studentRegister(Request $request)
     {
         Log::info('Student registration attempt', ['email' => $request->email, 'data' => $request->all()]);
 
@@ -204,7 +209,7 @@ class AuthController extends Controller
             'email' => 'required|email|unique:users|max:255',
             'father_name' => 'required|string|max:255',
             'mother_name' => 'required|string|max:255',
-            'class_id' => 'required|integer',
+            'class_id' => 'required|integer|exists:classes,id',
             'country_code' => 'required|string|max:10',
             'parent_contact' => 'required|string|max:20',
             'password' => 'required|string|min:8|confirmed',
@@ -221,7 +226,7 @@ class AuthController extends Controller
 
             Log::info('Creating user...');
             
-            // Create user
+            // Create user with student role
             $user = User::create([
                 'name' => $request->name,
                 'username' => $request->username,
@@ -234,13 +239,13 @@ class AuthController extends Controller
             Log::info('User created successfully', ['user_id' => $user->id]);
 
             // Generate a unique roll number
-            $rollNumber = $this->generateRollNumber($request->class_id);
+            $rollNumber = $this->generateStudentRollNumber($request->class_id);
 
             // Create student record
             $studentData = [
                 'user_id' => $user->id,
                 'class_id' => $request->class_id,
-                'roll_number' => $rollNumber, // Add roll number
+                'roll_number' => $rollNumber,
                 'father_name' => $request->father_name,
                 'mother_name' => $request->mother_name,
                 'parent_contact' => $request->parent_contact,
@@ -267,8 +272,8 @@ class AuthController extends Controller
                 'user_role' => Auth::user()->role ?? 'none'
             ]);
 
-            // Redirect to home
-            return redirect()->route('home')->with([
+            // FIX: Redirect to home page instead of student dashboard
+            return redirect('/')->with([
                 'success' => 'Registration successful! Welcome to SkillGro.'
             ]);
 
@@ -287,25 +292,24 @@ class AuthController extends Controller
         }
     }
 
-    private function generateRollNumber($classId)
+    /**
+     * Generate unique roll number for student
+     */
+    private function generateStudentRollNumber($classId)
     {
-        $year = date('Y');
+        $currentYear = date('Y');
         $classCode = str_pad($classId, 2, '0', STR_PAD_LEFT);
         
-        // Get the last roll number for this class and year
-        $lastStudent = Student::where('roll_number', 'like', "{$year}{$classCode}%")
-            ->orderBy('roll_number', 'desc')
+        $lastStudent = Student::where('class_id', $classId)
+            ->orderBy('id', 'desc')
             ->first();
-
-        if ($lastStudent) {
-            $lastNumber = intval(substr($lastStudent->roll_number, -3));
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
-        }
-
-        return $year . $classCode . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+            
+        $sequence = $lastStudent ? (int)substr($lastStudent->roll_number, -3) + 1 : 1;
+        $sequenceCode = str_pad($sequence, 3, '0', STR_PAD_LEFT);
+        
+        return "ST{$currentYear}{$classCode}{$sequenceCode}";
     }
+
     /**
      * Handle OTP sending request
      */
@@ -324,16 +328,13 @@ class AuthController extends Controller
 
         try {
             // For demo purposes, we'll just return success
-            // In production, you would integrate with an SMS service here
-            
-            // Generate OTP (for demo, we'll use 123456)
             $otp = '123456';
             
             // Store OTP in session for verification
             session([
                 'otp_code' => $otp,
                 'otp_phone' => $request->countryCode . $request->phoneNumber,
-                'otp_expires' => now()->addMinutes(10), // OTP valid for 10 minutes
+                'otp_expires' => now()->addMinutes(10),
             ]);
 
             Log::info('OTP sent (demo)', [
@@ -435,12 +436,6 @@ class AuthController extends Controller
 
         try {
             // In a real application, you would send a password reset email here
-            $user = User::where('email', $request->email)->first();
-
-            // Generate reset token and send email
-            // $token = Str::random(60);
-            // $user->sendPasswordResetNotification($token);
-
             Log::info('Password reset requested', ['email' => $request->email]);
 
             return back()->with('status', 'Password reset link has been sent to your email.');
@@ -462,7 +457,7 @@ class AuthController extends Controller
             'super_admin' => redirect()->intended('/super-admin'),
             'admin' => redirect()->intended('/admin'),
             'teacher' => redirect()->intended('/teacher'),
-            'student' => redirect()->intended('/student'),
+            'student' => redirect()->intended('/student/dashboard'),
             default => redirect()->intended('/'),
         };
     }

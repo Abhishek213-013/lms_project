@@ -438,730 +438,507 @@
   </FrontendLayout>
 </template>
 
-<script>
+<script setup>
 import { Link } from '@inertiajs/vue3'
 import FrontendLayout from '../Layout/FrontendLayout.vue'
 import { router, usePage } from '@inertiajs/vue3';
-import { ref, computed, onMounted, onUnmounted, getCurrentInstance } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { useTranslation } from '@/composables/useTranslation';
 
-export default {
-  name: 'CourseSingle',
-  components: {
-    FrontendLayout,
-    Link
+// Define props FIRST before using them
+const props = defineProps({
+  course: {
+    type: Object,
+    default: null
   },
-  props: {
-    course: {
-      type: Object,
-      default: null
-    },
-    relatedCourses: {
-      type: Array,
-      default: () => []
-    },
-    isEnrolled: {
-      type: Boolean,
-      default: false
-    }
+  relatedCourses: {
+    type: Array,
+    default: () => []
   },
-  setup(props) {
-    // Get the Vue instance for accessing global properties
-    const { proxy } = getCurrentInstance()
-
-    const page = usePage();
-    const loading = ref(false);
-    const loadingSubjects = ref(false);
-    const loadingEnroll = ref(false);
-    const error = ref(null);
-    const activeTab = ref('overview');
-    const openModule = ref(null);
-    const subjects = ref([]);
-    const isEnrolled = ref(props.isEnrolled);
-    const currentCourse = ref(props.course);
-    const currentTheme = ref('light');
-    const currentLanguage = ref('bn'); // Default to Bengali
-
-    // Define translations object
-    const translations = {
-      en: {
-        'Course Details': 'Course Details',
-        'Home': 'Home',
-        'Courses': 'Courses',
-        'Loading...': 'Loading...',
-        'Loading course details...': 'Loading course details...',
-        'Unable to Load Course': 'Unable to Load Course',
-        'Try Again': 'Try Again',
-        'Back to Courses': 'Back to Courses',
-        'reviews': 'reviews',
-        'By': 'By',
-        'students': 'students',
-        'Overview': 'Overview',
-        'Curriculum': 'Curriculum',
-        'Subjects': 'Subjects',
-        'Instructor': 'Instructor',
-        "What you'll learn": "What you'll learn",
-        'Course Content': 'Course Content',
-        'lessons': 'lessons',
-        'Other Subjects in': 'Other Subjects in',
-        'Click any subject to view its details': 'Click any subject to view its details',
-        'Loading other subjects...': 'Loading other subjects...',
-        'View Details': 'View Details',
-        'No other subjects available': 'No other subjects available',
-        'This class currently has only this subject.': 'This class currently has only this subject.',
-        'Browse All Courses': 'Browse All Courses',
-        'Instructor Rating': 'Instructor Rating',
-        'Courses': 'Courses',
-        'Students': 'Students',
-        'Years Experience': 'Years Experience',
-        'Contact Information': 'Contact Information',
-        'Course Fee': 'Course Fee',
-        'Free': 'Free',
-        'Already Enrolled': 'Already Enrolled',
-        'Enroll Now': 'Enroll Now',
-        'Start learning today': 'Start learning today',
-        'This course includes:': 'This course includes:',
-        'Course Details': 'Course Details',
-        'Level:': 'Level:',
-        'Duration:': 'Duration:',
-        'Lessons:': 'Lessons:',
-        'Students:': 'Students:',
-        'Certificate:': 'Certificate:',
-        'Yes': 'Yes',
-        'About the Instructor': 'About the Instructor',
-        'Rating': 'Rating',
-        'Other Subjects': 'Other Subjects',
-        'more subjects': 'more subjects',
-        'Comprehensive understanding of core concepts': 'Comprehensive understanding of core concepts',
-        'Practical application of learned skills': 'Practical application of learned skills',
-        'Interactive learning materials and resources': 'Interactive learning materials and resources',
-        'Expert guidance and support': 'Expert guidance and support',
-        'Real-world projects and exercises': 'Real-world projects and exercises',
-        'Lifetime access to course materials': 'Lifetime access to course materials',
-        '45 on-demand videos': '45 on-demand videos',
-        'Downloadable resources': 'Downloadable resources',
-        'Full lifetime access': 'Full lifetime access',
-        'Access on mobile and desktop': 'Access on mobile and desktop',
-        'Certificate of completion': 'Certificate of completion',
-        'All Levels': 'All Levels',
-        'Beginner': 'Beginner',
-        'Intermediate': 'Intermediate',
-        'Advanced': 'Advanced',
-        'Primary': 'Primary',
-        'Junior': 'Junior',
-        'Secondary': 'Secondary',
-        'Higher Secondary': 'Higher Secondary',
-        'Skill Course': 'Skill Course',
-        'Subject Expert': 'Subject Expert',
-        'Expert Instructor': 'Expert Instructor',
-        'This comprehensive course is designed to provide you with practical skills and knowledge that you can apply immediately. Whether you\'re a beginner or looking to advance your skills, this course will help you achieve your learning goals.': 'This comprehensive course is designed to provide you with practical skills and knowledge that you can apply immediately. Whether you\'re a beginner or looking to advance your skills, this course will help you achieve your learning goals.',
-        'Develop problem-solving skills and mathematical thinking': 'Develop problem-solving skills and mathematical thinking',
-        'Explore scientific concepts and experimental methods': 'Explore scientific concepts and experimental methods',
-        'Improve language proficiency and communication skills': 'Improve language proficiency and communication skills',
-        'Master Bengali language and literature': 'Master Bengali language and literature',
-        'Understand society, culture, and human interactions': 'Understand society, culture, and human interactions'
-      },
-      bn: {
-        'Course Details': 'কোর্স বিবরণ',
-        'Home': 'হোম',
-        'Courses': 'কোর্সসমূহ',
-        'Loading...': 'লোড হচ্ছে...',
-        'Loading course details...': 'কোর্স বিবরণ লোড হচ্ছে...',
-        'Unable to Load Course': 'কোর্স লোড করতে ব্যর্থ',
-        'Try Again': 'আবার চেষ্টা করুন',
-        'Back to Courses': 'কোর্সে ফিরে যান',
-        'reviews': 'রিভিউ',
-        'By': 'দ্বারা',
-        'students': 'শিক্ষার্থী',
-        'Overview': 'ওভারভিউ',
-        'Curriculum': 'কারিকুলাম',
-        'Subjects': 'বিষয়',
-        'Instructor': 'ইন্সট্রাক্টর',
-        "What you'll learn": "আপনি যা শিখবেন",
-        'Course Content': 'কোর্স কন্টেন্ট',
-        'lessons': 'লেসন',
-        'Other Subjects in': 'অন্যান্য বিষয়',
-        'Click any subject to view its details': 'বিস্তারিত দেখতে যেকোনো বিষয়ে ক্লিক করুন',
-        'Loading other subjects...': 'অন্যান্য বিষয় লোড হচ্ছে...',
-        'View Details': 'বিস্তারিত দেখুন',
-        'No other subjects available': 'কোনো অন্যান্য বিষয় উপলব্ধ নেই',
-        'This class currently has only this subject.': 'এই ক্লাসে বর্তমানে শুধুমাত্র এই বিষয়টি রয়েছে।',
-        'Browse All Courses': 'সমস্ত কোর্স ব্রাউজ করুন',
-        'Instructor Rating': 'ইন্সট্রাক্টর রেটিং',
-        'Courses': 'কোর্স',
-        'Students': 'শিক্ষার্থী',
-        'Years Experience': 'বছরের অভিজ্ঞতা',
-        'Contact Information': 'যোগাযোগের তথ্য',
-        'Course Fee': 'কোর্স ফি',
-        'Free': 'ফ্রি',
-        'Already Enrolled': 'ইতিমধ্যে নিবন্ধিত',
-        'Enroll Now': 'এখনই নিবন্ধন করুন',
-        'Start learning today': 'আজই শেখা শুরু করুন',
-        'This course includes:': 'এই কোর্সে রয়েছে:',
-        'Course Details': 'কোর্স বিবরণ',
-        'Level:': 'লেভেল:',
-        'Duration:': 'সময়কাল:',
-        'Lessons:': 'লেসন:',
-        'Students:': 'শিক্ষার্থী:',
-        'Certificate:': 'সার্টিফিকেট:',
-        'Yes': 'হ্যাঁ',
-        'About the Instructor': 'ইন্সট্রাক্টর সম্পর্কে',
-        'Rating': 'রেটিং',
-        'Other Subjects': 'অন্যান্য বিষয়',
-        'more subjects': 'আরও বিষয়',
-        'Comprehensive understanding of core concepts': 'মৌলিক ধারণার ব্যাপক বোঝাপড়া',
-        'Practical application of learned skills': 'শেখা দক্ষতার ব্যবহারিক প্রয়োগ',
-        'Interactive learning materials and resources': 'ইন্টারেক্টিভ লার্নিং ম্যাটেরিয়াল এবং রিসোর্স',
-        'Expert guidance and support': 'বিশেষজ্ঞ নির্দেশনা এবং সমর্থন',
-        'Real-world projects and exercises': 'বাস্তব-বিশ্বের প্রকল্প এবং অনুশীলন',
-        'Lifetime access to course materials': 'কোর্স ম্যাটেরিয়ালে আজীবন অ্যাক্সেস',
-        '45 on-demand videos': '৪৫টি অন-ডিমান্ড ভিডিও',
-        'Downloadable resources': 'ডাউনলোডযোগ্য রিসোর্স',
-        'Full lifetime access': 'পূর্ণ আজীবন অ্যাক্সেস',
-        'Access on mobile and desktop': 'মোবাইল এবং ডেস্কটপে অ্যাক্সেস',
-        'Certificate of completion': 'সমাপ্তি সার্টিফিকেট',
-        'All Levels': 'সব লেভেল',
-        'Beginner': 'শুরু',
-        'Intermediate': 'মধ্যবর্তী',
-        'Advanced': 'এডভান্সড',
-        'Primary': 'প্রাথমিক',
-        'Junior': 'জুনিয়র',
-        'Secondary': 'সেকেন্ডারি',
-        'Higher Secondary': 'উচ্চ মাধ্যমিক',
-        'Skill Course': 'স্কিল কোর্স',
-        'Subject Expert': 'বিষয় বিশেষজ্ঞ',
-        'Expert Instructor': 'বিশেষজ্ঞ ইন্সট্রাক্টর',
-        'This comprehensive course is designed to provide you with practical skills and knowledge that you can apply immediately. Whether you\'re a beginner or looking to advance your skills, this course will help you achieve your learning goals.': 'এই বিস্তৃত কোর্সটি আপনাকে ব্যবহারিক দক্ষতা এবং জ্ঞান প্রদান করার জন্য ডিজাইন করা হয়েছে যা আপনি অবিলম্বে প্রয়োগ করতে পারেন। আপনি একজন শিক্ষানবিস হোন বা আপনার দক্ষতা উন্নত করতে চান, এই কোর্সটি আপনার শেখার লক্ষ্য অর্জনে সাহায্য করবে।',
-        'Develop problem-solving skills and mathematical thinking': 'সমস্যা সমাধানের দক্ষতা এবং গাণিতিক চিন্তাভাবনা বিকাশ করুন',
-        'Explore scientific concepts and experimental methods': 'বৈজ্ঞানিক ধারণা এবং পরীক্ষামূলক পদ্ধতি অন্বেষণ করুন',
-        'Improve language proficiency and communication skills': 'ভাষার দক্ষতা এবং যোগাযোগের দক্ষতা উন্নত করুন',
-        'Master Bengali language and literature': 'বাংলা ভাষা এবং সাহিত্য আয়ত্ত করুন',
-        'Understand society, culture, and human interactions': 'সমাজ, সংস্কৃতি এবং মানুষের মিথস্ক্রিয়া বুঝুন'
-      }
-    }
-
-    // Translation function
-    const t = (key, replacements = {}) => {
-      let translated = translations[currentLanguage.value]?.[key] || key
-      
-      Object.keys(replacements).forEach(replacementKey => {
-        translated = translated.replace(`{${replacementKey}}`, replacements[replacementKey])
-      })
-      
-      return translated
-    }
-
-    // Load language and theme preferences from localStorage
-    onMounted(() => {
-      const savedLang = localStorage.getItem('preferredLanguage')
-      if (savedLang && (savedLang === 'en' || savedLang === 'bn')) {
-        currentLanguage.value = savedLang
-      }
-      
-      const savedTheme = localStorage.getItem('preferredTheme')
-      if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
-        currentTheme.value = savedTheme
-      }
-      
-      // Listen for language changes from other components
-      window.addEventListener('languageChanged', (event) => {
-        currentLanguage.value = event.detail.language
-      })
-
-      // Listen for theme changes
-      window.addEventListener('themeChanged', handleThemeChange);
-
-      if (!props.course) {
-        fetchCourse();
-      }
-      fetchOtherSubjects();
-    });
-
-    onUnmounted(() => {
-      window.removeEventListener('languageChanged', () => {})
-      window.removeEventListener('themeChanged', handleThemeChange);
-    });
-
-    // Handle theme changes
-    const handleThemeChange = (event) => {
-      currentTheme.value = event.detail.theme;
-    };
-
-    // Get class name from course data
-    const getClassName = (course) => {
-      if (!course) return t('This Class');
-      
-      if (course.type === 'regular') {
-        return course.name || `Class ${course.grade || ''}`;
-      } else {
-        return course.name || t('This Course');
-      }
-    };
-
-    // Get course title in "Class Name - Subject Name" format
-    const getCourseTitle = (course) => {
-      if (!course) return t('Course Details');
-      
-      if (course.type === 'regular') {
-        const className = course.name || `Class ${course.grade || ''}`;
-        const subjectName = course.subject || 'General';
-        return `${className} - ${subjectName}`;
-      } else {
-        return course.name || course.class_name || t('Untitled Course');
-      }
-    };
-
-    // Get course description
-    const getCourseDescription = (course) => {
-      if (course.description) {
-        return course.description;
-      }
-      
-      if (course.type === 'regular') {
-        return t('Comprehensive curriculum for students. This course covers all essential subjects and prepares students for academic success.');
-      } else {
-        return t('Explore this course - learn essential skills and knowledge from expert instructors.');
-      }
-    };
-
-    // ============ INSTRUCTOR METHODS ============
-
-    // Get instructor name with proper fallback
-    const getInstructorName = (teacher) => {
-      if (teacher?.name) {
-        return teacher.name;
-      }
-      return t('Expert Instructor');
-    };
-
-    // Get instructor qualification
-    const getInstructorQualification = (teacher) => {
-      if (teacher?.education_qualification) {
-        return teacher.education_qualification;
-      }
-      return t('Subject Expert');
-    };
-
-    // Get instructor rating
-    const getInstructorRating = (teacher) => {
-      if (teacher?.rating) {
-        return teacher.rating;
-      }
-      return '4.8';
-    };
-
-    // Get instructor bio
-    const getInstructorBio = (teacher) => {
-      if (teacher?.bio) {
-        return teacher.bio;
-      }
-      if (teacher?.experience) {
-        return t('Experienced instructor with teaching experience. Committed to providing quality education and helping learners achieve their goals through engaging and effective teaching methods.');
-      }
-      return t('Experienced instructor with years of expertise in teaching and mentoring students. Committed to providing quality education and helping learners achieve their goals through engaging and effective teaching methods.');
-    };
-
-    // Get instructor courses count
-    const getInstructorCoursesCount = (teacher) => {
-      if (teacher?.courses_count !== undefined) {
-        return teacher.courses_count;
-      }
-      return 5;
-    };
-
-    // Get instructor students count
-    const getInstructorStudentsCount = (teacher) => {
-      if (teacher?.students_count !== undefined) {
-        return teacher.students_count;
-      }
-      return 250;
-    };
-
-    // Get instructor experience
-    const getInstructorExperience = (teacher) => {
-      if (teacher?.experience) {
-        // Extract years from experience string (e.g., "5+ years" -> "5")
-        const match = teacher.experience.match(/(\d+)/);
-        return match ? match[1] : '5';
-      }
-      return '5';
-    };
-
-    // Get instructor email
-    const getInstructorEmail = (teacher) => {
-      return teacher?.email || null;
-    };
-
-    // Get instructor institute
-    const getInstructorInstitute = (teacher) => {
-      return teacher?.institute || null;
-    };
-
-    // Get instructor avatar
-    const getInstructorAvatar = (teacher) => {
-      if (teacher?.avatar) {
-        return teacher.avatar;
-      }
-      return '/assets/img/instructors/default.jpg';
-    };
-
-    // Get instructor image
-    const getInstructorImage = (teacher) => {
-      if (teacher?.avatar) {
-        return teacher.avatar;
-      }
-      return '/assets/img/instructors/default.jpg';
-    };
-
-    // ============ COURSE METHODS ============
-
-    // Fetch other subjects for the same class
-    const fetchOtherSubjects = async () => {
-      loadingSubjects.value = true;
-      try {
-        const courseId = currentCourse.value?.id;
-        if (!courseId) {
-          subjects.value = [];
-          return;
-        }
-
-        console.log('🔍 Fetching other subjects for course:', courseId);
-        
-        const currentSubject = currentCourse.value.subject;
-        const grade = currentCourse.value.grade;
-
-        console.log('📚 Current course:', currentCourse.value);
-        console.log('🎯 Current subject:', currentSubject);
-        console.log('📊 Grade:', grade);
-
-        // Try to fetch subjects by grade
-        let otherSubjectsData = [];
-
-        if (grade) {
-          console.log('🔍 Trying to fetch subjects by grade:', grade);
-          try {
-            const gradeResponse = await fetch(`/api/courses/class/${grade}/subjects`);
-            if (gradeResponse.ok) {
-              const gradeData = await gradeResponse.json();
-              if (gradeData.success && Array.isArray(gradeData.data)) {
-                otherSubjectsData = gradeData.data.filter(subject => 
-                  subject.name !== currentSubject && subject.id !== parseInt(courseId)
-                );
-                console.log('✅ Subjects by grade found:', otherSubjectsData);
-              }
-            }
-          } catch (gradeError) {
-            console.log('❌ Grade-based fetch failed:', gradeError.message);
-          }
-        }
-
-        // If no subjects found by grade, try general courses endpoint
-        if (otherSubjectsData.length === 0) {
-          console.log('🔍 Trying general courses endpoint');
-          try {
-            const coursesResponse = await fetch('/api/courses/classes');
-            if (coursesResponse.ok) {
-              const coursesData = await coursesResponse.json();
-              if (coursesData.success && Array.isArray(coursesData.data)) {
-                // Filter courses by same grade and type, excluding current subject
-                otherSubjectsData = coursesData.data.filter(course => 
-                  course.grade === grade && 
-                  course.type === 'regular' && 
-                  course.subject !== currentSubject &&
-                  course.id !== parseInt(courseId)
-                );
-                console.log('✅ Subjects from general endpoint:', otherSubjectsData);
-              }
-            }
-          } catch (generalError) {
-            console.log('❌ General courses fetch failed:', generalError.message);
-          }
-        }
-
-        subjects.value = otherSubjectsData;
-        console.log('🎯 Final other subjects:', subjects.value);
-
-      } catch (err) {
-        console.error('❌ Error fetching other subjects:', err);
-        subjects.value = [];
-      } finally {
-        loadingSubjects.value = false;
-      }
-    };
-
-    // Computed property for other subjects
-    const otherSubjects = computed(() => {
-      return subjects.value;
-    });
-
-    // Navigate to another subject
-    const navigateToSubject = (subject) => {
-      console.log('🎯 Navigating to subject:', subject);
-      router.visit(`/course/${subject.id}`);
-    };
-
-    const fetchCourse = async () => {
-      if (props.course) {
-        console.log('✅ Using course from props:', props.course);
-        currentCourse.value = props.course;
-        return;
-      }
-
-      loading.value = true;
-      error.value = null;
-      
-      try {
-        const path = window.location.pathname;
-        const match = path.match(/\/course\/(\d+)/);
-        const courseId = match ? match[1] : null;
-        
-        if (!courseId) {
-          throw new Error('Course ID not found');
-        }
-
-        console.log('🔍 Fetching course:', courseId);
-
-        const response = await fetch(`/api/courses/${courseId}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch course');
-        }
-        
-        const data = await response.json();
-        if (data.success) {
-          currentCourse.value = data.data;
-          console.log('✅ Course data received:', currentCourse.value);
-        } else {
-          throw new Error(data.message || 'Course not found');
-        }
-      } catch (err) {
-        console.error('❌ Error fetching course:', err);
-        error.value = err.message || 'Unable to load course details';
-      } finally {
-        loading.value = false;
-      }
-    };
-
-    const toggleModule = (index) => {
-      openModule.value = openModule.value === index ? null : index;
-    };
-
-    const enrollCourse = async () => {
-      loadingEnroll.value = true;
-      try {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        isEnrolled.value = true;
-        alert(t('Successfully enrolled in the course!'));
-        
-        const courseId = currentCourse.value?.id;
-        if (courseId) {
-          router.visit(`/learning/${courseId}`);
-        }
-      } catch (err) {
-        console.error('Error enrolling:', err);
-        alert(t('Failed to enroll. Please try again.'));
-      } finally {
-        loadingEnroll.value = false;
-      }
-    };
-
-    // Helper methods
-    const getCourseImage = (course) => {
-      return course?.thumbnail || '/assets/img/courses/h5_course_thumb01.jpg';
-    };
-
-    const getPreviewImage = (course) => {
-      return course?.thumbnail || '/assets/img/courses/h5_course_thumb02.jpg';
-    };
-
-    const getCourseCategory = (course) => {
-      if (!course) return t('Course');
-      if (course.type === 'regular') {
-        if (course.grade <= 5) return t('Primary');
-        if (course.grade <= 8) return t('Junior');
-        if (course.grade <= 10) return t('Secondary');
-        return t('Higher Secondary');
-      }
-      return course.category || t('Skill Course');
-    };
-
-    const formatDate = (dateString) => {
-      if (!dateString) return t('Recently');
-      try {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric' 
-        });
-      } catch (error) {
-        return t('Recently');
-      }
-    };
-
-    const getLearningPoints = (course) => {
-      return [
-        t('Comprehensive understanding of core concepts'),
-        t('Practical application of learned skills'),
-        t('Interactive learning materials and resources'),
-        t('Expert guidance and support'),
-        t('Real-world projects and exercises'),
-        t('Lifetime access to course materials')
-      ];
-    };
-
-    const getAdditionalInfo = (course) => {
-      return t('This comprehensive course is designed to provide you with practical skills and knowledge that you can apply immediately. Whether you\'re a beginner or looking to advance your skills, this course will help you achieve your learning goals.');
-    };
-
-    const getCourseModules = (course) => {
-      return [
-        {
-          id: 1,
-          title: 'Introduction & Basics',
-          lessons: [
-            { id: 1, title: 'Course Overview & Objectives', duration: '10:15', preview: true },
-            { id: 2, title: 'Getting Started Guide', duration: '15:30', preview: true },
-            { id: 3, title: 'Setting Up Your Environment', duration: '20:45', preview: false }
-          ]
-        },
-        {
-          id: 2,
-          title: 'Core Concepts',
-          lessons: [
-            { id: 4, title: 'Fundamental Principles', duration: '25:20', preview: false },
-            { id: 5, title: 'Advanced Techniques', duration: '30:15', preview: false },
-            { id: 6, title: 'Practical Applications', duration: '35:40', preview: false }
-          ]
-        },
-        {
-          id: 3,
-          title: 'Advanced Topics',
-          lessons: [
-            { id: 7, title: 'Expert Level Concepts', duration: '40:25', preview: false },
-            { id: 8, title: 'Real-world Projects', duration: '50:10', preview: false },
-            { id: 9, title: 'Final Assessment', duration: '15:00', preview: false }
-          ]
-        }
-      ];
-    };
-
-    const getSubjectIcon = (subjectName) => {
-      const icons = {
-        'Mathematics': 'fas fa-calculator',
-        'Science': 'fas fa-flask',
-        'English': 'fas fa-language',
-        'Bangla': 'fas fa-book',
-        'Social Studies': 'fas fa-globe-asia',
-        'Physics': 'fas fa-atom',
-        'Chemistry': 'fas fa-flask',
-        'Biology': 'fas fa-dna',
-        'History': 'fas fa-monument',
-        'Geography': 'fas fa-mountain',
-        'Computer Science': 'fas fa-laptop-code',
-        'default': 'fas fa-book'
-      };
-      return icons[subjectName] || icons.default;
-    };
-
-    const getSubjectDescription = (subjectName) => {
-      const descriptions = {
-        'Mathematics': t('Develop problem-solving skills and mathematical thinking'),
-        'Science': t('Explore scientific concepts and experimental methods'),
-        'English': t('Improve language proficiency and communication skills'),
-        'Bangla': t('Master Bengali language and literature'),
-        'Social Studies': t('Understand society, culture, and human interactions'),
-        'default': t('Comprehensive curriculum designed to build strong foundational knowledge and practical skills.')
-      };
-      return descriptions[subjectName] || descriptions.default;
-    };
-
-    const handleLessonClick = (lesson) => {
-      if (lesson.preview) {
-        alert(`${t('Playing preview:')} ${lesson.title}`);
-      } else if (!isEnrolled.value) {
-        enrollCourse();
-      } else {
-        alert(`${t('Starting lesson:')} ${lesson.title}`);
-      }
-    };
-
-    const getCourseFeatures = (course) => {
-      return [
-        { icon: 'fas fa-play-circle', text: t('45 on-demand videos') },
-        { icon: 'fas fa-file-alt', text: t('Downloadable resources') },
-        { icon: 'fas fa-infinity', text: t('Full lifetime access') },
-        { icon: 'fas fa-mobile-alt', text: t('Access on mobile and desktop') },
-        { icon: 'fas fa-trophy', text: t('Certificate of completion') }
-      ];
-    };
-
-    const getCourseLevel = (course) => {
-      if (!course) return t('All Levels');
-      if (course.type === 'regular') {
-        if (course.grade <= 5) return t('Beginner');
-        if (course.grade <= 8) return t('Intermediate');
-        return t('Advanced');
-      }
-      return t('All Levels');
-    };
-
-    const getTotalDuration = (course) => {
-      return '11h 20m';
-    };
-
-    const getTotalLessons = (course) => {
-      return '45';
-    };
-
-    return {
-      loading,
-      loadingSubjects,
-      loadingEnroll,
-      error,
-      activeTab,
-      openModule,
-      subjects,
-      otherSubjects,
-      isEnrolled,
-      course: computed(() => currentCourse.value),
-      getClassName,
-      getCourseTitle,
-      getCourseDescription,
-      fetchCourse,
-      fetchOtherSubjects,
-      navigateToSubject,
-      toggleModule,
-      enrollCourse,
-      getCourseImage,
-      getPreviewImage,
-      getCourseCategory,
-      getInstructorName,
-      getInstructorQualification,
-      getInstructorRating,
-      getInstructorBio,
-      getInstructorCoursesCount,
-      getInstructorStudentsCount,
-      getInstructorExperience,
-      getInstructorEmail,
-      getInstructorInstitute,
-      getInstructorAvatar,
-      getInstructorImage,
-      formatDate,
-      getLearningPoints,
-      getAdditionalInfo,
-      getCourseModules,
-      getSubjectIcon,
-      getSubjectDescription,
-      handleLessonClick,
-      getCourseFeatures,
-      getCourseLevel,
-      getTotalDuration,
-      getTotalLessons,
-      currentTheme,
-      t,
-      currentLanguage
-    };
+  isEnrolled: {
+    type: Boolean,
+    default: false
   }
-}
+})
+
+// Use the global translation composable
+const { currentLanguage, t, switchLanguage } = useTranslation()
+
+// Add icon render key to force re-render when language changes
+const iconRenderKey = ref(0)
+
+// Watch for language changes and force icon re-render
+watch(currentLanguage, () => {
+  iconRenderKey.value++
+  nextTick(() => {
+    // Force Font Awesome to re-render icons
+    if (window.FontAwesome && window.FontAwesome.dom) {
+      window.FontAwesome.dom.i2svg()
+    }
+  })
+})
+
+const page = usePage();
+const loading = ref(false);
+const loadingSubjects = ref(false);
+const loadingEnroll = ref(false);
+const error = ref(null);
+const activeTab = ref('overview');
+const openModule = ref(null);
+const subjects = ref([]);
+const isEnrolled = ref(props.isEnrolled);
+const currentCourse = ref(props.course);
+const currentTheme = ref('light');
+
+// Get class name from course data
+const getClassName = (course) => {
+  if (!course) return t('This Class');
+  
+  if (course.type === 'regular') {
+    return course.name || `Class ${course.grade || ''}`;
+  } else {
+    return course.name || t('This Course');
+  }
+};
+
+// Get course title in "Class Name - Subject Name" format
+const getCourseTitle = (course) => {
+  if (!course) return t('Course Details');
+  
+  if (course.type === 'regular') {
+    const className = course.name || `Class ${course.grade || ''}`;
+    const subjectName = course.subject || 'General';
+    return `${className} - ${subjectName}`;
+  } else {
+    return course.name || course.class_name || t('Untitled Course');
+  }
+};
+
+// Get course description
+const getCourseDescription = (course) => {
+  if (course.description) {
+    return course.description;
+  }
+  
+  if (course.type === 'regular') {
+    return t('Comprehensive curriculum for students. This course covers all essential subjects and prepares students for academic success.');
+  } else {
+    return t('Explore this course - learn essential skills and knowledge from expert instructors.');
+  }
+};
+
+// ============ INSTRUCTOR METHODS ============
+
+// Get instructor name with proper fallback
+const getInstructorName = (teacher) => {
+  if (teacher?.name) {
+    return teacher.name;
+  }
+  return t('Expert Instructor');
+};
+
+// Get instructor qualification
+const getInstructorQualification = (teacher) => {
+  if (teacher?.education_qualification) {
+    return teacher.education_qualification;
+  }
+  return t('Subject Expert');
+};
+
+// Get instructor rating
+const getInstructorRating = (teacher) => {
+  if (teacher?.rating) {
+    return teacher.rating;
+  }
+  return '4.8';
+};
+
+// Get instructor bio
+const getInstructorBio = (teacher) => {
+  if (teacher?.bio) {
+    return teacher.bio;
+  }
+  if (teacher?.experience) {
+    return t('Experienced instructor with teaching experience. Committed to providing quality education and helping learners achieve their goals through engaging and effective teaching methods.');
+  }
+  return t('Experienced instructor with years of expertise in teaching and mentoring students. Committed to providing quality education and helping learners achieve their goals through engaging and effective teaching methods.');
+};
+
+// Get instructor courses count
+const getInstructorCoursesCount = (teacher) => {
+  if (teacher?.courses_count !== undefined) {
+    return teacher.courses_count;
+  }
+  return 5;
+};
+
+// Get instructor students count
+const getInstructorStudentsCount = (teacher) => {
+  if (teacher?.students_count !== undefined) {
+    return teacher.students_count;
+  }
+  return 250;
+};
+
+// Get instructor experience
+const getInstructorExperience = (teacher) => {
+  if (teacher?.experience) {
+    // Extract years from experience string (e.g., "5+ years" -> "5")
+    const match = teacher.experience.match(/(\d+)/);
+    return match ? match[1] : '5';
+  }
+  return '5';
+};
+
+// Get instructor email
+const getInstructorEmail = (teacher) => {
+  return teacher?.email || null;
+};
+
+// Get instructor institute
+const getInstructorInstitute = (teacher) => {
+  return teacher?.institute || null;
+};
+
+// Get instructor avatar
+const getInstructorAvatar = (teacher) => {
+  if (teacher?.avatar) {
+    return teacher.avatar;
+  }
+  return '/assets/img/instructors/default.jpg';
+};
+
+// Get instructor image
+const getInstructorImage = (teacher) => {
+  if (teacher?.avatar) {
+    return teacher.avatar;
+  }
+  return '/assets/img/instructors/default.jpg';
+};
+
+// ============ COURSE METHODS ============
+
+// Fetch other subjects for the same class
+const fetchOtherSubjects = async () => {
+  loadingSubjects.value = true;
+  try {
+    const courseId = currentCourse.value?.id;
+    if (!courseId) {
+      subjects.value = [];
+      return;
+    }
+
+    console.log('🔍 Fetching other subjects for course:', courseId);
+    
+    const currentSubject = currentCourse.value.subject;
+    const grade = currentCourse.value.grade;
+
+    console.log('📚 Current course:', currentCourse.value);
+    console.log('🎯 Current subject:', currentSubject);
+    console.log('📊 Grade:', grade);
+
+    // Try to fetch subjects by grade
+    let otherSubjectsData = [];
+
+    if (grade) {
+      console.log('🔍 Trying to fetch subjects by grade:', grade);
+      try {
+        const gradeResponse = await fetch(`/api/courses/class/${grade}/subjects`);
+        if (gradeResponse.ok) {
+          const gradeData = await gradeResponse.json();
+          if (gradeData.success && Array.isArray(gradeData.data)) {
+            otherSubjectsData = gradeData.data.filter(subject => 
+              subject.name !== currentSubject && subject.id !== parseInt(courseId)
+            );
+            console.log('✅ Subjects by grade found:', otherSubjectsData);
+          }
+        }
+      } catch (gradeError) {
+        console.log('❌ Grade-based fetch failed:', gradeError.message);
+      }
+    }
+
+    // If no subjects found by grade, try general courses endpoint
+    if (otherSubjectsData.length === 0) {
+      console.log('🔍 Trying general courses endpoint');
+      try {
+        const coursesResponse = await fetch('/api/courses/classes');
+        if (coursesResponse.ok) {
+          const coursesData = await coursesResponse.json();
+          if (coursesData.success && Array.isArray(coursesData.data)) {
+            // Filter courses by same grade and type, excluding current subject
+            otherSubjectsData = coursesData.data.filter(course => 
+              course.grade === grade && 
+              course.type === 'regular' && 
+              course.subject !== currentSubject &&
+              course.id !== parseInt(courseId)
+            );
+            console.log('✅ Subjects from general endpoint:', otherSubjectsData);
+          }
+        }
+      } catch (generalError) {
+        console.log('❌ General courses fetch failed:', generalError.message);
+      }
+    }
+
+    subjects.value = otherSubjectsData;
+    console.log('🎯 Final other subjects:', subjects.value);
+
+  } catch (err) {
+    console.error('❌ Error fetching other subjects:', err);
+    subjects.value = [];
+  } finally {
+    loadingSubjects.value = false;
+  }
+};
+
+// Computed property for other subjects
+const otherSubjects = computed(() => {
+  return subjects.value;
+});
+
+// Navigate to another subject
+const navigateToSubject = (subject) => {
+  console.log('🎯 Navigating to subject:', subject);
+  router.visit(`/course/${subject.id}`);
+};
+
+const fetchCourse = async () => {
+  if (props.course) {
+    console.log('✅ Using course from props:', props.course);
+    currentCourse.value = props.course;
+    return;
+  }
+
+  loading.value = true;
+  error.value = null;
+  
+  try {
+    const path = window.location.pathname;
+    const match = path.match(/\/course\/(\d+)/);
+    const courseId = match ? match[1] : null;
+    
+    if (!courseId) {
+      throw new Error('Course ID not found');
+    }
+
+    console.log('🔍 Fetching course:', courseId);
+
+    const response = await fetch(`/api/courses/${courseId}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch course');
+    }
+    
+    const data = await response.json();
+    if (data.success) {
+      currentCourse.value = data.data;
+      console.log('✅ Course data received:', currentCourse.value);
+    } else {
+      throw new Error(data.message || 'Course not found');
+    }
+  } catch (err) {
+    console.error('❌ Error fetching course:', err);
+    error.value = err.message || 'Unable to load course details';
+  } finally {
+    loading.value = false;
+  }
+};
+
+const toggleModule = (index) => {
+  openModule.value = openModule.value === index ? null : index;
+};
+
+const enrollCourse = async () => {
+  loadingEnroll.value = true;
+  try {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    isEnrolled.value = true;
+    alert(t('Successfully enrolled in the course!'));
+    
+    const courseId = currentCourse.value?.id;
+    if (courseId) {
+      router.visit(`/learning/${courseId}`);
+    }
+  } catch (err) {
+    console.error('Error enrolling:', err);
+    alert(t('Failed to enroll. Please try again.'));
+  } finally {
+    loadingEnroll.value = false;
+  }
+};
+
+// Helper methods
+const getCourseImage = (course) => {
+  return course?.thumbnail || '/assets/img/courses/h5_course_thumb01.jpg';
+};
+
+const getPreviewImage = (course) => {
+  return course?.thumbnail || '/assets/img/courses/h5_course_thumb02.jpg';
+};
+
+const getCourseCategory = (course) => {
+  if (!course) return t('Course');
+  if (course.type === 'regular') {
+    if (course.grade <= 5) return t('Primary');
+    if (course.grade <= 8) return t('Junior');
+    if (course.grade <= 10) return t('Secondary');
+    return t('Higher Secondary');
+  }
+  return course.category || t('Skill Course');
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return t('Recently');
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  } catch (error) {
+    return t('Recently');
+  }
+};
+
+const getLearningPoints = (course) => {
+  return [
+    t('Comprehensive understanding of core concepts'),
+    t('Practical application of learned skills'),
+    t('Interactive learning materials and resources'),
+    t('Expert guidance and support'),
+    t('Real-world projects and exercises'),
+    t('Lifetime access to course materials')
+  ];
+};
+
+const getAdditionalInfo = (course) => {
+  return t('This comprehensive course is designed to provide you with practical skills and knowledge that you can apply immediately. Whether you\'re a beginner or looking to advance your skills, this course will help you achieve your learning goals.');
+};
+
+const getCourseModules = (course) => {
+  return [
+    {
+      id: 1,
+      title: 'Introduction & Basics',
+      lessons: [
+        { id: 1, title: 'Course Overview & Objectives', duration: '10:15', preview: true },
+        { id: 2, title: 'Getting Started Guide', duration: '15:30', preview: true },
+        { id: 3, title: 'Setting Up Your Environment', duration: '20:45', preview: false }
+      ]
+    },
+    {
+      id: 2,
+      title: 'Core Concepts',
+      lessons: [
+        { id: 4, title: 'Fundamental Principles', duration: '25:20', preview: false },
+        { id: 5, title: 'Advanced Techniques', duration: '30:15', preview: false },
+        { id: 6, title: 'Practical Applications', duration: '35:40', preview: false }
+      ]
+    },
+    {
+      id: 3,
+      title: 'Advanced Topics',
+      lessons: [
+        { id: 7, title: 'Expert Level Concepts', duration: '40:25', preview: false },
+        { id: 8, title: 'Real-world Projects', duration: '50:10', preview: false },
+        { id: 9, title: 'Final Assessment', duration: '15:00', preview: false }
+      ]
+    }
+  ];
+};
+
+const getSubjectIcon = (subjectName) => {
+  const icons = {
+    'Mathematics': 'fas fa-calculator',
+    'Science': 'fas fa-flask',
+    'English': 'fas fa-language',
+    'Bangla': 'fas fa-book',
+    'Social Studies': 'fas fa-globe-asia',
+    'Physics': 'fas fa-atom',
+    'Chemistry': 'fas fa-flask',
+    'Biology': 'fas fa-dna',
+    'History': 'fas fa-monument',
+    'Geography': 'fas fa-mountain',
+    'Computer Science': 'fas fa-laptop-code',
+    'default': 'fas fa-book'
+  };
+  return icons[subjectName] || icons.default;
+};
+
+const getSubjectDescription = (subjectName) => {
+  const descriptions = {
+    'Mathematics': t('Develop problem-solving skills and mathematical thinking'),
+    'Science': t('Explore scientific concepts and experimental methods'),
+    'English': t('Improve language proficiency and communication skills'),
+    'Bangla': t('Master Bengali language and literature'),
+    'Social Studies': t('Understand society, culture, and human interactions'),
+    'default': t('Comprehensive curriculum designed to build strong foundational knowledge and practical skills.')
+  };
+  return descriptions[subjectName] || descriptions.default;
+};
+
+const handleLessonClick = (lesson) => {
+  if (lesson.preview) {
+    alert(`${t('Playing preview:')} ${lesson.title}`);
+  } else if (!isEnrolled.value) {
+    enrollCourse();
+  } else {
+    alert(`${t('Starting lesson:')} ${lesson.title}`);
+  }
+};
+
+const getCourseFeatures = (course) => {
+  return [
+    { icon: 'fas fa-play-circle', text: t('45 on-demand videos') },
+    { icon: 'fas fa-file-alt', text: t('Downloadable resources') },
+    { icon: 'fas fa-infinity', text: t('Full lifetime access') },
+    { icon: 'fas fa-mobile-alt', text: t('Access on mobile and desktop') },
+    { icon: 'fas fa-trophy', text: t('Certificate of completion') }
+  ];
+};
+
+const getCourseLevel = (course) => {
+  if (!course) return t('All Levels');
+  if (course.type === 'regular') {
+    if (course.grade <= 5) return t('Beginner');
+    if (course.grade <= 8) return t('Intermediate');
+    return t('Advanced');
+  }
+  return t('All Levels');
+};
+
+const getTotalDuration = (course) => {
+  return '11h 20m';
+};
+
+const getTotalLessons = (course) => {
+  return '45';
+};
+
+onMounted(() => {
+  const savedTheme = localStorage.getItem('preferredTheme')
+  if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
+    currentTheme.value = savedTheme
+  }
+  
+  // Listen for theme changes
+  window.addEventListener('themeChanged', handleThemeChange);
+
+  if (!props.course) {
+    fetchCourse();
+  }
+  fetchOtherSubjects();
+});
+
+onUnmounted(() => {
+  window.removeEventListener('themeChanged', handleThemeChange);
+});
+
+// Handle theme changes
+const handleThemeChange = (event) => {
+  currentTheme.value = event.detail.theme;
+};
 </script>
 
 <!-- Add language-specific CSS -->
@@ -1189,85 +966,26 @@ export default {
   line-height: 1.6;
 }
 
+/* Ensure Font Awesome icons are properly loaded and don't disappear */
+:deep(.fas),
+:deep(.fab) {
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900 !important;
+  display: inline-block !important;
+  font-style: normal !important;
+  font-variant: normal !important;
+  text-rendering: auto !important;
+  line-height: 1 !important;
+}
+
+/* Force icon rendering */
+:deep(i[class*="fa-"]) {
+  display: inline-block !important;
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900 !important;
+}
+
 /* Keep the rest of your existing CSS styles the same */
-/* ==================== */
-/* MAIN LAYOUT */
-/* ==================== */
-.main-area {
-  background: var(--bg-primary);
-  transition: background-color 0.3s ease;
-}
-
-/* ==================== */
-/* BREADCRUMB STYLES */
-/* ==================== */
-.breadcrumb__area {
-  position: relative;
-  padding: 50px 0 50px;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  overflow: hidden;
-  color: var(--text-primary);
-  background-color: var(--bg-secondary);
-}
-
-.breadcrumb__content {
-  text-align: center;
-  position: relative;
-  z-index: 3;
-  color: var(--text-primary);
-}
-
-.breadcrumb__content .title {
-  font-size: 48px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 15px;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
-  transition: color 0.3s ease;
-}
-
-.breadcrumb {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  color: var(--text-primary);
-  font-size: 16px;
-  font-weight: 500;
-  transition: color 0.3s ease;
-}
-
-.breadcrumb a {
-  color: var(--text-primary);
-  text-decoration: none;
-  opacity: 0.8;
-  transition: opacity 0.3s ease, color 0.3s ease;
-}
-
-.breadcrumb a:hover {
-  opacity: 1;
-  color: var(--primary-color);
-}
-
-.breadcrumb-separator {
-  color: var(--text-muted);
-  opacity: 0.8;
-  margin: 0 10px;
-  font-size: 14px;
-  transition: color 0.3s ease;
-}
-
-.breadcrumb span:not(.breadcrumb-separator) {
-  color: var(--text-primary);
-  opacity: 1;
-  font-weight: 600;
-  transition: color 0.3s ease;
-}
-
 /* ==================== */
 /* MAIN LAYOUT */
 /* ==================== */

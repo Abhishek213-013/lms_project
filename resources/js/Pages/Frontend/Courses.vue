@@ -157,352 +157,244 @@
   </FrontendLayout>
 </template>
 
-<script>
+<script setup>
 import { router } from '@inertiajs/vue3';
-import { ref, computed, onMounted, onUnmounted, getCurrentInstance } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import FrontendLayout from '../Layout/FrontendLayout.vue';
+import { useTranslation } from '@/composables/useTranslation';
 
-export default {
-  name: 'CoursesPage',
-  components: {
-    FrontendLayout
+// Define props FIRST
+const props = defineProps({
+  courses: {
+    type: [Array, Object],
+    default: () => ({ data: [] })
   },
-  props: {
-    courses: {
-      type: [Array, Object],
-      default: () => ({ data: [] })
-    },
-    filters: {
-      type: Object,
-      default: () => ({})
-    }
-  },
-  setup(props) {
-    // Get the Vue instance for accessing global properties
-    const { proxy } = getCurrentInstance()
-
-    // Reactive data
-    const loading = ref(false);
-    const searchQuery = ref(props.filters.search || '');
-    const courseType = ref(props.filters.type || '');
-    const sortBy = ref(props.filters.sort || 'name');
-    const currentLanguage = ref('bn'); // Default to Bengali
-    const currentTheme = ref('light');
-
-    // Define translations object
-    const translations = {
-      en: {
-        'Available Courses': 'Available Courses',
-        'Explore our wide range of courses and classes': 'Explore our wide range of courses and classes',
-        'Search courses...': 'Search courses...',
-        'All Course Types': 'All Course Types',
-        'Regular Classes': 'Regular Classes',
-        'Skill Courses': 'Skill Courses',
-        'Sort by Name': 'Sort by Name',
-        'Sort by Grade': 'Sort by Grade',
-        'Sort by Popularity': 'Sort by Popularity',
-        'Class': 'Class',
-        'Course': 'Course',
-        'Grade': 'Grade',
-        'Skill Course': 'Skill Course',
-        'Primary': 'Primary',
-        'Junior': 'Junior',
-        'Secondary': 'Secondary',
-        'Higher Secondary': 'Higher Secondary',
-        'Active': 'Active',
-        'Inactive': 'Inactive',
-        'Upcoming': 'Upcoming',
-        'Clear Filters': 'Clear Filters',
-        'Refresh Courses': 'Refresh Courses',
-        'No Courses Available': 'No Courses Available',
-        'No courses found. Please check back later.': 'No courses found. Please check back later.',
-        'Reload Courses': 'Reload Courses',
-        'Loading courses...': 'Loading courses...'
-      },
-      bn: {
-        'Available Courses': 'উপলব্ধ কোর্সসমূহ',
-        'Explore our wide range of courses and classes': 'আমাদের বিস্তৃত কোর্স এবং ক্লাস এক্সপ্লোর করুন',
-        'Search courses...': 'কোর্স খুঁজুন...',
-        'All Course Types': 'সমস্ত কোর্সের ধরন',
-        'Regular Classes': 'নিয়মিত ক্লাস',
-        'Skill Courses': 'স্কিল কোর্স',
-        'Sort by Name': 'নাম অনুসারে সাজান',
-        'Sort by Grade': 'গ্রেড অনুসারে সাজান',
-        'Sort by Popularity': 'জনপ্রিয়তা অনুসারে সাজান',
-        'Class': 'ক্লাস',
-        'Course': 'কোর্স',
-        'Grade': 'গ্রেড',
-        'Skill Course': 'স্কিল কোর্স',
-        'Primary': 'প্রাথমিক',
-        'Junior': 'জুনিয়র',
-        'Secondary': 'সেকেন্ডারি',
-        'Higher Secondary': 'উচ্চ মাধ্যমিক',
-        'Active': 'সক্রিয়',
-        'Inactive': 'নিষ্ক্রিয়',
-        'Upcoming': 'শীঘ্রই আসছে',
-        'Clear Filters': 'ফিল্টার সরান',
-        'Refresh Courses': 'কোর্স রিফ্রেশ করুন',
-        'No Courses Available': 'কোন কোর্স উপলব্ধ নেই',
-        'No courses found. Please check back later.': 'কোন কোর্স পাওয়া যায়নি। দয়া করে পরে আবার চেক করুন।',
-        'Reload Courses': 'কোর্স পুনরায় লোড করুন',
-        'Loading courses...': 'কোর্স লোড হচ্ছে...'
-      }
-    }
-
-    // Load language and theme preferences from localStorage
-    onMounted(() => {
-      const savedLang = localStorage.getItem('preferredLanguage')
-      if (savedLang && (savedLang === 'en' || savedLang === 'bn')) {
-        currentLanguage.value = savedLang
-      }
-      
-      const savedTheme = localStorage.getItem('preferredTheme')
-      if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
-        currentTheme.value = savedTheme
-      }
-      
-      // Listen for language changes from other components
-      window.addEventListener('languageChanged', (event) => {
-        currentLanguage.value = event.detail.language
-      })
-
-      // Listen for theme changes
-      window.addEventListener('themeChanged', (event) => {
-        currentTheme.value = event.detail.theme
-      })
-    })
-
-    onUnmounted(() => {
-      window.removeEventListener('languageChanged', () => {})
-      window.removeEventListener('themeChanged', () => {})
-    })
-
-    // Translation function
-    const t = (key, replacements = {}) => {
-      let translated = translations[currentLanguage.value]?.[key] || key
-      
-      Object.keys(replacements).forEach(replacementKey => {
-        translated = translated.replace(`{${replacementKey}}`, replacements[replacementKey])
-      })
-      
-      return translated
-    }
-
-    // Handle theme changes
-    const handleThemeChange = (event) => {
-      currentTheme.value = event.detail.theme;
-    };
-
-    // Extract courses data from paginated object or array
-    const coursesData = computed(() => {
-      if (Array.isArray(props.courses)) {
-        return props.courses;
-      } else if (props.courses && props.courses.data) {
-        return props.courses.data;
-      }
-      return [];
-    });
-
-    // Refresh courses
-    const refreshCourses = () => {
-      router.reload({ only: ['courses'] });
-    };
-
-    // Handle pagination
-    const handlePagination = (url) => {
-      if (url) {
-        router.visit(url);
-      }
-    };
-
-    // Get course title in "Class Name - Subject Name" format
-    const getCourseTitle = (course) => {
-      if (course.type === 'regular') {
-        // For regular classes: "Class 1 - Mathematics"
-        const className = course.name || `Class ${course.grade || ''}`;
-        const subjectName = course.subject || 'General';
-        return `${className} - ${subjectName}`;
-      } else {
-        // For other courses: Use the course name directly
-        return course.name || course.class_name || 'Untitled Course';
-      }
-    };
-
-    // Get translated category text
-    const getCourseCategoryText = (course) => {
-      const category = getCourseCategory(course);
-      return t(category);
-    };
-
-    // Get translated status text
-    const getStatusText = (status) => {
-      return t(status.charAt(0).toUpperCase() + status.slice(1));
-    };
-
-    // Computed filtered courses
-    const filteredCourses = computed(() => {
-      let filtered = coursesData.value;
-
-      if (searchQuery.value) {
-        const query = searchQuery.value.toLowerCase();
-        filtered = filtered.filter(course => {
-          const courseName = course.name || course.class_name || '';
-          const courseDescription = course.description || '';
-          const courseCategory = course.category || '';
-          const courseSubject = course.subject || '';
-          
-          return courseName.toLowerCase().includes(query) ||
-                 courseDescription.toLowerCase().includes(query) ||
-                 courseCategory.toLowerCase().includes(query) ||
-                 courseSubject.toLowerCase().includes(query);
-        });
-      }
-
-      if (courseType.value) {
-        filtered = filtered.filter(course => {
-          const courseType = course.type || 'regular';
-          return courseType === courseType.value;
-        });
-      }
-
-      switch (sortBy.value) {
-        case 'name':
-          filtered.sort((a, b) => {
-            const nameA = getCourseTitle(a);
-            const nameB = getCourseTitle(b);
-            return nameA.localeCompare(nameB);
-          });
-          break;
-        case 'grade':
-          filtered.sort((a, b) => (a.grade || 0) - (b.grade || 0));
-          break;
-        case 'studentCount':
-          filtered.sort((a, b) => {
-            const countA = a.student_count || a.enrollment_count || a.studentCount || 0;
-            const countB = b.student_count || b.enrollment_count || b.studentCount || 0;
-            return countB - countA;
-          });
-          break;
-      }
-
-      return filtered;
-    });
-
-    // Methods
-    const getCourseThumbnail = (course) => {
-      const courseType = course.type || 'regular';
-      
-      if (courseType === 'regular') {
-        const grade = course.grade || 1;
-        const thumbnails = [
-          '/assets/img/courses/h5_course_thumb1.jpg',
-          '/assets/img/courses/h5_course_thumb02.jpg',
-          '/assets/img/courses/h5_course_thumb03.jpg',
-          '/assets/img/courses/h5_course_thumb04.jpg'
-        ];
-        return thumbnails[(grade - 1) % thumbnails.length];
-      } else {
-        const thumbnails = {
-          'Language': '/assets/img/courses/h5_course_thumb05.jpg',
-          'Technology': '/assets/img/courses/h5_course_thumb06.jpg',
-          'Personal Development': '/assets/img/courses/h5_course_thumb07.jpg',
-          'default': '/assets/img/courses/h5_course_thumb08.jpg'
-        };
-        return thumbnails[course.category] || thumbnails.default;
-      }
-    };
-
-    const handleImageError = (event) => {
-      event.target.src = '/assets/img/courses/h5_course_thumb01.jpg';
-    };
-
-    const getCourseDescription = (course) => {
-      if (course.description) {
-        return course.description.length > 120 ? course.description.substring(0, 120) + '...' : course.description;
-      }
-      
-      const courseType = course.type || 'regular';
-      if (courseType === 'regular') {
-        return `Comprehensive ${course.subject || 'subject'} curriculum for ${course.name || `Class ${course.grade}`} students`;
-      } else {
-        return `Explore ${course.name || course.class_name || 'this course'} - ${course.category || 'Specialized course'}`;
-      }
-    };
-
-    const getCourseCategory = (course) => {
-      const courseType = course.type || 'regular';
-      
-      if (courseType === 'regular') {
-        const grade = course.grade || 1;
-        if (grade <= 5) return 'Primary';
-        if (grade <= 8) return 'Junior';
-        if (grade <= 10) return 'Secondary';
-        return 'Higher Secondary';
-      } else {
-        return course.category || 'Skill Course';
-      }
-    };
-
-    const searchCourses = () => {
-      console.log('🔍 Searching for:', searchQuery.value);
-    };
-
-    const filterCourses = () => {
-      console.log('🎯 Filtering by type:', courseType.value);
-    };
-
-    const sortCourses = () => {
-      console.log('📊 Sorting by:', sortBy.value);
-    };
-
-    const clearFilters = () => {
-      searchQuery.value = '';
-      courseType.value = '';
-      sortBy.value = 'name';
-    };
-
-    const viewCourseDetails = (course) => {
-      const courseId = course.id || course.course_id;
-      if (!courseId) {
-        console.error('No course ID found:', course);
-        return;
-      }
-      
-      router.visit(`/course/${courseId}`, {
-        data: {
-          type: course.type || 'regular',
-          name: getCourseTitle(course)
-        }
-      });
-    };
-
-    return {
-      loading,
-      searchQuery,
-      courseType,
-      sortBy,
-      coursesData,
-      filteredCourses,
-      refreshCourses,
-      handlePagination,
-      getCourseTitle,
-      getCourseThumbnail,
-      handleImageError,
-      getCourseDescription,
-      getCourseCategory,
-      getCourseCategoryText,
-      getStatusText,
-      searchCourses,
-      filterCourses,
-      sortCourses,
-      clearFilters,
-      viewCourseDetails,
-      currentTheme,
-      t,
-      currentLanguage
-    };
+  filters: {
+    type: Object,
+    default: () => ({})
   }
-}
+});
+
+// Use the global translation composable
+const { currentLanguage, t, switchLanguage } = useTranslation()
+
+// Reactive data - NOW we can use props
+const loading = ref(false);
+const searchQuery = ref(props.filters.search || '');
+const courseType = ref(props.filters.type || '');
+const sortBy = ref(props.filters.sort || 'name');
+const currentTheme = ref('light');
+
+// Add icon render key to prevent disappearing icons
+const iconRenderKey = ref(0);
+
+// Watch for language changes to update icons
+watch(currentLanguage, () => {
+  iconRenderKey.value++;
+});
+
+// Handle theme changes
+const handleThemeChange = (event) => {
+  currentTheme.value = event.detail.theme;
+};
+
+// Extract courses data from paginated object or array
+const coursesData = computed(() => {
+  if (Array.isArray(props.courses)) {
+    return props.courses;
+  } else if (props.courses && props.courses.data) {
+    return props.courses.data;
+  }
+  return [];
+});
+
+// Refresh courses
+const refreshCourses = () => {
+  router.reload({ only: ['courses'] });
+};
+
+// Handle pagination
+const handlePagination = (url) => {
+  if (url) {
+    router.visit(url);
+  }
+};
+
+// Get course title in "Class Name - Subject Name" format
+const getCourseTitle = (course) => {
+  if (course.type === 'regular') {
+    // For regular classes: "Class 1 - Mathematics"
+    const className = course.name || `Class ${course.grade || ''}`;
+    const subjectName = course.subject || 'General';
+    return `${className} - ${subjectName}`;
+  } else {
+    // For other courses: Use the course name directly
+    return course.name || course.class_name || 'Untitled Course';
+  }
+};
+
+// Get translated category text
+const getCourseCategoryText = (course) => {
+  const category = getCourseCategory(course);
+  return t(category);
+};
+
+// Get translated status text
+const getStatusText = (status) => {
+  return t(status.charAt(0).toUpperCase() + status.slice(1));
+};
+
+// Computed filtered courses
+const filteredCourses = computed(() => {
+  let filtered = coursesData.value;
+
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    filtered = filtered.filter(course => {
+      const courseName = course.name || course.class_name || '';
+      const courseDescription = course.description || '';
+      const courseCategory = course.category || '';
+      const courseSubject = course.subject || '';
+      
+      return courseName.toLowerCase().includes(query) ||
+             courseDescription.toLowerCase().includes(query) ||
+             courseCategory.toLowerCase().includes(query) ||
+             courseSubject.toLowerCase().includes(query);
+    });
+  }
+
+  if (courseType.value) {
+    filtered = filtered.filter(course => {
+      const courseType = course.type || 'regular';
+      return courseType === courseType.value;
+    });
+  }
+
+  switch (sortBy.value) {
+    case 'name':
+      filtered.sort((a, b) => {
+        const nameA = getCourseTitle(a);
+        const nameB = getCourseTitle(b);
+        return nameA.localeCompare(nameB);
+      });
+      break;
+    case 'grade':
+      filtered.sort((a, b) => (a.grade || 0) - (b.grade || 0));
+      break;
+    case 'studentCount':
+      filtered.sort((a, b) => {
+        const countA = a.student_count || a.enrollment_count || a.studentCount || 0;
+        const countB = b.student_count || b.enrollment_count || b.studentCount || 0;
+        return countB - countA;
+      });
+      break;
+  }
+
+  return filtered;
+});
+
+// Methods
+const getCourseThumbnail = (course) => {
+  const courseType = course.type || 'regular';
+  
+  if (courseType === 'regular') {
+    const grade = course.grade || 1;
+    const thumbnails = [
+      '/assets/img/courses/h5_course_thumb1.jpg',
+      '/assets/img/courses/h5_course_thumb02.jpg',
+      '/assets/img/courses/h5_course_thumb03.jpg',
+      '/assets/img/courses/h5_course_thumb04.jpg'
+    ];
+    return thumbnails[(grade - 1) % thumbnails.length];
+  } else {
+    const thumbnails = {
+      'Language': '/assets/img/courses/h5_course_thumb05.jpg',
+      'Technology': '/assets/img/courses/h5_course_thumb06.jpg',
+      'Personal Development': '/assets/img/courses/h5_course_thumb07.jpg',
+      'default': '/assets/img/courses/h5_course_thumb08.jpg'
+    };
+    return thumbnails[course.category] || thumbnails.default;
+  }
+};
+
+const handleImageError = (event) => {
+  event.target.src = '/assets/img/courses/h5_course_thumb01.jpg';
+};
+
+const getCourseDescription = (course) => {
+  if (course.description) {
+    return course.description.length > 120 ? course.description.substring(0, 120) + '...' : course.description;
+  }
+  
+  const courseType = course.type || 'regular';
+  if (courseType === 'regular') {
+    return `Comprehensive ${course.subject || 'subject'} curriculum for ${course.name || `Class ${course.grade}`} students`;
+  } else {
+    return `Explore ${course.name || course.class_name || 'this course'} - ${course.category || 'Specialized course'}`;
+  }
+};
+
+const getCourseCategory = (course) => {
+  const courseType = course.type || 'regular';
+  
+  if (courseType === 'regular') {
+    const grade = course.grade || 1;
+    if (grade <= 5) return 'Primary';
+    if (grade <= 8) return 'Junior';
+    if (grade <= 10) return 'Secondary';
+    return 'Higher Secondary';
+  } else {
+    return course.category || 'Skill Course';
+  }
+};
+
+const searchCourses = () => {
+  console.log('🔍 Searching for:', searchQuery.value);
+};
+
+const filterCourses = () => {
+  console.log('🎯 Filtering by type:', courseType.value);
+};
+
+const sortCourses = () => {
+  console.log('📊 Sorting by:', sortBy.value);
+};
+
+const clearFilters = () => {
+  searchQuery.value = '';
+  courseType.value = '';
+  sortBy.value = 'name';
+};
+
+const viewCourseDetails = (course) => {
+  const courseId = course.id || course.course_id;
+  if (!courseId) {
+    console.error('No course ID found:', course);
+    return;
+  }
+  
+  router.visit(`/course/${courseId}`, {
+    data: {
+      type: course.type || 'regular',
+      name: getCourseTitle(course)
+    }
+  });
+};
+
+onMounted(() => {
+  // Load theme preference from localStorage
+  const savedTheme = localStorage.getItem('preferredTheme')
+  if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
+    currentTheme.value = savedTheme
+  }
+  
+  // Listen for theme changes
+  window.addEventListener('themeChanged', handleThemeChange)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('themeChanged', handleThemeChange)
+})
 </script>
 
 <!-- Keep your existing CSS styles the same -->
@@ -1277,5 +1169,24 @@ export default {
 
 .bn-lang .course-description {
   line-height: 1.7;
+}
+
+/* Ensure Font Awesome icons don't disappear */
+:deep(.fas),
+:deep(.fab) {
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900 !important;
+  display: inline-block !important;
+  font-style: normal !important;
+  font-variant: normal !important;
+  text-rendering: auto !important;
+  line-height: 1 !important;
+}
+
+/* Force icon rendering */
+:deep(i[class*="fa-"]) {
+  display: inline-block !important;
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900 !important;
 }
 </style>

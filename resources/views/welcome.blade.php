@@ -3,13 +3,13 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>SkillGro - Online Learning Platform</title>
+    <title>Pathshala LMS - Online Learning Platform</title>
     
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
     <!-- Favicon -->
-    <link rel="icon" href="/assets/img/favicon.png">
+    <link rel="icon" href="../../public/assets/img/pathshala-logo.ico">
     
     <!-- Vite CSS & JS -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])

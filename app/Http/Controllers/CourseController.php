@@ -543,6 +543,63 @@ class CourseController extends Controller
     }
 
     /**
+ * Search classes for header suggestions
+ */
+    public function searchClasses(Request $request)
+    {
+        try {
+            $query = $request->get('query', '');
+            
+            $classes = ClassModel::withCount('students as student_count')
+                ->where('status', 'active')
+                ->when($query, function($q) use ($query) {
+                    $q->where(function($queryBuilder) use ($query) {
+                        $queryBuilder->where('name', 'like', "%{$query}%")
+                            ->orWhere('subject', 'like', "%{$query}%")
+                            ->orWhere('category', 'like', "%{$query}%")
+                            ->orWhere('description', 'like', "%{$query}%");
+                    });
+                })
+                ->when(empty($query), function($q) {
+                    // When no query, return popular classes (most students)
+                    $q->orderBy('student_count', 'desc');
+                })
+                ->when($query, function($q) {
+                    // When there's a query, prioritize by relevance
+                    $q->orderBy('student_count', 'desc');
+                })
+                ->limit(10)
+                ->get(['id', 'name', 'subject', 'grade', 'type', 'category', 'description'])
+                ->map(function($class) {
+                    return [
+                        'id' => $class->id,
+                        'name' => $class->name,
+                        'subject' => $class->subject,
+                        'grade' => $class->grade,
+                        'type' => $class->type,
+                        'category' => $class->category,
+                        'description' => $class->description,
+                        'student_count' => $class->student_count,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $classes,
+                'total' => $classes->count()
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error searching classes: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to search classes',
+                'data' => []
+            ], 500);
+        }
+    }
+    /**
      * Mock data for development
      */
     private function getMockClasses()

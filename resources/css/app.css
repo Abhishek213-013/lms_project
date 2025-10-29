@@ -5,6 +5,8 @@
 @import 'bootstrap/dist/css/bootstrap.min.css';
 @import '@fortawesome/fontawesome-free/css/all.min.css';
 
+
+
 /* Your custom styles below */
 .loading-screen {
     display: flex;
@@ -26,7 +28,12 @@
     white-space: nowrap;
     border: 0;
 }
-
+.html5-video-player {
+  display: none !important;
+}
+.ytp-show-cards-title{
+                display: none !important;
+      }
 /* Vue transition styles */
 .page-enter-active,
 .page-leave-active {

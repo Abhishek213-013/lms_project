@@ -11,7 +11,7 @@
       </div>
 
       <!-- Sidebar Navigation -->
-      <nav class="space-y-4">
+      <nav class="space-y-2">
         <!-- Dashboard -->
         <div>
           <button 
@@ -32,7 +32,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
             </svg>
           </button>
-          <div v-show="activeMenu === 'dashboard'" class="ml-8 mt-1 space-y-1">
+          <div v-show="activeMenu === 'dashboard'" class="ml-8 mt-1 space-y-0.5">
             <a href="#" class="submenu-link text-sm">Overview</a>
             <a href="#" class="submenu-link text-sm">Analytics</a>
           </div>
@@ -62,7 +62,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
             </svg>
           </button>
-          <div v-show="activeMenu === 'users'" class="ml-8 mt-1 space-y-1">
+          <div v-show="activeMenu === 'users'" class="ml-8 mt-1 space-y-0.5">
             <a href="/admin/users/super-admins" class="submenu-link text-sm">Super Admins</a>
             <a href="/admin/users/admins" class="submenu-link text-sm">Admins</a>
             <a href="/admin/users/teachers" class="submenu-link text-sm">Teachers</a>
@@ -89,7 +89,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
             </svg>
           </button>
-          <div v-show="activeMenu === 'courses'" class="ml-8 mt-1 space-y-1">
+          <div v-show="activeMenu === 'courses'" class="ml-8 mt-1 space-y-0.5">
             <a href="/admin/courses/all-courses" class="submenu-link text-sm">All Courses</a>
             <a href="/admin/courses/categories" class="submenu-link text-sm">Course Categories</a>
             <a href="/admin/courses/enrollments" class="submenu-link text-sm">Enrollments</a>
@@ -117,7 +117,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
             </svg>
           </button>
-          <div v-show="activeMenu === 'admissions'" class="ml-8 mt-1 space-y-1">
+          <div v-show="activeMenu === 'admissions'" class="ml-8 mt-1 space-y-0.5">
             <a href="/admin/admissions/applications" class="submenu-link text-sm">Applications</a>
             <a href="/admin/admissions/approvals" class="submenu-link text-sm">Approvals</a>
             <a href="/admin/admissions/enrolled-students" class="submenu-link text-sm">Enrolled Students</a>
@@ -144,7 +144,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
             </svg>
           </button>
-          <div v-show="activeMenu === 'reports'" class="ml-8 mt-1 space-y-1">
+          <div v-show="activeMenu === 'reports'" class="ml-8 mt-1 space-y-0.5">
             <a href="#" class="submenu-link text-sm">User Reports</a>
             <a href="#" class="submenu-link text-sm">Course Reports</a>
             <a href="#" class="submenu-link text-sm">Financial Reports</a>
@@ -172,7 +172,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
             </svg>
           </button>
-          <div v-show="activeMenu === 'settings'" class="ml-8 mt-1 space-y-1">
+          <div v-show="activeMenu === 'settings'" class="ml-8 mt-1 space-y-0.5">
             <a href="#" class="submenu-link text-sm">General</a>
             <a href="#" class="submenu-link text-sm">Academic</a>
             <a href="#" class="submenu-link text-sm">Notifications</a>
@@ -219,14 +219,16 @@ const toggleMenu = (menu) => {
 
 .submenu-link {
   display: block;
-  padding: 0.4rem 0.75rem;
+  padding: 0.35rem 0.75rem;
   color: #4b5563;
-  border-radius: 0.5rem;
+  border-radius: 0.375rem;
   transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
+  text-decoration: none;
 }
 
 .submenu-link:hover {
   color: #4f46e5;
   background-color: #f9fafb;
+  text-decoration: none;
 }
 </style>

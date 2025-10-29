@@ -1,10 +1,19 @@
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gray-50 px-4">
     <div class="w-full max-w-md bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-      <!-- Logo -->
+      <!-- Pathshala LMS Logo -->
       <div class="flex justify-center mb-6">
-        <div class="w-12 h-12 bg-indigo-600 rounded-lg flex items-center justify-center">
-          <span class="text-white font-bold text-lg">P</span>
+        <div class="logo-container flex items-center">
+          <img 
+            src="../../../../public/assets/img/pathshala-logo.png" 
+            alt="Pathshala LMS" 
+            class="logo-image h-12 w-auto"
+            @error="handleImageError"
+          >
+          <!-- <div class="logo-text ml-3">
+            <div class="logo-main font-bold text-gray-900 text-xl">PATHSHALA LMS</div>
+            <div class="logo-sub text-gray-500 text-xs tracking-wide">EMPOWER MINDS</div>
+          </div> -->
         </div>
       </div>
 
@@ -44,7 +53,7 @@
             v-model="form.username"
             type="text"
             required
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
             placeholder="Enter your username"
             :class="{ 'border-red-500': form.errors.username }"
           />
@@ -61,7 +70,7 @@
             v-model="form.password"
             type="password"
             required
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
             placeholder="Enter your password"
             :class="{ 'border-red-500': form.errors.password }"
           />
@@ -72,10 +81,15 @@
 
         <!-- Remember me / Forgot -->
         <div class="flex items-center justify-between mb-6">
-          <label class="flex items-center text-sm text-gray-700">
-            <input type="checkbox" v-model="form.remember" class="mr-2 rounded border-gray-300 focus:ring-indigo-500" /> Remember me
+          <label class="flex items-center text-sm text-gray-700 cursor-pointer">
+            <input 
+              type="checkbox" 
+              v-model="form.remember" 
+              class="mr-2 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 transition-colors" 
+            /> 
+            Remember me
           </label>
-          <a href="#" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+          <a href="#" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium transition-colors">
             Forgot Password?
           </a>
         </div>
@@ -85,10 +99,10 @@
           type="submit"
           :disabled="form.processing"
           :class="[
-            'w-full py-2 rounded-md text-white font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2',
+            'w-full py-3 rounded-md text-white font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-offset-2',
             form.processing 
               ? 'bg-gray-400 cursor-not-allowed focus:ring-gray-400' 
-              : 'bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500'
+              : 'bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500 shadow-sm hover:shadow-md'
           ]"
         >
           {{ form.processing ? 'Signing in...' : 'Sign In' }}
@@ -99,15 +113,32 @@
       <div class="text-center mt-6">
         <p class="text-sm text-gray-600">
           Don't have an account?
-          <a href="/registration" class="text-indigo-600 hover:text-indigo-800 font-medium">
+          <a href="/registration" class="text-indigo-600 hover:text-indigo-800 font-medium transition-colors">
             Create one
           </a>
         </p>
       </div>
 
+      <!-- Student Login Link -->
+      <!-- <div class="text-center mt-4 pt-4 border-t border-gray-200">
+        <p class="text-sm text-gray-600">
+          Are you a student?
+          <a href="/student-login" class="text-indigo-600 hover:text-indigo-800 font-medium transition-colors">
+            Student Login
+          </a>
+        </p>
+      </div> -->
+
       <!-- General Error -->
       <div v-if="form.errors.message" class="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
         <p class="text-red-600 text-sm text-center">{{ form.errors.message }}</p>
+      </div>
+
+      <!-- Copyright -->
+      <div class="text-center mt-6 pt-4 border-t border-gray-100">
+        <p class="text-xs text-gray-500">
+          &copy; {{ new Date().getFullYear() }} IT Lab Solutions Ltd. All rights reserved.
+        </p>
       </div>
     </div>
   </div>
@@ -115,7 +146,7 @@
 
 <script setup>
 import { useForm } from '@inertiajs/vue3';
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 
 const roles = [
   { label: "Teacher", value: "teacher" },
@@ -130,39 +161,129 @@ const form = useForm({
   remember: false,
 });
 
-// Debug CSRF token
-onMounted(() => {
-  const csrfToken = document.querySelector('meta[name="csrf-token"]');
-  console.log('🔐 CSRF Token available:', !!csrfToken);
-  console.log('🔐 CSRF Token value:', csrfToken?.getAttribute('content'));
-  console.log('🍪 Cookies:', document.cookie);
-});
+// Handle logo image loading error
+const handleImageError = (event) => {
+  console.log('Logo image failed to load, using fallback');
+  // You could set a fallback image or hide the image element
+  event.target.style.display = 'none';
+};
 
 const submit = () => {
-  console.log('🚀 Submitting login form...');
-  console.log('📤 Form data:', { 
-    username: form.username, 
-    remember: form.remember 
-  });
-
   form.post('/login', {
     preserveScroll: true,
-    onStart: () => console.log('📨 Request started'),
-    onSuccess: (page) => {
-      console.log('✅ Login successful', page);
+    onSuccess: () => {
+      // Inertia will handle the redirect based on the backend response
+      console.log('✅ Login successful');
     },
     onError: (errors) => {
       console.log('❌ Login errors:', errors);
-      console.log('📊 Response status:', form.recentlySuccessful);
-      
-      if (errors.response && errors.response.status === 419) {
-        alert('🔄 Session expired. Refreshing page...');
-        window.location.reload();
-      }
-    },
-    onFinish: () => {
-      console.log('🏁 Request finished');
     },
   });
 };
 </script>
+
+<style scoped>
+/* Logo Styles */
+.logo-container {
+  transition: transform 0.2s ease;
+}
+
+.logo-container:hover {
+  transform: scale(1.02);
+}
+
+.logo-image {
+  object-fit: contain;
+  filter: brightness(0.9);
+}
+
+.logo-main {
+  letter-spacing: 0.5px;
+}
+
+.logo-sub {
+  letter-spacing: 1px;
+  margin-top: 2px;
+}
+
+/* Smooth transitions for interactive elements */
+button, a, input {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Focus styles for accessibility */
+input:focus, 
+button:focus {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+input:focus {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+button:focus:not(:disabled) {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+/* Form input focus styles */
+input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Button hover and focus states */
+button:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .logo-container {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .logo-text {
+    margin-left: 0;
+    margin-top: 8px;
+  }
+  
+  .logo-main {
+    font-size: 18px;
+  }
+  
+  .logo-sub {
+    font-size: 10px;
+  }
+  
+  /* Adjust padding for mobile */
+  .w-full.max-w-md {
+    padding: 1.5rem;
+  }
+}
+
+/* Loading state for button */
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Link hover effects */
+a:hover {
+  text-decoration: underline;
+}
+
+/* Checkbox focus style */
+input[type="checkbox"]:focus {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+/* Error state enhancements */
+.border-red-500:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+</style>

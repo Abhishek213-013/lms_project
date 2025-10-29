@@ -12,8 +12,14 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\InstructorRequestController;
+use App\Http\Controllers\Admin\ContentManagementController;
+use App\Http\Controllers\Api\ContentController;
 use App\Http\Controllers\VideoProxyController;
 use App\Http\Controllers\VideoController;
+use App\Http\Controllers\StudentProfileController;
+use App\Http\Controllers\MyCoursesController;
+use App\Http\Controllers\LearningProgressController;
+use App\Http\Controllers\SettingsController;
 use Illuminate\Support\Facades\Route;
 
 // ============ PUBLIC ROUTES ============
@@ -28,12 +34,6 @@ Route::get('/about', [FrontendController::class, 'about'])->name('about');
 Route::get('/contact', [FrontendController::class, 'contact'])->name('contact');
 Route::get('/blog', [FrontendController::class, 'blog'])->name('blog');
 Route::get('/blog/{slug}', [FrontendController::class, 'blogPost'])->name('blog.post');
-
-// Student Frontend Routes
-Route::get('/student-profile', [StudentController::class, 'profile'])->name('student.profile');
-Route::get('/my-courses', [StudentController::class, 'myCourses'])->name('student.my-courses');
-Route::get('/learning-progress', [StudentController::class, 'progress'])->name('student.progress');
-Route::get('/settings', [StudentController::class, 'settings'])->name('student.settings');
 
 // Auth Routes
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -57,6 +57,13 @@ Route::prefix('api')->middleware('web')->group(function () {
     Route::get('/public/teachers/{id}', [TeacherController::class, 'getTeacherPublicProfile']);
     Route::get('/public/categories', [CourseController::class, 'getPublicCategories']);
     
+    // 🔍 ADD THE MISSING SEARCH CLASSES ROUTE HERE
+    Route::get('/search-classes', [CourseController::class, 'searchClasses'])->name('api.search-classes');
+    
+    // Content API Routes (Public - for frontend pages)
+    Route::get('/content/about', [ContentController::class, 'getAboutContent']);
+    Route::get('/content/home', [ContentController::class, 'getHomeContent']);
+    
     // Instructor Request Public Route
     Route::post('/public/instructor-requests', [InstructorRequestController::class, 'submitRequest'])->name('api.instructor-requests.submit');
     
@@ -71,6 +78,10 @@ Route::prefix('api')->middleware('web')->group(function () {
     // NEW: Direct Video Stream Routes
     Route::get('/youtube-direct-stream', [VideoController::class, 'getYouTubeDirectStream']);
     Route::get('/video-proxy/{videoId}', [VideoController::class, 'proxyVideo']);
+    
+    // User Management Public Routes (for registration)
+    Route::post('/public/users/check-username', [UserController::class, 'checkUsernameAvailability']);
+    Route::post('/public/users/check-email', [UserController::class, 'checkEmailAvailability']);
     
     // Health check
     Route::get('/health', function () {
@@ -93,47 +104,78 @@ Route::get('/custom-video-player', function (Request $request) {
     ]);
 })->name('custom.video.player');
 
+// ============ AUTHENTICATED ROUTES ============
 Route::middleware(['auth'])->group(function () {
     
     // Logout route
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    // Super Admin Routes
-    Route::middleware(['role:super_admin'])->group(function () {
-        Route::get('/super-admin', [AdminController::class, 'superAdmin'])->name('super.admin');
+    // ============ STUDENT PROFILE ROUTES ============
+    Route::middleware(['role:student'])->prefix('student')->group(function () {
+        // Student Dashboard
+        Route::get('/', [StudentController::class, 'dashboard'])->name('student.dashboard');
+        Route::get('/my-courses', [StudentController::class, 'myCourses'])->name('student.my-courses');
+        Route::get('/assignments', [AssignmentController::class, 'studentAssignments'])->name('student.assignments');
+        Route::get('/schedule', [ScheduleController::class, 'studentSchedule'])->name('student.schedule');
+        Route::get('/grades', [StudentController::class, 'grades'])->name('student.grades');
+        Route::get('/profile', [StudentController::class, 'profile'])->name('student.profile');
+        Route::get('/progress', [StudentController::class, 'progress'])->name('student.progress');
+        Route::get('/settings', [StudentController::class, 'settings'])->name('student.settings');
         
-        // Super Admins Management
-        Route::prefix('/admin/users/super-admins')->group(function () {
-            Route::get('/', [AdminController::class, 'superAdmins'])->name('super.admins');
-            Route::post('/', [AdminController::class, 'storeSuperAdmin'])->name('super.admins.store');
-            Route::put('/{id}', [AdminController::class, 'updateSuperAdmin'])->name('super.admins.update');
-            Route::delete('/{id}', [AdminController::class, 'destroySuperAdmin'])->name('super.admins.destroy');
-        });
-
-        // Admins Management
-        Route::prefix('/admin/users/admins')->group(function () {
-            Route::get('/', [AdminController::class, 'admins'])->name('admins');
-            Route::post('/', [AdminController::class, 'storeAdmin'])->name('admins.store');
-            Route::put('/{id}', [AdminController::class, 'updateAdmin'])->name('admins.update');
-            Route::delete('/{id}', [AdminController::class, 'destroyAdmin'])->name('admins.destroy');
-        });
-
-        // Instructor Requests Management
-        Route::prefix('/admin/instructor-requests')->group(function () {
-            Route::get('/pending', [InstructorRequestController::class, 'pendingRequests'])->name('admin.instructor-requests.pending');
-        });
+        // New Profile Dropdown Routes
+        Route::get('/student-profile', [StudentProfileController::class, 'show'])->name('student.profile.new');
+        Route::get('/my-courses-new', [MyCoursesController::class, 'index'])->name('my-courses.new');
+        Route::get('/learning-progress', [LearningProgressController::class, 'index'])->name('learning-progress.new');
+        Route::get('/settings-new', [SettingsController::class, 'index'])->name('settings.new');
     });
 
-    // Admin Routes
+    // ============ ADMIN & SUPER ADMIN ROUTES ============
     Route::middleware(['role:admin,super_admin'])->group(function () {
+        // Admin Dashboard
         Route::get('/admin', [AdminController::class, 'admin'])->name('admin');
         
-        // Teachers Management
+        // Super Admin Dashboard (only for super admins)
+        Route::middleware(['role:super_admin'])->group(function () {
+            Route::get('/super-admin', [AdminController::class, 'superAdmin'])->name('super.admin');
+            
+            // Super Admins Management
+            Route::prefix('/admin/users/super-admins')->group(function () {
+                Route::get('/', [UserController::class, 'superAdminsPage'])->name('super.admins');
+                Route::post('/', [UserController::class, 'createSuperAdmin'])->name('super.admins.store');
+                Route::put('/{id}', [UserController::class, 'updateUser'])->name('super.admins.update');
+                Route::delete('/{id}', [UserController::class, 'deleteUser'])->name('super.admins.destroy');
+            });
+
+            // Admins Management
+            Route::prefix('/admin/users/admins')->group(function () {
+                Route::get('/', [UserController::class, 'adminsPage'])->name('admins');
+                Route::post('/', [UserController::class, 'createAdmin'])->name('admins.store');
+                Route::put('/{id}', [UserController::class, 'updateUser'])->name('admins.update');
+                Route::delete('/{id}', [UserController::class, 'deleteUser'])->name('admins.destroy');
+            });
+        });
+
+        // Teachers Management (for both admin and super_admin)
         Route::prefix('/admin/users/teachers')->group(function () {
-            Route::get('/', [AdminController::class, 'teachers'])->name('teachers');
-            Route::post('/', [AdminController::class, 'storeTeacher'])->name('teachers.store');
-            Route::put('/{id}', [AdminController::class, 'updateTeacher'])->name('teachers.update');
-            Route::delete('/{id}', [AdminController::class, 'deleteTeacher'])->name('teachers.destroy');
+            Route::get('/', [UserController::class, 'teachersPage'])->name('teachers');
+            Route::post('/', [UserController::class, 'createTeacher'])->name('teachers.store');
+            Route::put('/{id}', [UserController::class, 'updateUser'])->name('teachers.update');
+            Route::delete('/{id}', [UserController::class, 'deleteUser'])->name('teachers.destroy');
+        });
+
+        // Students Management (for both admin and super_admin)
+        Route::prefix('/admin/users/students')->group(function () {
+            Route::get('/', [UserController::class, 'studentsPage'])->name('students');
+            Route::post('/', [UserController::class, 'createStudent'])->name('students.store');
+            Route::get('/create', [UserController::class, 'createUserPage'])->name('students.create');
+            Route::get('/edit/{id}', [UserController::class, 'editUserPage'])->name('students.edit');
+            Route::put('/{id}', [UserController::class, 'updateUser'])->name('students.update');
+            Route::delete('/{id}', [UserController::class, 'deleteUser'])->name('students.destroy');
+        });
+
+        // User Creation Routes
+        Route::prefix('/admin/users')->group(function () {
+            Route::get('/create/{role}', [UserController::class, 'createUserPage'])->name('users.create');
         });
         
         // Teacher Portal Route
@@ -162,20 +204,26 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/enrolled-students', [AdmissionController::class, 'enrolledStudents'])->name('admissions.enrolled');
         });
 
-        // Instructor Requests Management (for admins too)
+        // Instructor Requests Management (for both admin and super_admin)
         Route::prefix('/admin/instructor-requests')->group(function () {
             Route::get('/pending', [InstructorRequestController::class, 'pendingRequests'])->name('admin.instructor-requests.pending');
         });
+
+        // Content Management Routes (for both admin and super_admin)
+        Route::prefix('/admin/content-management')->group(function () {
+            Route::get('/', [ContentManagementController::class, 'index'])->name('admin.content-management');
+            Route::post('/save', [ContentManagementController::class, 'save'])->name('admin.content-management.save');
+        });
     });
 
-    // Teacher Routes - UPDATED WITH FUNCTIONAL SIDEBAR NAVIGATION
-    Route::middleware(['role:teacher,admin,super_admin'])->group(function () {
+    // ============ TEACHER ROUTES ============
+    Route::middleware(['role:teacher,admin,super_admin'])->prefix('teacher')->group(function () {
         // Teacher Portal Dashboard
-        Route::get('/teacher', [TeacherController::class, 'dashboard'])->name('teacher.dashboard');
-        Route::get('/teacher/portal', [TeacherController::class, 'portal'])->name('teacher.portal');
+        Route::get('/', [TeacherController::class, 'dashboard'])->name('teacher.dashboard');
+        Route::get('/portal', [TeacherController::class, 'portal'])->name('teacher.portal');
         
         // ============ MY CLASSES SECTION ============
-        Route::prefix('/teacher/classes')->group(function () {
+        Route::prefix('/classes')->group(function () {
             // All Classes List
             Route::get('/', [TeacherController::class, 'classesList'])->name('teacher.classes');
             
@@ -187,7 +235,7 @@ Route::middleware(['auth'])->group(function () {
         });
 
         // ============ RESOURCES SECTION ============
-        Route::prefix('/teacher/resources')->group(function () {
+        Route::prefix('/resources')->group(function () {
             // My Resources List
             Route::get('/', [TeacherController::class, 'teacherResources'])->name('teacher.resources');
             
@@ -200,7 +248,7 @@ Route::middleware(['auth'])->group(function () {
         });
 
         // ============ ASSESSMENTS SECTION ============
-        Route::prefix('/teacher/assignments')->group(function () {
+        Route::prefix('/assignments')->group(function () {
             // Grade Assignments List
             Route::get('/', [AssignmentController::class, 'teacherAssignments'])->name('teacher.assignments');
             
@@ -213,7 +261,7 @@ Route::middleware(['auth'])->group(function () {
         });
 
         // ============ INDIVIDUAL CLASS MANAGEMENT ============
-        Route::prefix('/teacher/class/{classId}')->group(function () {
+        Route::prefix('/class/{classId}')->group(function () {
             // Class Dashboard
             Route::get('/', [TeacherController::class, 'classDashboard'])->name('teacher.class.dashboard');
             
@@ -236,24 +284,11 @@ Route::middleware(['auth'])->group(function () {
         });
 
         // Analytics & Settings
-        Route::get('/teacher/analytics', [TeacherController::class, 'analytics'])->name('teacher.analytics');
-        Route::get('/teacher/settings', [TeacherController::class, 'settings'])->name('teacher.settings');
-    });
-
-    // Student Routes
-    Route::middleware(['role:student'])->group(function () {
-        Route::get('/student', [StudentController::class, 'dashboard'])->name('student.dashboard');
-        Route::get('/student/my-courses', [StudentController::class, 'myCourses'])->name('student.my-courses');
-        Route::get('/student/assignments', [AssignmentController::class, 'studentAssignments'])->name('student.assignments');
-        Route::get('/student/schedule', [ScheduleController::class, 'studentSchedule'])->name('student.schedule');
-        Route::get('/student/grades', [StudentController::class, 'grades'])->name('student.grades');
-        Route::get('/student/profile', [StudentController::class, 'profile'])->name('student.profile');
-        Route::get('/student/progress', [StudentController::class, 'progress'])->name('student.progress');
-        Route::get('/student/settings', [StudentController::class, 'settings'])->name('student.settings');
+        Route::get('/analytics', [TeacherController::class, 'analytics'])->name('teacher.analytics');
+        Route::get('/settings', [TeacherController::class, 'settings'])->name('teacher.settings');
     });
 
     // ============ PROTECTED API ROUTES ============
-    
     Route::prefix('api')->middleware('web')->group(function () {
 
         Route::get('/video-proxy', [VideoProxyController::class, 'proxy']);
@@ -262,6 +297,30 @@ Route::middleware(['auth'])->group(function () {
         // ADD THE NEW VIDEO STREAM ROUTES HERE:
         Route::get('/youtube-direct-stream', [VideoController::class, 'getYouTubeDirectStream']);
         Route::get('/video-proxy/{videoId}', [VideoController::class, 'proxyVideo']);
+
+        // Content API Routes (Protected - for admin management)
+        Route::prefix('content')->group(function () {
+            Route::get('/all', [ContentController::class, 'getAllContent']);
+            Route::post('/save', [ContentController::class, 'saveContent']);
+            Route::post('/save-bulk', [ContentController::class, 'saveBulkContent']);
+        });
+
+        // User Management API Routes
+        Route::prefix('users')->group(function () {
+            Route::get('/profile', [UserController::class, 'getProfile']);
+            Route::put('/profile', [UserController::class, 'updateProfile']);
+            Route::get('/students', [UserController::class, 'getStudents'])->name('users.students');
+            Route::get('/teachers', [UserController::class, 'getTeachers'])->name('users.teachers');
+            Route::get('/admins', [UserController::class, 'getAdmins'])->name('users.admins');
+            Route::get('/super-admins', [UserController::class, 'getSuperAdmins'])->name('users.super-admins');
+            Route::get('/other-users', [UserController::class, 'getOtherUsers']);
+            Route::get('/{id}', [UserController::class, 'getUser']);
+            Route::post('/bulk-actions', [UserController::class, 'bulkUserActions'])->name('users.bulk-actions');
+            Route::get('/statistics', [UserController::class, 'getUserStatistics'])->name('users.statistics');
+            
+            // Student specific routes
+            Route::post('/students/create', [UserController::class, 'createStudent'])->name('api.users.students.create');
+        });
 
         // Course API Routes
         Route::prefix('courses')->group(function () {
@@ -293,16 +352,9 @@ Route::middleware(['auth'])->group(function () {
             
             // Debug route for course issues
             Route::get('/debug/courses', [CourseController::class, 'debugCourses']);
-        });
-
-        // User API Routes
-        Route::prefix('users')->group(function () {
-            Route::get('/other-users', [UserController::class, 'getOtherUsers']);
-            Route::get('/profile', [UserController::class, 'getProfile']);
-            Route::put('/profile', [UserController::class, 'updateProfile']);
-            Route::get('/students', [UserController::class, 'getStudents'])->name('users.students');
-            Route::get('/teachers', [UserController::class, 'getTeachers'])->name('users.teachers');
-            Route::get('/admins', [UserController::class, 'getAdmins'])->name('users.admins');
+            
+            // 🔍 ADD THE SEARCH CLASSES ROUTE HERE TOO FOR CONSISTENCY
+            Route::get('/search-classes', [CourseController::class, 'searchClasses'])->name('api.courses.search-classes');
         });
 
         // Teacher API Routes
@@ -431,6 +483,15 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/{id}/reject', [InstructorRequestController::class, 'rejectRequest']);
         });
 
+        // Student Profile API Routes
+        Route::prefix('student-profile')->group(function () {
+            Route::get('/data', [StudentProfileController::class, 'getProfileData'])->name('api.student-profile.data');
+            Route::put('/update', [StudentProfileController::class, 'updateProfile'])->name('api.student-profile.update');
+            Route::get('/progress', [LearningProgressController::class, 'getProgressData'])->name('api.student-profile.progress');
+            Route::get('/courses', [MyCoursesController::class, 'getCoursesData'])->name('api.student-profile.courses');
+            Route::put('/preferences', [SettingsController::class, 'updatePreferences'])->name('api.student-profile.preferences');
+        });
+
         // Video Proxy Protected API Routes
         Route::prefix('video-proxy')->group(function () {
             Route::get('/embed-url', [VideoProxyController::class, 'getEmbedUrl']);
@@ -481,7 +542,7 @@ Route::get('/{any}', function () {
     return view('app');
 })->where('any', '^(?!api|storage|assets).*$');
 
-// Add to routes/web.php temporarily
+// Debug route
 Route::get('/debug-session', function() {
     session(['debug_test' => 'session_working']);
     

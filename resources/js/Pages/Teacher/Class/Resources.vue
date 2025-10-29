@@ -1,246 +1,318 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-6">
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900">Resources - {{ classData.name }}</h1>
-        <p class="text-gray-600">Share video links with your students</p>
-      </div>
-      <div class="flex space-x-3">
-        <button 
-          @click="goBack"
-          class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-          </svg>
-          <span>Back to Class</span>
-        </button>
-        <button 
-          @click="showVideoUpload = true"
-          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-          </svg>
-          <span>Add Video Link</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Loading State -->
-    <div v-if="loading" class="flex justify-center items-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-    </div>
+  <div class="min-h-screen bg-gray-50 flex">
+    <!-- Sidebar -->
+    <TeacherSidebar 
+      @showUploadModal="showVideoUpload = true"
+      @createAssignment="createAssignment"
+      @goBackToAdmin="goBackToAdmin"
+    />
 
     <!-- Main Content -->
-    <div v-else>
-      <!-- Resources List -->
-      <div class="bg-white rounded-lg border border-gray-200 shadow-sm">
-        <div class="p-6 border-b border-gray-200 flex justify-between items-center">
-          <h3 class="text-lg font-semibold text-gray-800">Video Resources</h3>
-          <div class="text-sm text-gray-500">
-            {{ resources.length }} video{{ resources.length !== 1 ? 's' : '' }}
+    <div class="flex-1 ml-64 min-w-0">
+      <!-- Top Navbar -->
+      <Navbar 
+        :pageTitle="`Teacher Portal - ${teacherName}`"
+      />
+
+      <!-- Page Content -->
+      <div class="p-6 max-w-full overflow-x-hidden">
+        <!-- Resources Content -->
+        <div class="space-y-6">
+          <!-- Header -->
+          <div class="flex justify-between items-center mb-6">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900">Resources - {{ classData.name }}</h1>
+              <p class="text-gray-600">Share video links with your students</p>
+            </div>
+            <div class="flex space-x-3">
+              <button 
+                @click="goBack"
+                class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center space-x-2 no-underline"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                <span>Back to Class</span>
+              </button>
+              <button 
+                @click="showVideoUpload = true"
+                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 no-underline"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                <span>Add Video Link</span>
+              </button>
+            </div>
           </div>
-        </div>
-        
-        <div class="divide-y divide-gray-200">
-          <div 
-            v-for="resource in resources" 
-            :key="resource.id"
-            class="p-6 hover:bg-gray-50 transition-colors duration-150"
-          >
-            <div class="flex justify-between items-start">
-              <div class="flex items-start space-x-4 flex-1">
-                <!-- Video Thumbnail -->
-                <div 
-                  class="relative group cursor-pointer"
-                  @click="playVideo(resource)"
-                >
-                  <div class="relative">
-                    <img 
-                      :src="getResourceThumbnail(resource)" 
-                      :alt="resource.title"
-                      class="w-24 h-16 object-cover rounded-lg shadow-sm"
-                      @error="handleImageError"
-                    >
-                    <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                      <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z"/>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-                
-                <div class="flex-1">
-                  <h4 class="text-lg font-semibold text-gray-900 mb-1">{{ resource.title }}</h4>
-                  <p class="text-gray-600 mb-2">{{ resource.description || 'No description' }}</p>
-                  
-                  <div class="flex items-center space-x-4 text-sm text-gray-500">
-                    <div class="flex items-center space-x-1">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                      </svg>
-                      <span>Uploaded: {{ formatDate(resource.created_at) }}</span>
-                    </div>
-                    <div class="flex items-center space-x-1">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                      </svg>
-                      <span>{{ resource.download_count || 0 }} views</span>
-                    </div>
-                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                      VIDEO
-                    </span>
-                  </div>
-                  
-                  <!-- Debug Info (only in development) -->
-                  <div v-if="isDevelopment" class="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
-                    <p class="font-semibold">Debug Info:</p>
-                    <p>Content: {{ resource.content }}</p>
-                    <p>File Path: {{ resource.file_path }}</p>
-                    <p>Type: {{ resource.type }}</p>
-                    <p>Video Found: {{ !!getVideoContent(resource) }}</p>
-                  </div>
-                  
-                  <!-- Video Link -->
-                  <div class="mt-2">
-                    <div class="flex items-center space-x-2">
-                      <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z"/>
-                      </svg>
-                      <a 
-                        href="#" 
-                        @click.prevent="playVideo(resource)"
-                        class="text-blue-600 hover:text-blue-800 text-sm"
-                      >
-                        Watch Video
-                      </a>
-                    </div>
-                  </div>
+
+          <!-- Loading State -->
+          <div v-if="loading" class="flex justify-center items-center py-12">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+
+          <!-- Main Content -->
+          <div v-else>
+            <!-- Resources List -->
+            <div class="bg-white rounded-lg border border-gray-200 shadow-sm">
+              <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-gray-800">Video Resources</h3>
+                <div class="text-sm text-gray-500">
+                  {{ resources.length }} video{{ resources.length !== 1 ? 's' : '' }}
                 </div>
               </div>
               
-              <div class="flex space-x-2">
-                <!-- Play Button -->
-                <button 
-                  @click="playVideo(resource)"
-                  class="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1 rounded hover:bg-blue-50 transition-colors flex items-center space-x-1"
+              <div class="divide-y divide-gray-200">
+                <div 
+                  v-for="resource in resources" 
+                  :key="resource.id"
+                  class="p-6 hover:bg-gray-50 transition-colors duration-150"
                 >
-                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z"/>
-                  </svg>
-                  <span>Play</span>
-                </button>
+                  <div class="flex justify-between items-start">
+                    <div class="flex items-start space-x-4 flex-1">
+                      <!-- Video Thumbnail -->
+                      <div 
+                        class="relative group cursor-pointer"
+                        @click="playVideo(resource)"
+                      >
+                        <div class="relative">
+                          <img 
+                            :src="getResourceThumbnail(resource)" 
+                            :alt="resource.title"
+                            class="w-24 h-16 object-cover rounded-lg shadow-sm"
+                            @error="handleImageError"
+                          >
+                          <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z"/>
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="flex-1">
+                        <h4 class="text-lg font-semibold text-gray-900 mb-1">{{ resource.title }}</h4>
+                        <p class="text-gray-600 mb-2">{{ resource.description || 'No description' }}</p>
+                        
+                        <div class="flex items-center space-x-4 text-sm text-gray-500">
+                          <div class="flex items-center space-x-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span>Uploaded: {{ formatDate(resource.created_at) }}</span>
+                          </div>
+                          <div class="flex items-center space-x-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                            <span>{{ resource.download_count || 0 }} views</span>
+                          </div>
+                          <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                            VIDEO
+                          </span>
+                        </div>
+                        
+                        <!-- Debug Info (only in development) -->
+                        <div v-if="isDevelopment" class="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+                          <p class="font-semibold">Debug Info:</p>
+                          <p>Content: {{ resource.content }}</p>
+                          <p>File Path: {{ resource.file_path }}</p>
+                          <p>Type: {{ resource.type }}</p>
+                          <p>Video Found: {{ !!getVideoContent(resource) }}</p>
+                        </div>
+                        
+                        <!-- Video Link -->
+                        <div class="mt-2">
+                          <div class="flex items-center space-x-2">
+                            <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z"/>
+                            </svg>
+                            <a 
+                              href="#" 
+                              @click.prevent="playVideo(resource)"
+                              class="text-blue-600 hover:text-blue-800 text-sm no-underline"
+                            >
+                              Watch Video
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="flex space-x-2">
+                      <!-- Play Button -->
+                      <button 
+                        @click="playVideo(resource)"
+                        class="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1 rounded hover:bg-blue-50 transition-colors flex items-center space-x-1 no-underline"
+                      >
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z"/>
+                        </svg>
+                        <span>Play</span>
+                      </button>
+                      
+                      <button 
+                        @click="shareResource(resource)"
+                        class="text-green-600 hover:text-green-800 text-sm font-medium px-3 py-1 rounded hover:bg-green-50 transition-colors flex items-center space-x-1 no-underline"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                        </svg>
+                        <span>Share</span>
+                      </button>
+                      <button 
+                        @click="deleteResource(resource.id)"
+                        class="text-red-600 hover:text-red-800 text-sm font-medium px-3 py-1 rounded hover:bg-red-50 transition-colors flex items-center space-x-1 no-underline"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        <span>Delete</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
                 
-                <button 
-                  @click="shareResource(resource)"
-                  class="text-green-600 hover:text-green-800 text-sm font-medium px-3 py-1 rounded hover:bg-green-50 transition-colors flex items-center space-x-1"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                <div v-if="resources.length === 0" class="p-12 text-center text-gray-500">
+                  <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
                   </svg>
-                  <span>Share</span>
-                </button>
-                <button 
-                  @click="deleteResource(resource.id)"
-                  class="text-red-600 hover:text-red-800 text-sm font-medium px-3 py-1 rounded hover:bg-red-50 transition-colors flex items-center space-x-1"
-                >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                  </svg>
-                  <span>Delete</span>
-                </button>
+                  <p class="text-lg font-medium mb-2">No video resources yet</p>
+                  <p class="text-sm mb-4">Share your first video link to get started</p>
+                  <button 
+                    @click="showVideoUpload = true"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors no-underline"
+                  >
+                    Add Your First Video
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <div v-if="resources.length === 0" class="p-12 text-center text-gray-500">
-            <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
-            </svg>
-            <p class="text-lg font-medium mb-2">No video resources yet</p>
-            <p class="text-sm mb-4">Share your first video link to get started</p>
-            <button 
-              @click="showVideoUpload = true"
-              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Add Your First Video
-            </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Video Player Modal - Safe Version -->
+    <!-- Fixed Video Player Modal with Visible Header and Footer -->
     <div v-if="showVideoPlayer && currentVideo" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-50">
-      <div class="bg-black rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
-        <!-- Custom Header -->
-        <div class="px-6 py-3 bg-black flex justify-between items-center border-b border-gray-800">
-          <h3 class="text-lg font-semibold text-white">{{ currentVideo.title }}</h3>
-          <button @click="closeVideoPlayer" class="text-gray-300 hover:text-white transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="bg-white rounded-lg w-full max-w-4xl flex flex-col shadow-2xl border border-gray-300 max-h-[90vh]">
+        <!-- Header - White background, black text -->
+        <div class="px-3 py-2 bg-white flex justify-between items-center border-b border-gray-300 flex-shrink-0 z-10">
+          <h3 class="text-lg font-semibold text-black truncate flex-1 mr-4">{{ currentVideo.title }}</h3>
+          <button 
+            @click="closeVideoPlayer" 
+            class="text-gray-500 hover:text-gray-700 transition-colors flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 flex-shrink-0 no-underline"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
           </button>
         </div>
         
-        <div class="bg-black flex items-center justify-center">
-          <!-- Pure Video Player for direct streams -->
-          <div v-if="currentVideo.directVideoUrl" class="w-full aspect-video">
-            <video 
-              ref="videoPlayer"
-              controls
-              autoplay
-              class="w-full h-full"
-              :poster="currentVideo.thumbnail"
-            >
-              <source :src="currentVideo.directVideoUrl" type="video/mp4">
-              Your browser does not support the video tag.
-            </video>
-          </div>
-          
-          <!-- Ultra-clean YouTube embed as fallback -->
-          <div v-else-if="currentVideo.ultraCleanUrl" class="w-full aspect-video relative">
-            <iframe 
-              :src="currentVideo.ultraCleanUrl"
-              class="w-full h-full"
-              frameborder="0"
-              allow="autoplay; encrypted-media"
-              allowfullscreen
-            ></iframe>
+        
+        <!-- Video Content Area - Properly contained -->
+        <div class="flex-1 min-h-0 bg-gray-50 flex items-center justify-center p-4">
+          <div class="w-full max-w-3xl border-2 border-gray-300 rounded-lg overflow-hidden bg-black aspect-video relative">
+            <!-- Pure Video Player for direct streams -->
+            <div v-if="currentVideo.directVideoUrl" class="w-full h-full">
+              <video 
+                ref="videoPlayer"
+                controls
+                autoplay
+                class="w-full h-full"
+                :poster="currentVideo.thumbnail"
+                @play="isPlaying = true"
+                @pause="isPlaying = false"
+              >
+                <source :src="currentVideo.directVideoUrl" type="video/mp4">
+                Your browser does not support the video tag.
+              </video>
+              
+              <!-- Play Button Overlay -->
+              <div 
+                v-if="!isPlaying" 
+                class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 cursor-pointer"
+                @click="playPauseVideo"
+              >
+                <div class="w-20 h-20 bg-white bg-opacity-95 rounded-full flex items-center justify-center shadow-2xl hover:bg-white transition-all hover:scale-110 border-2 border-gray-200">
+                  <svg class="w-10 h-10 text-gray-800 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
             
-            <!-- Aggressive overlay to hide YouTube UI -->
-            <div class="absolute inset-0 pointer-events-none">
-              <div class="absolute top-0 left-0 w-full h-16 bg-black pointer-events-auto"></div>
-              <div class="absolute bottom-0 left-0 w-full h-20 bg-black pointer-events-auto"></div>
-              <div class="absolute top-0 right-0 w-24 h-24 bg-black pointer-events-auto"></div>
+            <!-- YouTube embed with proper scaling -->
+            <div v-else-if="currentVideo.ultraCleanUrl" class="w-full h-full relative">
+              <!-- Scale down the iframe to ensure it doesn't overflow -->
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="w-[95%] h-[95%]">
+                  <iframe 
+                    :src="currentVideo.ultraCleanUrl"
+                    class="w-full h-full"
+                    frameborder="0"
+                    allow="autoplay; encrypted-media"
+                    allowfullscreen
+                  ></iframe>
+                </div>
+              </div>
+              
+              
+              
+              <!-- Ensure borders are always visible -->
+              <div class="absolute inset-0 border-2 border-gray-300 pointer-events-none rounded-lg"></div>
+            </div>
+            
+            <!-- Error state -->
+            <div v-else class="w-full h-full flex items-center justify-center text-white bg-gray-800">
+              <div class="text-center p-6">
+                <svg class="w-16 h-16 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+                <p class="text-lg font-medium mb-2">Unable to load video</p>
+                <p class="text-sm text-gray-300 mb-6">The video could not be loaded.</p>
+                <div class="flex space-x-3 justify-center">
+                  <button 
+                    @click="closeVideoPlayer"
+                    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium border border-blue-700 no-underline"
+                  >
+                    Close
+                  </button>
+                  <button 
+                    v-if="currentVideo.originalUrl"
+                    @click="openInNewTab(currentVideo.originalUrl)"
+                    class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium border border-gray-700 no-underline"
+                  >
+                    Open Original
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-          
-          <!-- Error state -->
-          <div v-else class="w-full h-full flex items-center justify-center text-white">
-            <div class="text-center">
-              <svg class="w-16 h-16 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-              </svg>
-              <p class="text-lg mb-2">Unable to load video</p>
-              <p class="text-sm text-gray-300 mb-4">The video could not be loaded.</p>
-              <div class="flex space-x-2 justify-center">
-                <button 
-                  @click="closeVideoPlayer"
-                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Close
-                </button>
-                <button 
-                  v-if="currentVideo.originalUrl"
-                  @click="openInNewTab(currentVideo.originalUrl)"
-                  class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                >
-                  Open Original
-                </button>
-              </div>
+        </div>
+        
+        <!-- Footer Area - Always visible -->
+        <div class="bg-white px-3 py-2 border-t border-gray-300 flex-shrink-0 z-10">
+          <div class="flex justify-between items-center text-sm text-gray-600">
+            <span class="font-medium">Video Player</span>
+            <div class="flex space-x-4">
+              <button 
+                v-if="currentVideo.directVideoUrl"
+                @click="playPauseVideo"
+                class="flex items-center space-x-2 text-blue-600 hover:text-blue-800 font-medium no-underline"
+              >
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path v-if="isPlaying" d="M6 4h4v16H6zM14 4h4v16h-4z"/>
+                  <path v-else d="M8 5v14l11-7z"/>
+                </svg>
+                <span>{{ isPlaying ? 'Pause' : 'Play' }}</span>
+              </button>
+              <button 
+                @click="closeVideoPlayer"
+                class="text-gray-600 hover:text-gray-800 font-medium border border-gray-300 px-3 py-1 rounded hover:bg-gray-50 no-underline"
+              >
+                Close Player
+              </button>
             </div>
           </div>
         </div>
@@ -252,7 +324,7 @@
       <div class="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
           <h3 class="text-lg font-semibold text-gray-800">Add Video</h3>
-          <button @click="showVideoUpload = false" class="text-gray-400 hover:text-gray-600">
+          <button @click="showVideoUpload = false" class="text-gray-400 hover:text-gray-600 no-underline">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
@@ -320,7 +392,7 @@
             <button 
               type="button"
               @click="showVideoUpload = false"
-              class="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              class="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 no-underline"
               :disabled="uploading"
             >
               Cancel
@@ -332,7 +404,7 @@
                 (uploading || !videoForm.title || !videoForm.url) 
                   ? 'opacity-50 cursor-not-allowed' 
                   : 'hover:bg-blue-700'
-              }`"
+              } no-underline`"
             >
               <svg v-if="uploading" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -349,7 +421,9 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { usePage, router, useForm } from '@inertiajs/vue3'
+import { usePage, router, useForm, Link } from '@inertiajs/vue3'
+import TeacherSidebar from '../../Layout/TeacherSidebar.vue'
+import Navbar from '../../Layout/Navbar.vue'
 
 // Use Inertia.js page props
 const page = usePage()
@@ -357,15 +431,10 @@ const props = defineProps({
   classId: String,
   classData: Object,
   resources: Array,
+  teacher: Object,
 })
 
-// Use reactive refs for local state
-const classData = ref(props.classData || {
-  id: props.classId,
-  name: 'Loading...'
-})
-
-const resources = ref(props.resources || [])
+// UI State for sidebar and header
 const showVideoUpload = ref(false)
 const showVideoPlayer = ref(false)
 const currentVideo = ref(null)
@@ -380,6 +449,19 @@ const isDevelopment = computed(() => {
   return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
 })
 
+// Safe computed properties for teacher data
+const teacherName = computed(() => {
+  return props.teacher?.name || page.props.auth?.user?.name || 'Teacher'
+})
+
+// Use reactive refs for local state
+const classData = ref(props.classData || {
+  id: props.classId,
+  name: 'Loading...'
+})
+
+const resources = ref(props.resources || [])
+
 // Use Inertia form for proper CSRF handling
 const videoForm = useForm({
   title: '',
@@ -393,6 +475,22 @@ const videoForm = useForm({
 const goBack = () => {
   router.get(`/teacher/class/${props.classId}`)
 }
+
+// Sidebar and header methods
+const goBackToAdmin = () => {
+  router.visit('/admin/users/other-users')
+}
+
+const createAssignment = () => {
+  if (props.classId) {
+    router.visit(`/teacher/class/${props.classId}/assignments/create`)
+  } else {
+    router.visit('/teacher/assignments/create')
+  }
+}
+
+// All your existing video resource methods remain the same...
+// (getVideoContent, playVideo, uploadVideoFinal, etc.)
 
 // Debug function to check resource structure
 const debugResources = () => {
@@ -426,6 +524,55 @@ const debugResources = () => {
       console.log('   ❌ NO VIDEO CONTENT FOUND');
     }
   });
+};
+
+
+const getVideoSourceTitle = (video) => {
+  if (video.isDirectStream || video.isDirectVideo) {
+    return 'Direct Video Stream';
+  } else if (video.isEmbed) {
+    return 'YouTube Video';
+  }
+  return 'Video Source';
+};
+
+// Play/pause video
+const playPauseVideo = () => {
+  if (videoPlayer.value) {
+    if (videoPlayer.value.paused) {
+      videoPlayer.value.play();
+      isPlaying.value = true;
+    } else {
+      videoPlayer.value.pause();
+      isPlaying.value = false;
+    }
+  }
+};
+
+const extractYouTubeUrlFromDescription = (description) => {
+  if (!description) return null;
+  
+  // Look for YouTube URLs in the description
+  const youtubePatterns = [
+    /(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+    /(https?:\/\/)?(www\.)?youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
+    /youtu\.be\/([a-zA-Z0-9_-]{11})/
+  ];
+  
+  for (const pattern of youtubePatterns) {
+    const match = description.match(pattern);
+    if (match) {
+      let url = match[0];
+      // Ensure it has http protocol
+      if (!url.startsWith('http')) {
+        url = 'https://' + url;
+      }
+      return url;
+    }
+  }
+  
+  return null;
 };
 
 // Enhanced getVideoContent function
@@ -638,7 +785,7 @@ const generateCleanEmbedUrl = (videoId) => {
     'autoplay': '1',
     'rel': '0',
     'modestbranding': '1',
-    'controls': '1',
+    'controls': '0',
     'showinfo': '0',
     'iv_load_policy': '3',
     'fs': '1',
@@ -656,10 +803,33 @@ const generateCleanEmbedUrl = (videoId) => {
 
 // Emergency fallback mapping for resources without proper URLs
 const emergencyVideoMapping = {
-  // Add manual mappings here if needed
-  // 'resource_title': 'youtube_url'
+  'Second Intro': 'https://www.youtube.com/watch?v=YOUR_ACTUAL_VIDEO_ID'
+  // Add more mappings as needed
 };
 
+// Enhanced URL validation in upload form
+const validateAndNormalizeYouTubeUrl = (url) => {
+  if (!url) return null;
+  
+  let normalizedUrl = url.trim();
+  
+  // Ensure URL has proper protocol
+  if (!normalizedUrl.startsWith('http')) {
+    normalizedUrl = 'https://' + normalizedUrl;
+  }
+  
+  // Validate it's a YouTube URL
+  if (!isYouTubeUrl(normalizedUrl)) {
+    // Try to extract YouTube URL from text
+    const extractedUrl = extractYouTubeUrlFromDescription(normalizedUrl);
+    if (extractedUrl) {
+      return extractedUrl;
+    }
+    return null;
+  }
+  
+  return normalizedUrl;
+};
 
 // Enhanced video content extraction with fallbacks
 const getVideoContentWithFallback = (resource) => {
@@ -673,18 +843,11 @@ const getVideoContentWithFallback = (resource) => {
     return emergencyVideoMapping[resource.title];
   }
   
-  // Finally, try to extract from any text field using raw JSON
-  try {
-    const allText = JSON.stringify(resource).toLowerCase();
-    const youtubeMatch = allText.match(/(youtube\.com\/watch\?v=|youtu\.be\/)([a-za-z0-9_-]{11})/);
-    if (youtubeMatch) {
-      const videoId = youtubeMatch[2];
-      const reconstructedUrl = `https://www.youtube.com/watch?v=${videoId}`;
-      console.log('🔧 Reconstructed URL from raw data:', reconstructedUrl);
-      return reconstructedUrl;
-    }
-  } catch (error) {
-    console.log('❌ Error extracting from raw data:', error);
+  // Try to extract from description
+  const urlFromDescription = extractYouTubeUrlFromDescription(resource.description);
+  if (urlFromDescription) {
+    console.log('📝 Found URL in description:', urlFromDescription);
+    return urlFromDescription;
   }
   
   return null;
@@ -693,6 +856,7 @@ const getVideoContentWithFallback = (resource) => {
 // Enhanced playVideo function with better error handling
 const playVideo = async (resource) => {
   console.log('🎬 [playVideo] Attempting to play video:', resource.title);
+  debugVideoResource(resource);
   
   const videoContent = getVideoContentWithFallback(resource);
   
@@ -749,7 +913,6 @@ const playVideo = async (resource) => {
   }
 };
 
-
 // Updated method to get direct video stream
 const getDirectVideoStream = async (videoId) => {
   try {
@@ -798,7 +961,6 @@ const openInNewTab = (url) => {
   window.open(url, '_blank', 'noopener,noreferrer');
 };
 
-
 const getYouTubeDirectStream = async (videoId) => {
   try {
     // This would call your backend service that fetches direct video URLs
@@ -836,15 +998,12 @@ const generateUltraCleanEmbedUrl = (videoId) => {
     'controls': '0', // No controls
     'showinfo': '0',
     'iv_load_policy': '3',
-    'fs': '0', // No fullscreen
+    //'fs': '0', // No fullscreen
     'disablekb': '1',
     'playsinline': '1',
     'enablejsapi': '1',
     'origin': window.location.origin,
     'widget_referrer': window.location.origin,
-    'cc_load_policy': '0',
-    'color': 'white',
-    'hl': 'en',
     'cc_lang_pref': 'en',
     'version': '3',
     'loop': '0',
@@ -857,6 +1016,28 @@ const generateUltraCleanEmbedUrl = (videoId) => {
   return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
 };
 
+const debugVideoResource = (resource) => {
+  console.log('🔍 [DEBUG] Video Resource Analysis:');
+  console.log('Full resource data:', resource);
+  
+  // Check all possible URL fields
+  const urlFields = ['content', 'file_path', 'url', 'video_url', 'link', 'source'];
+  urlFields.forEach(field => {
+    if (resource[field]) {
+      console.log(`📍 ${field}:`, resource[field]);
+    }
+  });
+  
+  // Try to extract video content
+  const videoContent = getVideoContent(resource);
+  console.log('🎬 Extracted video content:', videoContent);
+  
+  if (videoContent) {
+    console.log('🔍 Is YouTube URL:', isYouTubeUrl(videoContent));
+    console.log('🆔 YouTube Video ID:', getYouTubeVideoId(videoContent));
+  }
+};
+
 const closeVideoPlayer = () => {
   // Stop video if playing (only if videoPlayer ref exists)
   if (videoPlayer.value && videoPlayer.value.pause) {
@@ -866,6 +1047,7 @@ const closeVideoPlayer = () => {
   
   showVideoPlayer.value = false;
   currentVideo.value = null;
+  isPlaying.value = false;
 };
 
 // Enhanced upload function with URL normalization
@@ -1102,30 +1284,132 @@ const formatDate = (dateString) => {
 }
 
 // Initialize
-onMounted(async () => {
-  if (!props.resources) {
-    await fetchResources()
-  } else {
-    // Debug existing resources
-    console.log('📦 Props resources:', props.resources)
-    resources.value.forEach((resource, index) => {
-      console.log(`🔍 Resource ${index + 1} structure:`, resource)
-      const videoContent = getVideoContent(resource)
-      console.log(`🎬 Video content for resource ${index + 1}:`, videoContent)
-    })
-  }
-  
-  // Run debug analysis after a short delay
-  setTimeout(() => {
-    debugResources()
-  }, 1000)
-})
+onMounted(() => {
+  const tag = document.createElement('script');
+  tag.src = "https://www.youtube.com/iframe_api";
+  document.body.appendChild(tag);
+
+  window.onYouTubeIframeAPIReady = () => {
+    new YT.Player('player', {
+      videoId: currentVideo.videoId,
+      playerVars: {
+        autoplay: 1,
+        controls: 0,
+        rel: 0,
+        fs: 0,
+        modestbranding: 1,
+        disablekb: 1,
+        iv_load_policy: 3,
+        playsinline: 1,
+      },
+    });
+  };
+});
+
 </script>
 
 <style scoped>
 /* Custom styles for clean video player */
+/* Enhanced Video Player Styles */
+
+.html5-video-player {
+  display: none !important;
+}
+.ytp-show-cards-title{
+                display: none !important;
+      }
+.video-player-container {
+  border: 1px solid #d1d5db; /* gray-300 */
+  border-radius: 0.5rem; /* rounded-lg */
+  overflow: hidden;
+}
+
+.video-content-area {
+  position: relative;
+  background: #000;
+  aspect-ratio: 16 / 9;
+}
+
+.video-content-area iframe,
+.video-content-area video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Ensure proper border visibility */
+.border-fix {
+  box-shadow: 
+    0 0 0 1px #d1d5db, /* Outer border */
+    inset 0 0 0 1px #000; /* Inner border for video area */
+}
+
+/* Play button overlay */
+.play-button-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.play-button-overlay:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.play-button-circle {
+  width: 5rem;
+  height: 5rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.play-button-circle:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: scale(1.05);
+}
+
+.rotate-180 {
+  transform: rotate(180deg);
+}
+
+.submenu-link {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  color: #000000;
+  border-radius: 0.5rem;
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
+  text-decoration: none;
+}
+
+.submenu-link:hover {
+  color: #4f46e5;
+  background-color: #f9fafb;
+  text-decoration: none;
+}
+
 iframe {
   border-radius: 0;
   background: #000;
+}
+
+/* Remove underline from all elements */
+.no-underline {
+  text-decoration: none !important;
+}
+
+/* Ensure no underline appears on hover for any element */
+button:hover,
+a:hover {
+  text-decoration: none !important;
 }
 </style>

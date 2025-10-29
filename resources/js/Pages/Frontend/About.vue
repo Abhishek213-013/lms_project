@@ -1,346 +1,188 @@
 <template>
-  <div class="main-area fix">
-    <!-- Page Banner -->
-    <section class="banner-area-two banner-bg-two" style="background-image: url('/assets/img/banner/banner_bg02.png')">
-      <div class="container">
-        <div class="row justify-content-center">
-          <div class="col-xl-8 col-lg-10">
-            <div class="banner__content-two text-center">
-              <h3 class="title">About SkillGro</h3>
-              <p>Empowering learners worldwide with quality education and innovative learning solutions</p>
+  <FrontendLayout>
+    <div class="main-area fix">
+      <!-- Breadcrumb Area - Reduced Height -->
+      <section class="breadcrumb__area breadcrumb__bg" :data-background="themeImagePath">
+        <div class="container">
+          <div class="row">
+            <div class="col-12">
+              <div class="breadcrumb__content">
+                <h3 class="title">{{ displayContent.about_banner_title || t('Who We Are') }}</h3>
+                <nav class="breadcrumb">
+                  <span property="itemListElement" typeof="ListItem">
+                    <a href="/">{{ t('Home') }}</a>
+                  </span>
+                  <span class="breadcrumb-separator"><i class="fas fa-angle-right"></i></span>
+                  <span property="itemListElement" typeof="ListItem">{{ t('About Us') }}</span>
+                </nav>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+        <div class="breadcrumb__shape-wrap">
+          <img src="../../../../public/assets/img/banner/breadcrumb_shape01.svg" alt="img" class="alltuchtopdown">
+          <img src="../../../../public/assets/img/banner/breadcrumb_shape02.svg" alt="img" data-aos="fade-right" data-aos-delay="300" class="aos-init aos-animate">
+          <img src="../../../../public/assets/img/banner/breadcrumb_shape03.png" alt="img" data-aos="fade-up" data-aos-delay="400" class="aos-init aos-animate">
+          <img src="../../../../public/assets/img/banner/breadcrumb_shape04.png" alt="img" data-aos="fade-down-left" data-aos-delay="400" class="aos-init aos-animate">
+          <img src="../../../../public/assets/img/banner/breadcrumb_shape05.svg" alt="img" data-aos="fade-left" data-aos-delay="400" class="aos-init aos-animate">
+        </div>
+      </section>
 
-    <!-- About Content Section -->
-    <section class="about-content-area section-py-120">
-      <div class="container">
-        <div class="row align-items-center">
-          <div class="col-lg-6">
-            <div class="about-content">
-              <div class="section__title mb-30">
-                <span class="sub-title">Our Story</span>
-                <h2 class="title">Transforming Education Through Innovation</h2>
-              </div>
-              <p class="about-description">
-                SkillGro was founded with a simple yet powerful vision: to make quality education accessible to everyone, everywhere. 
-                We believe that learning should be engaging, personalized, and available to all regardless of geographical or financial barriers.
-              </p>
-              <p>
-                Our platform brings together expert instructors, cutting-edge technology, and a supportive community to create 
-                an exceptional learning experience. From primary education to professional skill development, we're committed to 
-                helping learners achieve their full potential.
-              </p>
-              
-              <div class="about-features">
-                <div class="feature-item">
-                  <div class="feature-icon">
-                    <i class="flaticon-innovation"></i>
-                  </div>
-                  <div class="feature-content">
-                    <h4>Innovative Learning</h4>
-                    <p>Interactive courses with modern teaching methodologies</p>
-                  </div>
+      <!-- About Content Section - Centered -->
+      <section class="about-area-three section-py-120">
+        <div class="container">
+          <div class="row justify-content-center">
+            <div class="col-lg-10 col-md-12">
+              <div class="about__content-three text-center">
+                <div class="section__title mb-10">
+                  <span class="sub-title">{{ t('Get More About Us') }}</span>
+                  <h2 class="title">
+                    {{ displayContent.about_our_story_title || t('Empowering Students to Reach Their Potential') }}
+                  </h2>
                 </div>
-                <div class="feature-item">
-                  <div class="feature-icon">
-                    <i class="flaticon-expert"></i>
-                  </div>
-                  <div class="feature-content">
-                    <h4>Expert Instructors</h4>
-                    <p>Learn from industry professionals and experienced educators</p>
-                  </div>
-                </div>
-                <div class="feature-item">
-                  <div class="feature-icon">
-                    <i class="flaticon-support-1"></i>
-                  </div>
-                  <div class="feature-content">
-                    <h4>24/7 Support</h4>
-                    <p>Comprehensive support system for all our learners</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-lg-6">
-            <div class="about-image">
-              <img src="/assets/img/about/about-main.jpg" alt="About SkillGro">
-              <div class="about-experience">
-                <div class="experience-content">
-                  <h3>5+</h3>
-                  <p>Years of Excellence</p>
-                </div>
+                <p class="desc">{{ displayContent.about_our_story_content || t('about_story_content') }}</p>
+                <ul class="about__info-list list-wrap justify-content-center">
+                  <li class="about__info-list-item">
+                    <i class="flaticon-angle-right"></i>
+                    <p class="content">{{ t('World Class Instructors') }}</p>
+                  </li>
+                  <li class="about__info-list-item">
+                    <i class="flaticon-angle-right"></i>
+                    <p class="content">{{ t('Access Anywhere') }}</p>
+                  </li>
+                  <li class="about__info-list-item">
+                    <i class="flaticon-angle-right"></i>
+                    <p class="content">{{ t('Flexible Course Plan') }}</p>
+                  </li>
+                </ul>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- Stats Section -->
-    <section class="about-stats-area section-pb-120">
-      <div class="container">
-        <div class="row">
-          <div class="col-12">
-            <div class="stats-grid">
-              <div class="stat-item">
-                <div class="stat-number">
-                  <span class="counter" data-count="50000">0</span>+
+      <!-- Mission & Vision with proper spacing -->
+      <section class="mission-vision-area section-pt-60 section-pb-120">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-6">
+              <div class="mission-card">
+                <div class="card-icon">
+                  <i class="flaticon-target"></i>
                 </div>
-                <div class="stat-label">Students Enrolled</div>
+                <h3>{{ displayContent.about_mission_title || t('Our Mission') }}</h3>
+                <p>
+                  {{ displayContent.about_mission_content || t('about_mission_content') }}
+                </p>
+                <ul class="mission-list">
+                  <li><i class="fas fa-check"></i> {{ t('Provide accessible education') }}</li>
+                  <li><i class="fas fa-check"></i> {{ t('Foster lifelong learning') }}</li>
+                  <li><i class="fas fa-check"></i> {{ t('Bridge skills gap') }}</li>
+                  <li><i class="fas fa-check"></i> {{ t('Promote innovation') }}</li>
+                </ul>
               </div>
-              <div class="stat-item">
-                <div class="stat-number">
-                  <span class="counter" data-count="200">0</span>+
+            </div>
+            <div class="col-lg-6">
+              <div class="vision-card">
+                <div class="card-icon">
+                  <i class="flaticon-vision"></i>
                 </div>
-                <div class="stat-label">Expert Instructors</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-number">
-                  <span class="counter" data-count="150">0</span>+
-                </div>
-                <div class="stat-label">Courses Available</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-number">
-                  <span class="counter" data-count="95">0</span>%
-                </div>
-                <div class="stat-label">Success Rate</div>
+                <h3>{{ displayContent.about_vision_title || t('Our Vision') }}</h3>
+                <p>
+                  {{ displayContent.about_vision_content || t('about_vision_content') }}
+                </p>
+                <ul class="vision-list">
+                  <li><i class="fas fa-check"></i> {{ t('Global learning community') }}</li>
+                  <li><i class="fas fa-check"></i> {{ t('Personalized learning paths') }}</li>
+                  <li><i class="fas fa-check"></i> {{ t('Industry-relevant curriculum') }}</li>
+                  <li><i class="fas fa-check"></i> {{ t('Continuous innovation') }}</li>
+                </ul>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
-
-    <!-- Mission & Vision -->
-    <section class="mission-vision-area section-pb-120">
-      <div class="container">
-        <div class="row">
-          <div class="col-lg-6">
-            <div class="mission-card">
-              <div class="card-icon">
-                <i class="flaticon-target"></i>
-              </div>
-              <h3>Our Mission</h3>
-              <p>
-                To democratize education by providing high-quality, accessible, and affordable learning opportunities 
-                that empower individuals to achieve their personal and professional goals.
-              </p>
-              <ul class="mission-list">
-                <li><i class="fas fa-check"></i> Provide accessible education for all</li>
-                <li><i class="fas fa-check"></i> Foster lifelong learning habits</li>
-                <li><i class="fas fa-check"></i> Bridge the skills gap in the workforce</li>
-                <li><i class="fas fa-check"></i> Promote innovation in education</li>
-              </ul>
-            </div>
-          </div>
-          <div class="col-lg-6">
-            <div class="vision-card">
-              <div class="card-icon">
-                <i class="flaticon-vision"></i>
-              </div>
-              <h3>Our Vision</h3>
-              <p>
-                To create a world where anyone, anywhere can transform their life through access to the world's best 
-                learning experiences and educational resources.
-              </p>
-              <ul class="vision-list">
-                <li><i class="fas fa-check"></i> Global learning community</li>
-                <li><i class="fas fa-check"></i> Personalized learning paths</li>
-                <li><i class="fas fa-check"></i> Industry-relevant curriculum</li>
-                <li><i class="fas fa-check"></i> Continuous innovation in EdTech</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Team Section -->
-    <section class="team-area section-pb-120">
-      <div class="container">
-        <div class="row">
-          <div class="col-12">
-            <div class="section__title text-center mb-50">
-              <span class="sub-title">Leadership Team</span>
-              <h2 class="title">Meet Our Founders</h2>
-              <p>The passionate individuals behind SkillGro's success story</p>
-            </div>
-          </div>
-        </div>
-        <div class="row justify-content-center">
-          <div class="col-xl-3 col-lg-4 col-md-6" v-for="member in teamMembers" :key="member.id">
-            <div class="team-member">
-              <div class="member-image">
-                <img :src="member.image" :alt="member.name">
-                <div class="member-overlay">
-                  <div class="social-links">
-                    <a :href="member.social.linkedin"><i class="fab fa-linkedin-in"></i></a>
-                    <a :href="member.social.twitter"><i class="fab fa-twitter"></i></a>
-                    <a :href="member.social.email"><i class="fas fa-envelope"></i></a>
-                  </div>
-                </div>
-              </div>
-              <div class="member-info">
-                <h4 class="member-name">{{ member.name }}</h4>
-                <p class="member-role">{{ member.role }}</p>
-                <p class="member-bio">{{ member.bio }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Values Section -->
-    <section class="values-area section-pb-120" style="background-color: #f8f9fa;">
-      <div class="container">
-        <div class="row">
-          <div class="col-12">
-            <div class="section__title text-center mb-50">
-              <span class="sub-title">Our Values</span>
-              <h2 class="title">What We Stand For</h2>
-            </div>
-          </div>
-        </div>
-        <div class="row justify-content-center">
-          <div class="col-xl-4 col-lg-6" v-for="value in values" :key="value.id">
-            <div class="value-card">
-              <div class="value-icon">
-                <i :class="value.icon"></i>
-              </div>
-              <h4>{{ value.title }}</h4>
-              <p>{{ value.description }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  </div>
+      </section>
+    </div>
+  </FrontendLayout>
 </template>
 
 <script>
+import FrontendLayout from '../Layout/FrontendLayout.vue';
+import { useTranslation } from '@/composables/useTranslation';
+
 export default {
   name: 'AboutPage',
+  components: {
+    FrontendLayout
+  },
+  props: {
+    content: {
+      type: Object,
+      default: () => ({})
+    }
+  },
+  setup() {
+    const { currentLanguage, t, switchLanguage } = useTranslation();
+    return { currentLanguage, t, switchLanguage };
+  },
   data() {
     return {
-      teamMembers: [
-        {
-          id: 1,
-          name: 'Dr. Sarah Mitchell',
-          role: 'CEO & Founder',
-          image: '/assets/img/team/ceo.jpg',
-          bio: 'Education technology expert with 15+ years in the industry. Passionate about making quality education accessible to all.',
-          social: {
-            linkedin: '#',
-            twitter: '#',
-            email: '#'
-          }
-        },
-        {
-          id: 2,
-          name: 'Michael Zhang',
-          role: 'CTO & Co-founder',
-          image: '/assets/img/team/cto.jpg',
-          bio: 'Tech innovator and software architect dedicated to building scalable learning platforms that enhance educational experiences.',
-          social: {
-            linkedin: '#',
-            twitter: '#',
-            email: '#'
-          }
-        },
-        {
-          id: 3,
-          name: 'Emily Rodriguez',
-          role: 'Head of Education',
-          image: '/assets/img/team/education-head.jpg',
-          bio: 'Curriculum development specialist with a PhD in Education. Focused on creating engaging and effective learning materials.',
-          social: {
-            linkedin: '#',
-            twitter: '#',
-            email: '#'
-          }
-        },
-        {
-          id: 4,
-          name: 'David Thompson',
-          role: 'Operations Director',
-          image: '/assets/img/team/operations.jpg',
-          bio: 'Operations management expert ensuring smooth delivery of our educational services and excellent student support.',
-          social: {
-            linkedin: '#',
-            twitter: '#',
-            email: '#'
-          }
-        }
-      ],
-      values: [
-        {
-          id: 1,
-          title: 'Excellence',
-          icon: 'flaticon-quality',
-          description: 'We strive for the highest standards in everything we do, from course content to student support.'
-        },
-        {
-          id: 2,
-          title: 'Innovation',
-          icon: 'flaticon-innovation',
-          description: 'Constantly evolving our platform and teaching methods to provide the best learning experience.'
-        },
-        {
-          id: 3,
-          title: 'Accessibility',
-          icon: 'flaticon-accessibility',
-          description: 'Making quality education available to everyone, regardless of background or location.'
-        },
-        {
-          id: 4,
-          title: 'Community',
-          icon: 'flaticon-community',
-          description: 'Building a supportive learning community where students and instructors grow together.'
-        },
-        {
-          id: 5,
-          title: 'Integrity',
-          icon: 'flaticon-integrity',
-          description: 'Maintaining transparency, honesty, and ethical practices in all our operations.'
-        },
-        {
-          id: 6,
-          title: 'Impact',
-          icon: 'flaticon-impact',
-          description: 'Measuring our success by the positive impact we create in our students lives and careers.'
-        }
-      ]
+      loading: false,
+      currentTheme: 'light'
+    }
+  },
+  computed: {
+    displayContent() {
+      return Object.keys(this.content).length > 0 ? this.content : this.getDefaultContent();
+    },
+    themeImagePath() {
+      return (imageName = 'breadcrumb_bg.jpg') => {
+        const theme = this.currentTheme === 'dark' ? 'dark' : 'light';
+        return `/assets/img/bg/${theme}/${imageName}`;
+      };
+    },
+    themeShapePath() {
+      return (shapeName) => {
+        const theme = this.currentTheme === 'dark' ? 'dark' : 'light';
+        return `/assets/img/banner/${theme}/${shapeName}`;
+      };
+    },
+    themeIconPath() {
+      return (iconName) => {
+        const theme = this.currentTheme === 'dark' ? 'dark' : 'light';
+        return `/assets/img/icons/${theme}/${iconName}`;
+      };
     }
   },
   mounted() {
-    this.animateCounters();
+    this.loadThemePreference();
+    this.setupThemeListener();
+    console.log('About page content received:', this.content);
   },
   methods: {
-    animateCounters() {
-      const counters = document.querySelectorAll('.counter');
-      const speed = 200;
-
-      counters.forEach(counter => {
-        const updateCount = () => {
-          const target = +counter.getAttribute('data-count');
-          const count = +counter.innerText;
-          const increment = target / speed;
-
-          if (count < target) {
-            counter.innerText = Math.ceil(count + increment);
-            setTimeout(updateCount, 1);
-          } else {
-            counter.innerText = target;
-          }
-        };
-
-        updateCount();
+    getDefaultContent() {
+      return {
+        about_banner_title: this.t('Who We Are'),
+        about_our_story_title: this.t('Empowering Students to Reach Their Potential'),
+        about_our_story_content: this.t('about_story_content'),
+        about_mission_title: this.t('Our Mission'),
+        about_mission_content: this.t('about_mission_content'),
+        about_vision_title: this.t('Our Vision'),
+        about_vision_content: this.t('about_vision_content')
+      };
+    },
+    loadThemePreference() {
+      const savedTheme = localStorage.getItem('preferredTheme');
+      if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
+        this.currentTheme = savedTheme;
+      } else {
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        this.currentTheme = systemPrefersDark ? 'dark' : 'light';
+      }
+    },
+    setupThemeListener() {
+      window.addEventListener('themeChanged', (event) => {
+        this.currentTheme = event.detail.theme;
       });
     }
   }
@@ -348,130 +190,242 @@ export default {
 </script>
 
 <style scoped>
-.about-content-area {
-  background: white;
-}
-
-.about-description {
-  font-size: 1.1rem;
-  line-height: 1.8;
-  color: #555;
-  margin-bottom: 30px;
-}
-
-.about-features {
-  margin-top: 40px;
-}
-
-.feature-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.feature-icon {
-  width: 60px;
-  height: 60px;
-  background: linear-gradient(135deg, #e74c3c, #c0392b);
-  border-radius: 50%;
+/* Breadcrumb Area - Reduced Height */
+.breadcrumb__area {
+  position: relative;
+  padding: 30px 0 20px;
+  background-size: cover;
+  background-position: center;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  min-height: 150px;
+  background-color: var(--bg-secondary);
 }
 
-.feature-icon i {
-  font-size: 1.5rem;
-  color: white;
-}
-
-.feature-content h4 {
-  font-size: 1.3rem;
-  color: #2c3e50;
-  margin-bottom: 10px;
-}
-
-.feature-content p {
-  color: #7f8c8d;
-  margin: 0;
-  line-height: 1.6;
-}
-
-.about-image {
-  position: relative;
-  text-align: center;
-}
-
-.about-image img {
-  max-width: 100%;
-  border-radius: 15px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-}
-
-.about-experience {
+.breadcrumb__area::before {
+  content: '';
   position: absolute;
-  bottom: -30px;
-  right: -30px;
-  background: #e74c3c;
-  color: white;
-  padding: 30px;
-  border-radius: 15px;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-secondary);
+  opacity: 1;
+  z-index: -1;
+}
+
+.breadcrumb__content {
   text-align: center;
-  box-shadow: 0 15px 30px rgba(231, 76, 60, 0.3);
+  width: 100%;
 }
 
-.experience-content h3 {
-  font-size: 3rem;
+.breadcrumb__content .title {
+  font-size: 36px;
   font-weight: 700;
-  margin: 0;
-}
-
-.experience-content p {
-  margin: 0;
-  font-weight: 600;
-}
-
-/* Stats Section */
-.about-stats-area {
-  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-  color: white;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 30px;
-}
-
-.stat-item {
-  text-align: center;
-  padding: 40px 20px;
-}
-
-.stat-number {
-  font-size: 3.5rem;
-  font-weight: 700;
-  color: #e74c3c;
+  color: var(--text-primary);
   margin-bottom: 10px;
+  text-align: center;
+  width: 100%;
 }
 
-.stat-label {
-  font-size: 1.2rem;
-  color: #ecf0f1;
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  color: var(--text-primary);
+}
+
+.breadcrumb a {
+  color: var(--text-primary);
+  text-decoration: none;
+  opacity: 0.7;
+}
+
+.breadcrumb a:hover {
+  color: var(--primary-color);
+  opacity: 1;
+}
+
+.breadcrumb-separator {
+  margin: 0 10px;
+  color: var(--text-primary);
+  opacity: 0.7;
+}
+
+.breadcrumb span:last-child {
+  color: var(--text-primary);
+  opacity: 1;
   font-weight: 600;
 }
 
-/* Mission & Vision */
+.breadcrumb__shape-wrap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.breadcrumb__shape-wrap img {
+  position: absolute;
+  max-width: none;
+  opacity: 0.3;
+}
+
+/* Adjusted shape positions for smaller height */
+.breadcrumb__shape-wrap img:nth-child(1) {
+  top: 10%;
+  left: 8%;
+  width: 80px;
+  z-index: 1;
+}
+
+.breadcrumb__shape-wrap img:nth-child(2) {
+  top: 25%;
+  right: 20%;
+  width: 60px;
+  z-index: 1;
+}
+
+.breadcrumb__shape-wrap img:nth-child(3) {
+  bottom: 5%;
+  left: 32%;
+  width: 70px;
+  z-index: 1;
+}
+
+.breadcrumb__shape-wrap img:nth-child(4) {
+  bottom: 8%;
+  right: 40%;
+  width: 60px;
+  z-index: 1;
+}
+
+.breadcrumb__shape-wrap img:nth-child(5) {
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100px;
+  z-index: 1;
+}
+
+/* Animation for specific elements */
+.alltuchtopdown {
+  animation: alltuchtopdown 5s infinite linear;
+}
+
+@keyframes alltuchtopdown {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+/* About Area - Centered Layout */
+.about-area-three {
+  position: relative;
+  background: var(--bg-primary);
+}
+
+.about__content-three {
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.about__content-three .section__title {
+  text-align: center;
+}
+
+.about__content-three .section__title .sub-title {
+  color: var(--primary-color);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 10px;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.about__content-three .section__title .title {
+  font-size: 36px;
+  line-height: 1.3;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.desc {
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--text-secondary);
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.about__info-list {
+  margin-bottom: 40px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.about__info-list-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.about__info-list-item i {
+  color: var(--primary-color);
+  margin-right: 10px;
+  font-size: 14px;
+}
+
+.about__info-list-item .content {
+  margin: 0;
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+/* Mission & Vision with proper spacing */
+.mission-vision-area {
+  background: var(--bg-primary);
+  padding-top: 60px;
+  padding-bottom: 120px;
+}
+
 .mission-card,
 .vision-card {
-  background: white;
+  background: var(--card-bg);
   padding: 40px;
-  border-radius: 15px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
   height: 100%;
   position: relative;
   overflow: hidden;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+  margin-bottom: 30px;
+}
+
+.mission-card:hover,
+.vision-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
 }
 
 .mission-card::before {
@@ -481,7 +435,7 @@ export default {
   left: 0;
   right: 0;
   height: 5px;
-  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
 }
 
 .vision-card::before {
@@ -497,17 +451,20 @@ export default {
 .card-icon {
   width: 80px;
   height: 80px;
-  background: #f8f9fa;
+  background: var(--bg-secondary);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 25px;
+  border: 2px solid var(--border-color);
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .card-icon i {
   font-size: 2rem;
-  color: #e74c3c;
+  color: var(--primary-color);
 }
 
 .vision-card .card-icon i {
@@ -517,15 +474,19 @@ export default {
 .mission-card h3,
 .vision-card h3 {
   font-size: 1.8rem;
-  color: #2c3e50;
+  color: var(--text-primary);
   margin-bottom: 20px;
+  font-weight: 700;
+  text-align: center;
 }
 
 .mission-card p,
 .vision-card p {
-  color: #7f8c8d;
+  color: var(--text-secondary);
   line-height: 1.7;
   margin-bottom: 25px;
+  font-size: 16px;
+  text-align: center;
 }
 
 .mission-list,
@@ -541,170 +502,180 @@ export default {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #555;
+  color: var(--text-primary);
+  font-size: 15px;
 }
 
 .mission-list li i,
 .vision-list li i {
-  color: #27ae60;
+  color: var(--success-color);
+  font-size: 14px;
 }
 
-/* Team Section */
-.team-member {
-  background: white;
-  border-radius: 15px;
-  overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
-  margin-bottom: 30px;
-}
-
-.team-member:hover {
-  transform: translateY(-10px);
-}
-
-.member-image {
-  position: relative;
-  height: 300px;
-  overflow: hidden;
-}
-
-.member-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease;
-}
-
-.team-member:hover .member-image img {
-  transform: scale(1.1);
-}
-
-.member-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(231, 76, 60, 0.9);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.team-member:hover .member-overlay {
-  opacity: 1;
-}
-
-.social-links {
-  display: flex;
-  gap: 15px;
-}
-
-.social-links a {
-  width: 45px;
-  height: 45px;
-  background: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #e74c3c;
-  text-decoration: none;
-  transition: all 0.3s ease;
-}
-
-.social-links a:hover {
-  background: #2c3e50;
-  color: white;
-  transform: translateY(-3px);
-}
-
-.member-info {
-  padding: 25px;
-  text-align: center;
-}
-
-.member-name {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: #2c3e50;
-  margin-bottom: 5px;
-}
-
-.member-role {
-  color: #e74c3c;
-  font-weight: 600;
-  margin-bottom: 15px;
-}
-
-.member-bio {
-  color: #7f8c8d;
-  line-height: 1.6;
-  margin: 0;
-}
-
-/* Values Section */
-.value-card {
-  background: white;
-  padding: 40px 30px;
-  border-radius: 15px;
-  text-align: center;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
-  margin-bottom: 30px;
-  height: 100%;
-}
-
-.value-card:hover {
-  transform: translateY(-10px);
-}
-
-.value-icon {
-  width: 80px;
-  height: 80px;
-  background: linear-gradient(135deg, #e74c3c, #c0392b);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 25px;
-}
-
-.value-icon i {
-  font-size: 2rem;
-  color: white;
-}
-
-.value-card h4 {
-  font-size: 1.5rem;
-  color: #2c3e50;
-  margin-bottom: 15px;
-}
-
-.value-card p {
-  color: #7f8c8d;
-  line-height: 1.7;
-  margin: 0;
-}
-
-@media (max-width: 768px) {
-  .about-experience {
-    position: relative;
-    bottom: auto;
-    right: auto;
-    margin-top: 30px;
+/* Responsive Styles */
+@media (max-width: 1199px) {
+  .breadcrumb__content .title {
+    font-size: 32px;
   }
   
-  .stats-grid {
-    grid-template-columns: 1fr;
+  .about__content-three .section__title .title {
+    font-size: 32px;
+  }
+}
+
+@media (max-width: 991px) {
+  .breadcrumb__content .title {
+    font-size: 28px;
   }
   
-  .feature-item {
+  .about__content-three .section__title .title {
+    font-size: 28px;
+  }
+  
+  .mission-card,
+  .vision-card {
+    margin-bottom: 30px;
+  }
+  
+  .about__info-list {
     flex-direction: column;
-    text-align: center;
+    align-items: center;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 767px) {
+  .breadcrumb__area {
+    padding: 25px 0 15px;
+    min-height: 120px;
+  }
+  
+  .breadcrumb__content .title {
+    font-size: 24px;
+  }
+  
+  .about__content-three .section__title .title {
+    font-size: 24px;
+  }
+  
+  .mission-vision-area {
+    padding-top: 40px;
+    padding-bottom: 80px;
+  }
+  
+  .mission-card,
+  .vision-card {
+    padding: 30px 20px;
+  }
+  
+  .mission-card h3,
+  .vision-card h3 {
+    font-size: 1.5rem;
+  }
+  
+  .card-icon {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 20px;
+  }
+  
+  .card-icon i {
+    font-size: 1.5rem;
+  }
+  
+  /* Further reduce shapes on mobile */
+  .breadcrumb__shape-wrap img:nth-child(1) {
+    width: 60px;
+  }
+  
+  .breadcrumb__shape-wrap img:nth-child(2) {
+    width: 40px;
+  }
+  
+  .breadcrumb__shape-wrap img:nth-child(3) {
+    width: 50px;
+  }
+  
+  .breadcrumb__shape-wrap img:nth-child(4) {
+    width: 40px;
+  }
+  
+  .breadcrumb__shape-wrap img:nth-child(5) {
+    width: 70px;
+  }
+}
+
+@media (max-width: 575px) {
+  .breadcrumb__content .title {
+    font-size: 22px;
+  }
+  
+  .about__content-three .section__title .title {
+    font-size: 22px;
+  }
+  
+  .about__info-list-item .content {
+    font-size: 14px;
+  }
+  
+  .desc {
+    font-size: 14px;
+  }
+  
+  .mission-card p,
+  .vision-card p {
+    font-size: 14px;
+  }
+  
+  .mission-list li,
+  .vision-list li {
+    font-size: 14px;
+  }
+  
+  .breadcrumb__area {
+    min-height: 100px;
+    padding: 20px 0 15px;
+  }
+}
+
+/* Dark theme specific adjustments */
+.dark-theme .breadcrumb__area::before {
+  background: var(--bg-secondary);
+}
+
+.dark-theme .about-image {
+  filter: brightness(0.9);
+}
+
+.dark-theme .mission-card,
+.dark-theme .vision-card {
+  background: var(--card-bg);
+}
+
+/* RTL support for Bengali */
+.bn-lang .about__content-three .section__title,
+.bn-lang .about__info-list-item,
+.bn-lang .mission-list li,
+.bn-lang .vision-list li {
+  text-align: right;
+}
+
+.bn-lang .about__info-list-item i {
+  margin-right: 0;
+  margin-left: 10px;
+}
+
+/* Print styles */
+@media print {
+  .breadcrumb__shape-wrap,
+  .btn.arrow-btn {
+    display: none;
+  }
+  
+  .mission-card,
+  .vision-card {
+    box-shadow: none;
+    border: 1px solid #ccc;
   }
 }
 </style>

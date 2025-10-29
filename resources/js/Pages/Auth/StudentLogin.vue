@@ -93,10 +93,7 @@
               <p class="text-muted small mb-2">Are you an admin or teacher?</p>
               <div class="d-flex gap-2 justify-content-center">
                 <a href="/login" class="btn btn-sm btn-outline-secondary">
-                  Admin Login
-                </a>
-                <a href="/login" class="btn btn-sm btn-outline-secondary">
-                  Teacher Login
+                  Admin/Teacher Login
                 </a>
               </div>
             </div>
@@ -123,8 +120,12 @@ const form = useForm({
 
 const submit = () => {
   form.post('/student-login', {
-    onFinish: () => {
-      form.reset('password');
+    preserveScroll: true,
+    onSuccess: () => {
+      console.log('✅ Student login successful');
+    },
+    onError: (errors) => {
+      console.log('❌ Student login errors:', errors);
     },
   });
 };

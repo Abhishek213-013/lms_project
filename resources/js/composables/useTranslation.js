@@ -1,7 +1,6 @@
 // resources/js/composables/useTranslation.js
-import { ref, computed, onMounted, provide, inject } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
-// Your translations object
 export const translations = {
   en: {
     // Header & Navigation
@@ -17,6 +16,43 @@ export const translations = {
     'Logout': 'Logout',
     'Login': 'Login',
     'Get Started': 'Get Started',
+    
+    // Home Page
+    'Learning is What You Make of it. Make it Yours at SkillGro.': 'Learning is What You Make of it. Make it Yours at SkillGro.',
+    'Unlock your potential with our expert-led courses and transform your career.': 'Unlock your potential with our expert-led courses and transform your career.',
+    'Browse Courses': 'Browse Courses',
+    'Join Now': 'Join Now',
+    'Popular Courses': 'Popular Courses',
+    'Featured Instructors': 'Featured Instructors',
+    'Start Learning Today': 'Start Learning Today',
+    
+    // Courses Page
+    'Available Courses': 'Available Courses',
+    'Explore our wide range of courses and classes': 'Explore our wide range of courses and classes',
+    'Search courses...': 'Search courses...',
+    'All Course Types': 'All Course Types',
+    'Regular Classes': 'Regular Classes',
+    'Skill Courses': 'Skill Courses',
+    'Sort by Name': 'Sort by Name',
+    'Sort by Grade': 'Sort by Grade',
+    'Sort by Popularity': 'Sort by Popularity',
+    'Class': 'Class',
+    'Course': 'Course',
+    'Grade': 'Grade',
+    'Skill Course': 'Skill Course',
+    'Primary': 'Primary',
+    'Junior': 'Junior',
+    'Secondary': 'Secondary',
+    'Higher Secondary': 'Higher Secondary',
+    'Active': 'Active',
+    'Inactive': 'Inactive',
+    'Upcoming': 'Upcoming',
+    'Clear Filters': 'Clear Filters',
+    'Refresh Courses': 'Refresh Courses',
+    'No Courses Available': 'No Courses Available',
+    'No courses found. Please check back later.': 'No courses found. Please check back later.',
+    'Reload Courses': 'Reload Courses',
+    'Loading courses...': 'Loading courses...',
     
     // Instructors Page
     'All Instructors': 'All Instructors',
@@ -85,7 +121,188 @@ export const translations = {
     'Bangla': 'Bangla',
     'Sports': 'Sports',
     'Teaching Specialist': 'Teaching Specialist',
-    'Teaching Degree': 'Teaching Degree'
+    'Teaching Degree': 'Teaching Degree',
+
+    // Footer translations
+    'Transforming education through innovative online learning solutions.': 'Transforming education through innovative online learning solutions.',
+    'Quick Links': 'Quick Links',
+    'About Us': 'About Us',
+    'Categories': 'Categories',
+    'Primary (1-5)': 'Primary (1-5)',
+    'Junior (6-8)': 'Junior (6-8)',
+    'Secondary (9-10)': 'Secondary (9-10)',
+    'Higher Secondary (11-12)': 'Higher Secondary (11-12)',
+    'Contact Info': 'Contact Info',
+    '24/7 Support': '24/7 Support',
+    'All rights reserved.': 'All rights reserved.',
+    'Privacy Policy': 'Privacy Policy',
+    'Terms of Service': 'Terms of Service',
+    'Contact': 'Contact',
+    'Follow us on Facebook': 'Follow us on Facebook',
+    'Follow us on Twitter': 'Follow us on Twitter',
+    'Follow us on LinkedIn': 'Follow us on LinkedIn',
+    'Follow us on Instagram': 'Follow us on Instagram',
+
+    // Course Single Page
+    'Course Details': 'Course Details',
+    'Loading...': 'Loading...',
+    'Loading course details...': 'Loading course details...',
+    'Unable to Load Course': 'Unable to Load Course',
+    'Try Again': 'Try Again',
+    'Back to Courses': 'Back to Courses',
+    'reviews': 'reviews',
+    'By': 'By',
+    'students': 'students',
+    'Overview': 'Overview',
+    'Curriculum': 'Curriculum',
+    'Subjects': 'Subjects',
+    'Instructor': 'Instructor',
+    "What you'll learn": "What you'll learn",
+    'Course Content': 'Course Content',
+    'lessons': 'lessons',
+    'Other Subjects in': 'Other Subjects in',
+    'Click any subject to view its details': 'Click any subject to view its details',
+    'Loading other subjects...': 'Loading other subjects...',
+    'View Details': 'View Details',
+    'No other subjects available': 'No other subjects available',
+    'This class currently has only this subject.': 'This class currently has only this subject.',
+    'Browse All Courses': 'Browse All Courses',
+    'Instructor Rating': 'Instructor Rating',
+    'Years Experience': 'Years Experience',
+    'Contact Information': 'Contact Information',
+    'Course Fee': 'Course Fee',
+    'Free': 'Free',
+    'Already Enrolled': 'Already Enrolled',
+    'Enroll Now': 'Enroll Now',
+    'Start learning today': 'Start learning today',
+    'This course includes:': 'This course includes:',
+    'Level:': 'Level:',
+    'Duration:': 'Duration:',
+    'Lessons:': 'Lessons:',
+    'Students:': 'Students:',
+    'Certificate:': 'Certificate:',
+    'Yes': 'Yes',
+    'About the Instructor': 'About the Instructor',
+    'Rating': 'Rating',
+    'Other Subjects': 'Other Subjects',
+    'more subjects': 'more subjects',
+    'Comprehensive understanding of core concepts': 'Comprehensive understanding of core concepts',
+    'Practical application of learned skills': 'Practical application of learned skills',
+    'Interactive learning materials and resources': 'Interactive learning materials and resources',
+    'Expert guidance and support': 'Expert guidance and support',
+    'Real-world projects and exercises': 'Real-world projects and exercises',
+    'Lifetime access to course materials': 'Lifetime access to course materials',
+    '45 on-demand videos': '45 on-demand videos',
+    'Downloadable resources': 'Downloadable resources',
+    'Full lifetime access': 'Full lifetime access',
+    'Access on mobile and desktop': 'Access on mobile and desktop',
+    'Certificate of completion': 'Certificate of completion',
+    'All Levels': 'All Levels',
+    'Beginner': 'Beginner',
+    'Intermediate': 'Intermediate',
+    'Advanced': 'Advanced',
+    'This Class': 'This Class',
+    'This Course': 'This Course',
+    'Untitled Course': 'Untitled Course',
+    'Comprehensive curriculum for students. This course covers all essential subjects and prepares students for academic success.': 'Comprehensive curriculum for students. This course covers all essential subjects and prepares students for academic success.',
+    'Explore this course - learn essential skills and knowledge from expert instructors.': 'Explore this course - learn essential skills and knowledge from expert instructors.',
+    'Expert Instructor': 'Expert Instructor',
+    'Subject Expert': 'Subject Expert',
+    'Experienced instructor with teaching experience. Committed to providing quality education and helping learners achieve their goals through engaging and effective teaching methods.': 'Experienced instructor with teaching experience. Committed to providing quality education and helping learners achieve their goals through engaging and effective teaching methods.',
+    'Experienced instructor with years of expertise in teaching and mentoring students. Committed to providing quality education and helping learners achieve their goals through engaging and effective teaching methods.': 'Experienced instructor with years of expertise in teaching and mentoring students. Committed to providing quality education and helping learners achieve their goals through engaging and effective teaching methods.',
+    'Recently': 'Recently',
+    'This comprehensive course is designed to provide you with practical skills and knowledge that you can apply immediately. Whether you\'re a beginner or looking to advance your skills, this course will help you achieve your learning goals.': 'This comprehensive course is designed to provide you with practical skills and knowledge that you can apply immediately. Whether you\'re a beginner or looking to advance your skills, this course will help you achieve your learning goals.',
+    'Develop problem-solving skills and mathematical thinking': 'Develop problem-solving skills and mathematical thinking',
+    'Explore scientific concepts and experimental methods': 'Explore scientific concepts and experimental methods',
+    'Improve language proficiency and communication skills': 'Improve language proficiency and communication skills',
+    'Master Bengali language and literature': 'Master Bengali language and literature',
+    'Understand society, culture, and human interactions': 'Understand society, culture, and human interactions',
+    'Comprehensive curriculum designed to build strong foundational knowledge and practical skills.': 'Comprehensive curriculum designed to build strong foundational knowledge and practical skills.',
+    'Playing preview:': 'Playing preview:',
+    'Starting lesson:': 'Starting lesson:',
+    'Successfully enrolled in the course!': 'Successfully enrolled in the course!',
+    'Failed to enroll. Please try again.': 'Failed to enroll. Please try again.',
+    'General': 'General',
+
+    // About Section
+    'Who We Are': 'Who We Are',
+    'About Us': 'About Us',
+    'Get More About Us': 'Get More About Us',
+    'Empowering Students to Reach Their Potential': 'Empowering Students to Reach Their Potential',
+    'World Class Instructors': 'The Most World Class Instructors',
+    'Access Anywhere': 'Access Your Class Anywhere',
+    'Flexible Course Plan': 'Flexible Course Plan',
+    'Start Free Trial': 'Start Free Trial',
+    'Our Mission': 'Our Mission',
+    'Our Vision': 'Our Vision',
+    'Provide accessible education': 'Provide accessible education for all',
+    'Foster lifelong learning': 'Foster lifelong learning habits',
+    'Bridge skills gap': 'Bridge the skills gap in the workforce',
+    'Promote innovation': 'Promote innovation in education',
+    'Global learning community': 'Global learning community',
+    'Personalized learning paths': 'Personalized learning paths',
+    'Industry-relevant curriculum': 'Industry-relevant curriculum',
+    'Continuous innovation': 'Continuous innovation in EdTech',
+    'about_story_content': 'SkillGro was founded with a simple yet powerful vision: to make quality education accessible to everyone, everywhere. We believe that learning should be engaging, personalized, and available to all regardless of geographical or financial barriers.',
+    'about_mission_content': 'To democratize education by providing high-quality, accessible, and affordable learning opportunities that empower individuals to achieve their personal and professional goals.',
+    'about_vision_content': 'To create a world where anyone, anywhere can transform their life through access to the world\'s best learning experiences and educational resources.',
+
+    // Instructor Details Page - NEW TRANSLATIONS
+    'Total Classes': 'Total Classes',
+    'Students Taught': 'Students Taught',
+    'Demo Videos': 'Demo Videos',
+    'Languages': 'Languages',
+    'Response Time': 'Response Time',
+    'Email': 'Email',
+    'Experience': 'Experience',
+    'years': 'years',
+    'Follow Instructor': 'Follow Instructor',
+    'Teaching Experience': 'Teaching Experience',
+    'Years': 'Years',
+    'Educational Institution': 'Educational Institution',
+    'Teaching': 'Teaching',
+    'various subjects': 'various subjects',
+    'Education & Certification': 'Education & Certification',
+    'Teaching Certification': 'Teaching Certification',
+    'Class Videos': 'Class Videos',
+    'Watch classes to experience teaching style': 'Watch classes to experience teaching style',
+    'All Videos': 'All Videos',
+    'Intro': 'Intro',
+    'Demo': 'Demo',
+    'No Videos Available': 'No Videos Available',
+    'This instructor hasn\'t uploaded any demo videos yet.': 'This instructor hasn\'t uploaded any demo videos yet.',
+    'No videos in this class': 'No videos in this class',
+    'Try selecting a different class to see more videos.': 'Try selecting a different class to see more videos.',
+    'Load More Videos': 'Load More Videos',
+    'Classes Taught': 'Classes Taught',
+    'Subjects and classes currently being taught': 'Subjects and classes currently being taught',
+    'Content Coming Soon': 'Content Coming Soon',
+    'This instructor hasn\'t uploaded any content yet.': 'This instructor hasn\'t uploaded any content yet.',
+    'Teaching Philosophy': 'Teaching Philosophy',
+    'Video Player': 'Video Player',
+    'Direct Stream': 'Direct Stream',
+    'YouTube': 'YouTube',
+    'Pause': 'Pause',
+    'Play': 'Play',
+    'Close Player': 'Close Player',
+    'Unable to load video': 'Unable to load video',
+    'The video could not be loaded.': 'The video could not be loaded.',
+    'Close': 'Close',
+    'Open Original': 'Open Original',
+    'Loading video...': 'Loading video...',
+    'Your browser does not support the video tag.': 'Your browser does not support the video tag.',
+    'Untitled Video': 'Untitled Video',
+    'Demo Video': 'Demo Video',
+    'Invalid Date': 'Invalid Date',
+    'General Education': 'General Education',
+    'Professional Instructor': 'Professional Instructor',
+    'Certified': 'Certified',
+    'reviews': 'reviews',
+    'Total Students': 'Total Students',
+    'Total Enrollments': 'Total Enrollments',
+    'Courses Available': 'Courses Available',
+    'Expert Instructors': 'Expert Instructors',
+    'Students Enrolled': 'Students Enrolled'
   },
   bn: {
     // Header & Navigation
@@ -101,6 +318,43 @@ export const translations = {
     'Logout': 'লগআউট',
     'Login': 'লগইন',
     'Get Started': 'শুরু করুন',
+    
+    // Home Page
+    'Learning is What You Make of it. Make it Yours at SkillGro.': 'শেখা হলো আপনার যা বানাতে চান। এটিকে আপনার নিজের করে নিন স্কিলগ্রোতে।',
+    'Unlock your potential with our expert-led courses and transform your career.': 'আমাদের বিশেষজ্ঞ-নির্দেশিত কোর্সের মাধ্যমে আপনার সম্ভাবনা উন্মুক্ত করুন এবং আপনার ক্যারিয়ার রূপান্তর করুন।',
+    'Browse Courses': 'কোর্স ব্রাউজ করুন',
+    'Join Now': 'এখনই যোগ দিন',
+    'Popular Courses': 'জনপ্রিয় কোর্সসমূহ',
+    'Featured Instructors': 'বিশেষ ইন্সট্রাক্টর',
+    'Start Learning Today': 'আজই শেখা শুরু করুন',
+    
+    // Courses Page
+    'Available Courses': 'উপলব্ধ কোর্সসমূহ',
+    'Explore our wide range of courses and classes': 'আমাদের বিস্তৃত কোর্স এবং ক্লাস এক্সপ্লোর করুন',
+    'Search courses...': 'কোর্স খুঁজুন...',
+    'All Course Types': 'সমস্ত কোর্সের ধরন',
+    'Regular Classes': 'নিয়মিত ক্লাস',
+    'Skill Courses': 'স্কিল কোর্স',
+    'Sort by Name': 'নাম অনুসারে সাজান',
+    'Sort by Grade': 'গ্রেড অনুসারে সাজান',
+    'Sort by Popularity': 'জনপ্রিয়তা অনুসারে সাজান',
+    'Class': 'ক্লাস',
+    'Course': 'কোর্স',
+    'Grade': 'গ্রেড',
+    'Skill Course': 'স্কিল কোর্স',
+    'Primary': 'প্রাথমিক',
+    'Junior': 'জুনিয়র',
+    'Secondary': 'সেকেন্ডারি',
+    'Higher Secondary': 'উচ্চ মাধ্যমিক',
+    'Active': 'সক্রিয়',
+    'Inactive': 'নিষ্ক্রিয়',
+    'Upcoming': 'শীঘ্রই আসছে',
+    'Clear Filters': 'ফিল্টার সরান',
+    'Refresh Courses': 'কোর্স রিফ্রেশ করুন',
+    'No Courses Available': 'কোন কোর্স উপলব্ধ নেই',
+    'No courses found. Please check back later.': 'কোন কোর্স পাওয়া যায়নি। দয়া করে পরে আবার চেক করুন।',
+    'Reload Courses': 'কোর্স পুনরায় লোড করুন',
+    'Loading courses...': 'কোর্স লোড হচ্ছে...',
     
     // Instructors Page
     'All Instructors': 'সমস্ত ইন্সট্রাক্টর',
@@ -169,12 +423,193 @@ export const translations = {
     'Bangla': 'বাংলা',
     'Sports': 'ক্রীড়া',
     'Teaching Specialist': 'শিক্ষণ বিশেষজ্ঞ',
-    'Teaching Degree': 'শিক্ষণ ডিগ্রী'
+    'Teaching Degree': 'শিক্ষণ ডিগ্রী',
+
+    // Footer translations
+    'Transforming education through innovative online learning solutions.': 'উদ্ভাবনী অনলাইন লার্নিং সমাধানের মাধ্যমে শিক্ষার রূপান্তর।',
+    'Quick Links': 'দ্রুত লিঙ্কসমূহ',
+    'About Us': 'আমাদের সম্পর্কে',
+    'Categories': 'বিভাগসমূহ',
+    'Primary (1-5)': 'প্রাইমারি (১-৫)',
+    'Junior (6-8)': 'জুনিয়র (৬-৮)',
+    'Secondary (9-10)': 'সেকেন্ডারি (৯-১০)',
+    'Higher Secondary (11-12)': 'উচ্চ মাধ্যমিক (১১-১২)',
+    'Contact Info': 'যোগাযোগের তথ্য',
+    '24/7 Support': '২৪/৭ সাপোর্ট',
+    'All rights reserved.': 'সমস্ত অধিকার সংরক্ষিত।',
+    'Privacy Policy': 'গোপনীয়তা নীতি',
+    'Terms of Service': 'সেবার শর্তাবলী',
+    'Contact': 'যোগাযোগ',
+    'Follow us on Facebook': 'ফেসবুকে আমাদের ফলো করুন',
+    'Follow us on Twitter': 'টুইটারে আমাদের ফলো করুন',
+    'Follow us on LinkedIn': 'লিংকডইনে আমাদের ফলো করুন',
+    'Follow us on Instagram': 'ইনস্টাগ্রামে আমাদের ফলো করুন',
+
+    // Course Single Page
+    'Course Details': 'কোর্স বিবরণ',
+    'Loading...': 'লোড হচ্ছে...',
+    'Loading course details...': 'কোর্স বিবরণ লোড হচ্ছে...',
+    'Unable to Load Course': 'কোর্স লোড করতে ব্যর্থ',
+    'Try Again': 'আবার চেষ্টা করুন',
+    'Back to Courses': 'কোর্সে ফিরে যান',
+    'reviews': 'রিভিউ',
+    'By': 'দ্বারা',
+    'students': 'শিক্ষার্থী',
+    'Overview': 'ওভারভিউ',
+    'Curriculum': 'কারিকুলাম',
+    'Subjects': 'বিষয়',
+    'Instructor': 'ইন্সট্রাক্টর',
+    "What you'll learn": "আপনি যা শিখবেন",
+    'Course Content': 'কোর্স কন্টেন্ট',
+    'lessons': 'লেসন',
+    'Other Subjects in': 'অন্যান্য বিষয়',
+    'Click any subject to view its details': 'বিস্তারিত দেখতে যেকোনো বিষয়ে ক্লিক করুন',
+    'Loading other subjects...': 'অন্যান্য বিষয় লোড হচ্ছে...',
+    'View Details': 'বিস্তারিত দেখুন',
+    'No other subjects available': 'কোনো অন্যান্য বিষয় উপলব্ধ নেই',
+    'This class currently has only this subject.': 'এই ক্লাসে বর্তমানে শুধুমাত্র এই বিষয়টি রয়েছে।',
+    'Browse All Courses': 'সমস্ত কোর্স ব্রাউজ করুন',
+    'Instructor Rating': 'ইন্সট্রাক্টর রেটিং',
+    'Years Experience': 'বছরের অভিজ্ঞতা',
+    'Contact Information': 'যোগাযোগের তথ্য',
+    'Course Fee': 'কোর্স ফি',
+    'Free': 'ফ্রি',
+    'Already Enrolled': 'ইতিমধ্যে নিবন্ধিত',
+    'Enroll Now': 'এখনই নিবন্ধন করুন',
+    'Start learning today': 'আজই শেখা শুরু করুন',
+    'This course includes:': 'এই কোর্সে রয়েছে:',
+    'Level:': 'লেভেল:',
+    'Duration:': 'সময়কাল:',
+    'Lessons:': 'লেসন:',
+    'Students:': 'শিক্ষার্থী:',
+    'Certificate:': 'সার্টিফিকেট:',
+    'Yes': 'হ্যাঁ',
+    'About the Instructor': 'ইন্সট্রাক্টর সম্পর্কে',
+    'Rating': 'রেটিং',
+    'Other Subjects': 'অন্যান্য বিষয়',
+    'more subjects': 'আরও বিষয়',
+    'Comprehensive understanding of core concepts': 'মৌলিক ধারণার ব্যাপক বোঝাপড়া',
+    'Practical application of learned skills': 'শেখা দক্ষতার ব্যবহারিক প্রয়োগ',
+    'Interactive learning materials and resources': 'ইন্টারেক্টিভ লার্নিং ম্যাটেরিয়াল এবং রিসোর্স',
+    'Expert guidance and support': 'বিশেষজ্ঞ নির্দেশনা এবং সমর্থন',
+    'Real-world projects and exercises': 'বাস্তব-বিশ্বের প্রকল্প এবং অনুশীলন',
+    'Lifetime access to course materials': 'কোর্স ম্যাটেরিয়ালে আজীবন অ্যাক্সেস',
+    '45 on-demand videos': '৪৫টি অন-ডিমান্ড ভিডিও',
+    'Downloadable resources': 'ডাউনলোডযোগ্য রিসোর্স',
+    'Full lifetime access': 'পূর্ণ আজীবন অ্যাক্সেস',
+    'Access on mobile and desktop': 'মোবাইল এবং ডেস্কটপে অ্যাক্সেস',
+    'Certificate of completion': 'সমাপ্তি সার্টিফিকেট',
+    'All Levels': 'সব লেভেল',
+    'Beginner': 'শুরু',
+    'Intermediate': 'মধ্যবর্তী',
+    'Advanced': 'এডভান্সড',
+    'This Class': 'এই ক্লাস',
+    'This Course': 'এই কোর্স',
+    'Untitled Course': 'শিরোনামহীন কোর্স',
+    'Comprehensive curriculum for students. This course covers all essential subjects and prepares students for academic success.': 'শিক্ষার্থীদের জন্য ব্যাপক কারিকুলাম। এই কোর্সটি সমস্ত প্রয়োজনীয় বিষয় কভার করে এবং শিক্ষার্থীদের একাডেমিক সাফল্যের জন্য প্রস্তুত করে।',
+    'Explore this course - learn essential skills and knowledge from expert instructors.': 'এই কোর্সটি এক্সপ্লোর করুন - বিশেষজ্ঞ ইন্সট্রাক্টরদের থেকে প্রয়োজনীয় দক্ষতা এবং জ্ঞান শিখুন।',
+    'Expert Instructor': 'বিশেষজ্ঞ ইন্সট্রাক্টর',
+    'Subject Expert': 'বিষয় বিশেষজ্ঞ',
+    'Experienced instructor with teaching experience. Committed to providing quality education and helping learners achieve their goals through engaging and effective teaching methods.': 'শিক্ষণ অভিজ্ঞতা সহ অভিজ্ঞ ইন্সট্রাক্টর। মানসম্মত শিক্ষা প্রদান এবং আকর্ষণীয় ও কার্যকর শিক্ষণ পদ্ধতির মাধ্যমে শিক্ষার্থীদের তাদের লক্ষ্য অর্জনে সহায়তা করতে প্রতিশ্রুতিবদ্ধ।',
+    'Experienced instructor with years of expertise in teaching and mentoring students. Committed to providing quality education and helping learners achieve their goals through engaging and effective teaching methods.': 'শিক্ষার্থীদের শিক্ষাদান এবং পরামর্শদানে বছরের পর বছর অভিজ্ঞতা সহ অভিজ্ঞ ইন্সট্রাক্টর। মানসম্মত শিক্ষা প্রদান এবং আকর্ষণীয় ও কার্যকর শিক্ষণ পদ্ধতির মাধ্যমে শিক্ষার্থীদের তাদের লক্ষ্য অর্জনে সহায়তা করতে প্রতিশ্রুতিবদ্ধ।',
+    'Recently': 'সম্প্রতি',
+    'This comprehensive course is designed to provide you with practical skills and knowledge that you can apply immediately. Whether you\'re a beginner or looking to advance your skills, this course will help you achieve your learning goals.': 'এই বিস্তৃত কোর্সটি আপনাকে ব্যবহারিক দক্ষতা এবং জ্ঞান প্রদান করার জন্য ডিজাইন করা হয়েছে যা আপনি অবিলম্বে প্রয়োগ করতে পারেন। আপনি একজন শিক্ষানবিস হোন বা আপনার দক্ষতা উন্নত করতে চান, এই কোর্সটি আপনার শেখার লক্ষ্য অর্জনে সাহায্য করবে।',
+    'Develop problem-solving skills and mathematical thinking': 'সমস্যা সমাধানের দক্ষতা এবং গাণিতিক চিন্তাভাবনা বিকাশ করুন',
+    'Explore scientific concepts and experimental methods': 'বৈজ্ঞানিক ধারণা এবং পরীক্ষামূলক পদ্ধতি অন্বেষণ করুন',
+    'Improve language proficiency and communication skills': 'ভাষার দক্ষতা এবং যোগাযোগের দক্ষতা উন্নত করুন',
+    'Master Bengali language and literature': 'বাংলা ভাষা এবং সাহিত্য আয়ত্ত করুন',
+    'Understand society, culture, and human interactions': 'সমাজ, সংস্কৃতি এবং মানুষের মিথস্ক্রিয়া বুঝুন',
+    'Comprehensive curriculum designed to build strong foundational knowledge and practical skills.': 'শক্ত ভিত্তিগত জ্ঞান এবং ব্যবহারিক দক্ষতা গড়ে তোলার জন্য ডিজাইন করা ব্যাপক কারিকুলাম।',
+    'Playing preview:': 'প্রিভিউ চালাচ্ছেন:',
+    'Starting lesson:': 'লেসন শুরু হচ্ছে:',
+    'Successfully enrolled in the course!': 'কোর্সে সফলভাবে নিবন্ধিত হয়েছেন!',
+    'Failed to enroll. Please try again.': 'নিবন্ধন ব্যর্থ হয়েছে। দয়া করে আবার চেষ্টা করুন।',
+    'General': 'সাধারণ',
+
+    // About Section
+    'Who We Are': 'আমরা কারা',
+    'About Us': 'আমাদের সম্পর্কে',
+    'Get More About Us': 'আমাদের সম্পর্কে আরও জানুন',
+    'Empowering Students to Reach Their Potential': 'শিক্ষার্থীদের তাদের সম্ভাবনা পূরণে সক্ষম করা',
+    'World Class Instructors': 'বিশ্বমানের ইন্সট্রাক্টর',
+    'Access Anywhere': 'যেকোনো জায়গা থেকে অ্যাক্সেস করুন',
+    'Flexible Course Plan': 'নমনীয় কোর্স পরিকল্পনা',
+    'Start Free Trial': 'বিনামূল্যে ট্রায়াল শুরু করুন',
+    'Our Mission': 'আমাদের মিশন',
+    'Our Vision': 'আমাদের ভিশন',
+    'Provide accessible education': 'সবার জন্য সহজলভ্য শিক্ষা প্রদান',
+    'Foster lifelong learning': 'আজীবন শিক্ষার অভ্যাস গড়ে তোলা',
+    'Bridge skills gap': 'কর্মশক্তিতে দক্ষতার ফাঁক পূরণ করা',
+    'Promote innovation': 'শিক্ষায় উদ্ভাবন প্রচার করা',
+    'Global learning community': 'বৈশ্বিক শিক্ষা সম্প্রদায়',
+    'Personalized learning paths': 'ব্যক্তিগতকৃত শিক্ষার পথ',
+    'Industry-relevant curriculum': 'শিল্প-প্রাসঙ্গিক পাঠ্যক্রম',
+    'Continuous innovation': 'এডটেকে ধারাবাহিক উদ্ভাবন',
+    'about_story_content': 'স্কিলগ্রো একটি সহজ কিন্তু শক্তিশালী ভিশন নিয়ে প্রতিষ্ঠিত হয়েছিল: মানসম্মত শিক্ষা সবার জন্য, সর্বত্র সহজলভ্য করা। আমরা বিশ্বাস করি যে শিক্ষা আকর্ষণীয়, ব্যক্তিগতকৃত এবং ভৌগলিক বা আর্থিক বাধা নির্বিশেষে সবার জন্য উপলব্ধ হওয়া উচিত।',
+    'about_mission_content': 'উচ্চ-গুণমান, সহজলভ্য এবং সাশ্রয়ী মূল্যের শিক্ষার সুযোগ প্রদানের মাধ্যমে শিক্ষাকে গণতান্ত্রিক করা যা ব্যক্তিদের তাদের ব্যক্তিগত এবং পেশাদার লক্ষ্য অর্জনে সক্ষম করে।',
+    'about_vision_content': 'এমন একটি বিশ্ব তৈরি করা যেখানে anyone, anywhere বিশ্বের সেরা লার্নিং অভিজ্ঞতা এবং শিক্ষাগত সম্পদের অ্যাক্সেসের মাধ্যমে তাদের জীবন পরিবর্তন করতে পারে।',
+
+    // Instructor Details Page - NEW TRANSLATIONS
+    'Total Classes': 'মোট ক্লাস',
+    'Students Taught': 'শিক্ষার্থী পড়িয়েছেন',
+    'Demo Videos': 'ডেমো ভিডিও',
+    'Languages': 'ভাষা',
+    'Response Time': 'প্রতিক্রিয়া সময়',
+    'Email': 'ইমেইল',
+    'Experience': 'অভিজ্ঞতা',
+    'years': 'বছর',
+    'Follow Instructor': 'ইন্সট্রাক্টর ফলো করুন',
+    'Teaching Experience': 'শিক্ষণ অভিজ্ঞতা',
+    'Years': 'বছর',
+    'Educational Institution': 'শিক্ষাগত প্রতিষ্ঠান',
+    'Teaching': 'পড়াচ্ছেন',
+    'various subjects': 'বিভিন্ন বিষয়',
+    'Education & Certification': 'শিক্ষা ও সার্টিফিকেশন',
+    'Teaching Certification': 'শিক্ষণ সার্টিফিকেশন',
+    'Class Videos': 'ক্লাস ভিডিও',
+    'Watch classes to experience teaching style': 'শিক্ষণ শৈলী অনুভব করতে ক্লাস দেখুন',
+    'All Videos': 'সমস্ত ভিডিও',
+    'Intro': 'ইন্ট্রো',
+    'Demo': 'ডেমো',
+    'No Videos Available': 'কোন ভিডিও উপলব্ধ নেই',
+    'This instructor hasn\'t uploaded any demo videos yet.': 'এই ইন্সট্রাক্টর এখনও কোন ডেমো ভিডিও আপলোড করেননি।',
+    'No videos in this class': 'এই ক্লাসে কোন ভিডিও নেই',
+    'Try selecting a different class to see more videos.': 'আরও ভিডিও দেখতে একটি ভিন্ন ক্লাস নির্বাচন করুন।',
+    'Load More Videos': 'আরও ভিডিও লোড করুন',
+    'Classes Taught': 'পড়ানো ক্লাসসমূহ',
+    'Subjects and classes currently being taught': 'বর্তমানে পড়ানো বিষয় এবং ক্লাসসমূহ',
+    'Content Coming Soon': 'কন্টেন্ট শীঘ্রই আসছে',
+    'This instructor hasn\'t uploaded any content yet.': 'এই ইন্সট্রাক্টর এখনও কোন কন্টেন্ট আপলোড করেননি।',
+    'Teaching Philosophy': 'শিক্ষণ দর্শন',
+    'Video Player': 'ভিডিও প্লেয়ার',
+    'Direct Stream': 'সরাসরি স্ট্রিম',
+    'YouTube': 'ইউটিউব',
+    'Pause': 'বিরতি',
+    'Play': 'চালান',
+    'Close Player': 'প্লেয়ার বন্ধ করুন',
+    'Unable to load video': 'ভিডিও লোড করতে ব্যর্থ',
+    'The video could not be loaded.': 'ভিডিওটি লোড করা যায়নি।',
+    'Close': 'বন্ধ করুন',
+    'Open Original': 'অরিজিনাল খুলুন',
+    'Loading video...': 'ভিডিও লোড হচ্ছে...',
+    'Your browser does not support the video tag.': 'আপনার ব্রাউজার ভিডিও ট্যাগ সমর্থন করে না।',
+    'Untitled Video': 'শিরোনামহীন ভিডিও',
+    'Demo Video': 'ডেমো ভিডিও',
+    'Invalid Date': 'অবৈধ তারিখ',
+    'General Education': 'সাধারণ শিক্ষা',
+    'Professional Instructor': 'পেশাদার ইন্সট্রাক্টর',
+    'Certified': 'সার্টিফাইড',
+    'reviews': 'রিভিউ',
+    'Total Students': 'মোট শিক্ষার্থী',
+    'Total Enrollments': 'মোট নিবন্ধন',
+    'Courses Available': 'কোর্স উপলব্ধ',
+    'Expert Instructors': 'বিশেষজ্ঞ ইন্সট্রাক্টর',
+    'Students Enrolled': 'নিবন্ধিত শিক্ষার্থী'
   }
 }
 
 // Create a reactive current language
-const currentLanguage = ref('bn') // Default to Bengali
+const currentLanguage = ref('bn')
 
 // Translation function
 export const t = (key, replacements = {}) => {
@@ -189,18 +624,40 @@ export const t = (key, replacements = {}) => {
 
 // Switch language function
 export const switchLanguage = (lang) => {
+  if (lang === currentLanguage.value) return
+  
   currentLanguage.value = lang
   localStorage.setItem('preferredLanguage', lang)
   
   // Update body class for Bengali fonts
   if (lang === 'bn') {
     document.body.classList.add('bn-lang')
+    document.documentElement.lang = 'bn'
   } else {
     document.body.classList.remove('bn-lang')
+    document.documentElement.lang = 'en'
   }
   
+  // Update page title
+  document.title = lang === 'bn' 
+    ? 'স্কিলগ্রো - অনলাইন লার্নিং প্ল্যাটফর্ম'
+    : 'SkillGro - Online Learning Platform'
+  
   // Dispatch event for other components
-  window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: lang } }))
+  window.dispatchEvent(new CustomEvent('languageChanged', { 
+    detail: { language: lang } 
+  }))
+  
+  console.log('🌐 Language changed to:', lang)
+}
+
+// Handle global language changes
+const handleLanguageChange = (event) => {
+  const newLang = event.detail.language
+  if (newLang !== currentLanguage.value) {
+    currentLanguage.value = newLang
+    console.log('🔄 Language updated from event:', newLang)
+  }
 }
 
 // Composable function
@@ -210,8 +667,19 @@ export function useTranslation() {
     const savedLang = localStorage.getItem('preferredLanguage')
     if (savedLang && (savedLang === 'en' || savedLang === 'bn')) {
       currentLanguage.value = savedLang
-      switchLanguage(savedLang) // Apply immediately
+      switchLanguage(savedLang)
+    } else {
+      // Set default language
+      switchLanguage('bn')
     }
+    
+    // Listen for global language changes
+    window.addEventListener('languageChanged', handleLanguageChange)
+  })
+
+  onUnmounted(() => {
+    // Clean up event listener
+    window.removeEventListener('languageChanged', handleLanguageChange)
   })
 
   return {
@@ -219,27 +687,4 @@ export function useTranslation() {
     t,
     switchLanguage
   }
-}
-
-// Provide/inject key
-export const TranslationKey = Symbol('translation')
-
-// Provide function for app level
-export function provideTranslation(app) {
-  app.provide(TranslationKey, {
-    currentLanguage,
-    t,
-    switchLanguage
-  })
-}
-
-// Inject function for components
-export function useTranslationInject() {
-  const translation = inject(TranslationKey)
-  
-  if (!translation) {
-    throw new Error('Translation not provided. Make sure to call provideTranslation in your app.')
-  }
-  
-  return translation
 }

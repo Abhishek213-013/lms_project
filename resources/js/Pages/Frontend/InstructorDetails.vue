@@ -309,78 +309,151 @@
         </div>
       </section>
 
-      <!-- Video Player Modal - Safe Version -->
+      <!-- Video Player Modal - Fixed Z-Index Issue -->
       <div 
         v-if="showVideoPlayer && currentVideo" 
-        class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-50"
-        @click="closeVideoPlayer"
+        class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-50 video-player-modal"
+        @click.self="closeVideoPlayer"
       >
-        <div 
-          class="bg-black rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden"
-          @click.stop
-        >
-          <!-- Custom Header -->
-          <div class="px-6 py-3 bg-black flex justify-between items-center border-b border-gray-800">
-            <h3 class="text-lg font-semibold text-white">{{ getCleanTitle(currentVideo.title) }}</h3>
-            <button @click="closeVideoPlayer" class="text-gray-300 hover:text-white transition-colors">
-              <i class="fas fa-times"></i>
-            </button>
+        <div class="bg-white rounded-lg w-full max-w-4xl flex flex-col shadow-2xl border border-gray-300 max-h-[90vh] overflow-hidden relative z-50">
+          <!-- Header - Fixed z-index -->
+          <div class="px-6 py-4 bg-white border-b border-gray-200 flex-shrink-0 relative z-50">
+            <div class="flex justify-between items-center">
+              <h3 class="text-xl font-semibold text-gray-800 truncate flex-1 mr-4">
+                {{ getCleanTitle(currentVideo.title) }}
+              </h3>
+              <button 
+                @click="closeVideoPlayer" 
+                class="text-gray-500 hover:text-gray-700 transition-colors flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 flex-shrink-0 relative z-50"
+                aria-label="Close video player"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
           </div>
           
-          <div class="bg-black flex items-center justify-center">
-            <!-- Pure Video Player for direct streams -->
-            <div v-if="currentVideo.directVideoUrl" class="w-full aspect-video">
-              <video 
-                ref="videoPlayer"
-                controls
-                autoplay
-                class="w-full h-full"
-                :poster="currentVideo.thumbnail"
-              >
-                <source :src="currentVideo.directVideoUrl" type="video/mp4">
-                {{ t('Your browser does not support the video tag.') }}
-              </video>
-            </div>
-            
-            <!-- Ultra-clean YouTube embed as fallback -->
-            <div v-else-if="currentVideo.ultraCleanUrl" class="w-full aspect-video relative">
-              <iframe 
-                :src="currentVideo.ultraCleanUrl"
-                class="w-full h-full"
-                frameborder="0"
-                allow="autoplay; encrypted-media"
-                allowfullscreen
-              ></iframe>
+          <!-- Video Content Area - With proper z-index containment -->
+          <div class="flex-1 min-h-0 bg-black flex items-center justify-center p-6 relative">
+            <div class="w-full max-w-3xl border-4 border-gray-300 rounded-xl overflow-hidden bg-black aspect-video relative video-container">
+              <!-- Pure Video Player for direct streams -->
+              <div v-if="currentVideo.directVideoUrl" class="w-full h-full relative z-10">
+                <video 
+                  ref="videoPlayer"
+                  controls
+                  autoplay
+                  class="w-full h-full"
+                  :poster="currentVideo.thumbnail"
+                  @play="isPlaying = true"
+                  @pause="isPlaying = false"
+                  @ended="isPlaying = false"
+                >
+                  <source :src="currentVideo.directVideoUrl" type="video/mp4">
+                  {{ t('Your browser does not support the video tag.') }}
+                </video>
+                
+                <!-- Custom Play Button Overlay -->
+                <div 
+                  v-if="!isPlaying" 
+                  class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 cursor-pointer transition-opacity duration-300 z-20"
+                  @click="playPauseVideo"
+                >
+                  <div class="w-20 h-20 bg-white bg-opacity-95 rounded-full flex items-center justify-center shadow-2xl hover:bg-white transition-all hover:scale-110 border-2 border-gray-200">
+                    <svg class="w-10 h-10 text-gray-800 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
               
-              <!-- Aggressive overlay to hide YouTube UI -->
-              <div class="absolute inset-0 pointer-events-none">
-                <div class="absolute top-0 left-0 w-full h-16 bg-black pointer-events-auto"></div>
-                <div class="absolute bottom-0 left-0 w-full h-20 bg-black pointer-events-auto"></div>
-                <div class="absolute top-0 right-0 w-24 h-24 bg-black pointer-events-auto"></div>
+              <!-- YouTube embed with z-index isolation -->
+              <div v-else-if="currentVideo.ultraCleanUrl" class="w-full h-full relative">
+                <!-- YouTube Container with transform to create new stacking context -->
+                <div class="absolute inset-0 flex items-center justify-center p-2 transform translate-z-0">
+                  <div class="w-full h-full rounded-lg overflow-hidden iframe-container relative z-0">
+                    <iframe 
+                      :src="currentVideo.ultraCleanUrl"
+                      class="w-full h-full"
+                      frameborder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowfullscreen
+                      @load="handleIframeLoad"
+                      style="position: relative; z-index: 0;"
+                    ></iframe>
+                  </div>
+                </div>
+                
+                <!-- Protective overlay to prevent YouTube from capturing clicks outside video area -->
+                <div class="absolute inset-0 pointer-events-none z-10">
+                  <div class="absolute -inset-4 bg-transparent"></div>
+                </div>
+                
+                <!-- Border overlay - always on top -->
+                <div class="absolute inset-0 border-2 border-gray-300 pointer-events-none rounded-lg z-30"></div>
+              </div>
+              
+              <!-- Error state -->
+              <div v-else class="w-full h-full flex items-center justify-center text-white bg-gray-800 relative z-10">
+                <div class="text-center p-8">
+                  <svg class="w-16 h-16 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                  </svg>
+                  <p class="text-lg font-medium mb-2">{{ t('Unable to load video') }}</p>
+                  <p class="text-sm text-gray-300 mb-6">{{ t('The video could not be loaded.') }}</p>
+                  <div class="flex space-x-3 justify-center">
+                    <button 
+                      @click="closeVideoPlayer"
+                      class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium border border-blue-700 relative z-50"
+                    >
+                      {{ t('Close') }}
+                    </button>
+                    <button 
+                      v-if="currentVideo.originalUrl"
+                      @click="openInNewTab(currentVideo.originalUrl)"
+                      class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium border border-gray-700 relative z-50"
+                    >
+                      {{ t('Open Original') }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Loading state -->
+              <div v-if="isLoading" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-80 z-40">
+                <div class="text-center">
+                  <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                  <p class="text-white text-sm">{{ t('Loading video...') }}</p>
+                </div>
               </div>
             </div>
-            
-            <!-- Error state -->
-            <div v-else class="w-full h-full flex items-center justify-center text-white">
-              <div class="text-center">
-                <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
-                <p class="text-lg mb-2">{{ t('Unable to load video') }}</p>
-                <p class="text-sm text-gray-300 mb-4">{{ t('The video could not be loaded.') }}</p>
-                <div class="flex space-x-2 justify-center">
-                  <button 
-                    @click="closeVideoPlayer"
-                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    {{ t('Close') }}
-                  </button>
-                  <button 
-                    v-if="currentVideo.originalUrl"
-                    @click="openInNewTab(currentVideo.originalUrl)"
-                    class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                  >
-                    {{ t('Open Original') }}
-                  </button>
-                </div>
+          </div>
+          
+          <!-- Footer Area - Fixed z-index -->
+          <div class="bg-white px-6 py-4 border-t border-gray-200 flex-shrink-0 relative z-50">
+            <div class="flex justify-between items-center text-sm">
+              <div class="flex items-center space-x-4 text-gray-600">
+                <span class="font-medium">{{ t('Video Player') }}</span>
+                <span class="text-xs bg-gray-100 px-2 py-1 rounded">{{ currentVideo.isDirectStream ? t('Direct Stream') : t('YouTube') }}</span>
+              </div>
+              <div class="flex space-x-3">
+                <button 
+                  v-if="currentVideo.directVideoUrl"
+                  @click="playPauseVideo"
+                  class="flex items-center space-x-2 text-blue-600 hover:text-blue-800 font-medium transition-colors relative z-50"
+                >
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path v-if="isPlaying" d="M6 4h4v16H6zM14 4h4v16h-4z"/>
+                    <path v-else d="M8 5v14l11-7z"/>
+                  </svg>
+                  <span>{{ isPlaying ? t('Pause') : t('Play') }}</span>
+                </button>
+                <button 
+                  @click="closeVideoPlayer"
+                  class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium text-sm relative z-50"
+                >
+                  {{ t('Close Player') }}
+                </button>
               </div>
             </div>
           </div>
@@ -390,673 +463,695 @@
   </FrontendLayout>
 </template>
 
-<script>
+<script setup>
 import { Link } from '@inertiajs/vue3';
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import FrontendLayout from '../Layout/FrontendLayout.vue';
+import { useTranslation } from '@/composables/useTranslation';
 
-export default {
-  name: 'InstructorDetailsPage',
-  components: {
-    FrontendLayout,
-    Link
+// Use the global translation composable
+const { currentLanguage, t, switchLanguage } = useTranslation();
+
+// Component props
+const props = defineProps({
+  instructor: {
+    type: Object,
+    required: true
   },
-  props: {
-    instructor: {
-      type: Object,
-      required: true
-    },
-    classes: {
-      type: Array,
-      default: () => []
-    },
-    videos: {
-      type: Array,
-      default: () => []
-    },
-    stats: {
-      type: Object,
-      default: () => ({})
+  classes: {
+    type: Array,
+    default: () => []
+  },
+  videos: {
+    type: Array,
+    default: () => []
+  },
+  stats: {
+    type: Object,
+    default: () => ({})
+  }
+});
+
+// Reactive data
+const selectedVideo = ref(null);
+const currentVideo = ref(null);
+const showVideoPlayer = ref(false);
+const videoPlayer = ref(null);
+const activeCategory = ref('all');
+const videosPerPage = ref(6);
+const currentPage = ref(1);
+const currentTheme = ref('light');
+const isPlaying = ref(false);
+const isLoading = ref(false);
+
+// Add icon render key to force re-render
+const iconRenderKey = ref(0);
+
+// Enhanced language change handler with icon preservation
+const handleLanguageChange = async (event) => {
+  // Force re-render of icons
+  iconRenderKey.value++;
+  
+  // Small delay to ensure DOM updates
+  await nextTick();
+};
+
+// Handle theme changes
+const handleThemeChange = (event) => {
+  currentTheme.value = event.detail.theme;
+};
+
+// Load language and theme preferences from localStorage
+onMounted(() => {
+  const savedTheme = localStorage.getItem('preferredTheme');
+  currentTheme.value = savedTheme || 'light';
+  
+  // Listen for language changes from navbar
+  window.addEventListener('languageChanged', handleLanguageChange);
+  
+  // Listen for theme changes
+  window.addEventListener('themeChanged', handleThemeChange);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('languageChanged', handleLanguageChange);
+  window.removeEventListener('themeChanged', handleThemeChange);
+});
+
+// COMPUTED PROPERTIES
+const uniqueClasses = computed(() => {
+  return props.classes.filter((classItem, index, self) => 
+    index === self.findIndex(c => c.id === classItem.id)
+  );
+});
+
+const introVideo = computed(() => {
+  if (props.videos.length === 0) return null;
+  
+  // Find first class with videos
+  const firstClassWithVideos = classesWithVideos.value[0];
+  if (!firstClassWithVideos) return props.videos[0];
+  
+  // Get videos for that class
+  const firstClassVideos = getVideosByClass(firstClassWithVideos.id);
+  return firstClassVideos[0] || props.videos[0];
+});
+
+const getCleanTitle = (title) => {
+  if (!title) return t('Untitled Video');
+  
+  // Remove URLs from title
+  let cleanTitle = title.replace(/https?:\/\/[^\s]+/g, '').trim();
+  
+  // Remove YouTube specific patterns
+  cleanTitle = cleanTitle.replace(/youtu\.be\/[^\s]+/g, '');
+  cleanTitle = cleanTitle.replace(/youtube\.com\/watch\?v=[^\s]+/g, '');
+  cleanTitle = cleanTitle.replace(/\?si=[^\s]+/g, '');
+  
+  // Remove extra spaces and clean up
+  cleanTitle = cleanTitle.replace(/\s+/g, ' ').trim();
+  
+  // If title is empty after cleaning, use a default
+  if (!cleanTitle) return t('Demo Video');
+  
+  return cleanTitle;
+};
+
+const classesWithVideos = computed(() => {
+  const classMap = new Map();
+  
+  props.classes.forEach(classItem => {
+    const classVideos = props.videos.filter(video => 
+      String(video.class_id) === String(classItem.id)
+    );
+    if (classVideos.length > 0) {
+      classMap.set(classItem.id, classItem);
     }
-  },
-  setup(props) {
-    const selectedVideo = ref(null);
-    const currentVideo = ref(null);
-    const showVideoPlayer = ref(false);
-    const videoPlayer = ref(null);
-    const activeCategory = ref('all');
-    const videosPerPage = ref(6);
-    const currentPage = ref(1);
-    const currentLanguage = ref('bn'); // Default to Bengali
-    const currentTheme = ref('light');
+  });
+  
+  return Array.from(classMap.values());
+});
 
-    // Define translations object
-    const translations = {
-      en: {
-        'reviews': 'reviews',
-        'Total Classes': 'Total Classes',
-        'Students Taught': 'Students Taught',
-        'Demo Videos': 'Demo Videos',
-        'Expertise': 'Expertise',
-        'Languages': 'Languages',
-        'Response Time': 'Response Time',
-        'Email': 'Email',
-        'Experience': 'Experience',
-        'years': 'years',
-        'Follow Instructor': 'Follow Instructor',
-        'Teaching Experience': 'Teaching Experience',
-        'Years': 'Years',
-        'Educational Institution': 'Educational Institution',
-        'Teaching': 'Teaching',
-        'various subjects': 'various subjects',
-        'Education & Certification': 'Education & Certification',
-        'Teaching Certification': 'Teaching Certification',
-        'Class Videos': 'Class Videos',
-        'Watch classes to experience teaching style': 'Watch classes to experience teaching style',
-        'All Videos': 'All Videos',
-        'Intro': 'Intro',
-        'Demo': 'Demo',
-        'No Videos Available': 'No Videos Available',
-        "This instructor hasn't uploaded any demo videos yet.": "This instructor hasn't uploaded any demo videos yet.",
-        'No videos in this class': 'No videos in this class',
-        'Try selecting a different class to see more videos.': 'Try selecting a different class to see more videos.',
-        'Load More Videos': 'Load More Videos',
-        'Classes Taught': 'Classes Taught',
-        'Subjects and classes currently being taught': 'Subjects and classes currently being taught',
-        'Active': 'Active',
-        'Grade': 'Grade',
-        'students': 'students',
-        'Comprehensive course covering essential topics': 'Comprehensive course covering essential topics',
-        'View Course': 'View Course',
-        'Content Coming Soon': 'Content Coming Soon',
-        "This instructor hasn't uploaded any content yet.": "This instructor hasn't uploaded any content yet.",
-        'Teaching Philosophy': 'Teaching Philosophy',
-        'Your browser does not support the video tag.': 'Your browser does not support the video tag.',
-        'Unable to load video': 'Unable to load video',
-        'The video could not be loaded.': 'The video could not be loaded.',
-        'Close': 'Close',
-        'Open Original': 'Open Original',
-        'PhD Specialist': 'PhD Specialist',
-        'Master Educator': 'Master Educator',
-        'Science Expert': 'Science Expert',
-        'Bachelor Educator': 'Bachelor Educator',
-        'Science Teacher': 'Science Teacher',
-        'Certified Teacher': 'Certified Teacher',
-        'Professional Instructor': 'Professional Instructor',
-        'General Education': 'General Education',
-        'Invalid Date': 'Invalid Date',
-        'Successfully enrolled in the course!': 'Successfully enrolled in the course!',
-        'Failed to enroll. Please try again.': 'Failed to enroll. Please try again.',
-        'Playing preview:': 'Playing preview:',
-        'Starting lesson:': 'Starting lesson:'
-      },
-      bn: {
-        'reviews': 'রিভিউ',
-        'Total Classes': 'মোট ক্লাস',
-        'Students Taught': 'শিক্ষার্থী পড়িয়েছেন',
-        'Demo Videos': 'ডেমো ভিডিও',
-        'Expertise': 'দক্ষতা',
-        'Languages': 'ভাষা',
-        'Response Time': 'প্রতিক্রিয়া সময়',
-        'Email': 'ইমেইল',
-        'Experience': 'অভিজ্ঞতা',
-        'years': 'বছর',
-        'Follow Instructor': 'ইন্সট্রাক্টর ফলো করুন',
-        'Teaching Experience': 'শিক্ষণ অভিজ্ঞতা',
-        'Years': 'বছর',
-        'Educational Institution': 'শিক্ষাগত প্রতিষ্ঠান',
-        'Teaching': 'শিক্ষাদান',
-        'various subjects': 'বিভিন্ন বিষয়',
-        'Education & Certification': 'শিক্ষা ও সার্টিফিকেশন',
-        'Teaching Certification': 'শিক্ষণ সার্টিফিকেশন',
-        'Class Videos': 'ক্লাস ভিডিও',
-        'Watch classes to experience teaching style': 'শিক্ষণ শৈলী অনুভব করতে ক্লাস দেখুন',
-        'All Videos': 'সমস্ত ভিডিও',
-        'Intro': 'ইন্ট্রো',
-        'Demo': 'ডেমো',
-        'No Videos Available': 'কোন ভিডিও উপলব্ধ নেই',
-        "This instructor hasn't uploaded any demo videos yet.": 'এই ইন্সট্রাক্টর এখনও কোন ডেমো ভিডিও আপলোড করেননি।',
-        'No videos in this class': 'এই ক্লাসে কোন ভিডিও নেই',
-        'Try selecting a different class to see more videos.': 'আরও ভিডিও দেখতে একটি ভিন্ন ক্লাস নির্বাচন করুন।',
-        'Load More Videos': 'আরও ভিডিও লোড করুন',
-        'Classes Taught': 'পড়ানো ক্লাস',
-        'Subjects and classes currently being taught': 'বর্তমানে পড়ানো বিষয় এবং ক্লাস',
-        'Active': 'সক্রিয়',
-        'Grade': 'গ্রেড',
-        'students': 'শিক্ষার্থী',
-        'Comprehensive course covering essential topics': 'প্রয়োজনীয় বিষয় covering সম্পূর্ণ কোর্স',
-        'View Course': 'কোর্স দেখুন',
-        'Content Coming Soon': 'কন্টেন্ট শীঘ্রই আসছে',
-        "This instructor hasn't uploaded any content yet.": 'এই ইন্সট্রাক্টর এখনও কোন কন্টেন্ট আপলোড করেননি।',
-        'Teaching Philosophy': 'শিক্ষণ দর্শন',
-        'Your browser does not support the video tag.': 'আপনার ব্রাউজার ভিডিও ট্যাগ সমর্থন করে না।',
-        'Unable to load video': 'ভিডিও লোড করতে ব্যর্থ',
-        'The video could not be loaded.': 'ভিডিও লোড করা যায়নি।',
-        'Close': 'বন্ধ',
-        'Open Original': 'অরিজিনাল খুলুন',
-        'PhD Specialist': 'পিএইচডি বিশেষজ্ঞ',
-        'Master Educator': 'মাস্টার শিক্ষক',
-        'Science Expert': 'বিজ্ঞান বিশেষজ্ঞ',
-        'Bachelor Educator': 'ব্যাচেলর শিক্ষক',
-        'Science Teacher': 'বিজ্ঞান শিক্ষক',
-        'Certified Teacher': 'সার্টিফাইড শিক্ষক',
-        'Professional Instructor': 'পেশাদার ইন্সট্রাক্টর',
-        'General Education': 'সাধারণ শিক্ষা',
-        'Invalid Date': 'অবৈধ তারিখ',
-        'Successfully enrolled in the course!': 'কোর্সে সফলভাবে নিবন্ধিত!',
-        'Failed to enroll. Please try again.': 'নিবন্ধন ব্যর্থ। দয়া করে আবার চেষ্টা করুন।',
-        'Playing preview:': 'প্রিভিউ চলছে:',
-        'Starting lesson:': 'লেসন শুরু হচ্ছে:'
-      }
-    };
+const filteredVideos = computed(() => {
+  let filtered = [];
+  
+  if (activeCategory.value === 'all') {
+    filtered = props.videos;
+  } else {
+    filtered = props.videos.filter(video => 
+      String(video.class_id) === String(activeCategory.value)
+    );
+  }
+  
+  return filtered.slice(0, videosPerPage.value * currentPage.value);
+});
 
-    // Translation function
-    const t = (key, replacements = {}) => {
-      let translated = translations[currentLanguage.value]?.[key] || key;
-      
-      Object.keys(replacements).forEach(replacementKey => {
-        translated = translated.replace(`{${replacementKey}}`, replacements[replacementKey]);
-      });
-      
-      return translated;
-    };
+const showLoadMore = computed(() => {
+  let totalVideos = 0;
+  
+  if (activeCategory.value === 'all') {
+    totalVideos = props.videos.length;
+  } else {
+    totalVideos = props.videos.filter(v => 
+      String(v.class_id) === String(activeCategory.value)
+    ).length;
+  }
+  
+  return filteredVideos.value.length < totalVideos;
+});
 
-    // Handle language changes from navbar
-    const handleLanguageChange = (event) => {
-      currentLanguage.value = event.detail.language;
-    };
-
-    // Handle theme changes
-    const handleThemeChange = (event) => {
-      currentTheme.value = event.detail.theme;
-    };
-
-    // Load language and theme preferences from localStorage
-    onMounted(() => {
-      const savedLang = localStorage.getItem('preferredLanguage');
-      if (savedLang && (savedLang === 'en' || savedLang === 'bn')) {
-        currentLanguage.value = savedLang;
-      }
-
-      const savedTheme = localStorage.getItem('preferredTheme');
-      currentTheme.value = savedTheme || 'light';
-      
-      // Listen for language changes from navbar
-      window.addEventListener('languageChanged', handleLanguageChange);
-      
-      // Listen for theme changes
-      window.addEventListener('themeChanged', handleThemeChange);
-    });
-
-    onUnmounted(() => {
-      window.removeEventListener('languageChanged', handleLanguageChange);
-      window.removeEventListener('themeChanged', handleThemeChange);
-    });
-
-    // COMPUTED PROPERTIES
-    const uniqueClasses = computed(() => {
-      return props.classes.filter((classItem, index, self) => 
-        index === self.findIndex(c => c.id === classItem.id)
-      );
-    });
-
-    const introVideo = computed(() => {
-      if (props.videos.length === 0) return null;
-      
-      // Find first class with videos
-      const firstClassWithVideos = classesWithVideos.value[0];
-      if (!firstClassWithVideos) return props.videos[0];
-      
-      // Get videos for that class
-      const firstClassVideos = getVideosByClass(firstClassWithVideos.id);
-      return firstClassVideos[0] || props.videos[0];
-    });
-
-    const getCleanTitle = (title) => {
-      if (!title) return t('Untitled Video');
-      
-      // Remove URLs from title
-      let cleanTitle = title.replace(/https?:\/\/[^\s]+/g, '').trim();
-      
-      // Remove YouTube specific patterns
-      cleanTitle = cleanTitle.replace(/youtu\.be\/[^\s]+/g, '');
-      cleanTitle = cleanTitle.replace(/youtube\.com\/watch\?v=[^\s]+/g, '');
-      cleanTitle = cleanTitle.replace(/\?si=[^\s]+/g, '');
-      
-      // Remove extra spaces and clean up
-      cleanTitle = cleanTitle.replace(/\s+/g, ' ').trim();
-      
-      // If title is empty after cleaning, use a default
-      if (!cleanTitle) return t('Demo Video');
-      
-      return cleanTitle;
-    };
-
-    const classesWithVideos = computed(() => {
-      const classMap = new Map();
-      
-      props.classes.forEach(classItem => {
-        const classVideos = props.videos.filter(video => 
-          String(video.class_id) === String(classItem.id)
-        );
-        if (classVideos.length > 0) {
-          classMap.set(classItem.id, classItem);
-        }
-      });
-      
-      return Array.from(classMap.values());
-    });
-
-    const filteredVideos = computed(() => {
-      let filtered = [];
-      
-      if (activeCategory.value === 'all') {
-        filtered = props.videos;
-      } else {
-        filtered = props.videos.filter(video => 
-          String(video.class_id) === String(activeCategory.value)
-        );
+// VIDEO PLAYER METHODS
+const getVideoContent = (video) => {
+  if (!video) return null;
+  
+  // Check all possible fields that might contain the URL
+  const possibleFields = [
+    'content',
+    'file_path',
+    'url',
+    'video_url',
+    'link',
+    'source',
+    'video_content',
+    'youtube_url',
+    'resource_url',
+    'videoUrl'
+  ];
+  
+  for (const field of possibleFields) {
+    if (video[field] && typeof video[field] === 'string') {
+      const value = video[field].trim();
+      if (value.startsWith('http')) {
+        return value;
       }
       
-      return filtered.slice(0, videosPerPage.value * currentPage.value);
-    });
-
-    const showLoadMore = computed(() => {
-      let totalVideos = 0;
-      
-      if (activeCategory.value === 'all') {
-        totalVideos = props.videos.length;
-      } else {
-        totalVideos = props.videos.filter(v => 
-          String(v.class_id) === String(activeCategory.value)
-        ).length;
+      // Check if it contains YouTube pattern but missing protocol
+      if ((value.includes('youtube.com') || value.includes('youtu.be')) && !value.startsWith('http')) {
+        return 'https://' + value.replace(/^\/\//, '');
       }
-      
-      return filteredVideos.value.length < totalVideos;
-    });
+    }
+  }
+  
+  return null;
+};
 
-    // VIDEO PLAYER METHODS
-    const getVideoContent = (video) => {
-      if (!video) return null;
-      
-      // Check all possible fields that might contain the URL
-      const possibleFields = [
-        'content',
-        'file_path',
-        'url',
-        'video_url',
-        'link',
-        'source',
-        'video_content',
-        'youtube_url',
-        'resource_url',
-        'videoUrl'
-      ];
-      
-      for (const field of possibleFields) {
-        if (video[field] && typeof video[field] === 'string') {
-          const value = video[field].trim();
-          if (value.startsWith('http')) {
-            return value;
-          }
-          
-          // Check if it contains YouTube pattern but missing protocol
-          if ((value.includes('youtube.com') || value.includes('youtu.be')) && !value.startsWith('http')) {
-            return 'https://' + value.replace(/^\/\//, '');
-          }
-        }
-      }
-      
-      return null;
-    };
+const isYouTubeUrl = (url) => {
+  if (!url || typeof url !== 'string') return false;
+  
+  const cleanUrl = url.trim();
+  const youtubePatterns = [
+    /youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/,
+    /youtu\.be\/([a-zA-Z0-9_-]+)/,
+    /youtube\.com\/embed\/([a-zA-Z0-9_-]+)/,
+    /youtube\.com\/v\/([a-zA-Z0-9_-]+)/,
+    /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]+)/,
+    /youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/,
+    /youtube\.com\/live\/([a-zA-Z0-9_-]+)/
+  ];
+  
+  return youtubePatterns.some(pattern => pattern.test(cleanUrl));
+};
 
-    const isYouTubeUrl = (url) => {
-      if (!url || typeof url !== 'string') return false;
-      
-      const cleanUrl = url.trim();
-      const youtubePatterns = [
-        /youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/,
-        /youtu\.be\/([a-zA-Z0-9_-]+)/,
-        /youtube\.com\/embed\/([a-zA-Z0-9_-]+)/,
-        /youtube\.com\/v\/([a-zA-Z0-9_-]+)/,
-        /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]+)/,
-        /youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/,
-        /youtube\.com\/live\/([a-zA-Z0-9_-]+)/
-      ];
-      
-      return youtubePatterns.some(pattern => pattern.test(cleanUrl));
-    };
+const getYouTubeVideoId = (url) => {
+  if (!url || typeof url !== 'string') return null;
+  
+  const cleanUrl = url.trim();
+  const patterns = [
+    /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
+    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/live\/([a-zA-Z0-9_-]{11})/
+  ];
+  
+  for (const pattern of patterns) {
+    const match = cleanUrl.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+  
+  return null;
+};
 
-    const getYouTubeVideoId = (url) => {
-      if (!url || typeof url !== 'string') return null;
-      
-      const cleanUrl = url.trim();
-      const patterns = [
-        /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
-        /youtu\.be\/([a-zA-Z0-9_-]{11})/,
-        /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
-        /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/,
-        /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/,
-        /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
-        /youtube\.com\/live\/([a-zA-Z0-9_-]{11})/
-      ];
-      
-      for (const pattern of patterns) {
-        const match = cleanUrl.match(pattern);
-        if (match && match[1]) {
-          return match[1];
-        }
-      }
-      
-      return null;
-    };
+const generateUltraCleanEmbedUrl = (videoId) => {
+  const params = new URLSearchParams({
+    'autoplay': '1',
+    'rel': '0',
+    'modestbranding': '1',
+    'controls': '0',
+    'showinfo': '0',
+    'iv_load_policy': '3',
+    'fs': '0',
+    'disablekb': '1',
+    'playsinline': '1',
+    'enablejsapi': '1',
+    'origin': window.location.origin,
+    'widget_referrer': window.location.origin,
+    'cc_load_policy': '0',
+    'color': 'white',
+    'hl': 'en',
+    'cc_lang_pref': 'en',
+    'version': '3',
+    'loop': '0',
+    'playlist': videoId,
+    'mute': '0',
+    'start': '0',
+    'end': '0'
+  });
+  
+  return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
+};
 
-    const generateUltraCleanEmbedUrl = (videoId) => {
-      const params = new URLSearchParams({
-        'autoplay': '1',
-        'rel': '0',
-        'modestbranding': '1',
-        'controls': '0',
-        'showinfo': '0',
-        'iv_load_policy': '3',
-        'fs': '0',
-        'disablekb': '1',
-        'playsinline': '1',
-        'enablejsapi': '1',
-        'origin': window.location.origin,
-        'widget_referrer': window.location.origin,
-        'cc_load_policy': '0',
-        'color': 'white',
-        'hl': 'en',
-        'cc_lang_pref': 'en',
-        'version': '3',
-        'loop': '0',
-        'playlist': videoId,
-        'mute': '0',
-        'start': '0',
-        'end': '0'
-      });
+const playVideo = async (video) => {
+  console.log('🎬 [playVideo] Attempting to play video:', video.title);
+  isLoading.value = true;
+  
+  // Create clean video object first
+  const cleanVideo = {
+    ...video,
+    title: getCleanTitle(video.title)
+  };
+  
+  const videoContent = getVideoContent(video);
+  
+  if (!videoContent) {
+    alert(`No video content found for: ${cleanVideo.title}`);
+    isLoading.value = false;
+    return;
+  }
+  
+  if (isYouTubeUrl(videoContent)) {
+    const videoId = getYouTubeVideoId(videoContent);
+    
+    if (videoId) {
+      console.log('✅ Playing YouTube video with ID:', videoId);
       
-      return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
-    };
-
-    const playVideo = async (video) => {
-      console.log('🎬 [playVideo] Attempting to play video:', video.title);
+      // Try to get direct video stream first
+      const directVideoUrl = await getDirectVideoStream(videoId);
       
-      // Create clean video object first
-      const cleanVideo = {
-        ...video,
-        title: getCleanTitle(video.title)
-      };
-      
-      const videoContent = getVideoContent(video);
-      
-      if (!videoContent) {
-        alert(`No video content found for: ${cleanVideo.title}`);
-        return;
-      }
-      
-      if (isYouTubeUrl(videoContent)) {
-        const videoId = getYouTubeVideoId(videoContent);
-        
-        if (videoId) {
-          console.log('✅ Playing YouTube video with ID:', videoId);
-          
-          // Try to get direct video stream first
-          const directVideoUrl = await getDirectVideoStream(videoId);
-          
-          if (directVideoUrl) {
-            console.log('🎯 Using direct video stream');
-            currentVideo.value = {
-              ...cleanVideo,
-              directVideoUrl: directVideoUrl,
-              videoId: videoId,
-              thumbnail: getVideoThumbnail(video),
-              isDirectStream: true
-            };
-          } else {
-            console.log('🔄 Using ultra-clean embed as fallback');
-            currentVideo.value = {
-              ...cleanVideo,
-              ultraCleanUrl: generateUltraCleanEmbedUrl(videoId),
-              videoId: videoId,
-              originalUrl: videoContent,
-              isEmbed: true
-            };
-          }
-          
-        } else {
-          alert('Could not extract YouTube video ID from the URL.');
-          return;
-        }
-      } else {
-        // Handle non-YouTube URLs (direct video files)
-        console.log('🎯 Using direct video file');
+      if (directVideoUrl) {
+        console.log('🎯 Using direct video stream');
         currentVideo.value = {
           ...cleanVideo,
-          directVideoUrl: videoContent,
-          isDirectVideo: true
+          directVideoUrl: directVideoUrl,
+          videoId: videoId,
+          thumbnail: getVideoThumbnail(video),
+          isDirectStream: true
+        };
+      } else {
+        console.log('🔄 Using ultra-clean embed as fallback');
+        currentVideo.value = {
+          ...cleanVideo,
+          ultraCleanUrl: generateUltraCleanEmbedUrl(videoId),
+          videoId: videoId,
+          originalUrl: videoContent,
+          isEmbed: true
         };
       }
       
-      showVideoPlayer.value = true;
-      document.body.style.overflow = 'hidden';
-    };
-
-    const closeVideoPlayer = () => {
-      // Stop video if playing
-      if (videoPlayer.value && videoPlayer.value.pause) {
-        videoPlayer.value.pause();
-        videoPlayer.value.currentTime = 0;
-      }
-      
-      showVideoPlayer.value = false;
-      currentVideo.value = null;
-      document.body.style.overflow = 'auto';
-    };
-
-    const openInNewTab = (url) => {
-      window.open(url, '_blank', 'noopener,noreferrer');
-    };
-
-    const getDirectVideoStream = async (videoId) => {
-      try {
-        console.log('🔍 Getting direct video stream for:', videoId);
-        
-        // Method 1: Try our new backend API first
-        try {
-          const response = await fetch(`/api/youtube-direct-stream?videoId=${videoId}`);
-          const data = await response.json();
-          
-          if (data.success && data.directUrl) {
-            console.log('✅ Got direct video stream from API:', data.directUrl);
-            return data.directUrl;
-          }
-        } catch (apiError) {
-          console.log('❌ API method failed, trying proxy...');
-        }
-        
-        // Method 2: Use our proxy as fallback
-        const proxyUrl = `/api/video-proxy/${videoId}`;
-        console.log('🔄 Using proxy URL:', proxyUrl);
-        
-        // Test if proxy URL is accessible
-        try {
-          const testResponse = await fetch(proxyUrl, { method: 'HEAD' });
-          if (testResponse.ok) {
-            console.log('✅ Proxy URL is accessible');
-            return proxyUrl;
-          }
-        } catch (proxyError) {
-          console.log('❌ Proxy URL not accessible');
-        }
-        
-        // Method 3: Fallback to ultra-clean embed
-        console.log('🔄 Falling back to ultra-clean embed');
-        return null;
-        
-      } catch (error) {
-        console.error('❌ Error getting direct video stream:', error);
-        return null;
-      }
-    };
-
-    // EXISTING METHODS
-    const getInstructorTitle = (instructor) => {
-      if (instructor.education_qualification) {
-        const qual = instructor.education_qualification;
-        const titles = {
-          'en': {
-            'PhD': 'PhD Specialist',
-            'MA': 'Master Educator',
-            'MSC': 'Science Expert',
-            'BA': 'Bachelor Educator',
-            'BSC': 'Science Teacher',
-            'HSC': 'Certified Teacher',
-            'Other': 'Professional Instructor'
-          },
-          'bn': {
-            'PhD': 'পিএইচডি বিশেষজ্ঞ',
-            'MA': 'মাস্টার শিক্ষক',
-            'MSC': 'বিজ্ঞান বিশেষজ্ঞ',
-            'BA': 'ব্যাচেলর শিক্ষক',
-            'BSC': 'বিজ্ঞান শিক্ষক',
-            'HSC': 'সার্টিফাইড শিক্ষক',
-            'Other': 'পেশাদার ইন্সট্রাক্টর'
-          }
-        };
-        return titles[currentLanguage.value]?.[qual] || `${qual} ${t('Certified')}`;
-      }
-      return t('Professional Instructor');
-    };
-
-    const getClassName = (classId) => {
-      if (!classId) return t('General Education');
-      const classItem = props.classes.find(c => String(c.id) === String(classId));
-      return classItem ? classItem.name : t('General Education');
-    };
-
-    const getVideoThumbnail = (video) => {
-      if (video.thumbnail && video.thumbnail !== '/images/default-video-thumbnail.jpg') {
-        return video.thumbnail;
-      }
-      
-      const videoContent = getVideoContent(video);
-      if (videoContent && isYouTubeUrl(videoContent)) {
-        const videoId = getYouTubeVideoId(videoContent);
-        if (videoId) {
-          return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-        }
-      }
-      
-      return '/assets/img/courses/video_thumb01.jpg';
-    };
-
-    const getEmbedUrl = (video) => {
-      if (video.youtube_embed_url) {
-        return video.youtube_embed_url;
-      }
-      
-      const videoContent = getVideoContent(video);
-      if (videoContent && isYouTubeUrl(videoContent)) {
-        const videoId = getYouTubeVideoId(videoContent);
-        if (videoId) {
-          return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
-        }
-      }
-      
-      return video.videoUrl || '';
-    };
-
-    const getVideosByClass = (classId) => {
-      const allVideos = props.videos.filter(video => 
-        String(video.class_id) === String(classId)
-      );
-      
-      const firstClass = classesWithVideos.value[0];
-      if (firstClass && String(classId) === String(firstClass.id) && introVideo.value) {
-        return allVideos.filter(video => video.id !== introVideo.value.id);
-      }
-      
-      return allVideos;
-    };
-
-    const formatDate = (dateString) => {
-      if (!dateString) return 'N/A';
-      try {
-        const options = {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric'
-        };
-        
-        if (currentLanguage.value === 'bn') {
-          return new Date(dateString).toLocaleDateString('bn-BD', options);
-        }
-        
-        return new Date(dateString).toLocaleDateString('en-US', options);
-      } catch (error) {
-        return t('Invalid Date');
-      }
-    };
-
-    const setActiveCategory = (categoryId) => {
-      activeCategory.value = categoryId;
-      currentPage.value = 1;
-    };
-
-    const loadMoreVideos = () => {
-      currentPage.value++;
-    };
-
-    const handleImageError = (event) => {
-      event.target.src = '/assets/img/instructor/instructor01.png';
-    };
-
-    const handleVideoThumbnailError = (event) => {
-      event.target.src = '/assets/img/courses/video_thumb01.jpg';
-    };
-
-    return {
-      selectedVideo,
-      currentVideo,
-      showVideoPlayer,
-      videoPlayer,
-      activeCategory,
-      uniqueClasses,
-      introVideo,
-      classesWithVideos,
-      filteredVideos,
-      showLoadMore,
-      currentLanguage,
-      currentTheme,
-      t,
-      playVideo,
-      closeVideoPlayer,
-      openInNewTab,
-      getVideoContent,
-      isYouTubeUrl,
-      playVideo,
-      closeVideoPlayer,
-      openInNewTab,
-      getCleanTitle,
-      getInstructorTitle,
-      getClassName,
-      getVideoThumbnail,
-      getEmbedUrl,
-      getVideosByClass,
-      formatDate,
-      setActiveCategory,
-      loadMoreVideos,
-      handleImageError,
-      handleVideoThumbnailError,
-      getCleanTitle
+    } else {
+      alert('Could not extract YouTube video ID from the URL.');
+      isLoading.value = false;
+      return;
+    }
+  } else {
+    // Handle non-YouTube URLs (direct video files)
+    console.log('🎯 Using direct video file');
+    currentVideo.value = {
+      ...cleanVideo,
+      directVideoUrl: videoContent,
+      isDirectVideo: true
     };
   }
-}
+  
+  showVideoPlayer.value = true;
+  document.body.style.overflow = 'hidden';
+  isLoading.value = false;
+};
+
+const closeVideoPlayer = () => {
+  // Stop video if playing
+  if (videoPlayer.value && videoPlayer.value.pause) {
+    videoPlayer.value.pause();
+    videoPlayer.value.currentTime = 0;
+  }
+  
+  showVideoPlayer.value = false;
+  currentVideo.value = null;
+  isPlaying.value = false;
+  isLoading.value = false;
+  document.body.style.overflow = 'auto';
+};
+
+const playPauseVideo = () => {
+  if (videoPlayer.value) {
+    if (videoPlayer.value.paused) {
+      videoPlayer.value.play();
+      isPlaying.value = true;
+    } else {
+      videoPlayer.value.pause();
+      isPlaying.value = false;
+    }
+  }
+};
+
+const handleIframeLoad = () => {
+  isLoading.value = false;
+  console.log('✅ YouTube iframe loaded successfully');
+};
+
+const openInNewTab = (url) => {
+  window.open(url, '_blank', 'noopener,noreferrer');
+};
+
+const getDirectVideoStream = async (videoId) => {
+  try {
+    console.log('🔍 Getting direct video stream for:', videoId);
+    
+    // Method 1: Try our new backend API first
+    try {
+      const response = await fetch(`/api/youtube-direct-stream?videoId=${videoId}`);
+      const data = await response.json();
+      
+      if (data.success && data.directUrl) {
+        console.log('✅ Got direct video stream from API:', data.directUrl);
+        return data.directUrl;
+      }
+    } catch (apiError) {
+      console.log('❌ API method failed, trying proxy...');
+    }
+    
+    // Method 2: Use our proxy as fallback
+    const proxyUrl = `/api/video-proxy/${videoId}`;
+    console.log('🔄 Using proxy URL:', proxyUrl);
+    
+    // Test if proxy URL is accessible
+    try {
+      const testResponse = await fetch(proxyUrl, { method: 'HEAD' });
+      if (testResponse.ok) {
+        console.log('✅ Proxy URL is accessible');
+        return proxyUrl;
+      }
+    } catch (proxyError) {
+      console.log('❌ Proxy URL not accessible');
+    }
+    
+    // Method 3: Fallback to ultra-clean embed
+    console.log('🔄 Falling back to ultra-clean embed');
+    return null;
+    
+  } catch (error) {
+    console.error('❌ Error getting direct video stream:', error);
+    return null;
+  }
+};
+
+// EXISTING METHODS
+const getInstructorTitle = (instructor) => {
+  if (instructor.education_qualification) {
+    const qual = instructor.education_qualification;
+    const titles = {
+      'en': {
+        'PhD': 'PhD Specialist',
+        'MA': 'Master Educator',
+        'MSC': 'Science Expert',
+        'BA': 'Bachelor Educator',
+        'BSC': 'Science Teacher',
+        'HSC': 'Certified Teacher',
+        'Other': 'Professional Instructor'
+      },
+      'bn': {
+        'PhD': 'পিএইচডি বিশেষজ্ঞ',
+        'MA': 'মাস্টার শিক্ষক',
+        'MSC': 'বিজ্ঞান বিশেষজ্ঞ',
+        'BA': 'ব্যাচেলর শিক্ষক',
+        'BSC': 'বিজ্ঞান শিক্ষক',
+        'HSC': 'সার্টিফাইড শিক্ষক',
+        'Other': 'পেশাদার ইন্সট্রাক্টর'
+      }
+    };
+    return titles[currentLanguage.value]?.[qual] || `${qual} ${t('Certified')}`;
+  }
+  return t('Professional Instructor');
+};
+
+const getClassName = (classId) => {
+  if (!classId) return t('General Education');
+  const classItem = props.classes.find(c => String(c.id) === String(classId));
+  return classItem ? classItem.name : t('General Education');
+};
+
+const getVideoThumbnail = (video) => {
+  if (video.thumbnail && video.thumbnail !== '/images/default-video-thumbnail.jpg') {
+    return video.thumbnail;
+  }
+  
+  const videoContent = getVideoContent(video);
+  if (videoContent && isYouTubeUrl(videoContent)) {
+    const videoId = getYouTubeVideoId(videoContent);
+    if (videoId) {
+      return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+    }
+  }
+  
+  return '/assets/img/courses/video_thumb01.jpg';
+};
+
+const getEmbedUrl = (video) => {
+  if (video.youtube_embed_url) {
+    return video.youtube_embed_url;
+  }
+  
+  const videoContent = getVideoContent(video);
+  if (videoContent && isYouTubeUrl(videoContent)) {
+    const videoId = getYouTubeVideoId(videoContent);
+    if (videoId) {
+      return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
+    }
+  }
+  
+  return video.videoUrl || '';
+};
+
+const getVideosByClass = (classId) => {
+  const allVideos = props.videos.filter(video => 
+    String(video.class_id) === String(classId)
+  );
+  
+  const firstClass = classesWithVideos.value[0];
+  if (firstClass && String(classId) === String(firstClass.id) && introVideo.value) {
+    return allVideos.filter(video => video.id !== introVideo.value.id);
+  }
+  
+  return allVideos;
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  try {
+    const options = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    };
+    
+    if (currentLanguage.value === 'bn') {
+      return new Date(dateString).toLocaleDateString('bn-BD', options);
+    }
+    
+    return new Date(dateString).toLocaleDateString('en-US', options);
+  } catch (error) {
+    return t('Invalid Date');
+  }
+};
+
+const setActiveCategory = (categoryId) => {
+  activeCategory.value = categoryId;
+  currentPage.value = 1;
+};
+
+const loadMoreVideos = () => {
+  currentPage.value++;
+};
+
+const handleImageError = (event) => {
+  event.target.src = '/assets/img/instructor/instructor01.png';
+};
+
+const handleVideoThumbnailError = (event) => {
+  event.target.src = '/assets/img/courses/video_thumb01.jpg';
+};
 </script>
 
 <style scoped>
+/* ==================== */
+/* CRITICAL ICON FIXES */
+/* ==================== */
+
+/* Force Font Awesome icons to always display properly */
+.fas, .fab, .far {
+  display: inline-block !important;
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900 !important;
+  font-style: normal !important;
+  font-variant: normal !important;
+  text-rendering: auto !important;
+  line-height: 1 !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+}
+
+/* Ensure icons don't disappear during language changes */
+.fa-star,
+.fa-book-open,
+.fa-users,
+.fa-video,
+.fa-user-graduate,
+.fa-language,
+.fa-clock,
+.fa-envelope,
+.fa-phone,
+.fa-graduation-cap,
+.fa-play,
+.fa-video-slash,
+.fa-filter,
+.fa-info-circle,
+.fa-clock,
+.fa-calendar,
+.fa-book,
+.fa-graduation-cap,
+.fa-users,
+.fa-facebook-f,
+.fa-twitter,
+.fa-instagram,
+.fa-linkedin-in,
+.fa-youtube {
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900 !important;
+}
+
+/* Fix for Font Awesome Brands */
+.fab {
+  font-family: 'Font Awesome 6 Brands' !important;
+  font-weight: 400 !important;
+}
+
+/* Fix for Font Awesome Regular */
+.far {
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 400 !important;
+}
+
+/* ==================== */
+/* VIDEO PLAYER MODAL - CRITICAL Z-INDEX FIXES */
+/* ==================== */
+.video-player-modal {
+  backdrop-filter: blur(8px);
+  z-index: 9999 !important;
+}
+
+/* Modal container with high z-index */
+.video-player-modal > div {
+  z-index: 10000 !important;
+  position: relative;
+}
+
+/* Header - Force above everything */
+.video-player-modal .px-6.py-4.bg-white {
+  z-index: 10010 !important;
+  position: relative;
+}
+
+/* Footer - Force above everything */
+.video-player-modal .px-6.py-4.border-t {
+  z-index: 10010 !important;
+  position: relative;
+}
+
+/* Video container with isolation */
+.video-container {
+  position: relative;
+  width: 100%;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  isolation: isolate; /* Critical: creates new stacking context */
+  z-index: 1 !important;
+}
+
+/* YouTube iframe container with transform to contain z-index */
+.iframe-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  transform: translateZ(0); /* Creates new stacking context */
+  z-index: 1 !important;
+}
+
+/* YouTube iframe - keep it contained */
+.iframe-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  z-index: 1 !important;
+}
+
+/* Protective border overlay - always on top */
+.video-container .absolute.inset-0.border-2 {
+  z-index: 100 !important;
+  pointer-events: none;
+}
+
+/* Loading overlay - above YouTube */
+.video-container .absolute.inset-0.flex {
+  z-index: 50 !important;
+}
+
+/* Error state - above YouTube */
+.video-container .absolute.inset-0.flex.items-center {
+  z-index: 50 !important;
+}
+
+/* Play button overlay for direct videos */
+.video-container .absolute.inset-0.flex.items-center.justify-center {
+  z-index: 20 !important;
+}
+
+/* Close button in header - extra high z-index */
+.video-player-modal button[aria-label="Close video player"] {
+  z-index: 10020 !important;
+  position: relative;
+}
+
+/* Footer buttons - extra high z-index */
+.video-player-modal .bg-white.px-6.py-4 button {
+  z-index: 10020 !important;
+  position: relative;
+}
+
+/* Nuclear option for YouTube iframe containment */
+.youtube-isolation-fix {
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  perspective: 1000;
+  isolation: isolate;
+  z-index: 1 !important;
+}
+
+/* Emergency fallback: scale down YouTube slightly */
+.youtube-scale-fix {
+  transform: scale(0.995);
+  transform-origin: center center;
+}
+
 /* ==================== */
 /* MAIN LAYOUT */
 /* ==================== */
@@ -1748,190 +1843,6 @@ export default {
 }
 
 /* ==================== */
-/* VIDEO MODAL */
-/* ==================== */
-.video-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.9);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  padding: 20px;
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.modal-content {
-  position: relative;
-  background: var(--card-bg);
-  border-radius: 15px;
-  max-width: 1000px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-  animation: slideUp 0.3s ease;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  border: 1px solid var(--border-color);
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.close-modal {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  width: 40px;
-  height: 40px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 10;
-  transition: all 0.3s ease;
-  font-size: 18px;
-  backdrop-filter: blur(10px);
-}
-
-.close-modal:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.5);
-  transform: scale(1.1);
-}
-
-.video-container {
-  position: relative;
-  width: 100%;
-  padding-bottom: 56.25%; /* 16:9 aspect ratio */
-  height: 0;
-  background: #000000;
-  border-radius: 15px 15px 0 0;
-}
-
-.video-container iframe {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: 15px 15px 0 0;
-  border: none;
-}
-
-.video-info {
-  padding: 30px;
-  background: var(--card-bg);
-  color: var(--text-primary);
-  transition: all 0.3s ease;
-}
-
-.video-info h4 {
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 15px;
-  line-height: 1.3;
-  transition: color 0.3s ease;
-}
-
-.video-info p {
-  color: var(--text-muted);
-  line-height: 1.6;
-  margin-bottom: 20px;
-  font-size: 15px;
-  transition: color 0.3s ease;
-}
-
-.video-meta-modal {
-  display: flex;
-  gap: 25px;
-  font-size: 14px;
-  color: var(--text-muted);
-  margin-bottom: 25px;
-  flex-wrap: wrap;
-  transition: color 0.3s ease;
-}
-
-.video-meta-modal span {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.video-class-modal {
-  background: var(--bg-tertiary);
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  color: var(--text-primary);
-  transition: all 0.3s ease;
-}
-
-.video-actions {
-  display: flex;
-  gap: 15px;
-  flex-wrap: wrap;
-}
-
-.btn-outline {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: transparent;
-  border: 2px solid #ff0000;
-  color: #ff0000;
-  text-decoration: none;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  font-size: 14px;
-}
-
-.btn-outline:hover {
-  background: #ff0000;
-  color: #ffffff;
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(255, 0, 0, 0.3);
-}
-
-.no-video-available {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: var(--text-muted);
-  padding: 40px;
-  transition: color 0.3s ease;
-}
-
-/* ==================== */
 /* BUTTON STYLES */
 /* ==================== */
 .btn {
@@ -1985,6 +1896,8 @@ export default {
 .py-8 { padding-top: 2rem; padding-bottom: 2rem; }
 .mb-4 { margin-bottom: 1rem; }
 .mt-5 { margin-top: 1.25rem; }
+
+.text-center { text-align: center; }
 
 /* ==================== */
 /* LANGUAGE SUPPORT */
@@ -2106,11 +2019,7 @@ export default {
     gap: 10px;
   }
   
-  .modal-content {
-    margin: 10px;
-  }
-  
-  .video-modal {
+  .video-player-modal {
     padding: 10px;
   }
   
@@ -2260,5 +2169,109 @@ export default {
   .slideUp {
     animation: none;
   }
+}
+
+/* ==================== */
+/* LOADING ANIMATION */
+/* ==================== */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==================== */
+/* VIDEO OVERLAY STYLES */
+/* ==================== */
+.video-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.intro-video-card:hover .video-overlay {
+  opacity: 1;
+}
+
+.play-button {
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+  font-size: 20px;
+  transition: all 0.3s ease;
+}
+
+.intro-video-card:hover .play-button {
+  background: #ffffff;
+  transform: scale(1.1);
+}
+
+.video-duration {
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #ffffff;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.video-badge {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: var(--error-color);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.video-stats-simple,
+.video-meta-simple {
+  display: flex;
+  gap: 15px;
+  font-size: 13px;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+
+.video-stats-simple span,
+.video-meta-simple span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.video-class,
+.video-class-simple {
+  background: var(--bg-tertiary);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--text-primary);
 }
 </style>
