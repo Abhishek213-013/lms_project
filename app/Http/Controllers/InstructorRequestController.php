@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
@@ -25,7 +26,7 @@ class InstructorRequestController extends Controller
             ->select([
                 'id', 'name', 'username', 'email', 'dob',
                 'education_qualification', 'institute', 'experience',
-                'created_at' // Removed 'bio' since it doesn't exist
+                'created_at'
             ])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -33,23 +34,27 @@ class InstructorRequestController extends Controller
         return Inertia::render('Admin/InstructorRequests/Pending', [
             'user' => Auth::user(),
             'pendingRequests' => $pendingRequests,
-            'stats' => [
-                'total_pending' => $pendingRequests->count(),
-                'approved_today' => User::where('role', 'teacher')
-                    ->where('status', 'active')
-                    ->whereDate('updated_at', today())
-                    ->count(),
-                'total_teachers' => User::where('role', 'teacher')
-                    ->where('status', 'active')
-                    ->count(),
-            ]
+            'stats' => $this->getRequestStatsData()
         ]);
+    }
+
+    /**
+     * Get request statistics data
+     */
+    private function getRequestStatsData(): array
+    {
+        return [
+            'pending' => User::where('role', 'teacher')->where('status', 'pending')->count(),
+            'approved' => User::where('role', 'teacher')->where('status', 'active')->count(),
+            'rejected' => User::where('role', 'teacher')->where('status', 'rejected')->count(),
+            'total_requests' => User::where('role', 'teacher')->count(),
+        ];
     }
 
     /**
      * Submit instructor request (from frontend)
      */
-    public function submitRequest(Request $request)
+    public function submitRequest(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
@@ -85,7 +90,7 @@ class InstructorRequestController extends Controller
                 'experience' => $request->experience,
                 'password' => Hash::make($request->password),
                 'role' => 'teacher',
-                'status' => 'pending', // Set status to pending for approval
+                'status' => 'pending',
             ]);
 
             DB::commit();
@@ -105,7 +110,7 @@ class InstructorRequestController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to submit application. Please try again.',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
             ], 500);
         }
     }
@@ -113,7 +118,7 @@ class InstructorRequestController extends Controller
     /**
      * Approve instructor request
      */
-    public function approveRequest($id)
+    public function approveRequest($id): JsonResponse
     {
         try {
             $user = User::where('role', 'teacher')
@@ -122,7 +127,7 @@ class InstructorRequestController extends Controller
 
             $user->update([
                 'status' => 'active',
-                'email_verified_at' => now(), // Auto-verify email upon approval
+                'email_verified_at' => now(),
             ]);
 
             Log::info("Instructor request approved: {$user->name} ({$user->email})");
@@ -144,7 +149,7 @@ class InstructorRequestController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to approve instructor request',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
             ], 500);
         }
     }
@@ -152,7 +157,7 @@ class InstructorRequestController extends Controller
     /**
      * Reject instructor request
      */
-    public function rejectRequest(Request $request, $id)
+    public function rejectRequest(Request $request, $id): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'rejection_reason' => 'required|string|max:1000'
@@ -195,7 +200,7 @@ class InstructorRequestController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to reject instructor request',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
             ], 500);
         }
     }
@@ -203,7 +208,7 @@ class InstructorRequestController extends Controller
     /**
      * Get all pending requests for API
      */
-    public function getPendingRequests()
+    public function getPendingRequests(): JsonResponse
     {
         try {
             $requests = User::where('role', 'teacher')
@@ -211,7 +216,7 @@ class InstructorRequestController extends Controller
                 ->select([
                     'id', 'name', 'username', 'email', 'dob',
                     'education_qualification', 'institute', 'experience',
-                    'created_at' // Removed 'bio'
+                    'created_at'
                 ])
                 ->orderBy('created_at', 'desc')
                 ->get();
@@ -228,7 +233,7 @@ class InstructorRequestController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch pending requests',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
             ], 500);
         }
     }
@@ -236,19 +241,12 @@ class InstructorRequestController extends Controller
     /**
      * Get request statistics
      */
-    public function getRequestStats()
+    public function getRequestStats(): JsonResponse
     {
         try {
-            $stats = [
-                'pending' => User::where('role', 'teacher')->where('status', 'pending')->count(),
-                'approved' => User::where('role', 'teacher')->where('status', 'active')->count(),
-                'rejected' => User::where('role', 'teacher')->where('status', 'rejected')->count(),
-                'total_requests' => User::where('role', 'teacher')->count(),
-            ];
-
             return response()->json([
                 'success' => true,
-                'data' => $stats
+                'data' => $this->getRequestStatsData()
             ]);
 
         } catch (\Exception $e) {
@@ -257,7 +255,7 @@ class InstructorRequestController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch request statistics',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
             ], 500);
         }
     }

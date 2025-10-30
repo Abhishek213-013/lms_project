@@ -41,6 +41,10 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/registration', [AuthController::class, 'showRegistration'])->name('registration');
 Route::post('/register', [AuthController::class, 'register'])->name('register');
 
+// TEACHER REGISTRATION ROUTES - ADDED HERE
+Route::get('/teacher-registration', [AuthController::class, 'showTeacherRegistration'])->name('teacher.registration');
+Route::post('/teacher-registration', [AuthController::class, 'teacherRegister'])->name('teacher.registration.post');
+
 Route::get('/student-login', [AuthController::class, 'showStudentLogin'])->name('student.login');
 Route::post('/student-login', [AuthController::class, 'studentLogin'])->name('student.login.post');
 Route::get('/student-registration', [AuthController::class, 'showStudentRegistration'])->name('student.registration');
@@ -111,6 +115,16 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     // ============ STUDENT PROFILE ROUTES ============
+    // NEW: Student profile routes at root level (not under /student prefix)
+    Route::middleware(['role:student'])->group(function () {
+        // New Profile Dropdown Routes - accessible at root level
+        Route::get('/student-profile', [StudentProfileController::class, 'show'])->name('student.profile.new');
+        Route::get('/my-courses', [MyCoursesController::class, 'index'])->name('my-courses.new');
+        Route::get('/learning-progress', [LearningProgressController::class, 'index'])->name('learning-progress.new');
+        Route::get('/settings', [SettingsController::class, 'index'])->name('settings.new');
+    });
+
+    // ============ STUDENT DASHBOARD ROUTES (under /student prefix) ============
     Route::middleware(['role:student'])->prefix('student')->group(function () {
         // Student Dashboard
         Route::get('/', [StudentController::class, 'dashboard'])->name('student.dashboard');
@@ -121,12 +135,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/profile', [StudentController::class, 'profile'])->name('student.profile');
         Route::get('/progress', [StudentController::class, 'progress'])->name('student.progress');
         Route::get('/settings', [StudentController::class, 'settings'])->name('student.settings');
-        
-        // New Profile Dropdown Routes
-        Route::get('/student-profile', [StudentProfileController::class, 'show'])->name('student.profile.new');
-        Route::get('/my-courses-new', [MyCoursesController::class, 'index'])->name('my-courses.new');
-        Route::get('/learning-progress', [LearningProgressController::class, 'index'])->name('learning-progress.new');
-        Route::get('/settings-new', [SettingsController::class, 'index'])->name('settings.new');
     });
 
     // ============ ADMIN & SUPER ADMIN ROUTES ============

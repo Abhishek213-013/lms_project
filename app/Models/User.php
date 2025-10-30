@@ -24,7 +24,7 @@ class User extends Authenticatable
         'password',
         'role',
         'experience',
-        'bio',
+        'bio', // Make sure this is included
         'status',
         'rejection_reason'
     ];

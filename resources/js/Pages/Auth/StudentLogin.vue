@@ -5,9 +5,12 @@
         <div class="col-md-6 col-lg-5">
           <div class="login-card">
             <div class="text-center mb-4">
-              <img src="/assets/img/logo.png" alt="SkillGro" class="logo">
-              <h2 class="mt-3">Student Login</h2>
-              <p class="text-muted">Welcome back to SkillGro</p>
+              <!-- Pathshala LMS Logo -->
+              <div class="logo-container">
+                <img src="/assets/img/pathshala-logo.png" alt="Pathshala LMS" class="logo">
+              </div>
+              <h2 class="mt-4 login-title">Student Login</h2>
+              <p class="text-muted">Welcome back to Pathshala LMS</p>
             </div>
 
             <!-- Error Message -->
@@ -82,7 +85,7 @@
 
             <!-- Registration Link -->
             <div class="text-center mt-4">
-              <p class="mb-0">New to SkillGro?</p>
+              <p class="mb-0">New to Pathshala LMS?</p>
               <a href="/phone-verification" class="btn btn-outline-primary mt-2">
                 Create Student Account
               </a>
@@ -106,6 +109,7 @@
 
 <script setup>
 import { useForm } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
 
 const props = defineProps({
   errors: Object,
@@ -147,8 +151,45 @@ const submit = () => {
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
 }
 
+/* Logo Container */
+.logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
 .logo {
-  max-height: 60px;
+  max-height: 50px;
+  width: auto;
+}
+
+.logo-text {
+  text-align: left;
+}
+
+.logo-main {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #e74c3c;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.logo-subtitle {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #6c757d;
+  margin: 0;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.login-title {
+  color: #2c3e50;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
 }
 
 .form-control {
@@ -174,6 +215,29 @@ const submit = () => {
   font-weight: 600;
 }
 
+.btn-primary {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+}
+
+.btn-outline-primary {
+  border-color: #e74c3c;
+  color: #e74c3c;
+  transition: all 0.3s ease;
+}
+
+.btn-outline-primary:hover {
+  background-color: #e74c3c;
+  border-color: #e74c3c;
+  transform: translateY(-2px);
+}
+
 .alert {
   border-radius: 10px;
   border: none;
@@ -182,6 +246,7 @@ const submit = () => {
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none !important;
 }
 
 .form-control:disabled {
@@ -195,14 +260,58 @@ const submit = () => {
   color: #dc3545;
 }
 
+/* Responsive Design */
+@media (max-width: 768px) {
+  .logo-container {
+    flex-direction: column;
+    text-align: center;
+    gap: 10px;
+  }
+  
+  .logo-text {
+    text-align: center;
+  }
+  
+  .logo-main {
+    font-size: 1.3rem;
+  }
+  
+  .logo-subtitle {
+    font-size: 0.7rem;
+  }
+}
+
 @media (max-width: 576px) {
   .login-card {
     padding: 2rem 1.5rem;
+  }
+  
+  .logo {
+    max-height: 45px;
+  }
+  
+  .logo-main {
+    font-size: 1.2rem;
   }
 }
 
 .spinner-border-sm {
   width: 1rem;
   height: 1rem;
+}
+
+/* Text link styling */
+.text-decoration-none {
+  color: #e74c3c;
+  transition: color 0.3s ease;
+}
+
+.text-decoration-none:hover {
+  color: #c0392b;
+}
+
+/* Border top for admin/teacher section */
+.border-top {
+  border-top: 1px solid #e9ecef !important;
 }
 </style>

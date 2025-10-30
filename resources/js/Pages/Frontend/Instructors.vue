@@ -78,7 +78,7 @@
             </div>
           </div>
 
-          <!-- Instructors Grid -->
+          <!-- Instructors Grid - UPDATED TO MATCH HOME PAGE -->
           <div v-else class="row">
             <div class="col-12">
               <div class="instructors-header mb-4">
@@ -89,92 +89,82 @@
               </div>
             </div>
 
+            <!-- UPDATED: Instructor Cards with Full Profile Image Layout (Same as Home Page) -->
             <div class="col-xl-3 col-lg-4 col-md-6" v-for="instructor in displayedInstructors" :key="instructor.id">
-              <div class="instructor-card">
-                <!-- Profile Image Container -->
-                <div class="profile-image-container">
-                  <div class="profile-image-wrapper">
+              <div class="instructor-card-new">
+                <!-- Profile Header with Full Image - UPDATED FOR FULL-SIZE WITH PADDING -->
+                <div class="profile-header-full">
+                  <div class="profile-image-full-container">
                     <img 
                       :src="getInstructorAvatar(instructor)" 
                       :alt="instructor.name"
-                      class="profile-image"
+                      class="profile-image-full"
                       @error="handleImageError"
                     >
-                    <div class="profile-overlay">
-                      <div class="profile-actions">
-                        <button class="btn-quick-view" :title="t('Quick View')">
-                          <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="btn-favorite" :title="t('Add to Favorite')">
-                          <i class="fas fa-heart"></i>
-                        </button>
+                    <div class="profile-overlay-full">
+                      <div class="profile-info-overlay">
+                        <h3 class="instructor-name-overlay">{{ instructor.name }}</h3>
+                        <p class="instructor-title-overlay">{{ getExpertise(instructor) }}</p>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <!-- Profile Content -->
-                <div class="profile-content">
-                  <!-- Name and Title -->
-                  <div class="profile-header">
-                    <h3 class="instructor-name">{{ instructor.name }}</h3>
-                    <p class="instructor-title">{{ getExpertise(instructor) }}</p>
+                <!-- Education Section -->
+                <div class="education-section-new">
+                  <div class="section-header">
+                    <i class="fas fa-graduation-cap icon-fixed"></i>
+                    <span class="section-title-small">{{ t('Education') }}</span>
                   </div>
+                  <p class="education-text-new line-clamp-2">{{ getEducation(instructor) }}</p>
+                </div>
 
-                  <!-- Education -->
-                  <div class="profile-education">
-                    <div class="education-icon">
-                      <i class="fas fa-graduation-cap"></i>
-                    </div>
-                    <div class="education-info">
-                      <span class="education-label">{{ t('Education') }}</span>
-                      <p class="education-text">{{ getEducation(instructor) }}</p>
-                    </div>
+                <!-- Stats Section -->
+                <div class="stats-section-new">
+                  <div class="section-header">
+                    <i class="fas fa-chart-bar icon-fixed"></i>
+                    <span class="section-title-small">{{ t('Stats') }}</span>
                   </div>
-
-                  <!-- Stats -->
-                  <div class="profile-stats">
-                    <div class="stats-grid">
-                      <div class="stat-item">
-                        <div class="stat-icon">
-                          <i class="fas fa-book-open"></i>
-                        </div>
-                        <div class="stat-info">
-                          <div class="stat-number">{{ instructor.courses_count || 0 }}</div>
-                          <div class="stat-label">{{ t('Courses') }}</div>
-                        </div>
+                  <div class="stats-grid-new">
+                    <div class="stat-item-new">
+                      <div class="stat-icon-new">
+                        <i class="fas fa-book-open icon-fixed"></i>
                       </div>
-                      <div class="stat-item">
-                        <div class="stat-icon">
-                          <i class="fas fa-users"></i>
-                        </div>
-                        <div class="stat-info">
-                          <div class="stat-number">{{ instructor.students_count || 0 }}</div>
-                          <div class="stat-label">{{ t('Students') }}</div>
-                        </div>
+                      <div class="stat-info-new">
+                        <div class="stat-number-new">{{ instructor.courses_count || 0 }}</div>
+                        <div class="stat-label-new">{{ t('Courses') }}</div>
                       </div>
-                      <div class="stat-item">
-                        <div class="stat-icon">
-                          <i class="fas fa-star"></i>
-                        </div>
-                        <div class="stat-info">
-                          <div class="stat-number">{{ instructor.rating || '4.8' }}</div>
-                          <div class="stat-label">{{ t('Rating') }}</div>
-                        </div>
+                    </div>
+                    <div class="stat-item-new">
+                      <div class="stat-icon-new">
+                        <i class="fas fa-users icon-fixed"></i>
+                      </div>
+                      <div class="stat-info-new">
+                        <div class="stat-number-new">{{ instructor.students_count || 0 }}</div>
+                        <div class="stat-label-new">{{ t('Students') }}</div>
+                      </div>
+                    </div>
+                    <div class="stat-item-new">
+                      <div class="stat-icon-new">
+                        <i class="fas fa-star icon-fixed"></i>
+                      </div>
+                      <div class="stat-info-new">
+                        <div class="stat-number-new">{{ instructor.rating || '4.8' }}</div>
+                        <div class="stat-label-new">{{ t('Rating') }}</div>
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  <!-- Action Buttons -->
-                  <div class="profile-actions-footer">
-                    <Link :href="`/instructor/${instructor.id}`" class="btn-view-profile">
-                      <i class="fas fa-user-circle"></i>
-                      {{ t('View Profile') }}
-                    </Link>
-                    <button class="btn-contact" :title="t('Contact Instructor')">
-                      <i class="fas fa-envelope"></i>
-                    </button>
-                  </div>
+                <!-- Action Buttons -->
+                <div class="profile-actions-footer-new">
+                  <Link :href="`/instructor/${instructor.id}`" class="btn-view-profile-new">
+                    <i class="fas fa-user-circle icon-fixed"></i>
+                    {{ t('View Profile') }}
+                  </Link>
+                  <button class="btn-contact-new" :title="t('Contact Instructor')">
+                    <i class="fas fa-envelope icon-fixed"></i>
+                  </button>
                 </div>
               </div>
             </div>
@@ -237,6 +227,198 @@
         </div>
       </section>
       <!-- cta-area-end -->
+
+      <!-- Instructor Application Modal -->
+      <div v-if="showInstructorModal" class="modal-overlay" @click="showInstructorModal = false">
+        <div class="modal-content" @click.stop>
+          <div class="modal-header">
+            <h3>{{ t('Become an Instructor') }}</h3>
+            <button class="modal-close" @click="showInstructorModal = false">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          
+          <div class="modal-body">
+            <form @submit.prevent="submitInstructorApplication" class="instructor-form">
+              <!-- Personal Information -->
+              <div class="form-section">
+                <h4>{{ t('Personal Information') }}</h4>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label for="name">{{ t('Full Name') }} *</label>
+                    <input 
+                      type="text" 
+                      id="name"
+                      v-model="instructorForm.name"
+                      :placeholder="t('Enter your full name')"
+                      required
+                    >
+                  </div>
+                  
+                  <div class="form-group">
+                    <label for="username">{{ t('Username') }} *</label>
+                    <input 
+                      type="text" 
+                      id="username"
+                      v-model="instructorForm.username"
+                      :placeholder="t('Choose a username')"
+                      required
+                    >
+                  </div>
+                  
+                  <div class="form-group">
+                    <label for="email">{{ t('Email Address') }} *</label>
+                    <input 
+                      type="email" 
+                      id="email"
+                      v-model="instructorForm.email"
+                      :placeholder="t('Enter your email')"
+                      required
+                    >
+                  </div>
+                  
+                  <div class="form-group">
+                    <label for="dob">{{ t('Date of Birth') }} *</label>
+                    <input 
+                      type="date" 
+                      id="dob"
+                      v-model="instructorForm.dob"
+                      required
+                      :max="maxDate"
+                    >
+                    <small class="form-help">{{ t('You must be at least 18 years old') }}</small>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Educational Background -->
+              <div class="form-section">
+                <h4>{{ t('Educational Background') }}</h4>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label for="education_qualification">{{ t('Highest Qualification') }} *</label>
+                    <select 
+                      id="education_qualification"
+                      v-model="instructorForm.education_qualification"
+                      required
+                    >
+                      <option value="">{{ t('Select Qualification') }}</option>
+                      <option value="HSC">{{ t('Higher Secondary Certificate') }}</option>
+                      <option value="BSC">{{ t('Bachelor of Science') }}</option>
+                      <option value="BA">{{ t('Bachelor of Arts') }}</option>
+                      <option value="MA">{{ t('Master of Arts') }}</option>
+                      <option value="MSC">{{ t('Master of Science') }}</option>
+                      <option value="PhD">{{ t('Doctor of Philosophy') }}</option>
+                      <option value="Other">{{ t('Other Qualification') }}</option>
+                    </select>
+                  </div>
+                  
+                  <div class="form-group">
+                    <label for="institute">{{ t('Institute') }} *</label>
+                    <input 
+                      type="text" 
+                      id="institute"
+                      v-model="instructorForm.institute"
+                      :placeholder="t('Your university or institution')"
+                      required
+                    >
+                  </div>
+                </div>
+                
+                <div class="form-group">
+                  <label for="experience">{{ t('Teaching Experience') }}</label>
+                  <textarea 
+                    id="experience"
+                    v-model="instructorForm.experience"
+                    :placeholder="t('Describe your teaching experience, if any...')"
+                    rows="3"
+                  ></textarea>
+                </div>
+              </div>
+
+              <!-- Account Security -->
+              <div class="form-section">
+                <h4>{{ t('Account Security') }}</h4>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label for="password">{{ t('Password') }} *</label>
+                    <input 
+                      type="password" 
+                      id="password"
+                      v-model="instructorForm.password"
+                      :placeholder="t('Create a strong password')"
+                      required
+                      minlength="8"
+                    >
+                  </div>
+                  
+                  <div class="form-group">
+                    <label for="password_confirmation">{{ t('Confirm Password') }} *</label>
+                    <input 
+                      type="password" 
+                      id="password_confirmation"
+                      v-model="instructorForm.password_confirmation"
+                      :placeholder="t('Confirm your password')"
+                      required
+                    >
+                  </div>
+                </div>
+              </div>
+
+              <!-- Terms and Conditions -->
+              <div class="form-section">
+                <div class="form-group checkbox-group">
+                  <input 
+                    type="checkbox" 
+                    id="terms"
+                    v-model="instructorForm.agree_terms"
+                    required
+                  >
+                  <label for="terms">
+                    {{ t('I agree to the') }} 
+                    <a href="/terms" target="_blank" class="link">{{ t('Terms and Conditions') }}</a>
+                    {{ t('and') }}
+                    <a href="/privacy" target="_blank" class="link">{{ t('Privacy Policy') }}</a>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Form Actions -->
+              <div class="form-actions">
+                <button 
+                  type="button" 
+                  class="btn btn-cancel" 
+                  @click="showInstructorModal = false"
+                >
+                  {{ t('Cancel') }}
+                </button>
+                <button 
+                  type="submit" 
+                  class="btn btn-submit"
+                  :disabled="submitting"
+                >
+                  <span v-if="submitting" class="loading-spinner"></span>
+                  {{ submitting ? t('Submitting...') : t('Submit Application') }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Success Modal -->
+      <div v-if="showSuccessModal" class="modal-overlay" @click="showSuccessModal = false">
+        <div class="modal-content success-modal" @click.stop>
+          <div class="success-icon">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <h3>{{ t('Application Submitted!') }}</h3>
+          <p>{{ t('Your instructor application has been received and is under review. We will notify you via email once a decision is made.') }}</p>
+          <button class="btn btn-success" @click="showSuccessModal = false">
+            {{ t('Close') }}
+          </button>
+        </div>
+      </div>
     </main>
   </FrontendLayout>
 </template>
@@ -257,6 +439,22 @@ const loadingMore = ref(false);
 const visibleCount = ref(8);
 const itemsPerPage = 8;
 const showInstructorModal = ref(false);
+const showSuccessModal = ref(false);
+const submitting = ref(false);
+
+// Instructor application form
+const instructorForm = ref({
+  name: '',
+  username: '',
+  email: '',
+  dob: '',
+  education_qualification: '',
+  institute: '',
+  experience: '',
+  password: '',
+  password_confirmation: '',
+  agree_terms: false
+});
 
 // Props
 const props = defineProps({
@@ -286,6 +484,13 @@ const iconRenderKey = ref(0);
 // Watch for language changes and force icon re-render
 watch(currentLanguage, () => {
   iconRenderKey.value++;
+});
+
+// Compute max date for date of birth (18 years ago)
+const maxDate = computed(() => {
+  const date = new Date();
+  date.setFullYear(date.getFullYear() - 18);
+  return date.toISOString().split('T')[0];
 });
 
 // Computed properties
@@ -392,6 +597,60 @@ const getEducation = (instructor) => {
     return instructor.education_qualification;
   }
   return t('Teaching Degree');
+};
+
+// Method to submit instructor application
+const submitInstructorApplication = async () => {
+  submitting.value = true;
+  
+  try {
+    const response = await fetch('/api/public/instructor-requests', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      },
+      body: JSON.stringify(instructorForm.value)
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      // Reset form and show success message
+      resetInstructorForm();
+      showInstructorModal.value = false;
+      showSuccessModal.value = true;
+    } else {
+      // Handle validation errors
+      if (data.errors) {
+        const errorMessages = Object.values(data.errors).flat().join('\n');
+        alert('Please fix the following errors:\n' + errorMessages);
+      } else {
+        alert(data.message || 'Failed to submit application. Please try again.');
+      }
+    }
+  } catch (error) {
+    console.error('Error submitting application:', error);
+    alert('Network error. Please check your connection and try again.');
+  } finally {
+    submitting.value = false;
+  }
+};
+
+// Method to reset the form
+const resetInstructorForm = () => {
+  instructorForm.value = {
+    name: '',
+    username: '',
+    email: '',
+    dob: '',
+    education_qualification: '',
+    institute: '',
+    experience: '',
+    password: '',
+    password_confirmation: '',
+    agree_terms: false
+  };
 };
 </script>
 
@@ -527,9 +786,9 @@ const getEducation = (instructor) => {
 }
 
 /* ==================== */
-/* PROFESSIONAL INSTRUCTOR CARD */
+/* UPDATED: INSTRUCTOR CARD WITH FULL PROFILE IMAGE (SAME AS HOME PAGE) */
 /* ==================== */
-.instructor-card {
+.instructor-card-new {
   background: var(--card-bg);
   border-radius: 20px;
   margin-bottom: 30px;
@@ -538,267 +797,216 @@ const getEducation = (instructor) => {
   border: 1px solid var(--border-color);
   overflow: hidden;
   height: 100%;
-  position: relative;
   display: flex;
   flex-direction: column;
+  padding: 0;
 }
 
-.instructor-card:hover {
+.instructor-card-new:hover {
   transform: translateY(-8px);
   box-shadow: var(--shadow-xl);
-  border-color: var(--primary-color);
 }
 
-/* Profile Image Container */
-.profile-image-container {
+/* Profile Header with Full Image - FIXED CROPPING (SAME AS HOME PAGE) */
+.profile-header-full {
   position: relative;
-  padding: 40px 30px 30px;
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
-  text-align: center;
-  transition: all 0.3s ease;
+  height: 200px;
+  overflow: hidden;
   flex-shrink: 0;
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+  padding: 10px; /* Added padding around the image */
 }
 
-.profile-image-wrapper {
-  position: relative;
-  display: inline-block;
-  width: 140px;
-  height: 140px;
-  border-radius: 20px;
-  background: var(--card-bg);
-  padding: 8px;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-  transition: all 0.3s ease;
-}
-
-.instructor-card:hover .profile-image-wrapper {
-  transform: scale(1.05);
-  box-shadow: 0 12px 35px rgba(0,0,0,0.2);
-}
-
-.profile-image {
+.profile-image-full-container {
   width: 100%;
   height: 100%;
-  border-radius: 15px;
-  object-fit: cover;
-  border: 3px solid var(--bg-primary);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 12px; /* Rounded corners for the image container */
+  background: var(--bg-secondary); /* Background color for empty spaces */
+}
+
+/* FIXED: Changed object-fit from 'cover' to 'contain' to prevent head cropping */
+.profile-image-full {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain; /* CHANGED: This prevents head cropping */
   transition: all 0.3s ease;
+  border-radius: 8px;
 }
 
-.instructor-card:hover .profile-image {
-  border-color: var(--primary-color);
+.instructor-card-new:hover .profile-image-full {
+  transform: scale(1.05);
 }
 
-.profile-overlay {
+.profile-overlay-full {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.9) 0%, rgba(var(--secondary-rgb), 0.9) 100%);
-  border-radius: 15px;
-  opacity: 0;
+  background: linear-gradient(to bottom, transparent 40%, rgba(0, 0, 0, 0.8) 100%);
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-end;
+  padding: 20px;
   transition: all 0.3s ease;
+  border-radius: 12px;
 }
 
-.profile-image-wrapper:hover .profile-overlay {
-  opacity: 1;
-}
-
-.profile-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.btn-quick-view,
-.btn-favorite {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: none;
-  background: white;
-  color: var(--primary-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 14px;
-}
-
-.btn-quick-view:hover,
-.btn-favorite:hover {
-  background: var(--primary-color);
-  color: white;
-  transform: scale(1.1);
-}
-
-/* Profile Content */
-.profile-content {
-  padding: 0 25px 25px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Profile Header */
-.profile-header {
+.profile-info-overlay {
+  width: 100%;
   text-align: center;
-  padding: 20px 0;
-  border-bottom: 1px solid var(--border-light);
-  margin-bottom: 20px;
-  flex-shrink: 0;
 }
 
-.instructor-name {
-  font-size: 1.3rem;
+.instructor-name-overlay {
+  font-size: 1.4rem;
   font-weight: 700;
-  color: var(--text-primary);
-  margin: 0 0 8px 0;
+  color: white;
+  margin: 0 0 5px 0;
   line-height: 1.3;
-  transition: color 0.3s ease;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
 
-.instructor-title {
-  font-size: 0.9rem;
+.instructor-title-overlay {
+  font-size: 1rem;
   font-weight: 600;
-  color: var(--primary-color);
+  color: rgba(255, 255, 255, 0.9);
   margin: 0;
   line-height: 1.4;
-  transition: color 0.3s ease;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   word-wrap: break-word;
   overflow-wrap: break-word;
+}
+
+/* Section Headers */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.section-header i {
+  color: var(--primary-color);
+  font-size: 14px;
+  width: 16px;
+  text-align: center;
+}
+
+.section-title-small {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* Education Section */
-.profile-education {
-  display: flex;
-  align-items: flex-start;
-  gap: 15px;
-  padding: 15px;
+.education-section-new {
+  padding: 25px;
   background: var(--bg-secondary);
-  border-radius: 12px;
-  margin-bottom: 20px;
-  transition: background-color 0.3s ease;
+  margin: 0;
+  border-bottom: 1px solid var(--border-light);
   flex-shrink: 0;
 }
 
-.education-icon {
-  width: 40px;
-  height: 40px;
-  background: var(--primary-color);
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 16px;
-  flex-shrink: 0;
-  transition: background-color 0.3s ease;
-}
-
-.education-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.education-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 4px;
-  display: block;
-  transition: color 0.3s ease;
-}
-
-.education-text {
-  font-size: 0.85rem;
+.education-text-new {
+  font-size: 0.9rem;
   color: var(--text-primary);
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.5;
   font-weight: 500;
   transition: color 0.3s ease;
   word-wrap: break-word;
   overflow-wrap: break-word;
   
-  /* Enhanced line-clamp with better browser support */
+  /* Enhanced line-clamp implementation */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   line-clamp: 2;
   box-orient: vertical;
+  max-height: calc(0.9rem * 1.5 * 2);
 }
 
-/* ==================== */
-/* UPDATED STATS SECTION */
-/* ==================== */
-.profile-stats {
-  margin-bottom: 20px;
+/* Stats Section */
+.stats-section-new {
+  padding: 25px;
+  background: var(--bg-secondary);
+  margin: 0;
   flex-shrink: 0;
 }
 
-.stats-grid {
+.stats-grid-new {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
-  padding: 0 2px;
+  gap: 10px;
 }
 
-.stat-item {
+.stat-item-new {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   flex: 1;
   padding: 12px 8px;
-  background: var(--bg-secondary);
-  border-radius: 10px;
+  background: var(--card-bg);
+  border-radius: 12px;
   transition: background-color 0.3s ease;
   min-width: 0;
   text-align: center;
+  border: 1px solid var(--border-light);
 }
 
-.stat-icon {
+.stat-item-new:hover {
+  background: var(--bg-tertiary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.stat-icon-new {
   width: 32px;
   height: 32px;
   background: var(--primary-color);
-  border-radius: 8px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-size: 12px;
   flex-shrink: 0;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
 }
 
-.stat-info {
+.stat-info-new {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
 }
 
-.stat-number {
-  font-size: 1.1rem;
+.stat-number-new {
+  font-size: 1rem !important;
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.2;
   transition: color 0.3s ease;
 }
 
-.stat-label {
-  font-size: 0.7rem;
+.stat-label-new {
+  font-size: 0.7rem !important;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -810,48 +1018,26 @@ const getEducation = (instructor) => {
   display: block;
 }
 
-/* Specific stat item alignment */
-.stat-item:nth-child(1) .stat-label::before {
-  content: "Courses";
-}
-
-.stat-item:nth-child(2) .stat-label::before {
-  content: "Students";
-}
-
-.stat-item:nth-child(3) .stat-label::before {
-  content: "Rating";
-}
-
-.stat-label {
-  font-size: 0;
-}
-
-.stat-label::before {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-weight: 600;
-}
-
 /* Action Buttons */
-.profile-actions-footer {
+.profile-actions-footer-new {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
+  padding: 25px;
+  background: var(--card-bg);
   margin-top: auto;
   flex-shrink: 0;
 }
 
-.btn-view-profile {
+.btn-view-profile-new {
   flex: 1;
   background: var(--primary-color);
   color: white;
   border: none;
-  padding: 12px 16px;
-  border-radius: 10px;
+  padding: 14px 20px;
+  border-radius: 12px;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   cursor: pointer;
   transition: all 0.3s ease;
   text-decoration: none;
@@ -860,32 +1046,32 @@ const getEducation = (instructor) => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 44px;
+  min-height: 48px;
 }
 
-.btn-view-profile:hover {
+.btn-view-profile-new:hover {
   background: var(--primary-hover);
   transform: translateY(-2px);
   box-shadow: 0 5px 15px color-mix(in srgb, var(--primary-color) 30%, transparent);
 }
 
-.btn-contact {
-  width: 44px;
-  height: 44px;
+.btn-contact-new {
+  width: 48px;
+  height: 48px;
   background: var(--bg-secondary);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 14px;
+  font-size: 16px;
   flex-shrink: 0;
 }
 
-.btn-contact:hover {
+.btn-contact-new:hover {
   background: var(--primary-color);
   color: white;
   border-color: var(--primary-color);
@@ -1188,72 +1374,310 @@ const getEducation = (instructor) => {
 }
 
 /* ==================== */
-/* DARK THEME ENHANCEMENTS */
+/* MODAL STYLES */
 /* ==================== */
-.dark-theme .instructor-card:hover {
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  backdrop-filter: blur(5px);
+}
+
+.modal-content {
+  background: var(--card-bg);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 700px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 25px 30px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.modal-body {
+  padding: 30px;
+}
+
+/* Form Styles */
+.instructor-form {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-section h4 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  font-weight: 600;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 12px 15px;
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
   border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 20%, transparent);
 }
 
-.dark-theme .search-input,
-.dark-theme .filter-select {
-  background: var(--bg-secondary);
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
 }
 
-.dark-theme .profile-education,
-.dark-theme .stat-item {
-  background: var(--bg-tertiary);
+.form-help {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  margin-top: 4px;
 }
 
-.dark-theme .no-instructors {
-  background: var(--bg-secondary);
+/* Checkbox Group */
+.checkbox-group {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
 }
 
-/* ==================== */
-/* LANGUAGE SUPPORT */
-/* ==================== */
-.bn-lang .instructor-card,
-.bn-lang .instructors-header,
-.bn-lang .search-input,
-.bn-lang .filter-select {
-  font-family: 'Kalpurush', 'SolaimanLipi', 'Siyam Rupali', Arial, sans-serif;
+.checkbox-group input[type="checkbox"] {
+  margin-top: 2px;
+  transform: scale(1.1);
 }
 
-.bn-lang .instructor-name {
+.checkbox-group label {
+  font-weight: normal;
   line-height: 1.4;
 }
 
-.bn-lang .instructor-title,
-.bn-lang .education-text {
-  line-height: 1.6;
+.link {
+  color: var(--primary-color);
+  text-decoration: none;
 }
 
-.bn-lang .education-label,
-.bn-lang .stat-label {
-  letter-spacing: 0;
+.link:hover {
+  text-decoration: underline;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: flex-end;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.btn {
+  padding: 12px 25px;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.btn-cancel {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.btn-cancel:hover {
+  background: var(--border-color);
+}
+
+.btn-submit {
+  background: var(--primary-color);
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-submit:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+}
+
+.btn-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Success Modal */
+.success-modal {
+  text-align: center;
+  max-width: 500px;
+}
+
+.success-icon {
+  font-size: 4rem;
+  color: #10b981;
+  margin-bottom: 20px;
+}
+
+.success-modal h3 {
+  margin: 0 0 15px 0;
+  color: var(--text-primary);
+  font-size: 1.5rem;
+}
+
+.success-modal p {
+  color: var(--text-secondary);
+  margin-bottom: 25px;
+  line-height: 1.5;
+}
+
+.btn-success {
+  background: #10b981;
+  color: white;
+  padding: 12px 30px;
+}
+
+.btn-success:hover {
+  background: #059669;
 }
 
 /* ==================== */
-/* RESPONSIVE DESIGN */
+/* ICON FIXES */
+/* ==================== */
+.icon-fixed {
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900 !important;
+  font-style: normal !important;
+  font-variant: normal !important;
+  text-rendering: auto !important;
+  -webkit-font-smoothing: antialiased !important;
+  speak: none;
+}
+
+/* Ensure all Font Awesome icons maintain their font family */
+.fas, .fa, .far, .fab {
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900 !important;
+}
+
+/* Specific fixes for Bengali language */
+:global(.bn-lang) .fas,
+:global(.bn-lang) .fa,
+:global(.bn-lang) .far,
+:global(.bn-lang) .fab,
+:global(.bn-lang) .icon-fixed {
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900 !important;
+}
+
+/* ==================== */
+/* RESPONSIVE DESIGN FOR FIXED AVATARS */
 /* ==================== */
 @media (max-width: 1199px) {
-  .cta__title {
-    font-size: 32px;
+  .profile-header-full {
+    height: 180px;
   }
   
-  .breadcrumb__content .title {
-    font-size: 42px;
+  .stats-grid-new {
+    gap: 8px;
   }
   
-  .profile-image-wrapper {
-    width: 130px;
-    height: 130px;
-  }
-  
-  .stats-grid {
-    gap: 6px;
-  }
-  
-  .stat-item {
+  .stat-item-new {
     padding: 10px 6px;
   }
 }
@@ -1263,35 +1687,33 @@ const getEducation = (instructor) => {
     padding: 80px 0;
   }
   
-  .profile-image-wrapper {
-    width: 120px;
-    height: 120px;
+  .profile-header-full {
+    height: 160px;
   }
   
-  .cta__area {
-    padding: 80px 0;
+  .instructor-name-overlay {
+    font-size: 1.2rem;
   }
   
-  .stats-grid {
+  .instructor-title-overlay {
+    font-size: 0.9rem;
+  }
+  
+  .education-section-new,
+  .stats-section-new {
+    padding: 20px;
+  }
+  
+  .profile-actions-footer-new {
+    padding: 20px;
+  }
+  
+  .stats-grid-new {
     gap: 5px;
   }
   
-  .stat-item {
-    padding: 10px 5px;
-  }
-  
-  .stat-icon {
-    width: 28px;
-    height: 28px;
-    font-size: 11px;
-  }
-  
-  .stat-number {
-    font-size: 1rem;
-  }
-  
-  .stat-label {
-    font-size: 0.65rem;
+  .stat-item-new {
+    padding: 8px 4px;
   }
 }
 
@@ -1301,12 +1723,51 @@ const getEducation = (instructor) => {
     text-align: center;
   }
   
-  .profile-content {
-    padding: 0 20px 20px;
+  .profile-header-full {
+    height: 140px;
   }
   
-  .profile-image-container {
-    padding: 30px 25px 25px;
+  .instructor-name-overlay {
+    font-size: 1.1rem;
+  }
+  
+  .instructor-title-overlay {
+    font-size: 0.85rem;
+  }
+  
+  .profile-overlay-full {
+    padding: 15px;
+  }
+  
+  .education-section-new,
+  .stats-section-new {
+    padding: 15px;
+  }
+  
+  .stats-grid-new {
+    gap: 6px;
+  }
+  
+  .stat-item-new {
+    padding: 8px 4px;
+  }
+  
+  .stat-number-new {
+    font-size: 0.9rem !important;
+  }
+  
+  .stat-label-new {
+    font-size: 0.65rem !important;
+  }
+  
+  .profile-actions-footer-new {
+    padding: 15px;
+    flex-direction: column;
+  }
+  
+  .btn-contact-new {
+    width: 100%;
+    margin-top: 10px;
   }
   
   .results-count {
@@ -1319,53 +1780,69 @@ const getEducation = (instructor) => {
     margin-bottom: 15px;
   }
   
-  .profile-actions-footer {
+  /* Modal responsive */
+  .modal-content {
+    margin: 10px;
+    max-height: 95vh;
+  }
+  
+  .modal-header {
+    padding: 20px;
+  }
+  
+  .modal-body {
+    padding: 20px;
+  }
+  
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .form-actions {
     flex-direction: column;
   }
   
-  .btn-contact {
+  .btn {
     width: 100%;
-    margin-top: 10px;
-  }
-  
-  .stats-grid {
-    gap: 8px;
-  }
-  
-  .stat-item {
-    padding: 12px 8px;
   }
 }
 
 @media (max-width: 575px) {
-  .instructor-card {
+  .instructor-card-new {
     margin-bottom: 20px;
   }
   
-  .instructor-name {
-    font-size: 1.2rem;
+  .profile-header-full {
+    height: 120px;
   }
   
-  .profile-image-wrapper {
-    width: 110px;
-    height: 110px;
+  .instructor-name-overlay {
+    font-size: 1rem;
   }
   
-  .profile-image-container {
-    padding: 25px 20px 20px;
+  .instructor-title-overlay {
+    font-size: 0.8rem;
   }
   
-  .btn-view-profile {
-    padding: 10px 12px;
-    font-size: 0.85rem;
+  .profile-overlay-full {
+    padding: 10px;
   }
   
-  .stat-number {
-    font-size: 0.95rem;
+  .stats-grid-new {
+    flex-direction: column;
+    gap: 8px;
   }
   
-  .stat-label {
-    font-size: 0.6rem;
+  .stat-item-new {
+    flex-direction: row;
+    justify-content: flex-start;
+    text-align: left;
+    padding: 12px 15px;
+  }
+  
+  .stat-info-new {
+    align-items: flex-start;
   }
   
   .breadcrumb__content .title {
@@ -1377,21 +1854,17 @@ const getEducation = (instructor) => {
     gap: 0.5rem;
   }
   
-  .stats-grid {
-    flex-direction: column;
-    gap: 8px;
+  /* Modal responsive */
+  .modal-overlay {
+    padding: 10px;
   }
   
-  .stat-item {
-    justify-content: center;
-    padding: 10px 12px;
-    flex-direction: row;
-    text-align: left;
-    gap: 12px;
+  .modal-header h3 {
+    font-size: 1.3rem;
   }
   
-  .stat-item .stat-info {
-    align-items: flex-start;
+  .form-section h4 {
+    font-size: 1.1rem;
   }
 }
 
@@ -1401,10 +1874,20 @@ const getEducation = (instructor) => {
 .btn:focus,
 .search-input:focus,
 .filter-select:focus,
-.btn-view-profile:focus,
-.btn-contact:focus,
-.btn-quick-view:focus,
-.btn-favorite:focus {
+.btn-view-profile-new:focus,
+.btn-contact-new:focus {
+  outline: 3px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
+  outline-offset: 2px;
+}
+
+.form-group input:focus-visible,
+.form-group select:focus-visible,
+.form-group textarea:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
+  outline-offset: 2px;
+}
+
+.btn:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
   outline-offset: 2px;
 }
@@ -1413,78 +1896,32 @@ const getEducation = (instructor) => {
 /* REDUCED MOTION */
 /* ==================== */
 @media (prefers-reduced-motion: reduce) {
-  .instructor-card,
+  .instructor-card-new,
   .btn,
-  .btn-view-profile,
-  .profile-image-wrapper,
-  .profile-image {
+  .btn-view-profile-new,
+  .profile-image-full {
     transition: none;
   }
   
-  .instructor-card:hover,
+  .instructor-card-new:hover,
   .btn:hover:not(:disabled),
-  .btn-view-profile:hover,
-  .btn-contact:hover,
-  .btn-quick-view:hover,
-  .btn-favorite:hover {
+  .btn-view-profile-new:hover,
+  .btn-contact-new:hover {
     transform: none;
   }
   
   .alltuchtopdown {
     animation: none;
   }
-}
-
-/* ==================== */
-/* ICON PRESERVATION */
-/* ==================== */
-:deep(.fas),
-:deep(.fab) {
-  font-family: 'Font Awesome 6 Free' !important;
-  font-weight: 900 !important;
-  display: inline-block !important;
-  font-style: normal !important;
-  font-variant: normal !important;
-  text-rendering: auto !important;
-  line-height: 1 !important;
-}
-
-:deep(i[class*="fa-"]) {
-  display: inline-block !important;
-  font-family: 'Font Awesome 6 Free' !important;
-  font-weight: 900 !important;
-}
-
-/* Ensure Font Awesome icons are properly loaded */
-.fa-search,
-.fa-angle-right,
-.fa-users,
-.fa-chalkboard-teacher,
-.fa-eye,
-.fa-heart,
-.fa-graduation-cap,
-.fa-book-open,
-.fa-star,
-.fa-user-circle,
-.fa-envelope {
-  font-family: 'Font Awesome 6 Free' !important;
-  font-weight: 900 !important;
+  
+  .modal-content {
+    animation: none;
+  }
 }
 
 /* ==================== */
 /* ENHANCED LINE-CLAMP COMPATIBILITY */
 /* ==================== */
-/* Modern line-clamp implementation with full browser support */
-.line-clamp-1 {
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-clamp: 1;
-  box-orient: vertical;
-  max-height: calc(1em * 1.4 * 1); /* line-height * number of lines */
-}
-
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -1492,121 +1929,18 @@ const getEducation = (instructor) => {
   overflow: hidden;
   line-clamp: 2;
   box-orient: vertical;
-  max-height: calc(1em * 1.4 * 2); /* line-height * number of lines */
-}
-
-.line-clamp-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-clamp: 3;
-  box-orient: vertical;
-  max-height: calc(1em * 1.4 * 3); /* line-height * number of lines */
-}
-
-/* Enhanced education text with better line-clamp */
-.education-text {
-  font-size: 0.85rem;
-  color: var(--text-primary);
-  margin: 0;
-  line-height: 1.4;
-  font-weight: 500;
-  transition: color 0.3s ease;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  
-  /* Enhanced line-clamp implementation */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-clamp: 2;
-  box-orient: vertical;
-  max-height: calc(0.85rem * 1.4 * 2); /* font-size * line-height * lines */
-}
-
-/* Fallback for browsers that don't support line-clamp */
-@supports not ((line-clamp: 2) or (-webkit-line-clamp: 2)) {
-  .education-text {
-    max-height: 2.8em;
-    overflow: hidden;
-    position: relative;
-    display: block;
-  }
-  
-  .education-text::after {
-    content: '...';
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    background: linear-gradient(90deg, transparent 0%, var(--bg-secondary) 20%);
-    padding-left: 20px;
-  }
-  
-  .line-clamp-1 {
-    max-height: 1.4em;
-    overflow: hidden;
-    display: block;
-  }
-  
-  .line-clamp-2 {
-    max-height: 2.8em;
-    overflow: hidden;
-    display: block;
-  }
-  
-  .line-clamp-3 {
-    max-height: 4.2em;
-    overflow: hidden;
-    display: block;
-  }
-}
-
-/* Utility classes for text truncation */
-.text-truncate {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.text-truncate-1 {
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-clamp: 1;
-  box-orient: vertical;
-}
-
-.text-truncate-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-clamp: 2;
-  box-orient: vertical;
-}
-
-.text-truncate-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-clamp: 3;
-  box-orient: vertical;
 }
 
 /* ==================== */
 /* PERFORMANCE OPTIMIZATIONS */
 /* ==================== */
-.instructor-card {
+.instructor-card-new {
   will-change: transform;
   backface-visibility: hidden;
   transform: translateZ(0);
 }
 
-.profile-image {
+.profile-image-full {
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
 }
@@ -1615,14 +1949,19 @@ const getEducation = (instructor) => {
 /* PRINT STYLES */
 /* ==================== */
 @media print {
-  .instructor-card {
+  .instructor-card-new {
     break-inside: avoid;
     box-shadow: none;
     border: 1px solid #ccc;
   }
   
-  .profile-actions-footer,
-  .profile-overlay {
+  .profile-actions-footer-new,
+  .profile-overlay-full {
+    display: none;
+  }
+  
+  .modal-overlay,
+  .modal-content {
     display: none;
   }
 }

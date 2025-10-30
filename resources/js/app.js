@@ -7,7 +7,7 @@ import '../css/app.css';
 import './bootstrap';
 
 
-const appName = import.meta.env.VITE_APP_NAME || 'SkillGro';
+const appName = import.meta.env.VITE_APP_NAME || 'Pathshala LMS';
 // Complete translation system
 const translations = {
     en: {
@@ -348,7 +348,7 @@ const applyGlobalTheme = (theme) => {
         document.documentElement.classList.add('light-theme');
         document.documentElement.classList.remove('dark-theme');
         document.body.classList.add('light-theme');
-        document.body.classList.remove('dark-theme');
+        document.body.classList.remove('light-theme');
     }
 };
 
@@ -385,8 +385,8 @@ const provideTranslation = (vueApp) => {
             
             // Update page title
             document.title = lang === 'bn' 
-                ? 'স্কিলগ্রো - অনলাইন লার্নিং প্ল্যাটফর্ম'
-                : 'SkillGro - Online Learning Platform';
+                ? 'পাঠশালা LMS - জ্ঞানকে শক্তিতে রূপান্তর'
+                : 'Pathshala LMS - Empower Minds';
             
             // Dispatch event for all components to update
             window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: lang } }));
@@ -411,7 +411,7 @@ const provideTranslation = (vueApp) => {
 createInertiaApp({
     title: (title) => {
         const currentLanguage = localStorage.getItem('preferredLanguage') || 'bn';
-        const siteName = currentLanguage === 'bn' ? 'স্কিলগ্রো - অনলাইন লার্নিং প্ল্যাটফর্ম' : 'SkillGro - Online Learning Platform';
+        const siteName = currentLanguage === 'bn' ? 'পাঠশালা LMS - জ্ঞানকে শক্তিতে রূপান্তর' : 'Pathshala LMS - Empower Minds';
         return title ? `${title} - ${siteName}` : siteName;
     },
     
@@ -711,9 +711,9 @@ window.addEventListener('languageChanged', (event) => {
     // Update any global elements that need language-specific content
     const siteTitle = document.querySelector('title');
     if (siteTitle && event.detail.language === 'bn') {
-        siteTitle.textContent = 'স্কিলগ্রো - অনলাইন লার্নিং প্ল্যাটফর্ম';
+        siteTitle.textContent = 'পাঠশালা LMS - জ্ঞানকে শক্তিতে রূপান্তর';
     } else if (siteTitle) {
-        siteTitle.textContent = 'SkillGro - Online Learning Platform';
+        siteTitle.textContent = 'Pathshala LMS - Empower Minds';
     }
 });
 
@@ -723,7 +723,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Export language functions for global use
-window.SkillGro = {
+window.PathshalaLMS = {
     switchLanguage: (lang) => {
         localStorage.setItem('preferredLanguage', lang);
         window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: lang } }));
@@ -749,4 +749,4 @@ window.SkillGro = {
     t: globalT
 };
 
-console.log('🚀 SkillGro app initialized with Bengali support');
+console.log('🚀 Pathshala LMS app initialized with Bengali support');

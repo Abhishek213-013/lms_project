@@ -6,8 +6,8 @@
     <div class="profile-header">
       <div class="container">
         <div class="header-content">
-          <h1 class="page-title">{{ t('My Profile') }}</h1>
-          <p class="page-subtitle">{{ t('Manage your profile and track your learning journey') }}</p>
+          <h1 class="page-title">My Profile</h1>
+          <p class="page-subtitle">Manage your profile and track your learning journey</p>
         </div>
       </div>
     </div>
@@ -31,34 +31,34 @@
           <nav class="sidebar-nav">
             <Link href="/student-profile" class="nav-item active">
               <i class="fas fa-user"></i>
-              <span class="nav-text">{{ t('My Profile') }}</span>
+              <span class="nav-text">My Profile</span>
             </Link>
             
             <Link href="/my-courses" class="nav-item">
               <i class="fas fa-book"></i>
-              <span class="nav-text">{{ t('My Courses') }}</span>
+              <span class="nav-text">My Courses</span>
             </Link>
             
             <Link href="/learning-progress" class="nav-item">
               <i class="fas fa-chart-line"></i>
-              <span class="nav-text">{{ t('Learning Progress') }}</span>
+              <span class="nav-text">Learning Progress</span>
             </Link>
             
             <Link href="/certificates" class="nav-item">
               <i class="fas fa-certificate"></i>
-              <span class="nav-text">{{ t('Certificates') }}</span>
+              <span class="nav-text">Certificates</span>
             </Link>
             
             <Link href="/settings" class="nav-item">
               <i class="fas fa-cog"></i>
-              <span class="nav-text">{{ t('Settings') }}</span>
+              <span class="nav-text">Settings</span>
             </Link>
             
             <div class="nav-divider"></div>
             
             <button class="nav-item logout" @click="logout">
               <i class="fas fa-sign-out-alt"></i>
-              <span class="nav-text">{{ t('Logout') }}</span>
+              <span class="nav-text">Logout</span>
             </button>
           </nav>
         </div>
@@ -77,13 +77,13 @@
                   <p>{{ profile.user.email }}</p>
                   <div class="member-since">
                     <i class="fas fa-calendar-alt"></i>
-                    {{ t('Member since') }} {{ profile.user.joined_date }}
+                    Member since {{ profile.user.joined_date }}
                   </div>
                 </div>
               </div>
               <button class="edit-profile-btn">
                 <i class="fas fa-edit"></i>
-                {{ t('Edit Profile') }}
+                Edit Profile
               </button>
             </div>
 
@@ -95,7 +95,7 @@
                 </div>
                 <div class="stat-info">
                   <div class="stat-number">{{ profile.stats.courses_enrolled }}</div>
-                  <div class="stat-label">{{ t('Courses Enrolled') }}</div>
+                  <div class="stat-label">Courses Enrolled</div>
                 </div>
               </div>
               <div class="stat-card">
@@ -104,7 +104,7 @@
                 </div>
                 <div class="stat-info">
                   <div class="stat-number">{{ profile.stats.courses_completed }}</div>
-                  <div class="stat-label">{{ t('Courses Completed') }}</div>
+                  <div class="stat-label">Courses Completed</div>
                 </div>
               </div>
               <div class="stat-card">
@@ -113,7 +113,7 @@
                 </div>
                 <div class="stat-info">
                   <div class="stat-number">{{ profile.stats.learning_hours }}</div>
-                  <div class="stat-label">{{ t('Learning Hours') }}</div>
+                  <div class="stat-label">Learning Hours</div>
                 </div>
               </div>
               <div class="stat-card">
@@ -122,7 +122,7 @@
                 </div>
                 <div class="stat-info">
                   <div class="stat-number">{{ profile.stats.current_streak }}</div>
-                  <div class="stat-label">{{ t('Day Streak') }}</div>
+                  <div class="stat-label">Day Streak</div>
                 </div>
               </div>
             </div>
@@ -131,9 +131,9 @@
           <!-- Recent Activity -->
           <div class="activity-section">
             <div class="section-header">
-              <h3>{{ t('Recent Activity') }}</h3>
+              <h3>Recent Activity</h3>
               <Link href="/learning-progress" class="view-all-link">
-                {{ t('View All') }} <i class="fas fa-arrow-right"></i>
+                View All <i class="fas fa-arrow-right"></i>
               </Link>
             </div>
             
@@ -144,7 +144,7 @@
                 </div>
                 <div class="activity-details">
                   <h4>{{ activity.course }}</h4>
-                  <p>{{ t('Progress') }}: {{ activity.progress }}%</p>
+                  <p>Progress: {{ activity.progress }}%</p>
                   <span class="activity-time">{{ activity.last_accessed }}</span>
                 </div>
                 <div class="progress-bar">
@@ -156,23 +156,23 @@
 
           <!-- Quick Actions -->
           <div class="quick-actions">
-            <h3>{{ t('Quick Actions') }}</h3>
+            <h3>Quick Actions</h3>
             <div class="action-grid">
               <Link href="/my-courses" class="action-card">
                 <i class="fas fa-book-open"></i>
-                <span>{{ t('My Courses') }}</span>
+                <span>My Courses</span>
               </Link>
               <Link href="/learning-progress" class="action-card">
                 <i class="fas fa-chart-line"></i>
-                <span>{{ t('Learning Progress') }}</span>
+                <span>Learning Progress</span>
               </Link>
               <Link href="/settings" class="action-card">
                 <i class="fas fa-cog"></i>
-                <span>{{ t('Settings') }}</span>
+                <span>Settings</span>
               </Link>
               <button class="action-card" @click="downloadCertificate">
                 <i class="fas fa-certificate"></i>
-                <span>{{ t('Certificates') }}</span>
+                <span>Certificates</span>
               </button>
             </div>
           </div>
@@ -184,26 +184,6 @@
 
 <script setup>
 import { Head, Link, router } from '@inertiajs/vue3'
-import { getCurrentInstance } from 'vue'
-
-// Get the current Vue instance to access global properties
-const { proxy } = getCurrentInstance()
-
-// Use the global t function
-const t = (key, replacements = {}) => {
-  // Try to use the global t function from the Vue instance
-  if (proxy && typeof proxy.t === 'function') {
-    return proxy.t(key, replacements)
-  }
-  
-  // Fallback: Try to use window.SkillGro.t
-  if (window.SkillGro && typeof window.SkillGro.t === 'function') {
-    return window.SkillGro.t(key, replacements)
-  }
-  
-  // Final fallback: return the key
-  return key
-}
 
 defineProps({
   profile: {
@@ -229,7 +209,6 @@ const logout = () => {
   router.post('/logout')
 }
 </script>
-
 <style scoped>
 .student-profile-page {
   min-height: 100vh;

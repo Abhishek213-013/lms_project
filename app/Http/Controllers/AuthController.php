@@ -33,6 +33,14 @@ class AuthController extends Controller
     }
 
     /**
+     * Show the teacher registration page
+     */
+    public function showTeacherRegistration(): Response
+    {
+        return Inertia::render('Auth/TeacherRegistration');
+    }
+
+    /**
      * Show the student login page
      */
     public function showStudentLogin(): Response
@@ -93,6 +101,9 @@ class AuthController extends Controller
         ])->withInput($request->only('username', 'remember'));
     }
 
+    /**
+     * Handle student login request
+     */
     public function studentLogin(Request $request)
     {
         Log::info('Student login attempt', ['login' => $request->login, 'ip' => $request->ip()]);
@@ -186,13 +197,78 @@ class AuthController extends Controller
             return $this->redirectBasedOnRole($user)
                 ->with('status', $request->role === 'teacher' 
                     ? 'Registration submitted for approval!' 
-                    : 'Registration successful! Welcome to SkillGro.');
+                    : 'Registration successful! Welcome to Pathshala LMS.');
 
         } catch (\Exception $e) {
             Log::error('Registration failed', ['error' => $e->getMessage(), 'email' => $request->email]);
             return back()->withErrors([
                 'message' => 'Registration failed. Please try again.',
             ]);
+        }
+    }
+
+        /**
+     * Handle teacher registration
+     */
+    public function teacherRegister(Request $request)
+    {
+        Log::info('Teacher registration attempt', ['email' => $request->email, 'data' => $request->all()]);
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'username' => 'required|string|unique:users|max:255',
+            'email' => 'required|email|unique:users|max:255',
+            'dob' => 'required|date',
+            'education_qualification' => 'required|string|max:255|in:HSC,BSC,BA,MA,MSC,PhD,Other',
+            'institute' => 'required|string|max:255',
+            'experience' => 'required|string|max:255',
+            'bio' => 'nullable|string|max:1000',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('Teacher registration validation failed', ['errors' => $validator->errors()->toArray()]);
+            return back()->withErrors($validator->errors())->withInput();
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $user = User::create([
+                'name' => $request->name,
+                'username' => $request->username,
+                'email' => $request->email,
+                'dob' => $request->dob,
+                'education_qualification' => $request->education_qualification,
+                'institute' => $request->institute,
+                'experience' => $request->experience,
+                'bio' => $request->bio,
+                'password' => Hash::make($request->password),
+                'role' => 'teacher',
+                'status' => 'pending', // Teachers need admin approval
+            ]);
+
+            DB::commit();
+
+            Log::info('Teacher registration successful', ['user_id' => $user->id]);
+
+            // Don't login automatically - wait for admin approval
+            return redirect()->route('login')
+                ->with('status', 'Teacher registration submitted successfully! Your account is pending admin approval.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Teacher registration failed', [
+                'error' => $e->getMessage(), 
+                'email' => $request->email,
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            
+            return back()->withErrors([
+                'message' => 'Teacher registration failed: ' . $e->getMessage(),
+            ])->withInput();
         }
     }
 
@@ -274,7 +350,7 @@ class AuthController extends Controller
 
             // FIX: Redirect to home page instead of student dashboard
             return redirect('/')->with([
-                'success' => 'Registration successful! Welcome to SkillGro.'
+                'success' => 'Registration successful! Welcome to Pathshala LMS.'
             ]);
 
         } catch (\Exception $e) {

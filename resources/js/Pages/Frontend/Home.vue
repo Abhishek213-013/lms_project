@@ -14,13 +14,13 @@
                 <p class="hero-subtitle">{{ displayContent.home_hero_subtitle }}</p>
                 
                 <div class="hero-actions">
-                  <Link href="/registration" class="btn btn-hero-primary">
+                  <Link href="/courses" class="btn btn-hero-primary">
                     {{ displayContent.home_hero_primary_button }}
                   </Link>
-                  <a href="#" class="btn btn-hero-secondary">
+                  <Link href="/instructors" class="btn btn-outline-primary btn-lg">
                     <i class="fas fa-play-circle"></i>
-                    {{ displayContent.home_hero_secondary_button }}
-                  </a>
+                    {{ displayContent.home_instructors_button }}
+                  </Link>
                 </div>
                 
                 <div class="hero-stats">
@@ -93,7 +93,7 @@
         </div>
       </section>
 
-      <!-- UPDATED: Instructors Section with Fixed Stats -->
+      <!-- FIXED: Instructors Section with Full-Size Avatar Images (No Head Cropping) -->
       <section class="instructors-section section-py-120" v-if="instructors.length > 0">
         <div class="container">
           <div class="row mb-5">
@@ -103,94 +103,83 @@
             </div>
           </div>
           
-          <!-- UPDATED: Professional Instructor Cards Grid -->
+          <!-- FIXED: Instructor Cards with Full-Size Avatar Images (No Head Cropping) -->
           <div class="row">
             <div class="col-xl-3 col-lg-4 col-md-6" v-for="instructor in instructors.slice(0, 8)" :key="instructor.id">
-              <div class="instructor-card">
-                <!-- Profile Image Container -->
-                <div class="profile-image-container">
-                  <div class="profile-image-wrapper">
+              <div class="instructor-card-new">
+                <!-- Profile Header with Full-Size Image - NO HEAD CROPPING -->
+                <div class="profile-header-full">
+                  <div class="profile-image-full-container">
                     <img 
                       :src="getInstructorAvatar(instructor)" 
                       :alt="instructor.name"
-                      class="profile-image"
+                      class="profile-image-full"
                       @error="handleImageError"
                     >
-                    <div class="profile-overlay">
-                      <div class="profile-actions">
-                        <button class="btn-quick-view" :title="t('Quick View')">
-                          <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="btn-favorite" :title="t('Add to Favorite')">
-                          <i class="fas fa-heart"></i>
-                        </button>
+                    <div class="profile-overlay-full">
+                      <div class="profile-info-overlay">
+                        <h3 class="instructor-name-overlay">{{ instructor.name }}</h3>
+                        <p class="instructor-title-overlay">{{ getExpertise(instructor) }}</p>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <!-- Profile Content -->
-                <div class="profile-content">
-                  <!-- Name and Title -->
-                  <div class="profile-header">
-                    <h3 class="instructor-name">{{ instructor.name }}</h3>
-                    <p class="instructor-title">{{ getExpertise(instructor) }}</p>
+                <!-- Education Section -->
+                <div class="education-section-new">
+                  <div class="section-header">
+                    <i class="fas fa-graduation-cap icon-fixed"></i>
+                    <span class="section-title-small">{{ t('Education') }}</span>
                   </div>
+                  <p class="education-text-new line-clamp-2">{{ getEducation(instructor) }}</p>
+                </div>
 
-                  <!-- Education -->
-                  <div class="profile-education">
-                    <div class="education-icon">
-                      <i class="fas fa-graduation-cap"></i>
-                    </div>
-                    <div class="education-info">
-                      <span class="education-label">{{ t('Education') }}</span>
-                      <p class="education-text line-clamp-2">{{ getEducation(instructor) }}</p>
-                    </div>
+                <!-- Stats Section -->
+                <div class="stats-section-new">
+                  <div class="section-header">
+                    <i class="fas fa-chart-bar icon-fixed"></i>
+                    <span class="section-title-small">{{ t('Stats') }}</span>
                   </div>
-
-                  <!-- FIXED: Stats Section -->
-                  <div class="profile-stats">
-                    <div class="stats-grid">
-                      <div class="stat-item">
-                        <div class="stat-icon">
-                          <i class="fas fa-book-open"></i>
-                        </div>
-                        <div class="stat-info">
-                          <div class="stat-number">{{ instructor.courses_count || 0 }}</div>
-                          <div class="stat-label">{{ t('Courses') }}</div>
-                        </div>
+                  <div class="stats-grid-new">
+                    <div class="stat-item-new">
+                      <div class="stat-icon-new">
+                        <i class="fas fa-book-open icon-fixed"></i>
                       </div>
-                      <div class="stat-item">
-                        <div class="stat-icon">
-                          <i class="fas fa-users"></i>
-                        </div>
-                        <div class="stat-info">
-                          <div class="stat-number">{{ instructor.students_count || 0 }}</div>
-                          <div class="stat-label">{{ t('Students') }}</div>
-                        </div>
+                      <div class="stat-info-new">
+                        <div class="stat-number-new">{{ instructor.courses_count || 0 }}</div>
+                        <div class="stat-label-new">{{ t('Courses') }}</div>
                       </div>
-                      <div class="stat-item">
-                        <div class="stat-icon">
-                          <i class="fas fa-star"></i>
-                        </div>
-                        <div class="stat-info">
-                          <div class="stat-number">{{ instructor.rating || '4.8' }}</div>
-                          <div class="stat-label">{{ t('Rating') }}</div>
-                        </div>
+                    </div>
+                    <div class="stat-item-new">
+                      <div class="stat-icon-new">
+                        <i class="fas fa-users icon-fixed"></i>
+                      </div>
+                      <div class="stat-info-new">
+                        <div class="stat-number-new">{{ instructor.students_count || 0 }}</div>
+                        <div class="stat-label-new">{{ t('Students') }}</div>
+                      </div>
+                    </div>
+                    <div class="stat-item-new">
+                      <div class="stat-icon-new">
+                        <i class="fas fa-star icon-fixed"></i>
+                      </div>
+                      <div class="stat-info-new">
+                        <div class="stat-number-new">{{ instructor.rating || '4.8' }}</div>
+                        <div class="stat-label-new">{{ t('Rating') }}</div>
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  <!-- Action Buttons -->
-                  <div class="profile-actions-footer">
-                    <Link :href="`/instructor/${instructor.id}`" class="btn-view-profile">
-                      <i class="fas fa-user-circle"></i>
-                      {{ t('View Profile') }}
-                    </Link>
-                    <button class="btn-contact" :title="t('Contact Instructor')">
-                      <i class="fas fa-envelope"></i>
-                    </button>
-                  </div>
+                <!-- Action Buttons -->
+                <div class="profile-actions-footer-new">
+                  <Link :href="`/instructor/${instructor.id}`" class="btn-view-profile-new">
+                    <i class="fas fa-user-circle icon-fixed"></i>
+                    {{ t('View Profile') }}
+                  </Link>
+                  <button class="btn-contact-new" :title="t('Contact Instructor')">
+                    <i class="fas fa-envelope icon-fixed"></i>
+                  </button>
                 </div>
               </div>
             </div>
@@ -317,7 +306,19 @@ const handleThemeChange = (event) => {
 // Watch for language changes to trigger re-render
 watch(currentLanguage, () => {
   // This will trigger reactive updates in the template
+  console.log('Language changed, refreshing icons...')
+  refreshIcons()
 })
+
+// Icon refresh function
+const refreshIcons = () => {
+  // Force Font Awesome to re-check for icons
+  if (window.FontAwesome && window.FontAwesome.dom && window.FontAwesome.dom.i2svg) {
+    setTimeout(() => {
+      window.FontAwesome.dom.i2svg()
+    }, 100)
+  }
+}
 
 onMounted(() => {
   // Get initial theme from localStorage or system preference
@@ -328,6 +329,9 @@ onMounted(() => {
   
   // Listen for theme changes from header
   window.addEventListener('themeChanged', handleThemeChange)
+  
+  // Initialize icons
+  refreshIcons()
   
   console.log('Home page content received:', props.content)
 })
@@ -377,7 +381,34 @@ const getEducation = (instructor) => {
 </script>
 
 <style scoped>
-/* Your existing CSS styles for other sections remain the same */
+/* ==================== */
+/* ICON FIXES FOR LANGUAGE SWITCH */
+/* ==================== */
+.icon-fixed {
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900 !important;
+  font-style: normal !important;
+  font-variant: normal !important;
+  text-rendering: auto !important;
+  -webkit-font-smoothing: antialiased !important;
+  speak: none;
+}
+
+/* Ensure all Font Awesome icons maintain their font family */
+.fas, .fa, .far, .fab {
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900 !important;
+}
+
+/* Specific fixes for Bengali language */
+:global(.bn-lang) .fas,
+:global(.bn-lang) .fa,
+:global(.bn-lang) .far,
+:global(.bn-lang) .fab,
+:global(.bn-lang) .icon-fixed {
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900 !important;
+}
 
 /* ==================== */
 /* UPDATED: INSTRUCTOR SECTION STYLES */
@@ -393,9 +424,9 @@ const getEducation = (instructor) => {
 }
 
 /* ==================== */
-/* UPDATED: PROFESSIONAL INSTRUCTOR CARD */
+/* FIXED: INSTRUCTOR CARD WITH FULL-SIZE AVATAR IMAGES - NO HEAD CROPPING */
 /* ==================== */
-.instructor-card {
+.instructor-card-new {
   background: var(--card-bg);
   border-radius: 20px;
   margin-bottom: 30px;
@@ -404,261 +435,207 @@ const getEducation = (instructor) => {
   border: 1px solid var(--border-color);
   overflow: hidden;
   height: 100%;
-  position: relative;
   display: flex;
   flex-direction: column;
+  padding: 0;
 }
 
-.instructor-card:hover {
+.instructor-card-new:hover {
   transform: translateY(-8px);
   box-shadow: var(--shadow-xl);
-  border-color: var(--primary-color);
 }
 
-/* Profile Image Container */
-.profile-image-container {
+/* Profile Header with Full-Size Image - NO HEAD CROPPING */
+.profile-header-full {
   position: relative;
-  padding: 40px 30px 30px;
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
-  text-align: center;
-  transition: all 0.3s ease;
+  height: 200px;
+  overflow: hidden;
   flex-shrink: 0;
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+  padding: 10px; /* Padding around the image */
 }
 
-.profile-image-wrapper {
-  position: relative;
-  display: inline-block;
-  width: 140px;
-  height: 140px;
-  border-radius: 20px;
-  background: var(--card-bg);
-  padding: 8px;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-  transition: all 0.3s ease;
-}
-
-.instructor-card:hover .profile-image-wrapper {
-  transform: scale(1.05);
-  box-shadow: 0 12px 35px rgba(0,0,0,0.2);
-}
-
-.profile-image {
+.profile-image-full-container {
   width: 100%;
   height: 100%;
-  border-radius: 15px;
-  object-fit: cover;
-  border: 3px solid var(--bg-primary);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--bg-secondary); /* Background color for empty spaces */
+}
+
+/* FIXED: Changed object-fit from 'cover' to 'contain' to prevent head cropping */
+.profile-image-full {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain; /* CHANGED: This prevents head cropping */
   transition: all 0.3s ease;
+  border-radius: 8px;
 }
 
-.instructor-card:hover .profile-image {
-  border-color: var(--primary-color);
+.instructor-card-new:hover .profile-image-full {
+  transform: scale(1.05);
 }
 
-.profile-overlay {
+.profile-overlay-full {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.9) 0%, rgba(var(--secondary-rgb), 0.9) 100%);
-  border-radius: 15px;
-  opacity: 0;
+  background: linear-gradient(to bottom, transparent 40%, rgba(0, 0, 0, 0.8) 100%);
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-end;
+  padding: 20px;
   transition: all 0.3s ease;
+  border-radius: 12px;
 }
 
-.profile-image-wrapper:hover .profile-overlay {
-  opacity: 1;
-}
-
-.profile-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.btn-quick-view,
-.btn-favorite {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: none;
-  background: white;
-  color: var(--primary-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 14px;
-}
-
-.btn-quick-view:hover,
-.btn-favorite:hover {
-  background: var(--primary-color);
-  color: white;
-  transform: scale(1.1);
-}
-
-/* Profile Content */
-.profile-content {
-  padding: 0 25px 25px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Profile Header */
-.profile-header {
+.profile-info-overlay {
+  width: 100%;
   text-align: center;
-  padding: 20px 0;
-  border-bottom: 1px solid var(--border-light);
-  margin-bottom: 20px;
-  flex-shrink: 0;
 }
 
-.instructor-name {
-  font-size: 1.3rem;
+.instructor-name-overlay {
+  font-size: 1.4rem;
   font-weight: 700;
-  color: var(--text-primary);
-  margin: 0 0 8px 0;
+  color: white;
+  margin: 0 0 5px 0;
   line-height: 1.3;
-  transition: color 0.3s ease;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
 
-.instructor-title {
-  font-size: 0.9rem;
+.instructor-title-overlay {
+  font-size: 1rem;
   font-weight: 600;
-  color: var(--primary-color);
+  color: rgba(255, 255, 255, 0.9);
   margin: 0;
   line-height: 1.4;
-  transition: color 0.3s ease;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   word-wrap: break-word;
   overflow-wrap: break-word;
+}
+
+/* Section Headers */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.section-header i {
+  color: var(--primary-color);
+  font-size: 14px;
+  width: 16px;
+  text-align: center;
+}
+
+.section-title-small {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* Education Section */
-.profile-education {
-  display: flex;
-  align-items: flex-start;
-  gap: 15px;
-  padding: 15px;
+.education-section-new {
+  padding: 25px;
   background: var(--bg-secondary);
-  border-radius: 12px;
-  margin-bottom: 20px;
-  transition: background-color 0.3s ease;
+  margin: 0;
+  border-bottom: 1px solid var(--border-light);
   flex-shrink: 0;
 }
 
-.education-icon {
-  width: 40px;
-  height: 40px;
-  background: var(--primary-color);
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 16px;
-  flex-shrink: 0;
-  transition: background-color 0.3s ease;
-}
-
-.education-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.education-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 4px;
-  display: block;
-  transition: color 0.3s ease;
-}
-
-.education-text {
-  font-size: 0.85rem;
+.education-text-new {
+  font-size: 0.9rem;
   color: var(--text-primary);
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.5;
   font-weight: 500;
   transition: color 0.3s ease;
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
 
-/* ==================== */
-/* FIXED: STATS SECTION - PROPER LABEL DISPLAY */
-/* ==================== */
-.profile-stats {
-  margin-bottom: 20px;
+/* Stats Section */
+.stats-section-new {
+  padding: 25px;
+  background: var(--bg-secondary);
+  margin: 0;
   flex-shrink: 0;
 }
 
-.stats-grid {
+.stats-grid-new {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
-  padding: 0 2px;
+  gap: 10px;
 }
 
-.stat-item {
+.stat-item-new {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   flex: 1;
-  padding: 10px 6px;
-  background: var(--bg-secondary);
-  border-radius: 10px;
+  padding: 12px 8px;
+  background: var(--card-bg);
+  border-radius: 12px;
   transition: background-color 0.3s ease;
   min-width: 0;
   text-align: center;
+  border: 1px solid var(--border-light);
 }
 
-.stat-icon {
-  width: 28px;
-  height: 28px;
+.stat-item-new:hover {
+  background: var(--bg-tertiary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.stat-icon-new {
+  width: 32px;
+  height: 32px;
   background: var(--primary-color);
-  border-radius: 8px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 11px;
+  font-size: 12px;
   flex-shrink: 0;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
 }
 
-.stat-info {
+.stat-info-new {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
 }
 
-/* Smaller stat numbers */
-.stat-number {
-  font-size: 0.9rem;
+.stat-number-new {
+  font-size: 1rem !important;
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.2;
   transition: color 0.3s ease;
 }
 
-/* Fixed: Proper label display without content replacement */
-.stat-label {
-  font-size: 0.65rem;
+.stat-label-new {
+  font-size: 0.7rem !important;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -671,23 +648,25 @@ const getEducation = (instructor) => {
 }
 
 /* Action Buttons */
-.profile-actions-footer {
+.profile-actions-footer-new {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
+  padding: 25px;
+  background: var(--card-bg);
   margin-top: auto;
   flex-shrink: 0;
 }
 
-.btn-view-profile {
+.btn-view-profile-new {
   flex: 1;
   background: var(--primary-color);
   color: white;
   border: none;
-  padding: 12px 16px;
-  border-radius: 10px;
+  padding: 14px 20px;
+  border-radius: 12px;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   cursor: pointer;
   transition: all 0.3s ease;
   text-decoration: none;
@@ -696,32 +675,32 @@ const getEducation = (instructor) => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 44px;
+  min-height: 48px;
 }
 
-.btn-view-profile:hover {
+.btn-view-profile-new:hover {
   background: var(--primary-hover);
   transform: translateY(-2px);
   box-shadow: 0 5px 15px color-mix(in srgb, var(--primary-color) 30%, transparent);
 }
 
-.btn-contact {
-  width: 44px;
-  height: 44px;
+.btn-contact-new {
+  width: 48px;
+  height: 48px;
   background: var(--bg-secondary);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 14px;
+  font-size: 16px;
   flex-shrink: 0;
 }
 
-.btn-contact:hover {
+.btn-contact-new:hover {
   background: var(--primary-color);
   color: white;
   border-color: var(--primary-color);
@@ -743,145 +722,137 @@ const getEducation = (instructor) => {
 }
 
 /* ==================== */
-/* RESPONSIVE DESIGN */
+/* RESPONSIVE DESIGN FOR FULL-SIZE AVATARS - NO HEAD CROPPING */
 /* ==================== */
 @media (max-width: 1199px) {
-  .profile-image-wrapper {
-    width: 130px;
-    height: 130px;
+  .profile-header-full {
+    height: 180px;
   }
   
-  .stats-grid {
-    gap: 6px;
+  .stats-grid-new {
+    gap: 8px;
   }
   
-  .stat-item {
-    padding: 8px 5px;
-  }
-  
-  .stat-number {
-    font-size: 0.85rem;
-  }
-  
-  .stat-label {
-    font-size: 0.6rem;
+  .stat-item-new {
+    padding: 10px 6px;
   }
 }
 
 @media (max-width: 991px) {
-  .section-py-120 {
-    padding: 80px 0;
+  .profile-header-full {
+    height: 160px;
   }
   
-  .profile-image-wrapper {
-    width: 120px;
-    height: 120px;
+  .instructor-name-overlay {
+    font-size: 1.2rem;
   }
   
-  .stats-grid {
+  .instructor-title-overlay {
+    font-size: 0.9rem;
+  }
+  
+  .education-section-new,
+  .stats-section-new {
+    padding: 20px;
+  }
+  
+  .profile-actions-footer-new {
+    padding: 20px;
+  }
+  
+  .stats-grid-new {
     gap: 5px;
   }
   
-  .stat-item {
+  .stat-item-new {
     padding: 8px 4px;
-  }
-  
-  .stat-icon {
-    width: 26px;
-    height: 26px;
-    font-size: 10px;
-  }
-  
-  .stat-number {
-    font-size: 0.8rem;
-  }
-  
-  .stat-label {
-    font-size: 0.55rem;
   }
 }
 
 @media (max-width: 767px) {
-  .profile-content {
-    padding: 0 20px 20px;
+  .profile-header-full {
+    height: 140px;
   }
   
-  .profile-image-container {
-    padding: 30px 25px 25px;
+  .instructor-name-overlay {
+    font-size: 1.1rem;
   }
   
-  .profile-actions-footer {
-    flex-direction: column;
-  }
-  
-  .btn-contact {
-    width: 100%;
-    margin-top: 10px;
-  }
-  
-  .stats-grid {
-    gap: 8px;
-  }
-  
-  .stat-item {
-    padding: 10px 6px;
-  }
-  
-  .stat-number {
+  .instructor-title-overlay {
     font-size: 0.85rem;
   }
   
-  .stat-label {
-    font-size: 0.6rem;
+  .profile-overlay-full {
+    padding: 15px;
+  }
+  
+  .education-section-new,
+  .stats-section-new {
+    padding: 15px;
+  }
+  
+  .stats-grid-new {
+    gap: 6px;
+  }
+  
+  .stat-item-new {
+    padding: 8px 4px;
+  }
+  
+  .stat-number-new {
+    font-size: 0.9rem !important;
+  }
+  
+  .stat-label-new {
+    font-size: 0.65rem !important;
+  }
+  
+  .profile-actions-footer-new {
+    padding: 15px;
+    flex-direction: column;
+  }
+  
+  .btn-contact-new {
+    width: 100%;
+    margin-top: 10px;
   }
 }
 
 @media (max-width: 575px) {
-  .instructor-card {
+  .instructor-card-new {
     margin-bottom: 20px;
   }
   
-  .instructor-name {
-    font-size: 1.2rem;
+  .profile-header-full {
+    height: 120px;
   }
   
-  .profile-image-wrapper {
-    width: 110px;
-    height: 110px;
+  .instructor-name-overlay {
+    font-size: 1rem;
   }
   
-  .profile-image-container {
-    padding: 25px 20px 20px;
+  .instructor-title-overlay {
+    font-size: 0.8rem;
   }
   
-  .btn-view-profile {
-    padding: 10px 12px;
-    font-size: 0.85rem;
+  .profile-overlay-full {
+    padding: 10px;
   }
   
-  .stats-grid {
+  .stats-grid-new {
     flex-direction: column;
     gap: 8px;
   }
   
-  .stat-item {
-    justify-content: center;
-    padding: 8px 10px;
+  .stat-item-new {
     flex-direction: row;
+    justify-content: flex-start;
     text-align: left;
-    gap: 10px;
+    padding: 12px 15px;
   }
   
-  .stat-item .stat-info {
+  .stat-info-new {
     align-items: flex-start;
-  }
-  
-  .stat-number {
-    font-size: 0.9rem;
-  }
-  
-  .stat-label {
-    font-size: 0.65rem;
   }
 }
 
@@ -889,10 +860,8 @@ const getEducation = (instructor) => {
 /* ACCESSIBILITY */
 /* ==================== */
 .btn:focus,
-.btn-view-profile:focus,
-.btn-contact:focus,
-.btn-quick-view:focus,
-.btn-favorite:focus {
+.btn-view-profile-new:focus,
+.btn-contact-new:focus {
   outline: 3px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
   outline-offset: 2px;
 }
@@ -901,20 +870,17 @@ const getEducation = (instructor) => {
 /* REDUCED MOTION */
 /* ==================== */
 @media (prefers-reduced-motion: reduce) {
-  .instructor-card,
+  .instructor-card-new,
   .btn,
-  .btn-view-profile,
-  .profile-image-wrapper,
-  .profile-image {
+  .btn-view-profile-new,
+  .profile-image-full {
     transition: none;
   }
   
-  .instructor-card:hover,
+  .instructor-card-new:hover,
   .btn:hover:not(:disabled),
-  .btn-view-profile:hover,
-  .btn-contact:hover,
-  .btn-quick-view:hover,
-  .btn-favorite:hover {
+  .btn-view-profile-new:hover,
+  .btn-contact-new:hover {
     transform: none;
   }
 }
@@ -1102,13 +1068,6 @@ const getEducation = (instructor) => {
   background: var(--primary-color);
   color: white;
 }
-
-/* .stats-number {
-  font-weight: 100;
-  font-size: 1rem;
-  margin-bottom: 0.5rem;
-  color: white;
-} */
 
 .stats-label {
   color: rgba(255, 255, 255, 0.9);

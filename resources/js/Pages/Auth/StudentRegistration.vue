@@ -5,8 +5,12 @@
         <div class="col-md-8 col-lg-6">
           <div class="registration-card">
             <div class="text-center mb-4">
-              <h2>Student Registration</h2>
-              <p class="text-muted">Complete your profile to get started</p>
+              <!-- Pathshala LMS Logo -->
+              <div class="logo-container">
+                <img src="/assets/img/pathshala-logo.png" alt="Pathshala LMS" class="logo">
+              </div>
+              <h2 class="mt-4 registration-title">Student Registration</h2>
+              <p class="text-muted">Complete your profile to get started with Pathshala LMS</p>
             </div>
 
             <!-- Success Message -->
@@ -218,6 +222,7 @@
 
 <script setup>
 import { useForm } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
 
 const props = defineProps({
   errors: Object,
@@ -268,6 +273,47 @@ const submit = () => {
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
 }
 
+/* Logo Container */
+.logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.logo {
+  max-height: 50px;
+  width: auto;
+}
+
+.logo-text {
+  text-align: left;
+}
+
+.logo-main {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #e74c3c;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.logo-subtitle {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #6c757d;
+  margin: 0;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.registration-title {
+  color: #2c3e50;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
 .form-control, .form-select {
   padding: 0.75rem 1rem;
   border-radius: 10px;
@@ -280,6 +326,11 @@ const submit = () => {
   box-shadow: 0 0 0 0.2rem rgba(231, 76, 60, 0.25);
 }
 
+.form-control.is-invalid, .form-select.is-invalid {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
 .country-code {
   max-width: 180px;
 }
@@ -288,6 +339,81 @@ const submit = () => {
   padding: 0.75rem 1.5rem;
   border-radius: 10px;
   font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  border: none;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+}
+
+.btn-outline-secondary {
+  border-color: #6c757d;
+  color: #6c757d;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  transform: translateY(-2px);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.alert {
+  border-radius: 10px;
+  border: none;
+}
+
+.invalid-feedback {
+  display: block;
+  font-size: 0.875em;
+  color: #dc3545;
+}
+
+/* Text link styling */
+.text-decoration-none {
+  color: #e74c3c;
+  transition: color 0.3s ease;
+}
+
+.text-decoration-none:hover {
+  color: #c0392b;
+}
+
+/* Border top for admin/teacher section */
+.border-top {
+  border-top: 1px solid #e9ecef !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .logo-container {
+    flex-direction: column;
+    text-align: center;
+    gap: 10px;
+  }
+  
+  .logo-text {
+    text-align: center;
+  }
+  
+  .logo-main {
+    font-size: 1.3rem;
+  }
+  
+  .logo-subtitle {
+    font-size: 0.7rem;
+  }
 }
 
 @media (max-width: 576px) {
@@ -295,8 +421,21 @@ const submit = () => {
     padding: 2rem 1.5rem;
   }
   
+  .logo {
+    max-height: 45px;
+  }
+  
+  .logo-main {
+    font-size: 1.2rem;
+  }
+  
   .country-code {
     max-width: 140px;
   }
+}
+
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
 }
 </style>

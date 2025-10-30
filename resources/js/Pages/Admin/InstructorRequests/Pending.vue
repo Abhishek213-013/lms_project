@@ -40,6 +40,19 @@
           </div>
         </div>
 
+        <!-- Error Alert -->
+        <div v-if="errorMessage" class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-circle text-red-400"></i>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800">Error</h3>
+              <div class="text-sm text-red-700 mt-1">{{ errorMessage }}</div>
+            </div>
+          </div>
+        </div>
+
         <!-- Requests Table -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200">
           <div class="p-6 border-b border-gray-200">
@@ -71,16 +84,18 @@
                   <button 
                     @click="approveRequest(request.id)"
                     :disabled="processing"
-                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center space-x-2"
                   >
-                    Approve
+                    <i class="fas fa-check"></i>
+                    <span>Approve</span>
                   </button>
                   <button 
                     @click="openRejectModal(request)"
                     :disabled="processing"
-                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center space-x-2"
                   >
-                    Reject
+                    <i class="fas fa-times"></i>
+                    <span>Reject</span>
                   </button>
                 </div>
               </div>
@@ -101,7 +116,6 @@
                 <div v-if="request.experience" class="md:col-span-2">
                   <strong>Experience:</strong> {{ request.experience }}
                 </div>
-                <!-- Removed bio section since it doesn't exist -->
               </div>
             </div>
           </div>
@@ -165,6 +179,7 @@ const processing = ref(false)
 const rejectModalVisible = ref(false)
 const selectedRequest = ref(null)
 const rejectionReason = ref('')
+const errorMessage = ref('')
 
 const qualifications = {
   'HSC': 'Higher Secondary Certificate',
@@ -189,19 +204,65 @@ const getQualificationLabel = (qualification) => {
   return qualifications[qualification] || qualification || 'Not specified'
 }
 
+// Improved API request handler
+const makeApiRequest = async (url, options = {}) => {
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+  
+  const defaultOptions = {
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'X-CSRF-TOKEN': csrfToken,
+      'X-Requested-With': 'XMLHttpRequest'
+    },
+    credentials: 'same-origin'
+  }
+
+  const mergedOptions = {
+    ...defaultOptions,
+    ...options,
+    headers: {
+      ...defaultOptions.headers,
+      ...options.headers
+    }
+  }
+
+  try {
+    const response = await fetch(url, mergedOptions)
+    
+    // Check if response is HTML instead of JSON
+    const contentType = response.headers.get('content-type')
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text()
+      if (text.startsWith('<!DOCTYPE') || text.startsWith('<html')) {
+        throw new Error('Server returned HTML instead of JSON. This might be an authentication issue or route problem.')
+      }
+      throw new Error(`Unexpected response format: ${contentType}`)
+    }
+
+    const data = await response.json()
+    
+    if (!response.ok) {
+      throw new Error(data.message || `HTTP error! status: ${response.status}`)
+    }
+    
+    return data
+  } catch (error) {
+    console.error('API request failed:', error)
+    throw error
+  }
+}
+
 const approveRequest = async (requestId) => {
   if (!confirm('Are you sure you want to approve this instructor?')) return
   
   processing.value = true
+  errorMessage.value = ''
+  
   try {
-    const response = await fetch(`/api/instructor-requests/${requestId}/approve`, {
-      method: 'POST',
-      headers: {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-      }
+    const data = await makeApiRequest(`/api/instructor-requests/${requestId}/approve`, {
+      method: 'POST'
     })
-    
-    const data = await response.json()
     
     if (data.success) {
       // Remove from list
@@ -211,10 +272,11 @@ const approveRequest = async (requestId) => {
       stats.value.approved = (stats.value.approved || 0) + 1
       alert('Instructor approved successfully!')
     } else {
-      alert('Failed to approve instructor: ' + data.message)
+      errorMessage.value = data.message || 'Failed to approve instructor request'
     }
   } catch (error) {
-    alert('Error approving instructor: ' + error.message)
+    errorMessage.value = error.message || 'Failed to approve instructor request. Please check your authentication and try again.'
+    console.error('Approve request error:', error)
   } finally {
     processing.value = false
   }
@@ -224,6 +286,7 @@ const openRejectModal = (request) => {
   selectedRequest.value = request
   rejectionReason.value = ''
   rejectModalVisible.value = true
+  errorMessage.value = ''
 }
 
 const closeRejectModal = () => {
@@ -234,24 +297,20 @@ const closeRejectModal = () => {
 
 const rejectRequest = async () => {
   if (!rejectionReason.value.trim()) {
-    alert('Please provide a rejection reason')
+    errorMessage.value = 'Please provide a rejection reason'
     return
   }
   
   processing.value = true
+  errorMessage.value = ''
+  
   try {
-    const response = await fetch(`/api/instructor-requests/${selectedRequest.value.id}/reject`, {
+    const data = await makeApiRequest(`/api/instructor-requests/${selectedRequest.value.id}/reject`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-      },
       body: JSON.stringify({
         rejection_reason: rejectionReason.value
       })
     })
-    
-    const data = await response.json()
     
     if (data.success) {
       // Remove from list
@@ -262,27 +321,29 @@ const rejectRequest = async () => {
       closeRejectModal()
       alert('Instructor application rejected!')
     } else {
-      alert('Failed to reject application: ' + data.message)
+      errorMessage.value = data.message || 'Failed to reject application'
     }
   } catch (error) {
-    alert('Error rejecting application: ' + error.message)
+    errorMessage.value = error.message || 'Failed to reject application. Please check your authentication and try again.'
+    console.error('Reject request error:', error)
   } finally {
     processing.value = false
   }
 }
 
+const refreshStats = async () => {
+  try {
+    const data = await makeApiRequest('/api/instructor-requests/stats')
+    if (data.success) {
+      stats.value = data.data
+    }
+  } catch (error) {
+    console.error('Error fetching stats:', error)
+  }
+}
+
 onMounted(() => {
   // Refresh stats periodically
-  setInterval(async () => {
-    try {
-      const response = await fetch('/api/instructor-requests/stats')
-      const data = await response.json()
-      if (data.success) {
-        stats.value = data.data
-      }
-    } catch (error) {
-      console.error('Error fetching stats:', error)
-    }
-  }, 30000) // Every 30 seconds
+  setInterval(refreshStats, 30000) // Every 30 seconds
 })
 </script>
