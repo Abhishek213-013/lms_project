@@ -18,7 +18,7 @@
                     {{ displayContent.home_hero_primary_button }}
                   </Link>
                   <Link href="/instructors" class="btn btn-outline-primary btn-lg">
-                    <i class="fas fa-play-circle"></i>
+                    <i class="fas fa-play-circle icon-fixed"></i>
                     {{ displayContent.home_instructors_button }}
                   </Link>
                 </div>
@@ -70,7 +70,7 @@
                   </div>
                   <div class="course-info d-flex justify-content-between align-items-center">
                     <small class="students-count">
-                      <i class="fas fa-users"></i> {{ course.student_count }} {{ t('students') }}
+                      <i class="fas fa-users icon-fixed"></i> {{ course.student_count }} {{ t('students') }}
                     </small>
                     <strong class="course-price">${{ course.fee }}</strong>
                   </div>
@@ -93,7 +93,7 @@
         </div>
       </section>
 
-      <!-- FIXED: Instructors Section with Full-Size Avatar Images (No Head Cropping) -->
+      <!-- Instructors Section -->
       <section class="instructors-section section-py-120" v-if="instructors.length > 0">
         <div class="container">
           <div class="row mb-5">
@@ -103,43 +103,35 @@
             </div>
           </div>
           
-          <!-- FIXED: Instructor Cards with Full-Size Avatar Images (No Head Cropping) -->
           <div class="row">
             <div class="col-xl-3 col-lg-4 col-md-6" v-for="instructor in instructors.slice(0, 8)" :key="instructor.id">
               <div class="instructor-card-new">
-                <!-- Profile Header with Full-Size Image - NO HEAD CROPPING -->
-                <div class="profile-header-full">
-                  <div class="profile-image-full-container">
-                    <img 
-                      :src="getInstructorAvatar(instructor)" 
-                      :alt="instructor.name"
-                      class="profile-image-full"
-                      @error="handleImageError"
-                    >
-                    <div class="profile-overlay-full">
-                      <div class="profile-info-overlay">
-                        <h3 class="instructor-name-overlay">{{ instructor.name }}</h3>
-                        <p class="instructor-title-overlay">{{ getExpertise(instructor) }}</p>
-                      </div>
-                    </div>
-                  </div>
+                <!-- Profile Picture - Rectangular Shape -->
+                <div class="profile-image-container">
+                  <img 
+                    :src="getInstructorAvatar(instructor)" 
+                    :alt="instructor.name"
+                    class="profile-image-rectangular"
+                    @error="handleImageError"
+                  >
+                </div>
+
+                <!-- Teacher Name Section -->
+                <div class="teacher-name-section">
+                  <h3 class="teacher-name">{{ instructor.name }}</h3>
                 </div>
 
                 <!-- Education Section -->
-                <div class="education-section-new">
+                <div class="education-section">
                   <div class="section-header">
                     <i class="fas fa-graduation-cap icon-fixed"></i>
                     <span class="section-title-small">{{ t('Education') }}</span>
                   </div>
-                  <p class="education-text-new line-clamp-2">{{ getEducation(instructor) }}</p>
+                  <p class="education-text line-clamp-2">{{ getEducation(instructor) }}</p>
                 </div>
 
                 <!-- Stats Section -->
                 <div class="stats-section-new">
-                  <div class="section-header">
-                    <i class="fas fa-chart-bar icon-fixed"></i>
-                    <span class="section-title-small">{{ t('Stats') }}</span>
-                  </div>
                   <div class="stats-grid-new">
                     <div class="stat-item-new">
                       <div class="stat-icon-new">
@@ -171,21 +163,17 @@
                   </div>
                 </div>
 
-                <!-- Action Buttons -->
-                <div class="profile-actions-footer-new">
-                  <Link :href="`/instructor/${instructor.id}`" class="btn-view-profile-new">
+                <!-- View Profile Button -->
+                <div class="view-profile-section">
+                  <Link :href="`/instructor/${instructor.id}`" class="btn-view-profile">
                     <i class="fas fa-user-circle icon-fixed"></i>
                     {{ t('View Profile') }}
                   </Link>
-                  <button class="btn-contact-new" :title="t('Contact Instructor')">
-                    <i class="fas fa-envelope icon-fixed"></i>
-                  </button>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- View All Instructors Button -->
           <div class="row mt-4">
             <div class="col-12 text-center">
               <Link href="/instructors" class="btn btn-outline-primary btn-lg">
@@ -244,7 +232,7 @@ import FrontendLayout from '../Layout/FrontendLayout.vue'
 import { ref, onMounted, computed, onUnmounted, watch } from 'vue'
 import { useTranslation } from '@/composables/useTranslation'
 
-// Use translation composable
+// Use translation composable - call it once at the top level
 const { t, currentLanguage } = useTranslation()
 
 // Define props
@@ -259,15 +247,15 @@ const props = defineProps({
   testimonials: Array
 })
 
-// Theme state
+// Reactive data
 const currentTheme = ref('light')
 
-// Computed property for dynamic content with fallbacks
+// Computed properties
 const displayContent = computed(() => {
-  return Object.keys(props.content).length > 0 ? props.content : getDefaultContent();
+  // Use props.content if available, otherwise use default content
+  return Object.keys(props.content).length > 0 ? props.content : getDefaultContent()
 })
 
-// Computed property for hero section background
 const heroSectionStyle = computed(() => {
   const isDark = currentTheme.value === 'dark'
   const lightBg = 'linear-gradient(135deg, rgba(245, 247, 250, 0.9) 0%, rgba(228, 232, 240, 0.9) 100%), url(\'/assets/img/banner/banner_bg02.png\') center/cover no-repeat'
@@ -278,7 +266,7 @@ const heroSectionStyle = computed(() => {
   }
 })
 
-// Default content fallback
+// Methods
 const getDefaultContent = () => {
   return {
     home_hero_title: t('Learning is What You Make of it. Make it Yours at SkillGro.'),
@@ -298,21 +286,11 @@ const getDefaultContent = () => {
   }
 }
 
-// Handle theme changes from global system
 const handleThemeChange = (event) => {
   currentTheme.value = event.detail.theme
 }
 
-// Watch for language changes to trigger re-render
-watch(currentLanguage, () => {
-  // This will trigger reactive updates in the template
-  console.log('Language changed, refreshing icons...')
-  refreshIcons()
-})
-
-// Icon refresh function
 const refreshIcons = () => {
-  // Force Font Awesome to re-check for icons
   if (window.FontAwesome && window.FontAwesome.dom && window.FontAwesome.dom.i2svg) {
     setTimeout(() => {
       window.FontAwesome.dom.i2svg()
@@ -320,27 +298,6 @@ const refreshIcons = () => {
   }
 }
 
-onMounted(() => {
-  // Get initial theme from localStorage or system preference
-  const savedTheme = localStorage.getItem('preferredTheme')
-  const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-  
-  currentTheme.value = savedTheme || (systemPrefersDark ? 'dark' : 'light')
-  
-  // Listen for theme changes from header
-  window.addEventListener('themeChanged', handleThemeChange)
-  
-  // Initialize icons
-  refreshIcons()
-  
-  console.log('Home page content received:', props.content)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('themeChanged', handleThemeChange)
-})
-
-// Methods for instructor data
 const getInstructorAvatar = (instructor) => {
   if (instructor.avatar && instructor.avatar !== '/assets/img/instructors/default.jpg') {
     return instructor.avatar;
@@ -362,7 +319,6 @@ const handleImageError = (event) => {
 }
 
 const getExpertise = (instructor) => {
-  // Extract expertise from qualification or use default
   const qual = instructor.education_qualification || '';
   if (qual.includes('Science')) return t('Science Expert');
   if (qual.includes('English')) return t('English Specialist');
@@ -378,6 +334,42 @@ const getEducation = (instructor) => {
   }
   return t('Teaching Degree');
 }
+
+// Force re-render when language changes
+watch(currentLanguage, (newLang, oldLang) => {
+  console.log('Language changed from', oldLang, 'to', newLang);
+  // Force re-computation of all translated content
+  refreshIcons();
+  
+  // Add a small delay to ensure DOM updates
+  setTimeout(() => {
+    if (window.FontAwesome && window.FontAwesome.dom && window.FontAwesome.dom.i2svg) {
+      window.FontAwesome.dom.i2svg();
+    }
+  }, 200);
+});
+
+// Lifecycle hooks - properly placed
+onMounted(() => {
+  // Get initial theme
+  const savedTheme = localStorage.getItem('preferredTheme')
+  const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+  
+  currentTheme.value = savedTheme || (systemPrefersDark ? 'dark' : 'light')
+  
+  // Listen for theme changes
+  window.addEventListener('themeChanged', handleThemeChange)
+  
+  // Initialize icons
+  refreshIcons()
+  
+  console.log('Home page content received:', props.content)
+  console.log('Current language:', currentLanguage.value)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('themeChanged', handleThemeChange)
+})
 </script>
 
 <style scoped>
@@ -411,7 +403,7 @@ const getEducation = (instructor) => {
 }
 
 /* ==================== */
-/* UPDATED: INSTRUCTOR SECTION STYLES */
+/* NEW INSTRUCTOR CARD DESIGN */
 /* ==================== */
 .instructors-section {
   position: relative;
@@ -423,15 +415,12 @@ const getEducation = (instructor) => {
   padding: 120px 0;
 }
 
-/* ==================== */
-/* FIXED: INSTRUCTOR CARD WITH FULL-SIZE AVATAR IMAGES - NO HEAD CROPPING */
-/* ==================== */
 .instructor-card-new {
   background: var(--card-bg);
-  border-radius: 20px;
+  border-radius: 12px;
   margin-bottom: 30px;
   box-shadow: var(--shadow);
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: all 0.3s ease;
   border: 1px solid var(--border-color);
   overflow: hidden;
   height: 100%;
@@ -441,96 +430,64 @@ const getEducation = (instructor) => {
 }
 
 .instructor-card-new:hover {
-  transform: translateY(-8px);
-  box-shadow: var(--shadow-xl);
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
 }
 
-/* Profile Header with Full-Size Image - NO HEAD CROPPING */
-.profile-header-full {
-  position: relative;
-  height: 200px;
-  overflow: hidden;
-  flex-shrink: 0;
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
-  padding: 10px; /* Padding around the image */
-}
-
-.profile-image-full-container {
+/* Profile Picture - Rectangular Shape */
+.profile-image-container {
   width: 100%;
-  height: 100%;
-  position: relative;
+  height: 220px;
+  overflow: hidden;
+  background: var(--bg-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
-  border-radius: 12px;
-  background: var(--bg-secondary); /* Background color for empty spaces */
+  padding: 0;
+  margin: 0;
 }
 
-/* FIXED: Changed object-fit from 'cover' to 'contain' to prevent head cropping */
-.profile-image-full {
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain; /* CHANGED: This prevents head cropping */
-  transition: all 0.3s ease;
-  border-radius: 8px;
+.profile-image-rectangular {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
 }
 
-.instructor-card-new:hover .profile-image-full {
+.instructor-card-new:hover .profile-image-rectangular {
   transform: scale(1.05);
 }
 
-.profile-overlay-full {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(to bottom, transparent 40%, rgba(0, 0, 0, 0.8) 100%);
-  display: flex;
-  align-items: flex-end;
+/* Teacher Name Section */
+.teacher-name-section {
   padding: 20px;
-  transition: all 0.3s ease;
-  border-radius: 12px;
+  border-bottom: 2px solid var(--border-color);
+  background: var(--card-bg);
 }
 
-.profile-info-overlay {
-  width: 100%;
-  text-align: center;
-}
-
-.instructor-name-overlay {
-  font-size: 1.4rem;
+.teacher-name {
+  font-size: 1.3rem;
   font-weight: 700;
-  color: white;
-  margin: 0 0 5px 0;
-  line-height: 1.3;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-}
-
-.instructor-title-overlay {
-  font-size: 1rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   margin: 0;
-  line-height: 1.4;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  line-height: 1.3;
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
 
-/* Section Headers */
+/* Education Section */
+.education-section {
+  padding: 20px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--card-bg);
+}
+
 .section-header {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border-light);
 }
 
 .section-header i {
@@ -548,32 +505,21 @@ const getEducation = (instructor) => {
   letter-spacing: 0.5px;
 }
 
-/* Education Section */
-.education-section-new {
-  padding: 25px;
-  background: var(--bg-secondary);
-  margin: 0;
-  border-bottom: 1px solid var(--border-light);
-  flex-shrink: 0;
-}
-
-.education-text-new {
+.education-text {
   font-size: 0.9rem;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   margin: 0;
   line-height: 1.5;
   font-weight: 500;
-  transition: color 0.3s ease;
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
 
 /* Stats Section */
 .stats-section-new {
-  padding: 25px;
-  background: var(--bg-secondary);
-  margin: 0;
-  flex-shrink: 0;
+  padding: 20px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--card-bg);
 }
 
 .stats-grid-new {
@@ -588,31 +534,28 @@ const getEducation = (instructor) => {
   align-items: center;
   gap: 6px;
   flex: 1;
-  padding: 12px 8px;
-  background: var(--card-bg);
-  border-radius: 12px;
+  padding: 10px 5px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
   transition: background-color 0.3s ease;
   min-width: 0;
   text-align: center;
-  border: 1px solid var(--border-light);
 }
 
 .stat-item-new:hover {
   background: var(--bg-tertiary);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .stat-icon-new {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   background: var(--primary-color);
-  border-radius: 10px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 12px;
+  font-size: 11px;
   flex-shrink: 0;
   transition: all 0.3s ease;
 }
@@ -623,48 +566,42 @@ const getEducation = (instructor) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 
 .stat-number-new {
-  font-size: 1rem !important;
+  font-size: 0.9rem !important;
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.2;
-  transition: color 0.3s ease;
 }
 
 .stat-label-new {
-  font-size: 0.7rem !important;
+  font-size: 0.65rem !important;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 600;
-  transition: color 0.3s ease;
   line-height: 1.2;
   word-wrap: break-word;
   overflow-wrap: break-word;
   display: block;
 }
 
-/* Action Buttons */
-.profile-actions-footer-new {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding: 25px;
+/* View Profile Section */
+.view-profile-section {
+  padding: 20px;
   background: var(--card-bg);
   margin-top: auto;
-  flex-shrink: 0;
 }
 
-.btn-view-profile-new {
-  flex: 1;
+.btn-view-profile {
+  width: 100%;
   background: var(--primary-color);
   color: white;
   border: none;
   padding: 14px 20px;
-  border-radius: 12px;
+  border-radius: 8px;
   font-weight: 600;
   font-size: 0.95rem;
   cursor: pointer;
@@ -678,33 +615,10 @@ const getEducation = (instructor) => {
   min-height: 48px;
 }
 
-.btn-view-profile-new:hover {
+.btn-view-profile:hover {
   background: var(--primary-hover);
   transform: translateY(-2px);
   box-shadow: 0 5px 15px color-mix(in srgb, var(--primary-color) 30%, transparent);
-}
-
-.btn-contact-new {
-  width: 48px;
-  height: 48px;
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 16px;
-  flex-shrink: 0;
-}
-
-.btn-contact-new:hover {
-  background: var(--primary-color);
-  color: white;
-  border-color: var(--primary-color);
-  transform: translateY(-2px);
 }
 
 /* ==================== */
@@ -722,11 +636,11 @@ const getEducation = (instructor) => {
 }
 
 /* ==================== */
-/* RESPONSIVE DESIGN FOR FULL-SIZE AVATARS - NO HEAD CROPPING */
+/* RESPONSIVE DESIGN FOR INSTRUCTOR CARDS */
 /* ==================== */
 @media (max-width: 1199px) {
-  .profile-header-full {
-    height: 180px;
+  .profile-image-container {
+    height: 200px;
   }
   
   .stats-grid-new {
@@ -734,61 +648,51 @@ const getEducation = (instructor) => {
   }
   
   .stat-item-new {
-    padding: 10px 6px;
+    padding: 8px 4px;
   }
 }
 
 @media (max-width: 991px) {
-  .profile-header-full {
-    height: 160px;
+  .profile-image-container {
+    height: 180px;
   }
   
-  .instructor-name-overlay {
+  .teacher-name {
     font-size: 1.2rem;
   }
   
-  .instructor-title-overlay {
-    font-size: 0.9rem;
+  .education-section,
+  .stats-section-new,
+  .view-profile-section {
+    padding: 15px;
   }
   
-  .education-section-new,
-  .stats-section-new {
-    padding: 20px;
-  }
-  
-  .profile-actions-footer-new {
-    padding: 20px;
+  .teacher-name-section {
+    padding: 15px;
   }
   
   .stats-grid-new {
     gap: 5px;
   }
-  
-  .stat-item-new {
-    padding: 8px 4px;
-  }
 }
 
 @media (max-width: 767px) {
-  .profile-header-full {
-    height: 140px;
+  .profile-image-container {
+    height: 160px;
   }
   
-  .instructor-name-overlay {
+  .teacher-name {
     font-size: 1.1rem;
   }
   
-  .instructor-title-overlay {
-    font-size: 0.85rem;
+  .education-section,
+  .stats-section-new,
+  .view-profile-section {
+    padding: 12px;
   }
   
-  .profile-overlay-full {
-    padding: 15px;
-  }
-  
-  .education-section-new,
-  .stats-section-new {
-    padding: 15px;
+  .teacher-name-section {
+    padding: 12px;
   }
   
   .stats-grid-new {
@@ -796,25 +700,15 @@ const getEducation = (instructor) => {
   }
   
   .stat-item-new {
-    padding: 8px 4px;
+    padding: 6px 3px;
   }
   
   .stat-number-new {
-    font-size: 0.9rem !important;
+    font-size: 0.85rem !important;
   }
   
   .stat-label-new {
-    font-size: 0.65rem !important;
-  }
-  
-  .profile-actions-footer-new {
-    padding: 15px;
-    flex-direction: column;
-  }
-  
-  .btn-contact-new {
-    width: 100%;
-    margin-top: 10px;
+    font-size: 0.6rem !important;
   }
 }
 
@@ -823,20 +717,12 @@ const getEducation = (instructor) => {
     margin-bottom: 20px;
   }
   
-  .profile-header-full {
-    height: 120px;
+  .profile-image-container {
+    height: 140px;
   }
   
-  .instructor-name-overlay {
+  .teacher-name {
     font-size: 1rem;
-  }
-  
-  .instructor-title-overlay {
-    font-size: 0.8rem;
-  }
-  
-  .profile-overlay-full {
-    padding: 10px;
   }
   
   .stats-grid-new {
@@ -848,7 +734,7 @@ const getEducation = (instructor) => {
     flex-direction: row;
     justify-content: flex-start;
     text-align: left;
-    padding: 12px 15px;
+    padding: 10px 12px;
   }
   
   .stat-info-new {
@@ -859,9 +745,7 @@ const getEducation = (instructor) => {
 /* ==================== */
 /* ACCESSIBILITY */
 /* ==================== */
-.btn:focus,
-.btn-view-profile-new:focus,
-.btn-contact-new:focus {
+.btn-view-profile:focus {
   outline: 3px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
   outline-offset: 2px;
 }
@@ -871,21 +755,20 @@ const getEducation = (instructor) => {
 /* ==================== */
 @media (prefers-reduced-motion: reduce) {
   .instructor-card-new,
-  .btn,
-  .btn-view-profile-new,
-  .profile-image-full {
+  .btn-view-profile,
+  .profile-image-rectangular {
     transition: none;
   }
   
   .instructor-card-new:hover,
-  .btn:hover:not(:disabled),
-  .btn-view-profile-new:hover,
-  .btn-contact-new:hover {
+  .btn-view-profile:hover {
     transform: none;
   }
 }
 
-/* Your existing CSS styles for other sections remain below */
+/* ==================== */
+/* EXISTING STYLES FOR OTHER SECTIONS */
+/* ==================== */
 .hero-section {
   padding: 120px 0 80px;
   position: relative;

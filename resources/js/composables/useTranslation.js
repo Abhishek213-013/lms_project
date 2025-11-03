@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 export const translations = {
   en: {
+    
     // Header & Navigation
     'Home': 'Home',
     'Courses': 'Courses',
@@ -16,7 +17,8 @@ export const translations = {
     'Logout': 'Logout',
     'Login': 'Login',
     'Get Started': 'Get Started',
-    
+    'View Course': 'View Course',
+
     // Home Page
     'Learning is What You Make of it. Make it Yours at SkillGro.': 'Learning is What You Make of it. Make it Yours at SkillGro.',
     'Unlock your potential with our expert-led courses and transform your career.': 'Unlock your potential with our expert-led courses and transform your career.',
@@ -65,10 +67,14 @@ export const translations = {
     'Meet Our Expert Instructors': 'Meet Our Expert Instructors',
     'Expertise': 'Expertise',
     'Education': 'Education',
+    'Stats': 'Stats',
     'Courses': 'Courses',
     'Students': 'Students',
     'Rating': 'Rating',
+    'View Profile': 'View Profile',
     'View Full Profile': 'View Full Profile',
+    'Contact Instructor': 'Contact Instructor',
+
     'No Instructors Found': 'No Instructors Found',
     'We couldn\'t find any instructors matching your criteria.': 'We couldn\'t find any instructors matching your criteria.',
     'Clear Filters': 'Clear Filters',
@@ -318,6 +324,7 @@ export const translations = {
     'Logout': 'লগআউট',
     'Login': 'লগইন',
     'Get Started': 'শুরু করুন',
+    'View Course': 'কোর্স দেখুন',
     
     // Home Page
     'Learning is What You Make of it. Make it Yours at SkillGro.': 'শেখা হলো আপনার যা বানাতে চান। এটিকে আপনার নিজের করে নিন স্কিলগ্রোতে।',
@@ -367,10 +374,13 @@ export const translations = {
     'Meet Our Expert Instructors': 'আমাদের বিশেষজ্ঞ ইন্সট্রাক্টরদের সাথে পরিচিত হোন',
     'Expertise': 'দক্ষতা',
     'Education': 'শিক্ষা',
+    'Stats': 'পরিসংখ্যান',
     'Courses': 'কোর্স',
     'Students': 'শিক্ষার্থী',
     'Rating': 'রেটিং',
+    'View Profile': 'প্রোফাইল দেখুন',
     'View Full Profile': 'সম্পূর্ণ প্রোফাইল দেখুন',
+    'Contact Instructor': 'ইন্সট্রাক্টরের সাথে যোগাযোগ',
     'No Instructors Found': 'কোন ইন্সট্রাক্টর পাওয়া যায়নি',
     'We couldn\'t find any instructors matching your criteria.': 'আপনার শর্তের সাথে মিলে এমন কোন ইন্সট্রাক্টর আমরা খুঁজে পাইনি।',
     'Clear Filters': 'ফিল্টার সরান',

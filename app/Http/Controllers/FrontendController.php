@@ -20,9 +20,17 @@ class FrontendController extends Controller
     public function home(): Response
     {
         try {
-            // Get home page content from database
-            $content = Content::getHomeContent();
+            // Get the language from request or session, default to 'en'
+            $language = $this->getCurrentLanguage();
             
+            Log::info("Loading home page with language: " . $language);
+            
+            // Get home page content from database with language support
+            $content = Content::getHomeContent($language);
+            
+            Log::info("Home content loaded for language {$language}:", $content);
+            
+            // ... rest of your home method code remains the same ...
             $featuredCourses = ClassModel::where('status', 'active')
                 ->with(['teacher:id,name', 'students'])
                 ->select(['id', 'name', 'subject', 'type', 'category', 'description', 'grade', 'created_at'])
@@ -99,7 +107,7 @@ class FrontendController extends Controller
             ];
 
             return Inertia::render('Frontend/Home', [
-                'content' => $content, // Add content to the props
+                'content' => $content,
                 'featuredCourses' => $featuredCourses,
                 'instructors' => $instructors,
                 'stats' => $stats,
@@ -112,14 +120,17 @@ class FrontendController extends Controller
                         'name' => Auth::user()->name,
                         'role' => Auth::user()->role,
                     ] : null
-                ]
+                ],
+                'currentLanguage' => $language,
+                'availableLanguages' => ['en', 'bn']
             ]);
 
         } catch (\Exception $e) {
             Log::error('Home page error: ' . $e->getMessage());
             
-            // Get default content as fallback
-            $defaultContent = Content::getDefaultContent();
+            // Get default content as fallback with language support
+            $language = $this->getCurrentLanguage();
+            $defaultContent = Content::getDefaultContent($language);
             $homeContent = array_filter($defaultContent, function($key) {
                 return strpos($key, 'home_') === 0;
             }, ARRAY_FILTER_USE_KEY);
@@ -135,20 +146,78 @@ class FrontendController extends Controller
                     'total_enrollments' => 2500
                 ],
                 'testimonials' => [],
-                'pageTitle' => 'SkillGro - Learn with Expert Teachers'
+                'pageTitle' => 'SkillGro - Learn with Expert Teachers',
+                'currentLanguage' => $language,
+                'availableLanguages' => ['en', 'bn']
             ]);
         }
     }
 
+
+
+    public function switchLanguage($language)
+    {
+        $validLanguages = ['en', 'bn'];
+        $referer = request()->header('referer') ?? '/';
+        
+        if (in_array($language, $validLanguages)) {
+            session(['lang' => $language]);
+            
+            // If it's an API request, return JSON
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Language switched to " . ($language === 'en' ? 'English' : 'Bengali'),
+                    'language' => $language,
+                    'redirect_url' => $referer
+                ]);
+            }
+            
+            // For web requests, redirect back
+            return redirect($referer)->with('success', "Language switched to " . ($language === 'en' ? 'English' : 'Bengali'));
+        }
+        
+        if (request()->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid language'
+            ], 400);
+        }
+        
+        return redirect($referer)->with('error', 'Invalid language');
+    }
+
+
     // About page
     public function about()
     {
-        // Get about page content from database
-        $content = Content::getAboutContent();
+        // Get the language from request or session, default to 'en'
+        $language = $this->getCurrentLanguage();
+        
+        Log::info("Loading about page with language: " . $language);
+        
+        // Get about page content from database with language support
+        $content = Content::getAboutContent($language);
+
+        Log::info("About content loaded for language {$language}:", $content);
 
         return Inertia::render('Frontend/About', [
-            'content' => $content
+            'content' => $content,
+            'currentLanguage' => $language,
+            'availableLanguages' => ['en', 'bn']
         ]);
+    }
+
+    private function getCurrentLanguage()
+    {
+        $language = request()->get('lang', session('lang', 'en'));
+        
+        // Validate language
+        if (!in_array($language, ['en', 'bn'])) {
+            $language = 'en';
+        }
+        
+        return $language;
     }
 
     public function courses(Request $request): Response

@@ -1,126 +1,128 @@
 <template>
   <footer class="frontend-footer" :class="themeClass">
-    <div class="container">
-      <div class="row compact-row">
-        <div class="col-lg-4 compact-col">
-          <div class="footer-logo compact-logo">
-            <Link href="/" class="text-decoration-none">
-              <div class="footer-logo-container">
-                <img src="../../../../public/assets/img/pathshala-logo.png" alt="Pathshala LMS" class="footer-logo-image">
-              </div>
-            </Link>
+    <div class="footer-padding-layer">
+      <div class="container">
+        <div class="row compact-row">
+          <div class="col-lg-4 compact-col">
+            <div class="footer-logo compact-logo">
+              <Link href="/" class="text-decoration-none">
+                <div class="footer-logo-container">
+                  <img src="../../../../public/assets/img/pathshala-logo.png" alt="Pathshala LMS" class="footer-logo-image">
+                </div>
+              </Link>
+            </div>
+            <p class="footer-description compact-description">{{ t('Transforming education through innovative online learning solutions.') }}</p>
+            <div class="social-links compact-social">
+              <a href="#" class="social-link" :title="t('Follow us on Facebook')">
+                <i class="fab fa-facebook-f icon-fixed"></i>
+              </a>
+              <a href="#" class="social-link" :title="t('Follow us on Twitter')">
+                <i class="fab fa-twitter icon-fixed"></i>
+              </a>
+              <a href="#" class="social-link" :title="t('Follow us on LinkedIn')">
+                <i class="fab fa-linkedin-in icon-fixed"></i>
+              </a>
+              <a href="#" class="social-link" :title="t('Follow us on Instagram')">
+                <i class="fab fa-instagram icon-fixed"></i>
+              </a>
+            </div>
           </div>
-          <p class="footer-description compact-description">{{ t('Transforming education through innovative online learning solutions.') }}</p>
-          <div class="social-links compact-social">
-            <a href="#" class="social-link" :title="t('Follow us on Facebook')">
-              <i class="fab fa-facebook-f"></i>
-            </a>
-            <a href="#" class="social-link" :title="t('Follow us on Twitter')">
-              <i class="fab fa-twitter"></i>
-            </a>
-            <a href="#" class="social-link" :title="t('Follow us on LinkedIn')">
-              <i class="fab fa-linkedin-in"></i>
-            </a>
-            <a href="#" class="social-link" :title="t('Follow us on Instagram')">
-              <i class="fab fa-instagram"></i>
-            </a>
+          
+          <div class="col-lg-2 col-md-6 compact-col">
+            <h6 class="footer-heading compact-heading">{{ t('Quick Links') }}</h6>
+            <ul class="footer-links compact-links">
+              <li class="footer-link-item">
+                <Link href="/" class="footer-link">
+                  {{ t('Home') }}
+                </Link>
+              </li>
+              <li class="footer-link-item">
+                <Link href="/courses" class="footer-link">
+                  {{ t('Courses') }}
+                </Link>
+              </li>
+              <li class="footer-link-item">
+                <Link href="/instructors" class="footer-link">
+                  {{ t('Instructors') }}
+                </Link>
+              </li>
+              <li class="footer-link-item">
+                <Link href="/about" class="footer-link">
+                  {{ t('About Us') }}
+                </Link>
+              </li>
+            </ul>
+          </div>
+          
+          <div class="col-lg-3 col-md-6 compact-col">
+            <h6 class="footer-heading compact-heading">{{ t('Categories') }}</h6>
+            <ul class="footer-links compact-links">
+              <li class="footer-link-item">
+                <Link href="/courses?category=primary" class="footer-link">
+                  {{ t('Primary (1-5)') }}
+                </Link>
+              </li>
+              <li class="footer-link-item">
+                <Link href="/courses?category=junior" class="footer-link">
+                  {{ t('Junior (6-8)') }}
+                </Link>
+              </li>
+              <li class="footer-link-item">
+                <Link href="/courses?category=secondary" class="footer-link">
+                  {{ t('Secondary (9-10)') }}
+                </Link>
+              </li>
+              <li class="footer-link-item">
+                <Link href="/courses?category=higher-secondary" class="footer-link">
+                  {{ t('Higher Secondary (11-12)') }}
+                </Link>
+              </li>
+            </ul>
+          </div>
+          
+          <div class="col-lg-3 compact-col">
+            <h6 class="footer-heading compact-heading">{{ t('Contact Info') }}</h6>
+            <ul class="contact-info compact-contact">
+              <li class="contact-item">
+                <i class="fas fa-map-marker-alt contact-icon icon-fixed"></i>
+                <span class="contact-text">159 Anabil, Dhopadighir Par (North), Jail Road, Sylhet, Sylhet 3100</span>
+              </li>
+              <li class="contact-item">
+                <i class="fas fa-phone contact-icon icon-fixed"></i>
+                <span class="contact-text">+88 01842-485222</span>
+              </li>
+              <li class="contact-item">
+                <i class="fas fa-envelope contact-icon icon-fixed"></i>
+                <span class="contact-text">itlslhelpdesk@gmail.com</span>
+              </li>
+              <li class="contact-item">
+                <i class="fas fa-clock contact-icon icon-fixed"></i>
+                <span class="contact-text">{{ t('24/7 Support') }}</span>
+              </li>
+            </ul>
           </div>
         </div>
         
-        <div class="col-lg-2 col-md-6 compact-col">
-          <h6 class="footer-heading compact-heading">{{ t('Quick Links') }}</h6>
-          <ul class="footer-links compact-links">
-            <li class="footer-link-item">
-              <Link href="/" class="footer-link">
-                {{ t('Home') }}
-              </Link>
-            </li>
-            <li class="footer-link-item">
-              <Link href="/courses" class="footer-link">
-                {{ t('Courses') }}
-              </Link>
-            </li>
-            <li class="footer-link-item">
-              <Link href="/instructors" class="footer-link">
-                {{ t('Instructors') }}
-              </Link>
-            </li>
-            <li class="footer-link-item">
-              <Link href="/about" class="footer-link">
-                {{ t('About Us') }}
-              </Link>
-            </li>
-          </ul>
-        </div>
+        <hr class="footer-divider compact-divider">
         
-        <div class="col-lg-3 col-md-6 compact-col">
-          <h6 class="footer-heading compact-heading">{{ t('Categories') }}</h6>
-          <ul class="footer-links compact-links">
-            <li class="footer-link-item">
-              <Link href="/courses?category=primary" class="footer-link">
-                {{ t('Primary (1-5)') }}
+        <div class="footer-bottom compact-bottom">
+          <div class="row align-items-center">
+            <div class="col-md-6">
+              <p class="copyright">
+                &copy; {{ new Date().getFullYear() }} IT Lab Solutions Ltd. {{ t('All rights reserved.') }}
+              </p>
+            </div>
+            <div class="col-md-6 text-md-end">
+              <Link href="/privacy" class="footer-bottom-link me-3">
+                {{ t('Privacy Policy') }}
               </Link>
-            </li>
-            <li class="footer-link-item">
-              <Link href="/courses?category=junior" class="footer-link">
-                {{ t('Junior (6-8)') }}
+              <Link href="/terms" class="footer-bottom-link me-3">
+                {{ t('Terms of Service') }}
               </Link>
-            </li>
-            <li class="footer-link-item">
-              <Link href="/courses?category=secondary" class="footer-link">
-                {{ t('Secondary (9-10)') }}
+              <Link href="/contact" class="footer-bottom-link">
+                {{ t('Contact') }}
               </Link>
-            </li>
-            <li class="footer-link-item">
-              <Link href="/courses?category=higher-secondary" class="footer-link">
-                {{ t('Higher Secondary (11-12)') }}
-              </Link>
-            </li>
-          </ul>
-        </div>
-        
-        <div class="col-lg-3 compact-col">
-          <h6 class="footer-heading compact-heading">{{ t('Contact Info') }}</h6>
-          <ul class="contact-info compact-contact">
-            <li class="contact-item">
-              <i class="fas fa-map-marker-alt contact-icon"></i>
-              <span class="contact-text">159 Anabil, Dhopadighir Par (North), Jail Road, Sylhet, Sylhet 3100</span>
-            </li>
-            <li class="contact-item">
-              <i class="fas fa-phone contact-icon"></i>
-              <span class="contact-text">+88 01842-485222</span>
-            </li>
-            <li class="contact-item">
-              <i class="fas fa-envelope contact-icon"></i>
-              <span class="contact-text">itlslhelpdesk@gmail.com</span>
-            </li>
-            <li class="contact-item">
-              <i class="fas fa-clock contact-icon"></i>
-              <span class="contact-text">{{ t('24/7 Support') }}</span>
-            </li>
-          </ul>
-        </div>
-      </div>
-      
-      <hr class="footer-divider compact-divider">
-      
-      <div class="footer-bottom compact-bottom">
-        <div class="row align-items-center">
-          <div class="col-md-6">
-            <p class="copyright">
-              &copy; {{ new Date().getFullYear() }} IT Lab Solutions Ltd. {{ t('All rights reserved.') }}
-            </p>
-          </div>
-          <div class="col-md-6 text-md-end">
-            <Link href="/privacy" class="footer-bottom-link me-3">
-              {{ t('Privacy Policy') }}
-            </Link>
-            <Link href="/terms" class="footer-bottom-link me-3">
-              {{ t('Terms of Service') }}
-            </Link>
-            <Link href="/contact" class="footer-bottom-link">
-              {{ t('Contact') }}
-            </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -166,6 +168,25 @@ const loadInitialTheme = () => {
   updateThemeClass()
 }
 
+// Refresh icons when language changes
+const refreshIcons = () => {
+  if (window.FontAwesome && window.FontAwesome.dom && window.FontAwesome.dom.i2svg) {
+    setTimeout(() => {
+      window.FontAwesome.dom.i2svg();
+    }, 100);
+  }
+}
+
+// Watch for language changes
+watch(currentLanguage, (newLang, oldLang) => {
+  console.log('Footer: Language changed from', oldLang, 'to', newLang);
+  refreshIcons();
+  
+  setTimeout(() => {
+    refreshIcons();
+  }, 200);
+});
+
 onMounted(() => {
   // Load initial theme
   loadInitialTheme()
@@ -189,6 +210,9 @@ onMounted(() => {
       updateThemeClass()
     }
   })
+  
+  // Initialize icons
+  refreshIcons()
 })
 
 onUnmounted(() => {
@@ -207,8 +231,26 @@ watch(currentTheme, () => {
 .frontend-footer {
   margin-top: auto;
   transition: all 0.3s ease;
-  padding: 1rem 0 0.5rem 0;
+  padding: 0;
   min-height: auto;
+}
+
+/* NEW: Additional padding layer for separation */
+.footer-padding-layer {
+  padding: 2rem 0 1rem 0;
+  position: relative;
+}
+
+/* Add subtle top border for better separation */
+.frontend-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--border-color) 50%, transparent 100%);
+  opacity: 0.6;
 }
 
 /* Compact layout classes */
@@ -247,11 +289,40 @@ watch(currentTheme, () => {
 }
 
 .compact-divider {
-  margin: 0.5rem 0 !important;
+  margin: 1rem 0 0.5rem 0 !important;
 }
 
 .compact-bottom {
   padding-top: 0.25rem !important;
+}
+
+/* ==================== */
+/* ICON FIXES FOR LANGUAGE SWITCH */
+/* ==================== */
+.icon-fixed {
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900 !important;
+  font-style: normal !important;
+  font-variant: normal !important;
+  text-rendering: auto !important;
+  -webkit-font-smoothing: antialiased !important;
+  speak: none;
+}
+
+/* Ensure all Font Awesome icons maintain their font family */
+.fas, .fa, .far, .fab {
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900 !important;
+}
+
+/* Specific fixes for Bengali language */
+:global(.bn-lang) .fas,
+:global(.bn-lang) .fa,
+:global(.bn-lang) .far,
+:global(.bn-lang) .fab,
+:global(.bn-lang) .icon-fixed {
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900 !important;
 }
 
 /* Light theme */
@@ -552,7 +623,10 @@ watch(currentTheme, () => {
 @media (max-width: 768px) {
   .frontend-footer {
     text-align: center;
-    padding: 0.75rem 0 0.5rem 0;
+  }
+  
+  .footer-padding-layer {
+    padding: 1.5rem 0 0.75rem 0;
   }
   
   .compact-col {
@@ -598,8 +672,8 @@ watch(currentTheme, () => {
 }
 
 @media (max-width: 576px) {
-  .frontend-footer {
-    padding: 0.5rem 0 0.25rem 0;
+  .footer-padding-layer {
+    padding: 1rem 0 0.5rem 0;
   }
   
   .footer-logo-image {
@@ -627,8 +701,8 @@ watch(currentTheme, () => {
 
 /* Extra padding for very small screens */
 @media (max-width: 375px) {
-  .frontend-footer {
-    padding: 0.5rem 0 0.25rem 0;
+  .footer-padding-layer {
+    padding: 0.75rem 0 0.25rem 0;
   }
   
   .container {

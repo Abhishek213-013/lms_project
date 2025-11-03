@@ -11,7 +11,7 @@
       <div class="p-6">
         <!-- Welcome Message -->
         <div class="mb-6">
-          <h1 class="text-2xl font-bold text-gray-900 mb-2">Welcome back, {{ $page.props.auth.user?.name || 'Admin' }}!</h1>
+          <h1 class="custom-heading mb-2">Welcome back, {{ $page.props.auth.user?.name || 'Admin' }}!</h1>
           <p class="text-gray-600">Here's what's happening in your LMS today.</p>
         </div>
 
@@ -294,3 +294,12 @@ onMounted(() => {
   initializeApp()
 })
 </script>
+
+<style scoped>
+.custom-heading {
+  font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-size: 27.8417px;
+  font-weight: 800;
+  color: #1f2937; /* text-gray-900 equivalent */
+}
+</style>

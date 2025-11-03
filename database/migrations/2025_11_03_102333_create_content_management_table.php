@@ -6,26 +6,27 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
     {
         Schema::create('content_management', function (Blueprint $table) {
             $table->id();
             $table->string('key')->unique();
             $table->text('value')->nullable();
+            $table->text('value_bn')->nullable(); // Bengali translation
             $table->timestamps();
+            
+            // Add index for better performance
+            $table->index('key');
         });
-
-        // Insert default content
-        $defaultContent = \App\Models\Content::getDefaultContent();
-        foreach ($defaultContent as $key => $value) {
-            \App\Models\Content::create([
-                'key' => $key,
-                'value' => $value
-            ]);
-        }
     }
 
-    public function down()
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
         Schema::dropIfExists('content_management');
     }

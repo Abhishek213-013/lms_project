@@ -12,7 +12,7 @@
                   <span property="itemListElement" typeof="ListItem">
                     <Link href="/">{{ t('Home') }}</Link>
                   </span>
-                  <span class="breadcrumb-separator"><i class="fas fa-angle-right"></i></span>
+                  <span class="breadcrumb-separator"><i class="fas fa-angle-right icon-fixed"></i></span>
                   <span property="itemListElement" typeof="ListItem">{{ t('Instructors') }}</span>
                 </nav>
               </div>
@@ -45,7 +45,7 @@
                       class="search-input"
                     >
                     <button type="submit" class="search-button">
-                      <i class="fas fa-search"></i>
+                      <i class="fas fa-search icon-fixed"></i>
                     </button>
                   </div>
                 </form>
@@ -78,7 +78,7 @@
             </div>
           </div>
 
-          <!-- Instructors Grid - UPDATED TO MATCH HOME PAGE -->
+          <!-- Instructors Grid - UPDATED TO MATCH HOME PAGE DESIGN -->
           <div v-else class="row">
             <div class="col-12">
               <div class="instructors-header mb-4">
@@ -89,42 +89,35 @@
               </div>
             </div>
 
-            <!-- UPDATED: Instructor Cards with Full Profile Image Layout (Same as Home Page) -->
+            <!-- UPDATED: Instructor Cards with Rectangular Profile Image Layout (Same as Home Page) -->
             <div class="col-xl-3 col-lg-4 col-md-6" v-for="instructor in displayedInstructors" :key="instructor.id">
               <div class="instructor-card-new">
-                <!-- Profile Header with Full Image - UPDATED FOR FULL-SIZE WITH PADDING -->
-                <div class="profile-header-full">
-                  <div class="profile-image-full-container">
-                    <img 
-                      :src="getInstructorAvatar(instructor)" 
-                      :alt="instructor.name"
-                      class="profile-image-full"
-                      @error="handleImageError"
-                    >
-                    <div class="profile-overlay-full">
-                      <div class="profile-info-overlay">
-                        <h3 class="instructor-name-overlay">{{ instructor.name }}</h3>
-                        <p class="instructor-title-overlay">{{ getExpertise(instructor) }}</p>
-                      </div>
-                    </div>
-                  </div>
+                <!-- Profile Picture - Rectangular Shape -->
+                <div class="profile-image-container">
+                  <img 
+                    :src="getInstructorAvatar(instructor)" 
+                    :alt="instructor.name"
+                    class="profile-image-rectangular"
+                    @error="handleImageError"
+                  >
+                </div>
+
+                <!-- Teacher Name Section -->
+                <div class="teacher-name-section">
+                  <h3 class="teacher-name">{{ instructor.name }}</h3>
                 </div>
 
                 <!-- Education Section -->
-                <div class="education-section-new">
+                <div class="education-section">
                   <div class="section-header">
                     <i class="fas fa-graduation-cap icon-fixed"></i>
                     <span class="section-title-small">{{ t('Education') }}</span>
                   </div>
-                  <p class="education-text-new line-clamp-2">{{ getEducation(instructor) }}</p>
+                  <p class="education-text line-clamp-2">{{ getEducation(instructor) }}</p>
                 </div>
 
                 <!-- Stats Section -->
                 <div class="stats-section-new">
-                  <div class="section-header">
-                    <i class="fas fa-chart-bar icon-fixed"></i>
-                    <span class="section-title-small">{{ t('Stats') }}</span>
-                  </div>
                   <div class="stats-grid-new">
                     <div class="stat-item-new">
                       <div class="stat-icon-new">
@@ -156,15 +149,12 @@
                   </div>
                 </div>
 
-                <!-- Action Buttons -->
-                <div class="profile-actions-footer-new">
-                  <Link :href="`/instructor/${instructor.id}`" class="btn-view-profile-new">
+                <!-- View Profile Button -->
+                <div class="view-profile-section">
+                  <Link :href="`/instructor/${instructor.id}`" class="btn-view-profile">
                     <i class="fas fa-user-circle icon-fixed"></i>
                     {{ t('View Profile') }}
                   </Link>
-                  <button class="btn-contact-new" :title="t('Contact Instructor')">
-                    <i class="fas fa-envelope icon-fixed"></i>
-                  </button>
                 </div>
               </div>
             </div>
@@ -174,7 +164,7 @@
           <div v-if="instructors.length === 0 && !loading" class="row">
             <div class="col-12">
               <div class="no-instructors text-center">
-                <i class="fas fa-users fa-4x mb-3"></i>
+                <i class="fas fa-users fa-4x mb-3 icon-fixed"></i>
                 <h4>{{ t('No Instructors Found') }}</h4>
                 <p>{{ t('We couldn\'t find any instructors matching your criteria.') }}</p>
                 <button class="btn btn-primary" @click="clearFilters">
@@ -206,7 +196,7 @@
             <div class="col-lg-6">
               <div class="cta__content">
                 <div class="cta__icon">
-                  <i class="fas fa-chalkboard-teacher fa-3x"></i>
+                  <i class="fas fa-chalkboard-teacher fa-3x icon-fixed"></i>
                 </div>
                 <h2 class="cta__title">{{ t('Become an Instructor Today') }}</h2>
                 <p>{{ t('Join our team of expert educators and share your knowledge with thousands of eager learners worldwide.') }}</p>
@@ -218,7 +208,7 @@
             <div class="col-lg-6">
               <div class="cta__images">
                 <div class="cta__placeholder">
-                  <i class="fas fa-users fa-5x"></i>
+                  <i class="fas fa-users fa-5x icon-fixed"></i>
                   <p>{{ t('Join Our Teaching Community') }}</p>
                 </div>
               </div>
@@ -234,7 +224,7 @@
           <div class="modal-header">
             <h3>{{ t('Become an Instructor') }}</h3>
             <button class="modal-close" @click="showInstructorModal = false">
-              <i class="fas fa-times"></i>
+              <i class="fas fa-times icon-fixed"></i>
             </button>
           </div>
           
@@ -410,7 +400,7 @@
       <div v-if="showSuccessModal" class="modal-overlay" @click="showSuccessModal = false">
         <div class="modal-content success-modal" @click.stop>
           <div class="success-icon">
-            <i class="fas fa-check-circle"></i>
+            <i class="fas fa-check-circle icon-fixed"></i>
           </div>
           <h3>{{ t('Application Submitted!') }}</h3>
           <p>{{ t('Your instructor application has been received and is under review. We will notify you via email once a decision is made.') }}</p>
@@ -656,25 +646,375 @@ const resetInstructorForm = () => {
 
 <style scoped>
 /* ==================== */
-/* CSS VARIABLES */
+/* ICON FIXES FOR LANGUAGE SWITCH */
 /* ==================== */
-:root {
-  --line-clamp-1: 1;
-  --line-clamp-2: 2;
-  --line-clamp-3: 3;
+.icon-fixed {
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900 !important;
+  font-style: normal !important;
+  font-variant: normal !important;
+  text-rendering: auto !important;
+  -webkit-font-smoothing: antialiased !important;
+  speak: none;
+}
+
+/* Ensure all Font Awesome icons maintain their font family */
+.fas, .fa, .far, .fab {
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900 !important;
+}
+
+/* Specific fixes for Bengali language */
+:global(.bn-lang) .fas,
+:global(.bn-lang) .fa,
+:global(.bn-lang) .far,
+:global(.bn-lang) .fab,
+:global(.bn-lang) .icon-fixed {
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900 !important;
 }
 
 /* ==================== */
-/* MAIN LAYOUT */
+/* NEW INSTRUCTOR CARD DESIGN (SAME AS HOME PAGE) */
 /* ==================== */
+.instructor-card-new {
+  background: var(--card-bg);
+  border-radius: 12px;
+  margin-bottom: 30px;
+  box-shadow: var(--shadow);
+  transition: all 0.3s ease;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.instructor-card-new:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Profile Picture - Rectangular Shape */
+.profile-image-container {
+  width: 100%;
+  height: 220px;
+  overflow: hidden;
+  background: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+}
+
+.profile-image-rectangular {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.instructor-card-new:hover .profile-image-rectangular {
+  transform: scale(1.05);
+}
+
+/* Teacher Name Section */
+.teacher-name-section {
+  padding: 20px;
+  border-bottom: 2px solid var(--border-color);
+  background: var(--card-bg);
+}
+
+.teacher-name {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  text-align: center;
+  line-height: 1.3;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Education Section */
+.education-section {
+  padding: 20px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--card-bg);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.section-header i {
+  color: var(--primary-color);
+  font-size: 14px;
+  width: 16px;
+  text-align: center;
+}
+
+.section-title-small {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.education-text {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+  font-weight: 500;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Stats Section */
+.stats-section-new {
+  padding: 20px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--card-bg);
+}
+
+.stats-grid-new {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.stat-item-new {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  padding: 10px 5px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
+  min-width: 0;
+  text-align: center;
+}
+
+.stat-item-new:hover {
+  background: var(--bg-tertiary);
+}
+
+.stat-icon-new {
+  width: 28px;
+  height: 28px;
+  background: var(--primary-color);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 11px;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.stat-info-new {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.stat-number-new {
+  font-size: 0.9rem !important;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.stat-label-new {
+  font-size: 0.65rem !important;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  display: block;
+}
+
+/* View Profile Section */
+.view-profile-section {
+  padding: 20px;
+  background: var(--card-bg);
+  margin-top: auto;
+}
+
+.btn-view-profile {
+  width: 100%;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 14px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+}
+
+.btn-view-profile:hover {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px color-mix(in srgb, var(--primary-color) 30%, transparent);
+}
+
+/* ==================== */
+/* LINE-CLAMP UTILITIES */
+/* ==================== */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ==================== */
+/* RESPONSIVE DESIGN FOR INSTRUCTOR CARDS */
+/* ==================== */
+@media (max-width: 1199px) {
+  .profile-image-container {
+    height: 200px;
+  }
+  
+  .stats-grid-new {
+    gap: 8px;
+  }
+  
+  .stat-item-new {
+    padding: 8px 4px;
+  }
+}
+
+@media (max-width: 991px) {
+  .profile-image-container {
+    height: 180px;
+  }
+  
+  .teacher-name {
+    font-size: 1.2rem;
+  }
+  
+  .education-section,
+  .stats-section-new,
+  .view-profile-section {
+    padding: 15px;
+  }
+  
+  .teacher-name-section {
+    padding: 15px;
+  }
+  
+  .stats-grid-new {
+    gap: 5px;
+  }
+}
+
+@media (max-width: 767px) {
+  .profile-image-container {
+    height: 160px;
+  }
+  
+  .teacher-name {
+    font-size: 1.1rem;
+  }
+  
+  .education-section,
+  .stats-section-new,
+  .view-profile-section {
+    padding: 12px;
+  }
+  
+  .teacher-name-section {
+    padding: 12px;
+  }
+  
+  .stats-grid-new {
+    gap: 6px;
+  }
+  
+  .stat-item-new {
+    padding: 6px 3px;
+  }
+  
+  .stat-number-new {
+    font-size: 0.85rem !important;
+  }
+  
+  .stat-label-new {
+    font-size: 0.6rem !important;
+  }
+}
+
+@media (max-width: 575px) {
+  .instructor-card-new {
+    margin-bottom: 20px;
+  }
+  
+  .profile-image-container {
+    height: 140px;
+  }
+  
+  .teacher-name {
+    font-size: 1rem;
+  }
+  
+  .stats-grid-new {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .stat-item-new {
+    flex-direction: row;
+    justify-content: flex-start;
+    text-align: left;
+    padding: 10px 12px;
+  }
+  
+  .stat-info-new {
+    align-items: flex-start;
+  }
+}
+
+/* ==================== */
+/* EXISTING STYLES (KEEPING YOUR ORIGINAL STYLES FOR OTHER SECTIONS) */
+/* ==================== */
+
+/* Main Layout */
 .main-area {
   background: var(--bg-primary);
   transition: background-color 0.3s ease;
 }
 
-/* ==================== */
-/* BREADCRUMB STYLES */
-/* ==================== */
+/* Breadcrumb Styles */
 .breadcrumb__area {
   position: relative;
   padding: 4px 0 4px;
@@ -743,9 +1083,7 @@ const resetInstructorForm = () => {
   transition: color 0.3s ease;
 }
 
-/* ==================== */
-/* INSTRUCTOR AREA */
-/* ==================== */
+/* Instructor Area */
 .instructor__area {
   position: relative;
   background: var(--bg-primary);
@@ -756,9 +1094,7 @@ const resetInstructorForm = () => {
   padding: 120px 0;
 }
 
-/* ==================== */
-/* LOADING STYLES */
-/* ==================== */
+/* Loading Styles */
 .simple-loading {
   padding: 80px 0;
   text-align: center;
@@ -785,302 +1121,7 @@ const resetInstructorForm = () => {
   100% { transform: rotate(360deg); }
 }
 
-/* ==================== */
-/* UPDATED: INSTRUCTOR CARD WITH FULL PROFILE IMAGE (SAME AS HOME PAGE) */
-/* ==================== */
-.instructor-card-new {
-  background: var(--card-bg);
-  border-radius: 20px;
-  margin-bottom: 30px;
-  box-shadow: var(--shadow);
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  border: 1px solid var(--border-color);
-  overflow: hidden;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-}
-
-.instructor-card-new:hover {
-  transform: translateY(-8px);
-  box-shadow: var(--shadow-xl);
-}
-
-/* Profile Header with Full Image - FIXED CROPPING (SAME AS HOME PAGE) */
-.profile-header-full {
-  position: relative;
-  height: 200px;
-  overflow: hidden;
-  flex-shrink: 0;
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
-  padding: 10px; /* Added padding around the image */
-}
-
-.profile-image-full-container {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  border-radius: 12px; /* Rounded corners for the image container */
-  background: var(--bg-secondary); /* Background color for empty spaces */
-}
-
-/* FIXED: Changed object-fit from 'cover' to 'contain' to prevent head cropping */
-.profile-image-full {
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain; /* CHANGED: This prevents head cropping */
-  transition: all 0.3s ease;
-  border-radius: 8px;
-}
-
-.instructor-card-new:hover .profile-image-full {
-  transform: scale(1.05);
-}
-
-.profile-overlay-full {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(to bottom, transparent 40%, rgba(0, 0, 0, 0.8) 100%);
-  display: flex;
-  align-items: flex-end;
-  padding: 20px;
-  transition: all 0.3s ease;
-  border-radius: 12px;
-}
-
-.profile-info-overlay {
-  width: 100%;
-  text-align: center;
-}
-
-.instructor-name-overlay {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: white;
-  margin: 0 0 5px 0;
-  line-height: 1.3;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-}
-
-.instructor-title-overlay {
-  font-size: 1rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-  margin: 0;
-  line-height: 1.4;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-}
-
-/* Section Headers */
-.section-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border-light);
-}
-
-.section-header i {
-  color: var(--primary-color);
-  font-size: 14px;
-  width: 16px;
-  text-align: center;
-}
-
-.section-title-small {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-/* Education Section */
-.education-section-new {
-  padding: 25px;
-  background: var(--bg-secondary);
-  margin: 0;
-  border-bottom: 1px solid var(--border-light);
-  flex-shrink: 0;
-}
-
-.education-text-new {
-  font-size: 0.9rem;
-  color: var(--text-primary);
-  margin: 0;
-  line-height: 1.5;
-  font-weight: 500;
-  transition: color 0.3s ease;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  
-  /* Enhanced line-clamp implementation */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-clamp: 2;
-  box-orient: vertical;
-  max-height: calc(0.9rem * 1.5 * 2);
-}
-
-/* Stats Section */
-.stats-section-new {
-  padding: 25px;
-  background: var(--bg-secondary);
-  margin: 0;
-  flex-shrink: 0;
-}
-
-.stats-grid-new {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.stat-item-new {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  flex: 1;
-  padding: 12px 8px;
-  background: var(--card-bg);
-  border-radius: 12px;
-  transition: background-color 0.3s ease;
-  min-width: 0;
-  text-align: center;
-  border: 1px solid var(--border-light);
-}
-
-.stat-item-new:hover {
-  background: var(--bg-tertiary);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-.stat-icon-new {
-  width: 32px;
-  height: 32px;
-  background: var(--primary-color);
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 12px;
-  flex-shrink: 0;
-  transition: all 0.3s ease;
-}
-
-.stat-info-new {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-.stat-number-new {
-  font-size: 1rem !important;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.2;
-  transition: color 0.3s ease;
-}
-
-.stat-label-new {
-  font-size: 0.7rem !important;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-weight: 600;
-  transition: color 0.3s ease;
-  line-height: 1.2;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  display: block;
-}
-
-/* Action Buttons */
-.profile-actions-footer-new {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding: 25px;
-  background: var(--card-bg);
-  margin-top: auto;
-  flex-shrink: 0;
-}
-
-.btn-view-profile-new {
-  flex: 1;
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  padding: 14px 20px;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-decoration: none;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 48px;
-}
-
-.btn-view-profile-new:hover {
-  background: var(--primary-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px color-mix(in srgb, var(--primary-color) 30%, transparent);
-}
-
-.btn-contact-new {
-  width: 48px;
-  height: 48px;
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 16px;
-  flex-shrink: 0;
-}
-
-.btn-contact-new:hover {
-  background: var(--primary-color);
-  color: white;
-  border-color: var(--primary-color);
-  transform: translateY(-2px);
-}
-
-/* ==================== */
-/* HEADER AND COUNT */
-/* ==================== */
+/* Header and Count */
 .instructors-header {
   background: var(--card-bg);
   padding: 25px;
@@ -1112,9 +1153,7 @@ const resetInstructorForm = () => {
   font-size: 0.9rem;
 }
 
-/* ==================== */
-/* SEARCH AND FILTER */
-/* ==================== */
+/* Search and Filter */
 .search-box {
   margin-bottom: 20px;
 }
@@ -1197,9 +1236,7 @@ const resetInstructorForm = () => {
   transition: color 0.3s ease;
 }
 
-/* ==================== */
-/* NO INSTRUCTORS */
-/* ==================== */
+/* No Instructors */
 .no-instructors {
   padding: 80px 20px;
   color: var(--text-muted);
@@ -1229,9 +1266,7 @@ const resetInstructorForm = () => {
   transition: color 0.3s ease;
 }
 
-/* ==================== */
-/* LOAD MORE BUTTON */
-/* ==================== */
+/* Load More Button */
 .instructor__load-more {
   margin-top: 50px;
 }
@@ -1255,9 +1290,7 @@ const resetInstructorForm = () => {
   box-shadow: 0 10px 25px color-mix(in srgb, var(--primary-color) 30%, transparent);
 }
 
-/* ==================== */
-/* CTA SECTION */
-/* ==================== */
+/* CTA Section */
 .cta__area {
   background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
   padding: 100px 0;
@@ -1300,9 +1333,7 @@ const resetInstructorForm = () => {
   transition: color 0.3s ease;
 }
 
-/* ==================== */
-/* BREADCRUMB SHAPES */
-/* ==================== */
+/* Breadcrumb Shapes */
 .breadcrumb__shape-wrap {
   position: absolute;
   top: 0;
@@ -1374,7 +1405,7 @@ const resetInstructorForm = () => {
 }
 
 /* ==================== */
-/* MODAL STYLES */
+/* MODAL STYLES (KEEPING YOUR EXISTING MODAL STYLES) */
 /* ==================== */
 .modal-overlay {
   position: fixed;
@@ -1637,137 +1668,61 @@ const resetInstructorForm = () => {
 }
 
 /* ==================== */
-/* ICON FIXES */
+/* ACCESSIBILITY */
 /* ==================== */
-.icon-fixed {
-  font-family: 'Font Awesome 6 Free' !important;
-  font-weight: 900 !important;
-  font-style: normal !important;
-  font-variant: normal !important;
-  text-rendering: auto !important;
-  -webkit-font-smoothing: antialiased !important;
-  speak: none;
+.btn:focus,
+.search-input:focus,
+.filter-select:focus,
+.btn-view-profile:focus {
+  outline: 3px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
+  outline-offset: 2px;
 }
 
-/* Ensure all Font Awesome icons maintain their font family */
-.fas, .fa, .far, .fab {
-  font-family: 'Font Awesome 6 Free' !important;
-  font-weight: 900 !important;
+.form-group input:focus-visible,
+.form-group select:focus-visible,
+.form-group textarea:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
+  outline-offset: 2px;
 }
 
-/* Specific fixes for Bengali language */
-:global(.bn-lang) .fas,
-:global(.bn-lang) .fa,
-:global(.bn-lang) .far,
-:global(.bn-lang) .fab,
-:global(.bn-lang) .icon-fixed {
-  font-family: 'Font Awesome 6 Free' !important;
-  font-weight: 900 !important;
+.btn:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
+  outline-offset: 2px;
 }
 
 /* ==================== */
-/* RESPONSIVE DESIGN FOR FIXED AVATARS */
+/* REDUCED MOTION */
 /* ==================== */
-@media (max-width: 1199px) {
-  .profile-header-full {
-    height: 180px;
+@media (prefers-reduced-motion: reduce) {
+  .instructor-card-new,
+  .btn,
+  .btn-view-profile,
+  .profile-image-rectangular {
+    transition: none;
   }
   
-  .stats-grid-new {
-    gap: 8px;
+  .instructor-card-new:hover,
+  .btn:hover:not(:disabled),
+  .btn-view-profile:hover {
+    transform: none;
   }
   
-  .stat-item-new {
-    padding: 10px 6px;
+  .alltuchtopdown {
+    animation: none;
+  }
+  
+  .modal-content {
+    animation: none;
   }
 }
 
-@media (max-width: 991px) {
-  .section-py-120 {
-    padding: 80px 0;
-  }
-  
-  .profile-header-full {
-    height: 160px;
-  }
-  
-  .instructor-name-overlay {
-    font-size: 1.2rem;
-  }
-  
-  .instructor-title-overlay {
-    font-size: 0.9rem;
-  }
-  
-  .education-section-new,
-  .stats-section-new {
-    padding: 20px;
-  }
-  
-  .profile-actions-footer-new {
-    padding: 20px;
-  }
-  
-  .stats-grid-new {
-    gap: 5px;
-  }
-  
-  .stat-item-new {
-    padding: 8px 4px;
-  }
-}
-
+/* ==================== */
+/* RESPONSIVE DESIGN */
+/* ==================== */
 @media (max-width: 767px) {
   .instructors-count {
     font-size: 1.3rem;
     text-align: center;
-  }
-  
-  .profile-header-full {
-    height: 140px;
-  }
-  
-  .instructor-name-overlay {
-    font-size: 1.1rem;
-  }
-  
-  .instructor-title-overlay {
-    font-size: 0.85rem;
-  }
-  
-  .profile-overlay-full {
-    padding: 15px;
-  }
-  
-  .education-section-new,
-  .stats-section-new {
-    padding: 15px;
-  }
-  
-  .stats-grid-new {
-    gap: 6px;
-  }
-  
-  .stat-item-new {
-    padding: 8px 4px;
-  }
-  
-  .stat-number-new {
-    font-size: 0.9rem !important;
-  }
-  
-  .stat-label-new {
-    font-size: 0.65rem !important;
-  }
-  
-  .profile-actions-footer-new {
-    padding: 15px;
-    flex-direction: column;
-  }
-  
-  .btn-contact-new {
-    width: 100%;
-    margin-top: 10px;
   }
   
   .results-count {
@@ -1809,42 +1764,6 @@ const resetInstructorForm = () => {
 }
 
 @media (max-width: 575px) {
-  .instructor-card-new {
-    margin-bottom: 20px;
-  }
-  
-  .profile-header-full {
-    height: 120px;
-  }
-  
-  .instructor-name-overlay {
-    font-size: 1rem;
-  }
-  
-  .instructor-title-overlay {
-    font-size: 0.8rem;
-  }
-  
-  .profile-overlay-full {
-    padding: 10px;
-  }
-  
-  .stats-grid-new {
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .stat-item-new {
-    flex-direction: row;
-    justify-content: flex-start;
-    text-align: left;
-    padding: 12px 15px;
-  }
-  
-  .stat-info-new {
-    align-items: flex-start;
-  }
-  
   .breadcrumb__content .title {
     font-size: 2rem;
   }
@@ -1865,104 +1784,6 @@ const resetInstructorForm = () => {
   
   .form-section h4 {
     font-size: 1.1rem;
-  }
-}
-
-/* ==================== */
-/* ACCESSIBILITY */
-/* ==================== */
-.btn:focus,
-.search-input:focus,
-.filter-select:focus,
-.btn-view-profile-new:focus,
-.btn-contact-new:focus {
-  outline: 3px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
-  outline-offset: 2px;
-}
-
-.form-group input:focus-visible,
-.form-group select:focus-visible,
-.form-group textarea:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
-  outline-offset: 2px;
-}
-
-.btn:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
-  outline-offset: 2px;
-}
-
-/* ==================== */
-/* REDUCED MOTION */
-/* ==================== */
-@media (prefers-reduced-motion: reduce) {
-  .instructor-card-new,
-  .btn,
-  .btn-view-profile-new,
-  .profile-image-full {
-    transition: none;
-  }
-  
-  .instructor-card-new:hover,
-  .btn:hover:not(:disabled),
-  .btn-view-profile-new:hover,
-  .btn-contact-new:hover {
-    transform: none;
-  }
-  
-  .alltuchtopdown {
-    animation: none;
-  }
-  
-  .modal-content {
-    animation: none;
-  }
-}
-
-/* ==================== */
-/* ENHANCED LINE-CLAMP COMPATIBILITY */
-/* ==================== */
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-clamp: 2;
-  box-orient: vertical;
-}
-
-/* ==================== */
-/* PERFORMANCE OPTIMIZATIONS */
-/* ==================== */
-.instructor-card-new {
-  will-change: transform;
-  backface-visibility: hidden;
-  transform: translateZ(0);
-}
-
-.profile-image-full {
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-}
-
-/* ==================== */
-/* PRINT STYLES */
-/* ==================== */
-@media print {
-  .instructor-card-new {
-    break-inside: avoid;
-    box-shadow: none;
-    border: 1px solid #ccc;
-  }
-  
-  .profile-actions-footer-new,
-  .profile-overlay-full {
-    display: none;
-  }
-  
-  .modal-overlay,
-  .modal-content {
-    display: none;
   }
 }
 </style>

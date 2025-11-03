@@ -14,7 +14,7 @@
         <div class="px-6 py-4">
           <div class="flex justify-between items-center">
             <div class="flex items-center min-w-0">
-              <h1 class="text-2xl font-semibold text-gray-800 truncate">Teacher Portal - {{ teacher.name || 'Loading...' }}</h1>
+              <h1 class="custom-heading truncate">Teacher Portal - {{ teacher.name || 'Loading...' }}</h1>
             </div>
             
             <div class="flex items-center space-x-4 flex-shrink-0">
@@ -1013,6 +1013,13 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.custom-heading {
+  font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-size: 27.8417px;
+  font-weight: 800;
+  color: #1f2937; /* text-gray-900 equivalent */
+}
+
 .rotate-180 {
   transform: rotate(180deg);
 }

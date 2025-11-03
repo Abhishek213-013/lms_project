@@ -12,7 +12,7 @@
                   <span property="itemListElement" typeof="ListItem">
                     <a href="/">{{ t('Home') }}</a>
                   </span>
-                  <span class="breadcrumb-separator"><i class="fas fa-angle-right"></i></span>
+                  <span class="breadcrumb-separator"><i class="fas fa-angle-right icon-fixed"></i></span>
                   <span property="itemListElement" typeof="ListItem">{{ t('About Us') }}</span>
                 </nav>
               </div>
@@ -35,7 +35,6 @@
             <div class="col-lg-10 col-md-12">
               <div class="about__content-three text-center">
                 <div class="section__title mb-10">
-                  <span class="sub-title">{{ t('Get More About Us') }}</span>
                   <h2 class="title">
                     {{ displayContent.about_our_story_title || t('Empowering Students to Reach Their Potential') }}
                   </h2>
@@ -43,15 +42,15 @@
                 <p class="desc">{{ displayContent.about_our_story_content || t('about_story_content') }}</p>
                 <ul class="about__info-list list-wrap justify-content-center">
                   <li class="about__info-list-item">
-                    <i class="flaticon-angle-right"></i>
+                    <i class="flaticon-angle-right icon-fixed"></i>
                     <p class="content">{{ t('World Class Instructors') }}</p>
                   </li>
                   <li class="about__info-list-item">
-                    <i class="flaticon-angle-right"></i>
+                    <i class="flaticon-angle-right icon-fixed"></i>
                     <p class="content">{{ t('Access Anywhere') }}</p>
                   </li>
                   <li class="about__info-list-item">
-                    <i class="flaticon-angle-right"></i>
+                    <i class="flaticon-angle-right icon-fixed"></i>
                     <p class="content">{{ t('Flexible Course Plan') }}</p>
                   </li>
                 </ul>
@@ -68,34 +67,34 @@
             <div class="col-lg-6">
               <div class="mission-card">
                 <div class="card-icon">
-                  <i class="flaticon-target"></i>
+                  <i class="flaticon-target icon-fixed"></i>
                 </div>
                 <h3>{{ displayContent.about_mission_title || t('Our Mission') }}</h3>
                 <p>
                   {{ displayContent.about_mission_content || t('about_mission_content') }}
                 </p>
                 <ul class="mission-list">
-                  <li><i class="fas fa-check"></i> {{ t('Provide accessible education') }}</li>
-                  <li><i class="fas fa-check"></i> {{ t('Foster lifelong learning') }}</li>
-                  <li><i class="fas fa-check"></i> {{ t('Bridge skills gap') }}</li>
-                  <li><i class="fas fa-check"></i> {{ t('Promote innovation') }}</li>
+                  <li><i class="fas fa-check icon-fixed"></i> {{ t('Provide accessible education') }}</li>
+                  <li><i class="fas fa-check icon-fixed"></i> {{ t('Foster lifelong learning') }}</li>
+                  <li><i class="fas fa-check icon-fixed"></i> {{ t('Bridge skills gap') }}</li>
+                  <li><i class="fas fa-check icon-fixed"></i> {{ t('Promote innovation') }}</li>
                 </ul>
               </div>
             </div>
             <div class="col-lg-6">
               <div class="vision-card">
                 <div class="card-icon">
-                  <i class="flaticon-vision"></i>
+                  <i class="flaticon-vision icon-fixed"></i>
                 </div>
                 <h3>{{ displayContent.about_vision_title || t('Our Vision') }}</h3>
                 <p>
                   {{ displayContent.about_vision_content || t('about_vision_content') }}
                 </p>
                 <ul class="vision-list">
-                  <li><i class="fas fa-check"></i> {{ t('Global learning community') }}</li>
-                  <li><i class="fas fa-check"></i> {{ t('Personalized learning paths') }}</li>
-                  <li><i class="fas fa-check"></i> {{ t('Industry-relevant curriculum') }}</li>
-                  <li><i class="fas fa-check"></i> {{ t('Continuous innovation') }}</li>
+                  <li><i class="fas fa-check icon-fixed"></i> {{ t('Global learning community') }}</li>
+                  <li><i class="fas fa-check icon-fixed"></i> {{ t('Personalized learning paths') }}</li>
+                  <li><i class="fas fa-check icon-fixed"></i> {{ t('Industry-relevant curriculum') }}</li>
+                  <li><i class="fas fa-check icon-fixed"></i> {{ t('Continuous innovation') }}</li>
                 </ul>
               </div>
             </div>
@@ -154,10 +153,24 @@ export default {
       };
     }
   },
+  watch: {
+    currentLanguage(newLang, oldLang) {
+      console.log('About page: Language changed from', oldLang, 'to', newLang);
+      this.refreshIcons();
+      
+      // Add a small delay to ensure DOM updates
+      setTimeout(() => {
+        this.refreshIcons();
+      }, 200);
+    }
+  },
   mounted() {
     this.loadThemePreference();
     this.setupThemeListener();
     console.log('About page content received:', this.content);
+    
+    // Initialize icons
+    this.refreshIcons();
   },
   methods: {
     getDefaultContent() {
@@ -184,12 +197,48 @@ export default {
       window.addEventListener('themeChanged', (event) => {
         this.currentTheme = event.detail.theme;
       });
+    },
+    refreshIcons() {
+      // Force Font Awesome to re-render icons
+      if (window.FontAwesome && window.FontAwesome.dom && window.FontAwesome.dom.i2svg) {
+        setTimeout(() => {
+          window.FontAwesome.dom.i2svg();
+        }, 100);
+      }
     }
   }
 }
 </script>
 
 <style scoped>
+
+.icon-fixed {
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900 !important;
+  font-style: normal !important;
+  font-variant: normal !important;
+  text-rendering: auto !important;
+  -webkit-font-smoothing: antialiased !important;
+  speak: none;
+}
+
+/* Ensure all Font Awesome icons maintain their font family */
+.fas, .fa, .far, .fab, .flaticon {
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900 !important;
+}
+
+/* Specific fixes for Bengali language */
+:global(.bn-lang) .fas,
+:global(.bn-lang) .fa,
+:global(.bn-lang) .far,
+:global(.bn-lang) .fab,
+:global(.bn-lang) .flaticon,
+:global(.bn-lang) .icon-fixed {
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900 !important;
+}
+
 /* Breadcrumb Area - Reduced Height */
 .breadcrumb__area {
   position: relative;
@@ -364,6 +413,13 @@ export default {
   margin-bottom: 20px;
   color: var(--text-primary);
   font-weight: 700;
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .desc {
@@ -372,6 +428,14 @@ export default {
   color: var(--text-secondary);
   margin-bottom: 30px;
   text-align: center;
+  /* FIX: Set min-height to prevent layout shift */
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  padding: 0 10px;
 }
 
 .about__info-list {
@@ -478,6 +542,13 @@ export default {
   margin-bottom: 20px;
   font-weight: 700;
   text-align: center;
+  /* FIX: Set min-height to prevent layout shift */
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .mission-card p,
@@ -487,6 +558,14 @@ export default {
   margin-bottom: 25px;
   font-size: 16px;
   text-align: center;
+  /* FIX: Set min-height to prevent layout shift */
+  min-height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  padding: 0 10px;
 }
 
 .mission-list,
@@ -520,7 +599,23 @@ export default {
   
   .about__content-three .section__title .title {
     font-size: 32px;
+    min-height: 80px;
   }
+
+  .desc {
+    min-height: 110px;
+  }
+  
+  .mission-card p,
+  .vision-card p {
+    min-height: 130px;
+  }
+  
+  .mission-card h3,
+  .vision-card h3 {
+    min-height: 55px;
+  }
+
 }
 
 @media (max-width: 991px) {
@@ -530,6 +625,24 @@ export default {
   
   .about__content-three .section__title .title {
     font-size: 28px;
+    min-height: 70px;
+  }
+  
+  .desc {
+    min-height: 100px;
+    font-size: 15px;
+  }
+  
+  .mission-card p,
+  .vision-card p {
+    min-height: 120px;
+    font-size: 15px;
+  }
+  
+  .mission-card h3,
+  .vision-card h3 {
+    font-size: 1.6rem;
+    min-height: 50px;
   }
   
   .mission-card,
@@ -556,6 +669,24 @@ export default {
   
   .about__content-three .section__title .title {
     font-size: 24px;
+    min-height: 60px;
+  }
+  
+  .desc {
+    min-height: 90px;
+    font-size: 14px;
+  }
+  
+  .mission-card p,
+  .vision-card p {
+    min-height: 110px;
+    font-size: 14px;
+  }
+  
+  .mission-card h3,
+  .vision-card h3 {
+    font-size: 1.4rem;
+    min-height: 45px;
   }
   
   .mission-vision-area {
@@ -612,6 +743,24 @@ export default {
   
   .about__content-three .section__title .title {
     font-size: 22px;
+    min-height: 55px;
+  }
+  
+  .desc {
+    min-height: 80px;
+    font-size: 14px;
+  }
+  
+  .mission-card p,
+  .vision-card p {
+    min-height: 100px;
+    font-size: 14px;
+  }
+  
+  .mission-card h3,
+  .vision-card h3 {
+    font-size: 1.3rem;
+    min-height: 40px;
   }
   
   .about__info-list-item .content {
@@ -653,6 +802,29 @@ export default {
 }
 
 /* RTL support for Bengali */
+.bn-lang .about__content-three .section__title .title {
+  line-height: 1.4; /* Slightly tighter line height for Bengali */
+  font-size: 34px; /* Slightly smaller font for longer Bengali text */
+}
+.bn-lang .desc {
+  line-height: 1.7; /* Adjusted line height for Bengali */
+  font-size: 15px; /* Slightly smaller font for longer text */
+}
+
+.bn-lang .mission-card p,
+.bn-lang .vision-card p {
+  line-height: 1.6; /* Adjusted line height for Bengali */
+  font-size: 15px; /* Slightly smaller font for longer text */
+}
+.bn-lang .about__content-three .section__title .title,
+.bn-lang .desc,
+.bn-lang .mission-card p,
+.bn-lang .vision-card p,
+.bn-lang .mission-card h3,
+.bn-lang .vision-card h3 {
+  word-break: break-word;
+  hyphens: auto;
+}
 .bn-lang .about__content-three .section__title,
 .bn-lang .about__info-list-item,
 .bn-lang .mission-list li,

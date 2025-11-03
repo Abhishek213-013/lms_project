@@ -35,6 +35,10 @@ Route::get('/contact', [FrontendController::class, 'contact'])->name('contact');
 Route::get('/blog', [FrontendController::class, 'blog'])->name('blog');
 Route::get('/blog/{slug}', [FrontendController::class, 'blogPost'])->name('blog.post');
 
+// Language switching routes - ADDED HERE
+Route::post('/switch-language/{lang}', [FrontendController::class, 'switchLanguage'])->name('switch.language');
+Route::get('/switch-language/{lang}', [FrontendController::class, 'switchLanguage'])->name('switch.language.get');
+
 // Auth Routes
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
@@ -64,9 +68,19 @@ Route::prefix('api')->middleware('web')->group(function () {
     // 🔍 ADD THE MISSING SEARCH CLASSES ROUTE HERE
     Route::get('/search-classes', [CourseController::class, 'searchClasses'])->name('api.search-classes');
     
-    // Content API Routes (Public - for frontend pages)
-    Route::get('/content/about', [ContentController::class, 'getAboutContent']);
-    Route::get('/content/home', [ContentController::class, 'getHomeContent']);
+    // Content API Routes (Public - for frontend pages) - UPDATED WITH LANGUAGE SUPPORT
+    Route::get('/content/about/{language?}', [ContentController::class, 'getAboutContent'])->name('api.content.about');
+    Route::get('/content/home/{language?}', [ContentController::class, 'getHomeContent'])->name('api.content.home');
+    Route::get('/content/{language?}', [ContentController::class, 'getAllContent'])->name('api.content.all');
+    
+    // Language API Routes - ADDED HERE
+    Route::post('/switch-language/{lang}', [FrontendController::class, 'switchLanguage'])->name('api.switch.language');
+    Route::get('/current-language', function() {
+        return response()->json([
+            'language' => session('lang', 'en'),
+            'available_languages' => ['en', 'bn']
+        ]);
+    })->name('api.current.language');
     
     // Instructor Request Public Route
     Route::post('/public/instructor-requests', [InstructorRequestController::class, 'submitRequest'])->name('api.instructor-requests.submit');
@@ -218,9 +232,17 @@ Route::middleware(['auth'])->group(function () {
         });
 
         // Content Management Routes (for both admin and super_admin)
-        Route::prefix('/admin/content-management')->group(function () {
-            Route::get('/', [ContentManagementController::class, 'index'])->name('admin.content-management');
-            Route::post('/save', [ContentManagementController::class, 'save'])->name('admin.content-management.save');
+        // Content management routes
+        Route::prefix('admin/content-management')->group(function () {
+            Route::get('/', [ContentManagementController::class, 'index'])->name('content.management');
+            Route::post('/save', [ContentManagementController::class, 'save'])->name('content.save');
+            Route::post('/upload-image', [ContentManagementController::class, 'uploadImage'])->name('content.upload.image');
+            Route::post('/remove-image', [ContentManagementController::class, 'removeImage'])->name('content.remove.image');
+            Route::post('/bulk-save', [ContentManagementController::class, 'bulkSave'])->name('content.bulk.save');
+            
+            // API routes for frontend
+            Route::get('/api/content/{language?}', [ContentManagementController::class, 'getContent'])->name('content.get');
+            Route::get('/api/content-with-languages', [ContentManagementController::class, 'getAllContentWithLanguages'])->name('content.with.languages');
         });
     });
 
@@ -308,9 +330,13 @@ Route::middleware(['auth'])->group(function () {
 
         // Content API Routes (Protected - for admin management)
         Route::prefix('content')->group(function () {
-            Route::get('/all', [ContentController::class, 'getAllContent']);
+            Route::get('/all/{language?}', [ContentController::class, 'getAllContent'])->name('api.content.all');
             Route::post('/save', [ContentController::class, 'saveContent']);
             Route::post('/save-bulk', [ContentController::class, 'saveBulkContent']);
+            
+            // ADD CONTENT IMAGE UPLOAD ROUTES
+            Route::post('/upload-image', [ContentController::class, 'uploadImage'])->name('api.content.upload-image');
+            Route::post('/remove-image', [ContentController::class, 'removeImage'])->name('api.content.remove-image');
         });
 
         // User Management API Routes
@@ -512,6 +538,9 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/resource-files', [TeacherController::class, 'uploadResourceFiles']);
             Route::delete('/files/{filename}', [TeacherController::class, 'deleteFile']);
             Route::post('/profile-image', [UserController::class, 'uploadProfileImage']);
+            
+            // ADD CONTENT IMAGE UPLOAD ROUTE
+            Route::post('/content-image', [ContentManagementController::class, 'uploadImage'])->name('api.upload.content-image');
         });
 
         // Dashboard and Analytics API Routes
@@ -544,6 +573,17 @@ Route::get('/storage/assignments/{filename}', function ($filename) {
     
     return response()->file($path);
 })->name('storage.assignments');
+
+// ADD CONTENT IMAGES PUBLIC ACCESS ROUTE
+Route::get('/storage/content-images/{filename}', function ($filename) {
+    $path = storage_path('app/public/content-images/' . $filename);
+    
+    if (!file_exists($path)) {
+        abort(404);
+    }
+    
+    return response()->file($path);
+})->name('storage.content-images');
 
 // Fallback route for SPA
 Route::get('/{any}', function () {

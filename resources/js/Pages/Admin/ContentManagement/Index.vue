@@ -13,7 +13,43 @@
         <!-- Welcome Message -->
         <div class="mb-6">
           <h1 class="text-2xl font-bold text-gray-900 mb-2">Content Management</h1>
-          <p class="text-gray-600">Manage all frontend content and text across your application.</p>
+          <p class="text-gray-600">Manage all frontend content and text across your application in both English and Bengali.</p>
+        </div>
+
+        <!-- Language Toggle -->
+        <div class="mb-6">
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-lg font-semibold text-gray-800">Language Management</h3>
+                <p class="text-gray-600">Switch between English and Bengali to manage content for both languages</p>
+              </div>
+              <div class="flex space-x-2 bg-gray-100 rounded-lg p-1">
+                <button
+                  @click="activeLanguage = 'en'"
+                  :class="[
+                    'px-4 py-2 rounded-md text-sm font-medium transition-colors',
+                    activeLanguage === 'en'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  ]"
+                >
+                  English
+                </button>
+                <button
+                  @click="activeLanguage = 'bn'"
+                  :class="[
+                    'px-4 py-2 rounded-md text-sm font-medium transition-colors',
+                    activeLanguage === 'bn'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  ]"
+                >
+                  বাংলা (Bengali)
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Success/Error Messages -->
@@ -60,84 +96,88 @@
             <h3 class="text-lg font-semibold text-gray-800 mb-2">{{ activeSectionData.title }}</h3>
             <p class="text-gray-600 mb-6">{{ activeSectionData.description }}</p>
 
+            <!-- Language Indicator -->
+            <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div class="flex items-center">
+                <span class="text-sm font-medium text-blue-800">
+                  Currently editing in: 
+                  <span class="font-bold">{{ activeLanguage === 'en' ? 'English' : 'বাংলা (Bengali)' }}</span>
+                </span>
+                <span class="ml-2 text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                  {{ activeLanguage === 'en' ? 'EN' : 'BN' }}
+                </span>
+              </div>
+            </div>
+
             <!-- Content Fields -->
             <div class="space-y-6">
               <div v-for="(fieldLabel, fieldKey) in activeSectionData.fields" :key="fieldKey">
                 <label class="block text-sm font-medium text-gray-700 mb-2">
                   {{ fieldLabel }}
+                  <span class="text-xs text-gray-500 ml-1">
+                    ({{ activeLanguage === 'en' ? 'English' : 'Bengali' }})
+                  </span>
                 </label>
                 
-                <!-- Image Upload Field -->
-                <div v-if="fieldKey.includes('image')" class="space-y-4">
-                  <!-- Current Image Preview -->
-                  <div v-if="content[fieldKey] && content[fieldKey] !== getDefaultImage(fieldKey)" class="border rounded-lg p-4 bg-gray-50">
-                    <p class="text-sm text-gray-600 mb-2">Current Image Preview:</p>
-                    <div class="flex items-start space-x-4">
-                      <img 
-                        :src="content[fieldKey]" 
-                        :alt="fieldLabel"
-                        class="w-32 h-32 object-contain rounded-lg shadow-sm border bg-white"
-                        @error="handleImagePreviewError"
-                      />
-                      <div class="flex-1">
-                        <p class="text-xs text-gray-500 mb-2 break-all">{{ content[fieldKey] }}</p>
-                        <button
-                          @click="removeImage(fieldKey)"
-                          class="px-3 py-1 bg-red-100 text-red-700 rounded-md text-sm hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500"
-                        >
-                          Remove Image
-                        </button>
-                      </div>
-                    </div>
+                <!-- Show both languages side by side for better management -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-2">
+                  <!-- English Version -->
+                  <div class="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">
+                      English Version
+                    </label>
+                    <textarea
+                      v-model="englishContent[fieldKey]"
+                      @blur="saveContent(fieldKey, englishContent[fieldKey], bengaliContent[fieldKey])"
+                      :rows="fieldKey.includes('content') ? 4 : 2"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                      :placeholder="`Enter ${fieldLabel.toLowerCase()} in English...`"
+                    ></textarea>
+                    <p class="mt-1 text-xs text-gray-500">
+                      Characters: {{ englishContent[fieldKey] ? englishContent[fieldKey].length : 0 }}
+                    </p>
                   </div>
-                  
-                  <!-- Image Upload Controls -->
-                  <div class="space-y-3">
-                    <div class="flex items-center space-x-4">
-                      <input
-                        type="text"
-                        v-model="imageUrls[fieldKey]"
-                        @blur="saveImageUrl(fieldKey, imageUrls[fieldKey])"
-                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                        placeholder="Enter image URL or upload a file..."
-                      />
-                      <button
-                        @click="openImageUpload(fieldKey)"
-                        class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 flex items-center space-x-2"
-                      >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                        </svg>
-                        <span>Upload</span>
-                      </button>
-                    </div>
-                    
-                    <div class="flex items-center space-x-4 text-sm">
-                      <button
-                        @click="resetToDefault(fieldKey)"
-                        class="px-3 py-1 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                      >
-                        Reset to Default
-                      </button>
-                      <span class="text-xs text-gray-500">
-                        Supported formats: JPEG, PNG, GIF, SVG, WebP (Max 5MB)
-                      </span>
-                    </div>
+
+                  <!-- Bengali Version -->
+                  <div class="border border-gray-200 rounded-lg p-3 bg-gray-50" :class="{ 'border-blue-300 bg-blue-50': activeLanguage === 'bn' }">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">
+                      Bengali Version
+                    </label>
+                    <textarea
+                      v-model="bengaliContent[fieldKey]"
+                      @blur="saveContent(fieldKey, englishContent[fieldKey], bengaliContent[fieldKey])"
+                      :rows="fieldKey.includes('content') ? 4 : 2"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm font-bengali"
+                      :placeholder="`Enter ${fieldLabel.toLowerCase()} in Bengali...`"
+                      dir="auto"
+                    ></textarea>
+                    <p class="mt-1 text-xs text-gray-500">
+                      Characters: {{ bengaliContent[fieldKey] ? bengaliContent[fieldKey].length : 0 }}
+                    </p>
                   </div>
                 </div>
-                
-                <!-- Text Field -->
-                <div v-else>
-                  <textarea
-                    v-model="content[fieldKey]"
-                    @blur="saveContent(fieldKey, content[fieldKey])"
-                    :rows="getTextareaRows(fieldKey)"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    :placeholder="`Enter ${fieldLabel.toLowerCase()}...`"
-                  ></textarea>
-                  <p class="mt-1 text-xs text-gray-500">
-                    Character count: {{ content[fieldKey] ? content[fieldKey].length : 0 }}
-                  </p>
+
+                <!-- Quick Actions -->
+                <div class="flex justify-between items-center text-xs text-gray-500">
+                  <span>
+                    Last saved: {{ getLastSaved(fieldKey) }}
+                  </span>
+                  <div class="flex space-x-2">
+                    <button
+                      @click="copyToBengali(fieldKey)"
+                      class="text-blue-600 hover:text-blue-800"
+                      title="Copy English to Bengali"
+                    >
+                      Copy EN → BN
+                    </button>
+                    <button
+                      @click="resetToDefault(fieldKey)"
+                      class="text-gray-600 hover:text-gray-800"
+                      title="Reset to default"
+                    >
+                      Reset
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -169,7 +209,7 @@
         </div>
 
         <!-- Quick Stats -->
-        <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
             <div class="flex items-center">
               <div class="p-2 bg-green-100 rounded-lg mr-4">
@@ -206,71 +246,24 @@
                 </svg>
               </div>
               <div>
-                <p class="text-sm font-medium text-gray-600">Modified</p>
-                <p class="text-lg font-semibold text-gray-800">{{ modifiedFields }}</p>
+                <p class="text-sm font-medium text-gray-600">English Modified</p>
+                <p class="text-lg font-semibold text-gray-800">{{ modifiedEnglishFields }}</p>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Image Upload Modal -->
-    <div v-if="showImageUpload" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-lg p-6 w-full max-w-md">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="text-lg font-semibold">Upload Image</h3>
-          <button @click="closeImageUpload" class="text-gray-400 hover:text-gray-600">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
-        </div>
-        
-        <div class="space-y-4">
-          <!-- File Selection -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Select Image File</label>
-            <input
-              type="file"
-              ref="fileInput"
-              @change="handleFileSelect"
-              accept="image/*"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            />
-          </div>
-          
-          <!-- File Preview -->
-          <div v-if="selectedFile && filePreviewUrl" class="border rounded-lg p-3">
-            <p class="text-sm text-gray-600 mb-2">Preview:</p>
-            <img :src="filePreviewUrl" :alt="selectedFile.name" class="max-w-full h-32 object-contain mx-auto rounded" />
-            <p class="text-xs text-gray-500 mt-2 text-center">{{ selectedFile.name }} ({{ formatFileSize(selectedFile.size) }})</p>
-          </div>
-          
-          <!-- Upload Progress -->
-          <div v-if="uploading" class="space-y-2">
-            <div class="w-full bg-gray-200 rounded-full h-2">
-              <div class="bg-indigo-600 h-2 rounded-full transition-all duration-300" :style="{ width: uploadProgress + '%' }"></div>
+          <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+            <div class="flex items-center">
+              <div class="p-2 bg-orange-100 rounded-lg mr-4">
+                <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                </svg>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-600">Bengali Modified</p>
+                <p class="text-lg font-semibold text-gray-800">{{ modifiedBengaliFields }}</p>
+              </div>
             </div>
-            <p class="text-xs text-gray-600 text-center">Uploading... {{ uploadProgress }}%</p>
-          </div>
-          
-          <!-- Actions -->
-          <div class="flex justify-end space-x-3 pt-4">
-            <button
-              @click="closeImageUpload"
-              class="px-4 py-2 text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500"
-            >
-              Cancel
-            </button>
-            <button
-              @click="uploadImage"
-              :disabled="!selectedFile || uploading"
-              class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span v-if="uploading">Uploading...</span>
-              <span v-else>Upload Image</span>
-            </button>
           </div>
         </div>
       </div>
@@ -279,7 +272,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, reactive } from 'vue'
 import { router, useForm } from '@inertiajs/vue3'
 import Navbar from '../../Layout/Navbar.vue'
 import Sidebar from '../../Layout/Sidebar.vue'
@@ -306,23 +299,19 @@ const props = defineProps({
 
 // Reactive data
 const activeSection = ref('about')
+const activeLanguage = ref('en') // 'en' or 'bn'
 const saving = ref(false)
-const localContent = ref({})
-const imageUrls = ref({})
+const englishContent = reactive({})
+const bengaliContent = reactive({})
+const lastSaved = reactive({})
 const successMessage = ref('')
 const errorMessage = ref('')
-const showImageUpload = ref(false)
-const uploading = ref(false)
-const uploadProgress = ref(0)
-const currentImageField = ref('')
-const selectedFile = ref(null)
-const filePreviewUrl = ref(null)
-const fileInput = ref(null)
 
 // Use Inertia form for content saving
 const saveForm = useForm({
   key: '',
-  value: ''
+  value: '',
+  value_bn: ''
 })
 
 // Computed properties for safe flash message access
@@ -340,9 +329,14 @@ const totalFields = computed(() => {
     return total + Object.keys(props.sections[sectionKey].fields).length
   }, 0)
 })
-const modifiedFields = computed(() => {
-  return Object.keys(localContent.value).filter(key => 
-    localContent.value[key] !== props.content[key]
+const modifiedEnglishFields = computed(() => {
+  return Object.keys(englishContent).filter(key => 
+    englishContent[key] !== props.content[key]
+  ).length
+})
+const modifiedBengaliFields = computed(() => {
+  return Object.keys(bengaliContent).filter(key => 
+    bengaliContent[key] && bengaliContent[key] !== getDefaultBengali(key)
   ).length
 })
 const lastUpdated = computed(() => {
@@ -353,41 +347,7 @@ const lastUpdated = computed(() => {
   })
 })
 
-// Initialize content
-const content = computed({
-  get: () => {
-    const sectionFields = props.sections[activeSection.value]?.fields || {}
-    const sectionContent = {}
-    
-    Object.keys(sectionFields).forEach(fieldKey => {
-      sectionContent[fieldKey] = localContent.value[fieldKey] || props.content[fieldKey] || ''
-    })
-    
-    return sectionContent
-  },
-  set: (value) => {
-    Object.keys(value).forEach(key => {
-      localContent.value[key] = value[key]
-    })
-  }
-})
-
-// Default images for different fields
-const defaultImages = {
-  'home_hero_image': '/assets/img/h2_banner_img.png'
-}
-
 // Methods
-const getDefaultImage = (fieldKey) => {
-  return defaultImages[fieldKey] || '/assets/img/placeholder.jpg'
-}
-
-const getTextareaRows = (fieldKey) => {
-  if (fieldKey.includes('content')) return 6
-  if (fieldKey.includes('title') || fieldKey.includes('subtitle')) return 3
-  return 2
-}
-
 const showMessage = (message, type = 'success') => {
   if (type === 'success') {
     successMessage.value = message
@@ -403,188 +363,47 @@ const showMessage = (message, type = 'success') => {
   }, 5000)
 }
 
-const handleImagePreviewError = (event) => {
-  event.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y3ZmFmYyIvPjx0ZXh0IHg9IjEwMCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5Y2EwYTYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIwLjM1ZW0iPuKKojwvdGV4dD48L3N2Zz4='
-}
-
-const formatFileSize = (bytes) => {
-  if (bytes === 0) return '0 Bytes'
-  const k = 1024
-  const sizes = ['Bytes', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-}
-
-const openImageUpload = (fieldKey) => {
-  currentImageField.value = fieldKey
-  showImageUpload.value = true
-  selectedFile.value = null
-  filePreviewUrl.value = null
-  uploadProgress.value = 0
-  
-  nextTick(() => {
-    if (fileInput.value) {
-      fileInput.value.value = ''
-    }
-  })
-}
-
-const closeImageUpload = () => {
-  showImageUpload.value = false
-  currentImageField.value = ''
-  selectedFile.value = null
-  filePreviewUrl.value = null
-  uploadProgress.value = 0
-}
-
-const handleFileSelect = (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    // Validate file type and size
-    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml', 'image/webp']
-    const maxSize = 5 * 1024 * 1024 // 5MB
-    
-    if (!validTypes.includes(file.type)) {
-      showMessage('Please select a valid image file (JPEG, PNG, GIF, SVG, WebP)', 'error')
-      return
-    }
-    
-    if (file.size > maxSize) {
-      showMessage('Image size should be less than 5MB', 'error')
-      return
-    }
-    
-    selectedFile.value = file
-    
-    // Create preview
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      filePreviewUrl.value = e.target.result
-    }
-    reader.readAsDataURL(file)
+const getDefaultBengali = (fieldKey) => {
+  // This would typically come from your default content
+  const defaultBengali = {
+    'about_banner_title': 'স্কিলগ্রো সম্পর্কে',
+    'about_banner_description': 'মানসম্মত শিক্ষা এবং উদ্ভাবনী লার্নিং সমাধানের মাধ্যমে বিশ্বব্যাপী শিক্ষার্থীদের ক্ষমতায়ন',
+    // Add other default Bengali translations here
   }
+  return defaultBengali[fieldKey] || ''
 }
 
-const uploadImage = async () => {
-  if (!selectedFile.value) {
-    showMessage('Please select an image file', 'error')
-    return
-  }
-
-  try {
-    uploading.value = true
-    uploadProgress.value = 0
-    
-    const formData = new FormData()
-    formData.append('image', selectedFile.value)
-    formData.append('key', currentImageField.value)
-
-    const xhr = new XMLHttpRequest()
-    
-    xhr.upload.addEventListener('progress', (event) => {
-      if (event.lengthComputable) {
-        const percentComplete = (event.loaded / event.total) * 100
-        uploadProgress.value = Math.round(percentComplete)
-      }
-    })
-    
-    xhr.addEventListener('load', () => {
-      if (xhr.status === 200) {
-        const result = JSON.parse(xhr.responseText)
-        
-        if (result.success) {
-          // Update the content with the new image URL
-          localContent.value[currentImageField.value] = result.url
-          imageUrls.value[currentImageField.value] = result.url
-          showMessage('Image uploaded successfully!')
-          closeImageUpload()
-        } else {
-          showMessage(result.error || 'Failed to upload image', 'error')
-        }
-      } else {
-        showMessage('Upload failed. Please try again.', 'error')
-      }
-      uploading.value = false
-    })
-    
-    xhr.addEventListener('error', () => {
-      showMessage('Upload failed. Please try again.', 'error')
-      uploading.value = false
-    })
-    
-    xhr.open('POST', '/admin/content-management/upload-image')
-    xhr.setRequestHeader('X-CSRF-TOKEN', document.querySelector('meta[name="csrf-token"]').getAttribute('content'))
-    xhr.send(formData)
-    
-  } catch (error) {
-    console.error('Image upload error:', error)
-    showMessage('Error uploading image', 'error')
-    uploading.value = false
-  }
+const getLastSaved = (fieldKey) => {
+  return lastSaved[fieldKey] || 'Never'
 }
 
-const removeImage = async (fieldKey) => {
-  if (!confirm('Are you sure you want to remove this image? It will be reset to the default image.')) {
-    return
-  }
-
-  try {
-    const response = await fetch('/admin/content-management/remove-image', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-      },
-      body: JSON.stringify({ key: fieldKey })
-    })
-
-    const result = await response.json()
-
-    if (result.success) {
-      // Update the content with the default image
-      localContent.value[fieldKey] = result.default_value
-      imageUrls.value[fieldKey] = result.default_value
-      showMessage('Image removed successfully!')
-    } else {
-      showMessage(result.error || 'Failed to remove image', 'error')
-    }
-  } catch (error) {
-    console.error('Image removal error:', error)
-    showMessage('Error removing image', 'error')
+const copyToBengali = (fieldKey) => {
+  if (englishContent[fieldKey]) {
+    bengaliContent[fieldKey] = englishContent[fieldKey]
+    showMessage('Copied English content to Bengali field', 'info')
   }
 }
 
 const resetToDefault = (fieldKey) => {
-  localContent.value[fieldKey] = getDefaultImage(fieldKey)
-  imageUrls.value[fieldKey] = getDefaultImage(fieldKey)
-  saveContent(fieldKey, getDefaultImage(fieldKey))
+  englishContent[fieldKey] = props.content[fieldKey] || ''
+  bengaliContent[fieldKey] = getDefaultBengali(fieldKey)
+  showMessage('Field reset to default values', 'info')
 }
 
-const saveImageUrl = (fieldKey, url) => {
-  if (url && url !== props.content[fieldKey]) {
-    localContent.value[fieldKey] = url
-    saveContent(fieldKey, url)
-  }
-}
-
-const saveContent = async (key, value) => {
+const saveContent = async (key, value, valueBn = null) => {
   if (!key || value === undefined) {
     showMessage('Invalid content data', 'error')
     return
   }
 
-  // Don't save if value hasn't changed
-  if (props.content[key] === value) {
-    return
-  }
-
   try {
     saving.value = true
-    console.log('Saving content:', { key, value: value.substring(0, 50) + '...' })
+    console.log('Saving content:', { key, value, valueBn })
     
     // Use Inertia form to post to the web route
     saveForm.key = key
     saveForm.value = value
+    saveForm.value_bn = valueBn
     
     saveForm.post('/admin/content-management/save', {
       preserveScroll: true,
@@ -599,7 +418,13 @@ const saveContent = async (key, value) => {
         }
         
         // Update the local content to match the saved state
-        localContent.value[key] = value
+        englishContent[key] = value
+        if (valueBn !== null) {
+          bengaliContent[key] = valueBn
+        }
+        
+        // Update last saved timestamp
+        lastSaved[key] = new Date().toLocaleTimeString()
       },
       onError: (errors) => {
         console.error('Form errors:', errors)
@@ -620,9 +445,28 @@ const saveContent = async (key, value) => {
 }
 
 const saveAllContent = async () => {
-  const changes = Object.keys(localContent.value).filter(key => 
-    localContent.value[key] !== props.content[key]
-  )
+  const changes = []
+  
+  // Check for English changes
+  Object.keys(englishContent).forEach(key => {
+    if (englishContent[key] !== props.content[key]) {
+      changes.push({ key, value: englishContent[key], value_bn: bengaliContent[key] || '' })
+    }
+  })
+  
+  // Check for Bengali changes (even if English hasn't changed)
+  Object.keys(bengaliContent).forEach(key => {
+    if (bengaliContent[key] && bengaliContent[key] !== getDefaultBengali(key)) {
+      // If this key is not already in changes, add it
+      if (!changes.find(change => change.key === key)) {
+        changes.push({ 
+          key, 
+          value: englishContent[key] || props.content[key] || '', 
+          value_bn: bengaliContent[key] 
+        })
+      }
+    }
+  })
 
   if (changes.length === 0) {
     showMessage('No changes to save', 'info')
@@ -633,20 +477,22 @@ const saveAllContent = async () => {
     saving.value = true
     
     // Save each modified field sequentially
-    for (const key of changes) {
+    for (const change of changes) {
       await new Promise((resolve) => {
-        saveForm.key = key
-        saveForm.value = localContent.value[key]
+        saveForm.key = change.key
+        saveForm.value = change.value
+        saveForm.value_bn = change.value_bn
         
         saveForm.post('/admin/content-management/save', {
           preserveScroll: true,
           preserveState: true,
           onSuccess: () => {
-            console.log(`✅ Saved: ${key}`)
+            console.log(`✅ Saved: ${change.key}`)
+            lastSaved[change.key] = new Date().toLocaleTimeString()
             resolve()
           },
           onError: (errors) => {
-            console.error(`❌ Failed to save: ${key}`, errors)
+            console.error(`❌ Failed to save: ${change.key}`, errors)
             resolve() // Continue with next even if one fails
           }
         })
@@ -657,7 +503,7 @@ const saveAllContent = async () => {
     }
 
     console.log('✅ All content saved successfully')
-    showMessage('All changes saved successfully!')
+    showMessage(`${changes.length} changes saved successfully!`)
     
   } catch (error) {
     console.error('❌ Failed to save content:', error)
@@ -674,13 +520,8 @@ const resetSectionToDefaults = () => {
 
   const sectionFields = props.sections[activeSection.value]?.fields || {}
   Object.keys(sectionFields).forEach(fieldKey => {
-    if (fieldKey.includes('image')) {
-      localContent.value[fieldKey] = getDefaultImage(fieldKey)
-      imageUrls.value[fieldKey] = getDefaultImage(fieldKey)
-    } else {
-      // For text fields, we don't have easy access to defaults, so clear them
-      localContent.value[fieldKey] = ''
-    }
+    englishContent[fieldKey] = props.content[fieldKey] || ''
+    bengaliContent[fieldKey] = getDefaultBengali(fieldKey)
   })
   
   showMessage('Section reset to defaults. Click "Save All Changes" to apply.')
@@ -695,14 +536,27 @@ onMounted(() => {
   console.log('📝 Content Management loaded')
   console.log('Initial content:', props.content)
   console.log('Sections:', props.sections)
-  console.log('Flash messages:', props.flash)
-  console.log('Errors:', props.errors)
   
-  // Initialize image URLs
-  const imageFields = ['home_hero_image']
-  imageFields.forEach(field => {
-    imageUrls.value[field] = props.content[field] || getDefaultImage(field)
+  // Initialize content from props
+  const sectionFields = props.sections[activeSection.value]?.fields || {}
+  Object.keys(sectionFields).forEach(fieldKey => {
+    englishContent[fieldKey] = props.content[fieldKey] || ''
+    // For Bengali, we'll need to fetch from the server or use defaults
+    // For now, we'll initialize with empty values
+    bengaliContent[fieldKey] = ''
   })
 })
 </script>
 
+<style scoped>
+/* Bengali font support */
+.font-bengali {
+  font-family: 'SolaimanLipi', 'Siyam Rupali', 'Kalpurush', 'Arial', sans-serif;
+  line-height: 1.6;
+}
+
+/* Ensure proper text direction for Bengali */
+[dir="auto"] {
+  text-align: left;
+}
+</style>
