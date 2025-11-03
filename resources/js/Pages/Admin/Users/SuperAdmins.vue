@@ -28,21 +28,21 @@
         </div>
 
         <!-- Flash Messages -->
-        <div v-if="$page.props.flash.success" class="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+        <div v-if="flash?.success" class="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
           <div class="flex items-center">
             <svg class="w-5 h-5 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
-            <span class="text-green-700">{{ $page.props.flash.success }}</span>
+            <span class="text-green-700">{{ flash.success }}</span>
           </div>
         </div>
 
-        <div v-if="$page.props.flash.error" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+        <div v-if="flash?.error" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
           <div class="flex items-center">
             <svg class="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
-            <span class="text-red-700">{{ $page.props.flash.error }}</span>
+            <span class="text-red-700">{{ flash.error }}</span>
           </div>
         </div>
 
@@ -66,7 +66,7 @@
             <div class="flex justify-between items-start">
               <div>
                 <p class="text-sm font-medium text-gray-600 mb-1">Active Today</p>
-                <h3 class="text-3xl font-bold text-green-600">{{ stats.activeToday || 0 }}</h3>
+                <h3 class="text-3xl font-bold text-green-600">{{ stats?.activeToday || 0 }}</h3>
               </div>
               <div class="p-3 bg-green-100 rounded-lg">
                 <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,7 +80,7 @@
             <div class="flex justify-between items-start">
               <div>
                 <p class="text-sm font-medium text-gray-600 mb-1">Last 7 Days</p>
-                <h3 class="text-3xl font-bold text-purple-600">{{ stats.last7Days || 0 }}</h3>
+                <h3 class="text-3xl font-bold text-purple-600">{{ stats?.last7Days || 0 }}</h3>
               </div>
               <div class="p-3 bg-purple-100 rounded-lg">
                 <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -501,6 +501,10 @@ const props = defineProps({
     default: () => []
   },
   stats: {
+    type: Object,
+    default: () => ({})
+  },
+  flash: {
     type: Object,
     default: () => ({})
   }

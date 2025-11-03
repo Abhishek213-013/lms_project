@@ -10,6 +10,30 @@
       
       <!-- Page Content -->
       <div class="p-6 max-w-full overflow-x-hidden">
+        <!-- Debug Section - Temporary -->
+        <!-- <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+          <h3 class="text-lg font-semibold text-yellow-800 mb-2">Debug Information</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <strong>Teachers Count:</strong> {{ teachersCount }}<br>
+              <strong>Students Count:</strong> {{ studentsCount }}<br>
+              <strong>Filtered Users:</strong> {{ filteredUsers.length }}
+            </div>
+            <div>
+              <strong>Status:</strong> {{ status }}<br>
+              <strong>Form Errors:</strong> {{ form.errors }}
+            </div>
+            <div>
+              <button @click="refreshData" class="bg-yellow-500 text-white px-3 py-1 rounded text-sm">
+                Refresh Data
+              </button>
+              <button @click="debugForm" class="bg-blue-500 text-white px-3 py-1 rounded text-sm ml-2">
+                Debug Form
+              </button>
+            </div>
+          </div>
+        </div> -->
+
         <!-- Header -->
         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <div class="min-w-0">
@@ -537,7 +561,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { useForm, router } from '@inertiajs/vue3'
 import Sidebar from '../../Layout/Sidebar.vue'
 import Navbar from '../../Layout/Navbar.vue'
@@ -552,17 +576,19 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
-  status: String,
+  status: String
 })
+
+// Log props for debugging
+console.log('Teachers Props:', props.teachers)
+console.log('Students Props:', props.students)
+console.log('Status Props:', props.status)
 
 // Reactive data
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const searchQuery = ref('')
 const editingUser = ref(null)
-
-// Combine teachers and students for display
-const otherUsers = computed(() => [...props.teachers, ...props.students])
 
 // Forms
 const form = useForm({
@@ -596,10 +622,10 @@ const teachersCount = computed(() => props.teachers.length)
 const studentsCount = computed(() => props.students.length)
 
 const filteredUsers = computed(() => {
-  if (!searchQuery.value) return otherUsers.value
+  if (!searchQuery.value) return [...props.teachers, ...props.students]
   
   const query = searchQuery.value.toLowerCase()
-  return otherUsers.value.filter(user => 
+  return [...props.teachers, ...props.students].filter(user => 
     user.name?.toLowerCase().includes(query) ||
     user.username?.toLowerCase().includes(query) ||
     user.email?.toLowerCase().includes(query) ||
@@ -612,13 +638,43 @@ const handleSearch = (query) => {
   searchQuery.value = query
 }
 
+const debugForm = () => {
+  console.log('Form data:', form.data())
+  console.log('Form processing:', form.processing)
+  console.log('Form has errors:', form.hasErrors)
+  console.log('Form errors:', form.errors)
+  console.log('Teachers from props:', props.teachers)
+}
+
 const createTeacher = () => {
-  form.post('/admin/users/teachers', {
+  console.log('Creating teacher with data:', form.data())
+  
+  form.post('/admin/users/teachers/', {
     preserveScroll: true,
-    onSuccess: () => {
-      closeModal()
+    preserveState: false,
+    onSuccess: (page) => {
+      console.log('Teacher created successfully')
+      console.log('Page data:', page)
+      
+      // Close modal and reset form
+      showCreateModal.value = false
       form.reset()
+      form.clearErrors()
+      
+      // Force reload to get updated data
+      setTimeout(() => {
+        router.reload({ 
+          only: ['teachers', 'students', 'status'],
+          preserveScroll: true 
+        })
+      }, 500)
     },
+    onError: (errors) => {
+      console.log('Form errors:', errors)
+    },
+    onFinish: () => {
+      console.log('Form submission finished')
+    }
   })
 }
 
@@ -628,7 +684,7 @@ const editUser = (user) => {
   editForm.name = user.name
   editForm.username = user.username
   editForm.email = user.email
-  editForm.dob = user.dob ? user.dob.split('T')[0] : '' // Format date for input
+  editForm.dob = user.dob ? user.dob.split('T')[0] : ''
   editForm.education_qualification = user.education_qualification
   editForm.institute = user.institute
   editForm.experience = user.experience
@@ -645,6 +701,8 @@ const updateTeacher = () => {
     onSuccess: () => {
       closeEditModal()
       editForm.reset()
+      // Refresh the data
+      router.reload({ only: ['teachers'] })
     },
   })
 }
@@ -653,6 +711,10 @@ const deleteUser = (userId) => {
   if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
     router.delete(`/admin/users/teachers/${userId}`, {
       preserveScroll: true,
+      onSuccess: () => {
+        // Refresh teachers list after deletion
+        router.reload({ only: ['teachers'] })
+      }
     })
   }
 }
@@ -668,6 +730,14 @@ const closeEditModal = () => {
   editingUser.value = null
   editForm.reset()
   editForm.clearErrors()
+}
+
+const refreshData = () => {
+  console.log('Refreshing data...')
+  router.reload({ 
+    only: ['teachers', 'students', 'status'],
+    preserveScroll: true 
+  })
 }
 
 // Helper functions

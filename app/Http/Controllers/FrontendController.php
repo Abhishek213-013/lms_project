@@ -140,8 +140,6 @@ class FrontendController extends Controller
         }
     }
 
-    // ... rest of your existing methods remain the same
-
     // About page
     public function about()
     {
@@ -420,159 +418,159 @@ class FrontendController extends Controller
     }
 
     public function instructors(Request $request): Response
-{
-    try {
-        Log::info('🎯 Loading instructors page from database');
+    {
+        try {
+            Log::info('🎯 Loading instructors page from database');
 
-        // Get all teachers from database
-        $teachers = User::where('role', 'teacher')
-            ->select([
-                'id', 'name', 'username', 'email',
-                'education_qualification', 'institute', 'experience',
-                'bio', 'created_at'
-            ])
-            ->orderBy('name')
-            ->get();
+            // Get all teachers from database
+            $teachers = User::where('role', 'teacher')
+                ->select([
+                    'id', 'name', 'username', 'email',
+                    'education_qualification', 'institute', 'experience',
+                    'bio', 'created_at'
+                ])
+                ->orderBy('name')
+                ->get();
 
-        Log::info("📊 Found {$teachers->count()} teachers in database");
+            Log::info("📊 Found {$teachers->count()} teachers in database");
 
-        // Debug: Check if teachers exist and have IDs
-        $teachers->each(function($teacher) {
-            Log::info("👨‍🏫 Teacher: {$teacher->name} (ID: {$teacher->id})");
-        });
+            // Debug: Check if teachers exist and have IDs
+            $teachers->each(function($teacher) {
+                Log::info("👨‍🏫 Teacher: {$teacher->name} (ID: {$teacher->id})");
+            });
 
-        // Transform teachers data
-        $instructors = $teachers->map(function ($teacher) {
-            try {
-                // DEBUG: Count courses for this teacher
-                $coursesCount = ClassModel::where('teacher_id', $teacher->id)->count();
-                
-                // DEBUG: Check if any classes exist for this teacher
-                $teacherClasses = ClassModel::where('teacher_id', $teacher->id)->get();
-                Log::info("📚 Teacher {$teacher->name} (ID: {$teacher->id}): {$coursesCount} courses found");
-                
-                if ($coursesCount > 0) {
-                    Log::info("   Classes: " . $teacherClasses->pluck('name')->implode(', '));
-                }
-
-                // Count unique students
-                $totalStudents = DB::table('class_student')
-                    ->join('classes', 'class_student.class_id', '=', 'classes.id')
-                    ->where('classes.teacher_id', $teacher->id)
-                    ->distinct('class_student.student_id')
-                    ->count();
-
-                Log::info("   Students: {$totalStudents} students");
-
-                return [
-                    'id' => $teacher->id,
-                    'name' => $teacher->name ?? 'Unknown Instructor',
-                    'username' => $teacher->username ?? '',
-                    'email' => $teacher->email ?? '',
-                    'avatar' => $this->getInstructorAvatar($teacher),
-                    'education_qualification' => $teacher->education_qualification ?? 'Not specified',
-                    'institute' => $teacher->institute ?? 'Not specified',
-                    'experience' => $teacher->experience ?? 'Experienced educator',
-                    'bio' => $teacher->bio ?? 'Professional instructor dedicated to student success.',
-                    'courses_count' => $coursesCount,
-                    'students_count' => $totalStudents,
-                    'rating' => 4.8,
-                    'created_at' => $teacher->created_at ? $teacher->created_at->format('M d, Y') : 'Unknown'
-                ];
-            } catch (\Exception $e) {
-                Log::error("❌ Error processing teacher {$teacher->id}: " . $e->getMessage());
-                return [
-                    'id' => $teacher->id,
-                    'name' => $teacher->name ?? 'Unknown Instructor',
-                    'username' => $teacher->username ?? '',
-                    'email' => $teacher->email ?? '',
-                    'avatar' => $this->getInstructorAvatar($teacher),
-                    'education_qualification' => $teacher->education_qualification ?? 'Not specified',
-                    'institute' => $teacher->institute ?? 'Not specified',
-                    'experience' => $teacher->experience ?? 'Experienced educator',
-                    'bio' => $teacher->bio ?? 'Professional instructor.',
-                    'courses_count' => 0,
-                    'students_count' => 0,
-                    'rating' => 4.5,
-                    'created_at' => $teacher->created_at ? $teacher->created_at->format('M d, Y') : 'Unknown'
-                ];
-            }
-        });
-
-                // Get specializations for filter dropdown
-                $specializations = User::where('role', 'teacher')
-                    ->whereNotNull('education_qualification')
-                    ->where('education_qualification', '!=', '')
-                    ->distinct()
-                    ->pluck('education_qualification')
-                    ->values();
-
-                Log::info("✅ Successfully loaded {$instructors->count()} instructors with data");
-
-                return Inertia::render('Frontend/Instructors', [
-                    'instructors' => $instructors->toArray(),
-                    'filters' => [
-                        'search' => $request->search ?? '',
-                        'specialization' => $request->specialization ?? '',
-                    ],
-                    'specializations' => $specializations->toArray(),
-                    'pageTitle' => 'Our Instructors - SkillGro',
-                    'metaDescription' => 'Meet our team of expert instructors and teachers. Learn from experienced professionals dedicated to your success.'
-                ]);
-
-            } catch (\Exception $e) {
-                Log::error('❌ Instructors page error: ' . $e->getMessage());
-                Log::error('📝 Stack trace: ' . $e->getTraceAsString());
-                
-                // Only use fallback if there's a serious error
-                $teachers = User::where('role', 'teacher')->get();
-                
-                if ($teachers->count() > 0) {
-                    // If we have teachers but there was an error in processing, return basic data
-                    $basicInstructors = $teachers->map(function ($teacher) {
-                        return [
-                            'id' => $teacher->id,
-                            'name' => $teacher->name,
-                            'username' => $teacher->username,
-                            'email' => $teacher->email,
-                            'avatar' => $this->getInstructorAvatar($teacher),
-                            'education_qualification' => $teacher->education_qualification,
-                            'institute' => $teacher->institute,
-                            'experience' => $teacher->experience,
-                            'bio' => $teacher->bio,
-                            'courses_count' => 0,
-                            'students_count' => 0,
-                            'rating' => 4.5,
-                            'created_at' => $teacher->created_at->format('M d, Y')
-                        ];
-                    });
+            // Transform teachers data
+            $instructors = $teachers->map(function ($teacher) {
+                try {
+                    // DEBUG: Count courses for this teacher
+                    $coursesCount = ClassModel::where('teacher_id', $teacher->id)->count();
                     
-                    return Inertia::render('Frontend/Instructors', [
-                        'instructors' => $basicInstructors->toArray(),
-                        'filters' => [
-                            'search' => $request->search ?? '',
-                            'specialization' => $request->specialization ?? '',
-                        ],
-                        'specializations' => [],
-                        'pageTitle' => 'Our Instructors - SkillGro',
-                        'metaDescription' => 'Meet our team of expert instructors.'
-                    ]);
+                    // DEBUG: Check if any classes exist for this teacher
+                    $teacherClasses = ClassModel::where('teacher_id', $teacher->id)->get();
+                    Log::info("📚 Teacher {$teacher->name} (ID: {$teacher->id}): {$coursesCount} courses found");
+                    
+                    if ($coursesCount > 0) {
+                        Log::info("   Classes: " . $teacherClasses->pluck('name')->implode(', '));
+                    }
+
+                    // Count unique students
+                    $totalStudents = DB::table('class_student')
+                        ->join('classes', 'class_student.class_id', '=', 'classes.id')
+                        ->where('classes.teacher_id', $teacher->id)
+                        ->distinct('class_student.student_id')
+                        ->count();
+
+                    Log::info("   Students: {$totalStudents} students");
+
+                    return [
+                        'id' => $teacher->id,
+                        'name' => $teacher->name ?? 'Unknown Instructor',
+                        'username' => $teacher->username ?? '',
+                        'email' => $teacher->email ?? '',
+                        'avatar' => $this->getInstructorAvatar($teacher),
+                        'education_qualification' => $teacher->education_qualification ?? 'Not specified',
+                        'institute' => $teacher->institute ?? 'Not specified',
+                        'experience' => $teacher->experience ?? 'Experienced educator',
+                        'bio' => $teacher->bio ?? 'Professional instructor dedicated to student success.',
+                        'courses_count' => $coursesCount,
+                        'students_count' => $totalStudents,
+                        'rating' => 4.8,
+                        'created_at' => $teacher->created_at ? $teacher->created_at->format('M d, Y') : 'Unknown'
+                    ];
+                } catch (\Exception $e) {
+                    Log::error("❌ Error processing teacher {$teacher->id}: " . $e->getMessage());
+                    return [
+                        'id' => $teacher->id,
+                        'name' => $teacher->name ?? 'Unknown Instructor',
+                        'username' => $teacher->username ?? '',
+                        'email' => $teacher->email ?? '',
+                        'avatar' => $this->getInstructorAvatar($teacher),
+                        'education_qualification' => $teacher->education_qualification ?? 'Not specified',
+                        'institute' => $teacher->institute ?? 'Not specified',
+                        'experience' => $teacher->experience ?? 'Experienced educator',
+                        'bio' => $teacher->bio ?? 'Professional instructor.',
+                        'courses_count' => 0,
+                        'students_count' => 0,
+                        'rating' => 4.5,
+                        'created_at' => $teacher->created_at ? $teacher->created_at->format('M d, Y') : 'Unknown'
+                    ];
                 }
-                
-                // Only use mock data as last resort
-                $fallbackInstructors = $this->getFallbackInstructors();
+            });
+
+            // Get specializations for filter dropdown
+            $specializations = User::where('role', 'teacher')
+                ->whereNotNull('education_qualification')
+                ->where('education_qualification', '!=', '')
+                ->distinct()
+                ->pluck('education_qualification')
+                ->values();
+
+            Log::info("✅ Successfully loaded {$instructors->count()} instructors with data");
+
+            return Inertia::render('Frontend/Instructors', [
+                'instructors' => $instructors->toArray(),
+                'filters' => [
+                    'search' => $request->search ?? '',
+                    'specialization' => $request->specialization ?? '',
+                ],
+                'specializations' => $specializations->toArray(),
+                'pageTitle' => 'Our Instructors - SkillGro',
+                'metaDescription' => 'Meet our team of expert instructors and teachers. Learn from experienced professionals dedicated to your success.'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('❌ Instructors page error: ' . $e->getMessage());
+            Log::error('📝 Stack trace: ' . $e->getTraceAsString());
+            
+            // Only use fallback if there's a serious error
+            $teachers = User::where('role', 'teacher')->get();
+            
+            if ($teachers->count() > 0) {
+                // If we have teachers but there was an error in processing, return basic data
+                $basicInstructors = $teachers->map(function ($teacher) {
+                    return [
+                        'id' => $teacher->id,
+                        'name' => $teacher->name,
+                        'username' => $teacher->username,
+                        'email' => $teacher->email,
+                        'avatar' => $this->getInstructorAvatar($teacher),
+                        'education_qualification' => $teacher->education_qualification,
+                        'institute' => $teacher->institute,
+                        'experience' => $teacher->experience,
+                        'bio' => $teacher->bio,
+                        'courses_count' => 0,
+                        'students_count' => 0,
+                        'rating' => 4.5,
+                        'created_at' => $teacher->created_at->format('M d, Y')
+                    ];
+                });
                 
                 return Inertia::render('Frontend/Instructors', [
-                    'instructors' => $fallbackInstructors,
+                    'instructors' => $basicInstructors->toArray(),
                     'filters' => [
                         'search' => $request->search ?? '',
                         'specialization' => $request->specialization ?? '',
                     ],
-                    'specializations' => ['HSC', 'BSC', 'BA', 'MA', 'MSC', 'PhD', 'Other'],
+                    'specializations' => [],
                     'pageTitle' => 'Our Instructors - SkillGro',
                     'metaDescription' => 'Meet our team of expert instructors.'
                 ]);
             }
+            
+            // Only use mock data as last resort
+            $fallbackInstructors = $this->getFallbackInstructors();
+            
+            return Inertia::render('Frontend/Instructors', [
+                'instructors' => $fallbackInstructors,
+                'filters' => [
+                    'search' => $request->search ?? '',
+                    'specialization' => $request->specialization ?? '',
+                ],
+                'specializations' => ['HSC', 'BSC', 'BA', 'MA', 'MSC', 'PhD', 'Other'],
+                'pageTitle' => 'Our Instructors - SkillGro',
+                'metaDescription' => 'Meet our team of expert instructors.'
+            ]);
+        }
     }
 
     public function instructorDetails($id): Response
@@ -749,7 +747,6 @@ class FrontendController extends Controller
         }
     }
 
-
     // Contact page
     public function contact(): Response
     {
@@ -767,24 +764,9 @@ class FrontendController extends Controller
         ]);
     }
 
-    // Blog page
-    public function blog(): Response
-    {
-        return Inertia::render('Frontend/Blog', [
-            'pageTitle' => 'Blog - SkillGro',
-            'metaDescription' => 'Read the latest articles, tips, and insights about education, learning strategies, and career development.'
-        ]);
-    }
-
-    // Blog post page
-    public function blogPost($slug): Response
-    {
-        return Inertia::render('Frontend/BlogPost', [
-            'slug' => $slug,
-            'pageTitle' => 'Blog Post - SkillGro',
-            'metaDescription' => 'Educational insights and learning strategies.'
-        ]);
-    }
+    // REMOVED BLOG METHODS - They are now handled by BlogController
+    // Blog page - REMOVED
+    // Blog post page - REMOVED
 
     // Helper methods
     private function getFallbackInstructors()

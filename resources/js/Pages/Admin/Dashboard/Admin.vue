@@ -6,7 +6,7 @@
     <!-- Main Content -->
     <main class="flex-1 ml-64">
       <!-- Phoenix Top Navbar -->
-      <Navbar page-title="Approval Statistics" @search="handleSearch" />
+      <Navbar page-title="Admin Dashboard" @search="handleSearch" />
 
       <!-- Page Content -->
       <div class="p-6">

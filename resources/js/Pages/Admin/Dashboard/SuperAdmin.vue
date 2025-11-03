@@ -6,7 +6,7 @@
     <!-- Main Content -->
     <div class="flex-1 ml-64">
       <!-- Top Navbar -->
-      <Navbar page-title="Approval Statistics" @search="handleSearch" />
+      <Navbar page-title="Super Admin Dashboard" @search="handleSearch" />
       <!-- Page Content -->
       <div class="p-6">
         <!-- Welcome Message -->

@@ -23,6 +23,7 @@
                     <li><Link href="/courses">{{ t('Courses') }}</Link></li>
                     <li><Link href="/instructors">{{ t('Instructors') }}</Link></li>
                     <li><Link href="/about">{{ t('About') }}</Link></li>
+                    <li><Link href="/blog">{{ t('Blogs') }}</Link></li>
                     
                     <!-- Search Bar with Dropdown -->
                     <li class="search-nav-item">
@@ -180,11 +181,11 @@
                       </div>
                     </li>
                     
-                    <!-- Login/Register -->
+                    <!-- Login/Register - PERFECT CAPSULE STYLE -->
                     <li v-else class="auth-nav-item">
                       <div class="auth-buttons">
-                        <Link href="/student-login" class="btn-login">{{ t('Login') }}</Link>
-                        <Link href="/phone-verification" class="btn-primary">{{ t('Get Started') }}</Link>
+                        <Link href="/student-login" class="btn-login-capsule">{{ t('Login') }}</Link>
+                        <Link href="/phone-verification" class="btn-primary-capsule">{{ t('Get Started') }}</Link>
                       </div>
                     </li>
                   </ul>
@@ -340,8 +341,13 @@
                       <li><button @click="logoutMobile" class="mobile-logout-btn"><i class="fas fa-sign-out-alt"></i>{{ t('Logout') }}</button></li>
                     </template>
                     <template v-else>
-                      <li><Link href="/student-login" @click="closeAll">{{ t('Login') }}</Link></li>
-                      <li><Link href="/phone-verification" @click="closeAll">{{ t('Get Started') }}</Link></li>
+                      <!-- Perfect Capsule Mobile Auth Buttons -->
+                      <li class="mobile-auth-section">
+                        <div class="mobile-auth-buttons">
+                          <Link href="/student-login" class="btn-login-capsule mobile-capsule-btn" @click="closeAll">{{ t('Login') }}</Link>
+                          <Link href="/phone-verification" class="btn-primary-capsule mobile-capsule-btn" @click="closeAll">{{ t('Get Started') }}</Link>
+                        </div>
+                      </li>
                     </template>
                   </ul>
                 </div>
@@ -1346,47 +1352,149 @@ const vClickOutside = {
   color: #dc2626;
 }
 
-/* Auth Buttons */
+/* ===== PERFECT CAPSULE-STYLE AUTH BUTTONS ===== */
 .auth-buttons {
   display: flex;
   gap: 10px;
   align-items: center;
+  margin-left: 8px;
 }
 
-.btn-login {
-  padding: 6px 16px;
-  border-radius: 16px;
+/* Login Button - Perfect Capsule */
+.btn-login-capsule {
+  padding: 10px 24px;
+  border-radius: 50px;
   text-decoration: none;
-  font-weight: 500;
-  font-size: 13px;
+  font-weight: 600;
+  font-size: 14px;
   border: 2px solid var(--primary-color);
   background: transparent;
   color: var(--primary-color);
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   outline: none !important;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1;
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
 }
 
-.btn-login:hover {
+.btn-login-capsule:hover {
   background: var(--primary-color);
   color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(var(--primary-rgb, 59, 130, 246), 0.25);
 }
 
-.btn-primary {
-  padding: 6px 16px;
-  border-radius: 16px;
+.btn-login-capsule:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 10px rgba(var(--primary-rgb, 59, 130, 246), 0.2);
+}
+
+/* Get Started Button - Perfect Capsule */
+.btn-primary-capsule {
+  padding: 10px 24px;
+  border-radius: 50px;
   text-decoration: none;
-  font-weight: 500;
-  font-size: 13px;
+  font-weight: 600;
+  font-size: 14px;
   border: 2px solid var(--primary-color);
   background: var(--primary-color);
   color: white;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   outline: none !important;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1;
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
 }
 
-.btn-primary:hover {
-  background: var(--primary-hover);
-  border-color: var(--primary-hover);
+.btn-primary-capsule:hover {
+  background: var(--primary-hover, #2563eb);
+  border-color: var(--primary-hover, #2563eb);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(var(--primary-rgb, 59, 130, 246), 0.35);
+}
+
+.btn-primary-capsule:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 10px rgba(var(--primary-rgb, 59, 130, 246), 0.3);
+}
+
+/* Mobile Capsule Buttons */
+.mobile-auth-section {
+  border-top: 1px solid var(--border-light);
+  padding: 20px 0;
+}
+
+.mobile-auth-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 16px;
+}
+
+.mobile-capsule-btn {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+  padding: 12px 20px;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 15px;
+  min-height: 44px;
+}
+
+/* Ripple effect for capsule buttons */
+.btn-login-capsule::before,
+.btn-primary-capsule::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  transform: translate(-50%, -50%);
+  transition: width 0.4s, height 0.4s;
+}
+
+.btn-login-capsule:hover::before,
+.btn-primary-capsule:hover::before {
+  width: 120px;
+  height: 120px;
+}
+
+/* Dark theme adjustments for capsule buttons */
+.dark-theme .btn-login-capsule {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.dark-theme .btn-login-capsule:hover {
+  background: var(--primary-color);
+  color: var(--bg-primary);
+}
+
+.dark-theme .btn-primary-capsule {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: var(--bg-primary);
+}
+
+.dark-theme .btn-primary-capsule:hover {
+  background: var(--primary-hover, #2563eb);
+  border-color: var(--primary-hover, #2563eb);
 }
 
 /* Mobile Menu */
@@ -1643,6 +1751,23 @@ const vClickOutside = {
   .search-input-group {
     min-width: 160px;
   }
+  
+  /* Responsive capsule buttons */
+  .auth-buttons {
+    gap: 8px;
+  }
+  
+  .btn-login-capsule,
+  .btn-primary-capsule {
+    padding: 8px 20px;
+    font-size: 13px;
+    min-height: 36px;
+  }
+  
+  .mobile-capsule-btn {
+    padding: 10px 20px;
+    min-height: 42px;
+  }
 }
 
 /* Truncate long names */
@@ -1668,10 +1793,11 @@ const vClickOutside = {
     gap: 6px;
   }
   
-  .btn-login,
-  .btn-primary {
-    padding: 5px 12px;
+  .btn-login-capsule,
+  .btn-primary-capsule {
+    padding: 7px 18px;
     font-size: 12px;
+    min-height: 34px;
   }
 }
 
@@ -1700,8 +1826,8 @@ const vClickOutside = {
 .lang-btn-nav,
 .profile-trigger,
 .dropdown-item,
-.btn-login,
-.btn-primary,
+.btn-login-capsule,
+.btn-primary-capsule,
 .mobile-nav-btn,
 .mobile-logout-btn {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1716,8 +1842,8 @@ const vClickOutside = {
 .lang-btn-nav:focus,
 .profile-trigger:focus,
 .dropdown-item:focus,
-.btn-login:focus,
-.btn-primary:focus {
+.btn-login-capsule:focus,
+.btn-primary-capsule:focus {
   outline: none !important;
   box-shadow: none !important;
 }

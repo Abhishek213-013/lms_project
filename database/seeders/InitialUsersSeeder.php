@@ -19,9 +19,11 @@ class InitialUsersSeeder extends Seeder
             'password' => Hash::make('password123'),
             'role' => 'super_admin',
             'dob' => '1990-01-01',
-            'education_qualification' => 'MSC',
+            'education_qualification' => 'MSc', // Changed from MSC to MSc
             'institute' => 'SkillGro',
             'experience' => '5 years',
+            'status' => 'active',
+            'email_verified_at' => now(),
         ]);
 
         // Create Admin
@@ -32,9 +34,11 @@ class InitialUsersSeeder extends Seeder
             'password' => Hash::make('password123'),
             'role' => 'admin',
             'dob' => '1990-01-01',
-            'education_qualification' => 'BSC',
+            'education_qualification' => 'BSc', // Changed from BSC to BSc
             'institute' => 'SkillGro',
             'experience' => '3 years',
+            'status' => 'active',
+            'email_verified_at' => now(),
         ]);
 
         // Create Teacher
@@ -45,11 +49,12 @@ class InitialUsersSeeder extends Seeder
             'password' => Hash::make('password123'),
             'role' => 'teacher',
             'dob' => '1985-05-15',
-            'education_qualification' => 'MSC',
+            'education_qualification' => 'MSc', // Changed from MSC to MSc
             'institute' => 'University of Education',
-            'experience' => '8 years teaching experience',
+            'experience' => '8 years',
+            'status' => 'active',
+            'email_verified_at' => now(),
         ]);
-
 
         $this->command->info('Initial users created successfully!');
         $this->command->info('Super Admin: superadmin / password123');

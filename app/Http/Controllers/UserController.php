@@ -25,9 +25,11 @@ class UserController extends Controller
     {
         return Inertia::render('Admin/Users/SuperAdmins', [
             'user' => Auth::user(),
-            'initialData' => [
-                'superAdmins' => $this->getSuperAdminsData(),
-                'userStats' => $this->getUserStatsData(),
+            'superAdmins' => $this->getSuperAdminsData(),
+            'userStats' => $this->getUserStatsData(),
+            'flash' => [
+                'success' => session('success'),
+                'error' => session('error')
             ]
         ]);
     }
@@ -39,9 +41,11 @@ class UserController extends Controller
     {
         return Inertia::render('Admin/Users/Admins', [
             'user' => Auth::user(),
-            'initialData' => [
-                'admins' => $this->getAdminsData(),
-                'userStats' => $this->getUserStatsData(),
+            'admins' => $this->getAdminsData(),
+            'userStats' => $this->getUserStatsData(),
+            'flash' => [
+                'success' => session('success'),
+                'error' => session('error')
             ]
         ]);
     }
@@ -51,12 +55,30 @@ class UserController extends Controller
      */
     public function teachersPage(): Response
     {
+        Log::info('=== TEACHERS PAGE LOADED ===');
+        
+        // Get teachers with all necessary fields
+        $teachers = User::where('role', 'teacher')
+            ->select([
+                'id', 'name', 'username', 'email', 'dob',
+                'education_qualification', 'institute', 'experience', 'bio',
+                'status', 'created_at'
+            ])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        Log::info("Teachers found: " . $teachers->count());
+        Log::info("Teachers data: ", $teachers->toArray());
+
+        // Get students
+        $students = User::where('role', 'student')
+            ->select(['id', 'name', 'username', 'email', 'dob', 'role', 'created_at'])
+            ->get();
+
         return Inertia::render('Admin/Users/Teachers', [
-            'user' => Auth::user(),
-            'initialData' => [
-                'teachers' => $this->getTeachersData(),
-                'userStats' => $this->getUserStatsData(),
-            ]
+            'teachers' => $teachers,
+            'students' => $students,
+            'status' => session('success') ?? session('status'),
         ]);
     }
 
@@ -325,8 +347,14 @@ class UserController extends Controller
         }
     }
 
+    /**
+     * Create a new teacher - FIXED VERSION
+     */
     public function createTeacher(Request $request)
     {
+        Log::info('=== CREATE TEACHER REQUEST ===');
+        Log::info('Request data:', $request->all());
+        
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'username' => 'required|string|unique:users|max:255',
@@ -340,14 +368,15 @@ class UserController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors()
-            ], 422);
+            Log::error('Validation failed:', $validator->errors()->toArray());
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
         }
 
         try {
+            DB::beginTransaction();
+
             $user = User::create([
                 'name' => $request->name,
                 'username' => $request->username,
@@ -359,45 +388,36 @@ class UserController extends Controller
                 'bio' => $request->bio,
                 'password' => Hash::make($request->password),
                 'role' => 'teacher',
-                'status' => 'pending', // Teachers need approval
+                'status' => 'pending',
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Teacher created successfully and submitted for approval',
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'username' => $user->username,
-                    'email' => $user->email,
-                    'dob' => $user->dob,
-                    'education_qualification' => $user->education_qualification,
-                    'institute' => $user->institute,
-                    'experience' => $user->experience,
-                    'bio' => $user->bio,
-                    'role' => $user->role,
-                    'status' => $user->status
-                ]
-            ], 201);
+            DB::commit();
+
+            Log::info('Teacher created successfully:', ['id' => $user->id, 'name' => $user->name]);
+
+            // Redirect back to teachers page with success message
+            return redirect()->route('teachers') // Use the correct route name
+                ->with('success', 'Teacher ' . $user->name . ' created successfully!');
+
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('Error creating teacher: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to create teacher',
-                'error' => $e->getMessage()
-            ], 500);
+            
+            return redirect()->back()
+                ->withErrors(['message' => 'Failed to create teacher: ' . $e->getMessage()])
+                ->withInput();
         }
     }
 
+    /**
+     * Update user - FIXED VERSION
+     */
     public function updateUser(Request $request, $id)
     {
         $user = User::find($id);
         
         if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'User not found'
-            ], 404);
+            return redirect()->back()->withErrors(['message' => 'User not found']);
         }
 
         $validator = Validator::make($request->all(), [
@@ -414,11 +434,9 @@ class UserController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors()
-            ], 422);
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
         }
 
         try {
@@ -440,51 +458,31 @@ class UserController extends Controller
 
             $user->update($updateData);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'User updated successfully',
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'username' => $user->username,
-                    'email' => $user->email,
-                    'dob' => $user->dob,
-                    'education_qualification' => $user->education_qualification,
-                    'institute' => $user->institute,
-                    'experience' => $user->experience,
-                    'bio' => $user->bio,
-                    'role' => $user->role,
-                    'status' => $user->status
-                ]
-            ]);
+            return redirect()->back()->with('success', 'User updated successfully');
+
         } catch (\Exception $e) {
             Log::error('Error updating user: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update user',
-                'error' => $e->getMessage()
-            ], 500);
+            return redirect()->back()
+                ->withErrors(['message' => 'Failed to update user: ' . $e->getMessage()])
+                ->withInput();
         }
     }
 
+    /**
+     * Delete user - FIXED VERSION
+     */
     public function deleteUser($id)
     {
         try {
             $user = User::find($id);
             
             if (!$user) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'User not found'
-                ], 404);
+                return redirect()->back()->withErrors(['message' => 'User not found']);
             }
 
             // Prevent deletion of current user
             if ($user->id === Auth::id()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'You cannot delete your own account'
-                ], 422);
+                return redirect()->back()->withErrors(['message' => 'You cannot delete your own account']);
             }
 
             // If deleting a student, also delete the student record
@@ -494,17 +492,11 @@ class UserController extends Controller
 
             $user->delete();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'User deleted successfully'
-            ]);
+            return redirect()->back()->with('success', 'User deleted successfully');
+
         } catch (\Exception $e) {
             Log::error('Error deleting user: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to delete user',
-                'error' => $e->getMessage()
-            ], 500);
+            return redirect()->back()->withErrors(['message' => 'Failed to delete user']);
         }
     }
 
