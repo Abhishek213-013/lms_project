@@ -66,21 +66,90 @@
                 <label class="block text-sm font-medium text-gray-700 mb-2">
                   {{ fieldLabel }}
                 </label>
-                <textarea
-                  v-model="content[fieldKey]"
-                  @blur="saveContent(fieldKey, content[fieldKey])"
-                  :rows="fieldKey.includes('content') ? 6 : 3"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  :placeholder="`Enter ${fieldLabel.toLowerCase()}...`"
-                ></textarea>
-                <p class="mt-1 text-xs text-gray-500">
-                  Character count: {{ content[fieldKey] ? content[fieldKey].length : 0 }}
-                </p>
+                
+                <!-- Image Upload Field -->
+                <div v-if="fieldKey.includes('image')" class="space-y-4">
+                  <!-- Current Image Preview -->
+                  <div v-if="content[fieldKey] && content[fieldKey] !== getDefaultImage(fieldKey)" class="border rounded-lg p-4 bg-gray-50">
+                    <p class="text-sm text-gray-600 mb-2">Current Image Preview:</p>
+                    <div class="flex items-start space-x-4">
+                      <img 
+                        :src="content[fieldKey]" 
+                        :alt="fieldLabel"
+                        class="w-32 h-32 object-contain rounded-lg shadow-sm border bg-white"
+                        @error="handleImagePreviewError"
+                      />
+                      <div class="flex-1">
+                        <p class="text-xs text-gray-500 mb-2 break-all">{{ content[fieldKey] }}</p>
+                        <button
+                          @click="removeImage(fieldKey)"
+                          class="px-3 py-1 bg-red-100 text-red-700 rounded-md text-sm hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        >
+                          Remove Image
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Image Upload Controls -->
+                  <div class="space-y-3">
+                    <div class="flex items-center space-x-4">
+                      <input
+                        type="text"
+                        v-model="imageUrls[fieldKey]"
+                        @blur="saveImageUrl(fieldKey, imageUrls[fieldKey])"
+                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder="Enter image URL or upload a file..."
+                      />
+                      <button
+                        @click="openImageUpload(fieldKey)"
+                        class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 flex items-center space-x-2"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                        </svg>
+                        <span>Upload</span>
+                      </button>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4 text-sm">
+                      <button
+                        @click="resetToDefault(fieldKey)"
+                        class="px-3 py-1 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                      >
+                        Reset to Default
+                      </button>
+                      <span class="text-xs text-gray-500">
+                        Supported formats: JPEG, PNG, GIF, SVG, WebP (Max 5MB)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Text Field -->
+                <div v-else>
+                  <textarea
+                    v-model="content[fieldKey]"
+                    @blur="saveContent(fieldKey, content[fieldKey])"
+                    :rows="getTextareaRows(fieldKey)"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    :placeholder="`Enter ${fieldLabel.toLowerCase()}...`"
+                  ></textarea>
+                  <p class="mt-1 text-xs text-gray-500">
+                    Character count: {{ content[fieldKey] ? content[fieldKey].length : 0 }}
+                  </p>
+                </div>
               </div>
             </div>
 
             <!-- Save Button -->
-            <div class="mt-8 flex justify-end">
+            <div class="mt-8 flex justify-end space-x-3">
+              <button
+                @click="resetSectionToDefaults"
+                class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md shadow-sm text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Reset Section
+              </button>
               <button
                 @click="saveAllContent"
                 :disabled="saving"
@@ -145,11 +214,72 @@
         </div>
       </div>
     </div>
+
+    <!-- Image Upload Modal -->
+    <div v-if="showImageUpload" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-lg p-6 w-full max-w-md">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-semibold">Upload Image</h3>
+          <button @click="closeImageUpload" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+        
+        <div class="space-y-4">
+          <!-- File Selection -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Select Image File</label>
+            <input
+              type="file"
+              ref="fileInput"
+              @change="handleFileSelect"
+              accept="image/*"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+          
+          <!-- File Preview -->
+          <div v-if="selectedFile && filePreviewUrl" class="border rounded-lg p-3">
+            <p class="text-sm text-gray-600 mb-2">Preview:</p>
+            <img :src="filePreviewUrl" :alt="selectedFile.name" class="max-w-full h-32 object-contain mx-auto rounded" />
+            <p class="text-xs text-gray-500 mt-2 text-center">{{ selectedFile.name }} ({{ formatFileSize(selectedFile.size) }})</p>
+          </div>
+          
+          <!-- Upload Progress -->
+          <div v-if="uploading" class="space-y-2">
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div class="bg-indigo-600 h-2 rounded-full transition-all duration-300" :style="{ width: uploadProgress + '%' }"></div>
+            </div>
+            <p class="text-xs text-gray-600 text-center">Uploading... {{ uploadProgress }}%</p>
+          </div>
+          
+          <!-- Actions -->
+          <div class="flex justify-end space-x-3 pt-4">
+            <button
+              @click="closeImageUpload"
+              class="px-4 py-2 text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500"
+            >
+              Cancel
+            </button>
+            <button
+              @click="uploadImage"
+              :disabled="!selectedFile || uploading"
+              class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span v-if="uploading">Uploading...</span>
+              <span v-else>Upload Image</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { router, useForm } from '@inertiajs/vue3'
 import Navbar from '../../Layout/Navbar.vue'
 import Sidebar from '../../Layout/Sidebar.vue'
@@ -178,8 +308,16 @@ const props = defineProps({
 const activeSection = ref('about')
 const saving = ref(false)
 const localContent = ref({})
+const imageUrls = ref({})
 const successMessage = ref('')
 const errorMessage = ref('')
+const showImageUpload = ref(false)
+const uploading = ref(false)
+const uploadProgress = ref(0)
+const currentImageField = ref('')
+const selectedFile = ref(null)
+const filePreviewUrl = ref(null)
+const fileInput = ref(null)
 
 // Use Inertia form for content saving
 const saveForm = useForm({
@@ -234,7 +372,22 @@ const content = computed({
   }
 })
 
+// Default images for different fields
+const defaultImages = {
+  'home_hero_image': '/assets/img/h2_banner_img.png'
+}
+
 // Methods
+const getDefaultImage = (fieldKey) => {
+  return defaultImages[fieldKey] || '/assets/img/placeholder.jpg'
+}
+
+const getTextareaRows = (fieldKey) => {
+  if (fieldKey.includes('content')) return 6
+  if (fieldKey.includes('title') || fieldKey.includes('subtitle')) return 3
+  return 2
+}
+
 const showMessage = (message, type = 'success') => {
   if (type === 'success') {
     successMessage.value = message
@@ -248,6 +401,170 @@ const showMessage = (message, type = 'success') => {
     successMessage.value = ''
     errorMessage.value = ''
   }, 5000)
+}
+
+const handleImagePreviewError = (event) => {
+  event.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y3ZmFmYyIvPjx0ZXh0IHg9IjEwMCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5Y2EwYTYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIwLjM1ZW0iPuKKojwvdGV4dD48L3N2Zz4='
+}
+
+const formatFileSize = (bytes) => {
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
+
+const openImageUpload = (fieldKey) => {
+  currentImageField.value = fieldKey
+  showImageUpload.value = true
+  selectedFile.value = null
+  filePreviewUrl.value = null
+  uploadProgress.value = 0
+  
+  nextTick(() => {
+    if (fileInput.value) {
+      fileInput.value.value = ''
+    }
+  })
+}
+
+const closeImageUpload = () => {
+  showImageUpload.value = false
+  currentImageField.value = ''
+  selectedFile.value = null
+  filePreviewUrl.value = null
+  uploadProgress.value = 0
+}
+
+const handleFileSelect = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    // Validate file type and size
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml', 'image/webp']
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    
+    if (!validTypes.includes(file.type)) {
+      showMessage('Please select a valid image file (JPEG, PNG, GIF, SVG, WebP)', 'error')
+      return
+    }
+    
+    if (file.size > maxSize) {
+      showMessage('Image size should be less than 5MB', 'error')
+      return
+    }
+    
+    selectedFile.value = file
+    
+    // Create preview
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      filePreviewUrl.value = e.target.result
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
+const uploadImage = async () => {
+  if (!selectedFile.value) {
+    showMessage('Please select an image file', 'error')
+    return
+  }
+
+  try {
+    uploading.value = true
+    uploadProgress.value = 0
+    
+    const formData = new FormData()
+    formData.append('image', selectedFile.value)
+    formData.append('key', currentImageField.value)
+
+    const xhr = new XMLHttpRequest()
+    
+    xhr.upload.addEventListener('progress', (event) => {
+      if (event.lengthComputable) {
+        const percentComplete = (event.loaded / event.total) * 100
+        uploadProgress.value = Math.round(percentComplete)
+      }
+    })
+    
+    xhr.addEventListener('load', () => {
+      if (xhr.status === 200) {
+        const result = JSON.parse(xhr.responseText)
+        
+        if (result.success) {
+          // Update the content with the new image URL
+          localContent.value[currentImageField.value] = result.url
+          imageUrls.value[currentImageField.value] = result.url
+          showMessage('Image uploaded successfully!')
+          closeImageUpload()
+        } else {
+          showMessage(result.error || 'Failed to upload image', 'error')
+        }
+      } else {
+        showMessage('Upload failed. Please try again.', 'error')
+      }
+      uploading.value = false
+    })
+    
+    xhr.addEventListener('error', () => {
+      showMessage('Upload failed. Please try again.', 'error')
+      uploading.value = false
+    })
+    
+    xhr.open('POST', '/admin/content-management/upload-image')
+    xhr.setRequestHeader('X-CSRF-TOKEN', document.querySelector('meta[name="csrf-token"]').getAttribute('content'))
+    xhr.send(formData)
+    
+  } catch (error) {
+    console.error('Image upload error:', error)
+    showMessage('Error uploading image', 'error')
+    uploading.value = false
+  }
+}
+
+const removeImage = async (fieldKey) => {
+  if (!confirm('Are you sure you want to remove this image? It will be reset to the default image.')) {
+    return
+  }
+
+  try {
+    const response = await fetch('/admin/content-management/remove-image', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+      },
+      body: JSON.stringify({ key: fieldKey })
+    })
+
+    const result = await response.json()
+
+    if (result.success) {
+      // Update the content with the default image
+      localContent.value[fieldKey] = result.default_value
+      imageUrls.value[fieldKey] = result.default_value
+      showMessage('Image removed successfully!')
+    } else {
+      showMessage(result.error || 'Failed to remove image', 'error')
+    }
+  } catch (error) {
+    console.error('Image removal error:', error)
+    showMessage('Error removing image', 'error')
+  }
+}
+
+const resetToDefault = (fieldKey) => {
+  localContent.value[fieldKey] = getDefaultImage(fieldKey)
+  imageUrls.value[fieldKey] = getDefaultImage(fieldKey)
+  saveContent(fieldKey, getDefaultImage(fieldKey))
+}
+
+const saveImageUrl = (fieldKey, url) => {
+  if (url && url !== props.content[fieldKey]) {
+    localContent.value[fieldKey] = url
+    saveContent(fieldKey, url)
+  }
 }
 
 const saveContent = async (key, value) => {
@@ -303,7 +620,11 @@ const saveContent = async (key, value) => {
 }
 
 const saveAllContent = async () => {
-  if (Object.keys(localContent.value).length === 0) {
+  const changes = Object.keys(localContent.value).filter(key => 
+    localContent.value[key] !== props.content[key]
+  )
+
+  if (changes.length === 0) {
     showMessage('No changes to save', 'info')
     return
   }
@@ -312,10 +633,10 @@ const saveAllContent = async () => {
     saving.value = true
     
     // Save each modified field sequentially
-    for (const [key, value] of Object.entries(localContent.value)) {
+    for (const key of changes) {
       await new Promise((resolve) => {
         saveForm.key = key
-        saveForm.value = value
+        saveForm.value = localContent.value[key]
         
         saveForm.post('/admin/content-management/save', {
           preserveScroll: true,
@@ -338,15 +659,31 @@ const saveAllContent = async () => {
     console.log('✅ All content saved successfully')
     showMessage('All changes saved successfully!')
     
-    // Clear local changes after successful save
-    localContent.value = {}
-    
   } catch (error) {
     console.error('❌ Failed to save content:', error)
     showMessage('Failed to save content. Please try again.', 'error')
   } finally {
     saving.value = false
   }
+}
+
+const resetSectionToDefaults = () => {
+  if (!confirm('Are you sure you want to reset all fields in this section to their default values?')) {
+    return
+  }
+
+  const sectionFields = props.sections[activeSection.value]?.fields || {}
+  Object.keys(sectionFields).forEach(fieldKey => {
+    if (fieldKey.includes('image')) {
+      localContent.value[fieldKey] = getDefaultImage(fieldKey)
+      imageUrls.value[fieldKey] = getDefaultImage(fieldKey)
+    } else {
+      // For text fields, we don't have easy access to defaults, so clear them
+      localContent.value[fieldKey] = ''
+    }
+  })
+  
+  showMessage('Section reset to defaults. Click "Save All Changes" to apply.')
 }
 
 const handleSearch = (searchQuery) => {
@@ -360,5 +697,12 @@ onMounted(() => {
   console.log('Sections:', props.sections)
   console.log('Flash messages:', props.flash)
   console.log('Errors:', props.errors)
+  
+  // Initialize image URLs
+  const imageFields = ['home_hero_image']
+  imageFields.forEach(field => {
+    imageUrls.value[field] = props.content[field] || getDefaultImage(field)
+  })
 })
 </script>
+

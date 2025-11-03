@@ -59,6 +59,7 @@ class Content extends Model
             // Home Page Content
             'home_hero_title' => 'Learning is What You Make of it. Make it Yours at SkillGro.',
             'home_hero_subtitle' => 'Unlock your potential with our expert-led courses and transform your career.',
+            'home_hero_image' => '/assets/img/h2_banner_img.png',
             'home_hero_primary_button' => 'Start Free Trial',
             'home_hero_secondary_button' => 'Watch Our Class Demo',
             'home_courses_title' => 'Popular Courses',
