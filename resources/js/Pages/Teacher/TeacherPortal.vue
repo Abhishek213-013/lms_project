@@ -1015,8 +1015,8 @@ onMounted(() => {
 <style scoped>
 .custom-heading {
   font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-  font-size: 27.8417px;
-  font-weight: 800;
+  font-size: 22.8417px;
+  font-weight: 600;
   color: #1f2937; /* text-gray-900 equivalent */
 }
 

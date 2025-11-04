@@ -7,188 +7,187 @@
           <div class="col-12">
             <div class="menu-wrap">
               <nav class="main-nav">
-                <div class="logo">
-                  <Link href="/">
-                    <!-- New Rectangular Logo -->
-                    <div class="logo-container">
-                      <img src="../../../../public/assets/img/pathshala-logo.png" alt="Pathshala LMS" class="logo-image">
-                    </div>
-                  </Link>
+                <!-- SECTION 1: Logo -->
+                <div class="logo-section">
+                  <div class="logo">
+                    <a href="#" @click.prevent="navigateWithLanguage('/')">
+                      <div class="logo-container">
+                        <img src="../../../../public/assets/img/pathshala-logo.png" alt="Pathshala LMS" class="logo-image">
+                      </div>
+                    </a>
+                  </div>
                 </div>
-                
-                <!-- Desktop Navigation -->
-                <div class="desktop-menu">
+
+                <!-- SECTION 2: Navigation Components -->
+                <div class="nav-components-section">
                   <ul class="navigation">
-                    <li><Link href="/">{{ t('Home') }}</Link></li>
-                    <li><Link href="/courses">{{ t('Courses') }}</Link></li>
-                    <li><Link href="/instructors">{{ t('Instructors') }}</Link></li>
-                    <li><Link href="/about">{{ t('About') }}</Link></li>
-                    
-                    <!-- Search Bar with Dropdown -->
-                    <li class="search-nav-item">
-                      <div class="nav-search">
-                        <form @submit.prevent="searchCourses">
-                          <div class="search-input-group" :class="{ 'active': showSuggestions }">
-                            <input 
-                              v-model="searchQuery" 
-                              type="text" 
-                              :placeholder="t('Search Courses...')"
-                              @input="handleSearchInput"
-                              @focus="handleSearchFocus"
-                              @blur="onSearchBlur"
-                            >
-                            <button type="submit"><i class="fas fa-search"></i></button>
+                    <li><a href="#" @click.prevent="navigateWithLanguage('/')">{{ t('Home') }}</a></li>
+                    <li><a href="#" @click.prevent="navigateWithLanguage('/courses')">{{ t('Courses') }}</a></li>
+                    <li><a href="#" @click.prevent="navigateWithLanguage('/instructors')">{{ t('Instructors') }}</a></li>
+                    <li><a href="#" @click.prevent="navigateWithLanguage('/about')">{{ t('About') }}</a></li>
+                  </ul>
+                </div>
+
+                <!-- SECTION 3: Utilities & Profile -->
+                <div class="utilities-section">
+                  <!-- Search Bar -->
+                  <div class="search-utility">
+                    <div class="nav-search">
+                      <form @submit.prevent="searchCourses">
+                        <div class="search-input-group" :class="{ 'active': showSuggestions }">
+                          <input 
+                            v-model="searchQuery" 
+                            type="text" 
+                            :placeholder="t('Search Courses...')"
+                            @input="handleSearchInput"
+                            @focus="handleSearchFocus"
+                            @blur="onSearchBlur"
+                          >
+                          <button type="submit"><i class="fas fa-search"></i></button>
+                          
+                          <!-- Search Suggestions Dropdown -->
+                          <div class="search-suggestions" v-show="showSuggestions && (filteredSuggestions.length > 0 || isLoadingSuggestions)">
+                            <div class="suggestions-header">
+                              <span>Course Suggestions</span>
+                              <span class="suggestion-count" v-if="!isLoadingSuggestions && filteredSuggestions.length > 0">
+                                {{ filteredSuggestions.length }} results
+                              </span>
+                            </div>
                             
-                            <!-- Search Suggestions Dropdown -->
-                            <div class="search-suggestions" v-show="showSuggestions && (filteredSuggestions.length > 0 || isLoadingSuggestions)">
-                              <div class="suggestions-header">
-                                <span>Course Suggestions</span>
-                                <span class="suggestion-count" v-if="!isLoadingSuggestions && filteredSuggestions.length > 0">
-                                  {{ filteredSuggestions.length }} results
-                                </span>
-                              </div>
-                              
-                              <!-- Loading State -->
-                              <div class="loading-suggestions" v-if="isLoadingSuggestions">
-                                <i class="fas fa-spinner fa-spin"></i>
-                                <span>Searching courses...</span>
-                              </div>
-                              
-                              <!-- Results -->
-                              <div class="suggestions-list" v-else-if="filteredSuggestions.length > 0">
-                                <button 
-                                  v-for="course in filteredSuggestions" 
-                                  :key="course.id"
-                                  @click="selectSuggestion(course)"
-                                  class="suggestion-item"
-                                >
-                                  <i class="fas fa-book"></i>
-                                  <div class="course-info">
-                                    <div class="course-title">{{ course.name }}</div>
-                                    <div class="course-details">
-                                      <span class="course-type" v-if="course.type === 'regular'">
-                                        Class {{ course.grade }} • {{ course.subject }}
-                                      </span>
-                                      <span class="course-type" v-else-if="course.type === 'other'">
-                                        {{ course.category }} • Skill Course
-                                      </span>
-                                      <span class="course-students">
-                                        <i class="fas fa-users"></i> {{ course.student_count || 0 }} students
-                                      </span>
-                                    </div>
-                                  </div>
-                                </button>
-                              </div>
-                              
-                              <!-- No Results -->
-                              <div class="no-suggestions" v-else-if="searchQuery.trim()">
-                                <i class="fas fa-search"></i>
-                                <span>No courses found for "{{ searchQuery }}"</span>
-                              </div>
-                              
-                              <!-- Empty State -->
-                              <div class="no-suggestions" v-else>
+                            <div class="loading-suggestions" v-if="isLoadingSuggestions">
+                              <i class="fas fa-spinner fa-spin"></i>
+                              <span>Searching courses...</span>
+                            </div>
+                            
+                            <div class="suggestions-list" v-else-if="filteredSuggestions.length > 0">
+                              <button 
+                                v-for="course in filteredSuggestions" 
+                                :key="course.id"
+                                @click="selectSuggestion(course)"
+                                class="suggestion-item"
+                              >
                                 <i class="fas fa-book"></i>
-                                <span>Start typing to search courses</span>
-                              </div>
+                                <div class="course-info">
+                                  <div class="course-title">{{ course.name }}</div>
+                                  <div class="course-details">
+                                    <span class="course-type" v-if="course.type === 'regular'">
+                                      Class {{ course.grade }} • {{ course.subject }}
+                                    </span>
+                                    <span class="course-type" v-else-if="course.type === 'other'">
+                                      {{ course.category }} • Skill Course
+                                    </span>
+                                    <span class="course-students">
+                                      <i class="fas fa-users"></i> {{ course.student_count || 0 }} students
+                                    </span>
+                                  </div>
+                                </div>
+                              </button>
+                            </div>
+                            
+                            <div class="no-suggestions" v-else-if="searchQuery.trim()">
+                              <i class="fas fa-search"></i>
+                              <span>No courses found for "{{ searchQuery }}"</span>
+                            </div>
+                            
+                            <div class="no-suggestions" v-else>
+                              <i class="fas fa-book"></i>
+                              <span>Start typing to search courses</span>
                             </div>
                           </div>
-                        </form>
-                      </div>
-                    </li>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
 
-                    <!-- Theme Toggle -->
-                    <li class="theme-nav-item">
-                      <div class="theme-switcher-nav">
-                        <button 
-                          @click="toggleTheme"
-                          class="theme-btn-nav"
-                          :title="currentTheme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'"
-                        >
-                          <i v-if="currentTheme === 'light'" class="fas fa-moon"></i>
-                          <i v-else class="fas fa-sun"></i>
-                        </button>
-                      </div>
-                    </li>
+                  <!-- Theme Toggle -->
+                  <div class="theme-utility">
+                    <button 
+                      @click="toggleTheme"
+                      class="theme-btn-nav"
+                      :title="currentTheme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'"
+                    >
+                      <i v-if="currentTheme === 'light'" class="fas fa-moon"></i>
+                      <i v-else class="fas fa-sun"></i>
+                    </button>
+                  </div>
 
-                    <!-- Language Switcher -->
-                    <li class="language-nav-item">
-                      <div class="language-switcher-nav">
-                        <button 
-                          @click="switchLanguageWithIcons('bn')"
-                          :class="['lang-btn-nav', { 'active': currentLanguage === 'bn' }]"
-                        >
-                          Bn
-                        </button>
-                        <button 
-                          @click="switchLanguageWithIcons('en')"
-                          :class="['lang-btn-nav', { 'active': currentLanguage === 'en' }]"
-                        >
-                          En
-                        </button>
-                      </div>
-                    </li>
-                    
-                    <!-- Profile Dropdown -->
-                    <li class="profile-nav-item" v-if="$page.props.auth.user">
-                      <div class="profile-wrapper">
-                        <button class="profile-trigger" @click="toggleProfileDropdown">
-                          <i class="fas fa-user-circle"></i>
-                          {{ $page.props.auth.user.name }}
-                          <i class="fas fa-chevron-down" :class="{ 'rotate': profileOpen }"></i>
-                        </button>
+                  <!-- Language Toggle -->
+                  <div class="language-utility">
+                    <div class="language-switcher-nav">
+                      <button 
+                        @click="switchLanguageWithIcons('bn')"
+                        :class="['lang-btn-nav', { 'active': currentLanguage === 'bn' }]"
+                      >
+                        Bn
+                      </button>
+                      <button 
+                        @click="switchLanguageWithIcons('en')"
+                        :class="['lang-btn-nav', { 'active': currentLanguage === 'en' }]"
+                      >
+                        En
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Profile Section -->
+                  <div class="profile-utility" v-if="$page.props.auth.user">
+                    <div class="profile-wrapper">
+                      <button class="profile-trigger" @click="toggleProfileDropdown">
+                        <i class="fas fa-user-circle"></i>
+                        {{ $page.props.auth.user.name }}
+                        <i class="fas fa-chevron-down" :class="{ 'rotate': profileOpen }"></i>
+                      </button>
+                      
+                      <div class="profile-dropdown" v-show="profileOpen" v-click-outside="closeProfileDropdown">
+                        <div class="dropdown-header">
+                          <div class="student-info">
+                            <i class="fas fa-user-circle student-avatar"></i>
+                            <div class="student-details">
+                              <div class="student-name">{{ $page.props.auth.user.name }}</div>
+                              <div class="student-email">{{ $page.props.auth.user.email }}</div>
+                            </div>
+                          </div>
+                        </div>
                         
-                        <div class="profile-dropdown" v-show="profileOpen" v-click-outside="closeProfileDropdown">
-                          <div class="dropdown-header">
-                            <div class="student-info">
-                              <i class="fas fa-user-circle student-avatar"></i>
-                              <div class="student-details">
-                                <div class="student-name">{{ $page.props.auth.user.name }}</div>
-                                <div class="student-email">{{ $page.props.auth.user.email }}</div>
-                              </div>
-                            </div>
-                          </div>
+                        <div class="dropdown-divider"></div>
+                        
+                        <div class="dropdown-menu-items">
+                          <button @click="navigateToProfile" class="dropdown-item">
+                            <i class="fas fa-user"></i>
+                            <span class="dropdown-text">{{ t('My Profile') }}</span>
+                          </button>
+                          <button @click="navigateToMyCourses" class="dropdown-item">
+                            <i class="fas fa-book"></i>
+                            <span class="dropdown-text">{{ t('My Courses') }}</span>
+                          </button>
+                          <button @click="navigateToLearningProgress" class="dropdown-item">
+                            <i class="fas fa-chart-line"></i>
+                            <span class="dropdown-text">{{ t('Learning Progress') }}</span>
+                          </button>
+                          <button @click="navigateToSettings" class="dropdown-item">
+                            <i class="fas fa-cog"></i>
+                            <span class="dropdown-text">{{ t('Settings') }}</span>
+                          </button>
                           
                           <div class="dropdown-divider"></div>
                           
-                          <div class="dropdown-menu-items">
-                            <button @click="navigateToProfile" class="dropdown-item">
-                              <i class="fas fa-user"></i>
-                              <span class="dropdown-text">{{ t('My Profile') }}</span>
-                            </button>
-                            <button @click="navigateToMyCourses" class="dropdown-item">
-                              <i class="fas fa-book"></i>
-                              <span class="dropdown-text">{{ t('My Courses') }}</span>
-                            </button>
-                            <button @click="navigateToLearningProgress" class="dropdown-item">
-                              <i class="fas fa-chart-line"></i>
-                              <span class="dropdown-text">{{ t('Learning Progress') }}</span>
-                            </button>
-                            <button @click="navigateToSettings" class="dropdown-item">
-                              <i class="fas fa-cog"></i>
-                              <span class="dropdown-text">{{ t('Settings') }}</span>
-                            </button>
-                            
-                            <div class="dropdown-divider"></div>
-                            
-                            <button class="dropdown-item logout" @click="logout">
-                              <i class="fas fa-sign-out-alt"></i>
-                              <span class="dropdown-text">{{ t('Logout') }}</span>
-                            </button>
-                          </div>
+                          <button class="dropdown-item logout" @click="logout">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span class="dropdown-text">{{ t('Logout') }}</span>
+                          </button>
                         </div>
                       </div>
-                    </li>
-                    
-                    <!-- Login/Register - SIMPLE TEXT STYLE -->
-                    <li v-else class="auth-nav-item">
-                      <div class="auth-buttons-simple">
-                        <Link href="/student-login" class="text-link">{{ t('Login') }}</Link>
-                        <span class="separator">|</span>
-                        <Link href="/phone-verification" class="text-link primary">{{ t('Get Started') }}</Link>
-                      </div>
-                    </li>
-                  </ul>
+                    </div>
+                  </div>
+
+                  <!-- Login/Register -->
+                  <div class="auth-utility" v-else>
+                    <div class="auth-buttons-simple">
+                      <a href="#" @click.prevent="navigateWithLanguage('/student-login')" class="text-link">{{ t('Login') }}</a>
+                      <span class="separator">|</span>
+                      <a href="#" @click.prevent="navigateWithLanguage('/phone-verification')" class="text-link primary">{{ t('Get Started') }}</a>
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Mobile Menu Toggler -->
@@ -203,12 +202,11 @@
               <div class="mobile-menu-content">
                 <div class="mobile-menu-header">
                   <div class="mobile-logo">
-                    <Link href="/" @click="closeAll">
-                      <!-- Mobile Logo -->
+                    <a href="#" @click.prevent="navigateWithLanguage('/'); closeAll();">
                       <div class="logo-container mobile-logo-container">
                         <img src="/images/pathshala-logo.png" alt="Pathshala LMS" class="logo-image">
                       </div>
-                    </Link>
+                    </a>
                   </div>
                   
                   <!-- Theme and Language Switchers in Mobile -->
@@ -317,10 +315,10 @@
                 
                 <div class="mobile-navigation">
                   <ul class="mobile-nav-list">
-                    <li><Link href="/" @click="closeAll">{{ t('Home') }}</Link></li>
-                    <li><Link href="/courses" @click="closeAll">{{ t('Courses') }}</Link></li>
-                    <li><Link href="/instructors" @click="closeAll">{{ t('Instructors') }}</Link></li>
-                    <li><Link href="/about" @click="closeAll">{{ t('About') }}</Link></li>
+                    <li><a href="#" @click.prevent="navigateWithLanguage('/'); closeAll();">{{ t('Home') }}</a></li>
+                    <li><a href="#" @click.prevent="navigateWithLanguage('/courses'); closeAll();">{{ t('Courses') }}</a></li>
+                    <li><a href="#" @click.prevent="navigateWithLanguage('/instructors'); closeAll();">{{ t('Instructors') }}</a></li>
+                    <li><a href="#" @click.prevent="navigateWithLanguage('/about'); closeAll();">{{ t('About') }}</a></li>
                     
                     <template v-if="$page.props.auth.user">
                       <li class="mobile-profile-section">
@@ -341,11 +339,10 @@
                       <li><button @click="logoutMobile" class="mobile-logout-btn"><i class="fas fa-sign-out-alt"></i>{{ t('Logout') }}</button></li>
                     </template>
                     <template v-else>
-                      <!-- Simple Text Mobile Auth Buttons -->
                       <li class="mobile-auth-section">
                         <div class="mobile-auth-simple">
-                          <Link href="/student-login" class="mobile-text-link" @click="closeAll">{{ t('Login') }}</Link>
-                          <Link href="/phone-verification" class="mobile-text-link primary" @click="closeAll">{{ t('Get Started') }}</Link>
+                          <a href="#" @click.prevent="navigateWithLanguage('/student-login'); closeAll();" class="mobile-text-link">{{ t('Login') }}</a>
+                          <a href="#" @click.prevent="navigateWithLanguage('/phone-verification'); closeAll();" class="mobile-text-link primary">{{ t('Get Started') }}</a>
                         </div>
                       </li>
                     </template>
@@ -380,11 +377,137 @@ const showMobileSuggestions = ref(false)
 const courseSuggestions = ref([])
 const isLoadingSuggestions = ref(false)
 
-// Fetch real classes from database
+// Global language state management
+const initializeLanguage = () => {
+  // Check multiple sources for language preference in order of priority
+  const urlParams = new URLSearchParams(window.location.search)
+  const urlLang = urlParams.get('lang')
+  
+  // Priority: URL param > localStorage > browser default
+  let preferredLang = urlLang || localStorage.getItem('preferredLanguage')
+  
+  if (!preferredLang || !['en', 'bn'].includes(preferredLang)) {
+    // Detect browser language
+    const browserLang = navigator.language || navigator.userLanguage
+    preferredLang = browserLang.startsWith('bn') ? 'bn' : 'en'
+  }
+  
+  // Apply the language if different from current
+  if (preferredLang !== currentLanguage.value) {
+    console.log('Initializing language to:', preferredLang)
+    switchLanguage(preferredLang)
+    localStorage.setItem('preferredLanguage', preferredLang)
+  }
+  
+  // Ensure language parameter is always present in URL
+  ensureLanguageParameter()
+}
+
+// Function to ensure language parameter is always present in URL
+const ensureLanguageParameter = () => {
+  const currentUrl = new URL(window.location.href)
+  const currentLang = currentLanguage.value
+  
+  // If no lang parameter, add it based on current language
+  if (!currentUrl.searchParams.has('lang')) {
+    currentUrl.searchParams.set('lang', currentLang)
+    window.history.replaceState(null, '', currentUrl.toString())
+  }
+}
+
+// Enhanced navigation function that preserves language
+const navigateWithLanguage = (url, options = {}) => {
+  const currentLang = currentLanguage.value
+  let finalUrl = url
+  
+  // Add language parameter if not already present
+  if (currentLang === 'bn' && !url.includes('lang=')) {
+    const separator = url.includes('?') ? '&' : '?'
+    finalUrl = `${url}${separator}lang=bn`
+  }
+  
+  return router.visit(finalUrl, {
+    preserveState: true,
+    preserveScroll: true,
+    ...options
+  })
+}
+
+// Enhanced language switching with complete persistence and URL preservation
+const switchLanguageWithIcons = async (lang) => {
+  if (lang === currentLanguage.value) return // No change needed
+  
+  try {
+    console.log('Switching language to:', lang)
+    
+    // Update the translation composable
+    switchLanguage(lang)
+    
+    // Persist to localStorage
+    localStorage.setItem('preferredLanguage', lang)
+    
+    // Update document class for RTL/LTR support
+    document.documentElement.classList.remove('bn-lang', 'en-lang')
+    document.documentElement.classList.add(`${lang}-lang`)
+    
+    // Get current URL and update lang parameter
+    const currentUrl = new URL(window.location.href)
+    currentUrl.searchParams.set('lang', lang)
+    
+    // Dispatch global event for all components
+    window.dispatchEvent(new CustomEvent('languageChanged', { 
+      detail: { 
+        language: lang,
+        timestamp: Date.now()
+      } 
+    }))
+    
+    // Use Inertia to visit current page with new language
+    router.visit(currentUrl.toString(), {
+      preserveState: true,
+      preserveScroll: true,
+      replace: true, // Use replace instead of push to avoid history buildup
+      onSuccess: () => {
+        console.log('Language switched successfully to:', lang)
+        closeAll()
+        
+        // Force refresh of all icons and dynamic content
+        setTimeout(() => {
+          refreshIcons()
+          // Force re-render of any dynamic content
+          window.dispatchEvent(new CustomEvent('contentRefresh'))
+        }, 150)
+      },
+      onError: (errors) => {
+        console.error('Error switching language:', errors)
+        // Fallback: update URL without reloading entire page
+        window.history.replaceState(null, '', currentUrl.toString())
+        refreshIcons()
+      }
+    })
+    
+  } catch (error) {
+    console.error('Error switching language:', error)
+    // Final fallback
+    const currentUrl = new URL(window.location.href)
+    currentUrl.searchParams.set('lang', lang)
+    window.location.href = currentUrl.toString()
+  }
+}
+
+// Refresh icons function
+const refreshIcons = () => {
+  if (window.FontAwesome && window.FontAwesome.dom && window.FontAwesome.dom.i2svg) {
+    setTimeout(() => {
+      window.FontAwesome.dom.i2svg()
+    }, 100)
+  }
+}
+
+// Fetch course suggestions
 const fetchCourseSuggestions = async (query = '') => {
   try {
     isLoadingSuggestions.value = true
-    
     const response = await fetch(`/api/search-classes?query=${encodeURIComponent(query)}`)
     
     if (response.ok) {
@@ -405,7 +528,7 @@ const fetchCourseSuggestions = async (query = '') => {
 // Filtered suggestions based on search query
 const filteredSuggestions = computed(() => {
   if (!searchQuery.value.trim()) {
-    return courseSuggestions.value.slice(0, 5) // Show top 5 when empty
+    return courseSuggestions.value.slice(0, 5)
   }
   
   const query = searchQuery.value.toLowerCase()
@@ -413,7 +536,7 @@ const filteredSuggestions = computed(() => {
     course.name.toLowerCase().includes(query) ||
     (course.subject && course.subject.toLowerCase().includes(query)) ||
     (course.category && course.category.toLowerCase().includes(query))
-  ).slice(0, 8) // Limit to 8 results
+  ).slice(0, 8)
 })
 
 // Handle search input with debouncing
@@ -429,7 +552,6 @@ const handleSearchInput = () => {
       showSuggestions.value = true
       showMobileSuggestions.value = true
     } else {
-      // If search is empty, fetch popular classes
       fetchCourseSuggestions()
       showSuggestions.value = true
       showMobileSuggestions.value = true
@@ -440,13 +562,13 @@ const handleSearchInput = () => {
 // Handle search focus
 const handleSearchFocus = () => {
   if (courseSuggestions.value.length === 0) {
-    fetchCourseSuggestions() // Fetch popular classes when focusing
+    fetchCourseSuggestions()
   }
   showSuggestions.value = true
   showMobileSuggestions.value = true
 }
 
-// Handle search blur with delay to allow clicking on suggestions
+// Handle search blur with delay
 const onSearchBlur = () => {
   setTimeout(() => {
     showSuggestions.value = false
@@ -467,52 +589,16 @@ const selectSuggestion = (course) => {
   searchCourses()
 }
 
-// Search courses function
+// Search courses function with language preservation
 const searchCourses = () => {
   if (searchQuery.value.trim()) {
-    router.get('/courses', { search: searchQuery.value })
+    navigateWithLanguage('/courses', { data: { search: searchQuery.value } })
     searchQuery.value = ''
     showSuggestions.value = false
     showMobileSuggestions.value = false
   }
   closeAll()
 }
-
-// Load popular courses on component mount
-onMounted(() => {
-  fetchCourseSuggestions() // Load popular courses initially
-  
-  // Load theme preference and apply immediately
-  const savedTheme = localStorage.getItem('preferredTheme')
-  if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
-    currentTheme.value = savedTheme
-    applyTheme(savedTheme)
-  } else {
-    // Check system preference
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    currentTheme.value = systemPrefersDark ? 'dark' : 'light'
-    applyTheme(currentTheme.value)
-  }
-  
-  // Listen for system theme changes
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-    if (!localStorage.getItem('preferredTheme')) {
-      const newTheme = e.matches ? 'dark' : 'light'
-      currentTheme.value = newTheme
-      applyTheme(newTheme)
-      window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: newTheme } }))
-    }
-  })
-  
-  // Listen for theme changes from other components
-  window.addEventListener('themeChanged', (event) => {
-    currentTheme.value = event.detail.theme
-    applyTheme(event.detail.theme)
-  })
-})
-
-// Add a key to force re-render of icons
-const iconRenderKey = ref(0)
 
 // Enhanced theme management
 const applyTheme = (theme) => {
@@ -534,94 +620,59 @@ const applyTheme = (theme) => {
   localStorage.setItem('preferredTheme', theme)
 }
 
-// Watch for theme changes and apply immediately
-watch(currentTheme, (newTheme) => {
-  applyTheme(newTheme)
-})
-
-// Alternative: Use Inertia visit for language switching
-const switchLanguageWithIcons = async (lang) => {
-  try {
-    // Force re-render of icons
-    iconRenderKey.value++
-    
-    // Small delay to ensure DOM updates
-    await nextTick()
-    
-    // Use Inertia to visit current page with new language
-    router.visit(window.location.pathname, {
-      data: { lang: lang },
-      preserveState: true,
-      preserveScroll: true,
-      onSuccess: () => {
-        // Update your translation composable
-        switchLanguage(lang)
-        closeAll()
-      }
-    })
-    
-  } catch (error) {
-    console.error('Error switching language:', error)
-    // Fallback to page reload
-    window.location.href = `${window.location.pathname}?lang=${lang}`
-  }
-}
-
-// Enhanced toggle theme function
+// Toggle theme function
 const toggleTheme = () => {
   const newTheme = currentTheme.value === 'light' ? 'dark' : 'light'
   currentTheme.value = newTheme
   applyTheme(newTheme)
   
-  // Dispatch global event for other components
   window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: newTheme } }))
-  
   closeAll()
 }
 
-// Profile Dropdown Navigation Methods
+// Enhanced Navigation methods with language preservation
 const navigateToProfile = () => {
   closeAll()
-  router.get('/student-profile')
+  navigateWithLanguage('/student-profile')
 }
 
 const navigateToMyCourses = () => {
   closeAll()
-  router.get('/my-courses')
+  navigateWithLanguage('/my-courses')
 }
 
 const navigateToLearningProgress = () => {
   closeAll()
-  router.get('/learning-progress')
+  navigateWithLanguage('/learning-progress')
 }
 
 const navigateToSettings = () => {
   closeAll()
-  router.get('/settings')
+  navigateWithLanguage('/settings')
 }
 
-// Mobile Navigation Methods
+// Mobile Navigation Methods with language preservation
 const navigateToProfileMobile = () => {
   closeAll()
-  router.get('/student-profile')
+  navigateWithLanguage('/student-profile')
 }
 
 const navigateToMyCoursesMobile = () => {
   closeAll()
-  router.get('/my-courses')
+  navigateWithLanguage('/my-courses')
 }
 
 const navigateToLearningProgressMobile = () => {
   closeAll()
-  router.get('/learning-progress')
+  navigateWithLanguage('/learning-progress')
 }
 
 const navigateToSettingsMobile = () => {
   closeAll()
-  router.get('/settings')
+  navigateWithLanguage('/settings')
 }
 
-// Methods
+// UI control methods
 const toggleProfileDropdown = (event) => {
   event?.stopPropagation()
   profileOpen.value = !profileOpen.value
@@ -651,6 +702,70 @@ const logout = () => {
 const logoutMobile = () => {
   logout()
 }
+
+// Lifecycle hooks
+onMounted(() => {
+  console.log('FrontendHeader mounted - initializing language and theme')
+  
+  // Initialize language first
+  initializeLanguage()
+  
+  // Then load other resources
+  fetchCourseSuggestions()
+  
+  // Load theme preference
+  const savedTheme = localStorage.getItem('preferredTheme')
+  if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
+    currentTheme.value = savedTheme
+    applyTheme(savedTheme)
+  } else {
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    currentTheme.value = systemPrefersDark ? 'dark' : 'light'
+    applyTheme(currentTheme.value)
+  }
+  
+  // Listen for system theme changes
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    if (!localStorage.getItem('preferredTheme')) {
+      const newTheme = e.matches ? 'dark' : 'light'
+      currentTheme.value = newTheme
+      applyTheme(newTheme)
+      window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: newTheme } }))
+    }
+  })
+  
+  // Listen for theme changes from other components
+  window.addEventListener('themeChanged', (event) => {
+    currentTheme.value = event.detail.theme
+    applyTheme(event.detail.theme)
+  })
+  
+  // Listen for language changes from other components (redundancy)
+  window.addEventListener('languageChanged', (event) => {
+    console.log('Language change event received in header:', event.detail.language)
+    if (event.detail.language !== currentLanguage.value) {
+      switchLanguage(event.detail.language)
+      localStorage.setItem('preferredLanguage', event.detail.language)
+      ensureLanguageParameter() // Ensure parameter is updated
+    }
+  })
+})
+
+// Watch for language changes to update UI and URL
+watch(currentLanguage, (newLang, oldLang) => {
+  if (newLang !== oldLang) {
+    console.log('Language changed in header from', oldLang, 'to', newLang)
+    // Update document class
+    document.documentElement.classList.remove('bn-lang', 'en-lang')
+    document.documentElement.classList.add(`${newLang}-lang`)
+    
+    // Ensure URL has the correct language parameter
+    ensureLanguageParameter()
+    
+    // Refresh icons
+    refreshIcons()
+  }
+})
 
 // Click outside directive
 const vClickOutside = {
@@ -689,17 +804,19 @@ const vClickOutside = {
   padding: 0;
 }
 
+/* Main navigation layout with three sections */
 .main-nav {
   display: flex;
   align-items: center;
   width: 100%;
   justify-content: space-between;
   padding: 12px 0;
+  gap: 20px;
 }
 
-/* Logo Styles */
-.logo {
-  margin-right: 30px;
+/* SECTION 1: Logo */
+.logo-section {
+  flex-shrink: 0;
 }
 
 .logo-container {
@@ -719,21 +836,18 @@ const vClickOutside = {
   object-fit: contain;
 }
 
-/* Mobile Logo */
-.mobile-logo-container .logo-image {
-  height: 32px;
-}
-
-/* Desktop Navigation */
-.desktop-menu {
+/* SECTION 2: Navigation Components */
+.nav-components-section {
   flex: 1;
+  display: flex;
+  justify-content: center;
 }
 
 .navigation {
   display: flex;
   align-items: center;
   list-style: none;
-  gap: 16px;
+  gap: 24px;
   margin: 0;
   padding: 0;
 }
@@ -752,9 +866,16 @@ const vClickOutside = {
   color: var(--primary-color);
 }
 
-/* Search Bar - Completely Borderless */
-.search-nav-item {
-  margin-left: 8px;
+/* SECTION 3: Utilities & Profile */
+.utilities-section {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Search Utility */
+.search-utility {
   position: relative;
 }
 
@@ -768,7 +889,7 @@ const vClickOutside = {
   background: var(--bg-secondary);
   border-radius: 18px;
   padding: 5px 12px;
-  min-width: 180px;
+  min-width: 200px;
   transition: all 0.3s ease;
   position: relative;
   border: none;
@@ -947,6 +1068,404 @@ const vClickOutside = {
 .course-students i {
   font-size: 9px;
   margin-top: 0;
+}
+
+/* Theme Utility */
+.theme-utility {
+  display: flex;
+}
+
+.theme-btn-nav {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 14px;
+  background: var(--bg-secondary);
+  color: var(--primary-color);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  outline: none !important;
+}
+
+.theme-btn-nav:hover {
+  background: var(--bg-tertiary);
+  transform: scale(1.05);
+}
+
+/* Language Utility */
+.language-utility {
+  display: flex;
+}
+
+.language-switcher-nav {
+  display: flex;
+  gap: 1px;
+  background: var(--bg-primary);
+  border-radius: 16px;
+  padding: 2px;
+  transition: all 0.3s ease;
+}
+
+.lang-btn-nav {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 36px;
+  color: var(--text-primary);
+  outline: none !important;
+}
+
+.lang-btn-nav.active {
+  background: var(--primary-color);
+  color: white;
+}
+
+.lang-btn-nav:hover {
+  background: var(--bg-tertiary);
+}
+
+.lang-btn-nav.active:hover {
+  background: var(--primary-hover);
+}
+
+/* Profile Utility */
+.profile-utility {
+  position: relative;
+}
+
+.profile-wrapper {
+  position: relative;
+}
+
+.profile-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-secondary);
+  padding: 6px 12px;
+  border-radius: 16px;
+  border: none;
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  outline: none !important;
+}
+
+.profile-trigger:hover {
+  background: var(--bg-tertiary);
+}
+
+.profile-trigger i.fa-user-circle {
+  font-size: 16px;
+  color: var(--primary-color);
+}
+
+.profile-trigger .fa-chevron-down {
+  font-size: 11px;
+  transition: transform 0.3s ease;
+}
+
+.rotate {
+  transform: rotate(180deg);
+}
+
+.profile-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--bg-primary);
+  min-width: 280px;
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+  padding: 0;
+  margin-top: 6px;
+  z-index: 1001;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.dropdown-header {
+  padding: 16px 20px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.student-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.student-avatar {
+  font-size: 36px;
+  color: var(--primary-color);
+}
+
+.student-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.student-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.student-email {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdown-menu-items {
+  padding: 8px 8px;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-size: 13px;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  margin: 0;
+  outline: none !important;
+}
+
+.dropdown-item:hover {
+  background: var(--bg-secondary);
+  color: var(--primary-color);
+}
+
+.dropdown-item i {
+  width: 14px;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.dropdown-item:hover i {
+  color: var(--primary-color);
+}
+
+.dropdown-text {
+  flex: 1;
+  font-weight: 500;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 6px 0;
+  border: none;
+}
+
+.logout {
+  color: #ef4444;
+}
+
+.logout:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.dark-theme .logout:hover {
+  background: #7f1d1d;
+  color: #fca5a5;
+}
+
+.logout:hover i {
+  color: #dc2626;
+}
+
+/* Auth Utility */
+.auth-utility {
+  display: flex;
+}
+
+.auth-buttons-simple {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.text-link {
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 15px;
+  color: var(--text-primary);
+  transition: color 0.3s ease;
+  white-space: nowrap;
+  padding: 8px 0;
+}
+
+.text-link.primary {
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.text-link:hover {
+  color: var(--primary-color);
+}
+
+.text-link.primary:hover {
+  color: var(--primary-hover);
+}
+
+.separator {
+  color: var(--border-color);
+  font-size: 14px;
+}
+
+/* Mobile Menu Styles */
+.mobile-menu-toggler {
+  display: none;
+  cursor: pointer;
+  font-size: 22px;
+  color: var(--text-primary);
+  padding: 6px;
+  transition: color 0.3s ease;
+  outline: none !important;
+}
+
+.mobile-menu {
+  position: fixed;
+  top: 0;
+  left: -100%;
+  width: 300px;
+  height: 100vh;
+  background: var(--bg-primary);
+  z-index: 1002;
+  transition: left 0.3s ease;
+  box-shadow: var(--shadow-lg);
+}
+
+.mobile-menu.open {
+  left: 0;
+}
+
+.mobile-menu-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.mobile-logo-container .logo-image {
+  height: 32px;
+}
+
+.mobile-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 8px;
+}
+
+.mobile-theme-switcher {
+  display: flex;
+}
+
+.theme-btn-mobile {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 14px;
+  background: var(--bg-secondary);
+  color: var(--primary-color);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  outline: none !important;
+}
+
+.theme-btn-mobile:hover {
+  background: var(--bg-tertiary);
+  transform: scale(1.05);
+}
+
+.mobile-language-switcher {
+  display: flex;
+  gap: 1px;
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  padding: 2px;
+}
+
+.lang-btn-mobile {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 36px;
+  color: var(--text-primary);
+  outline: none !important;
+}
+
+.lang-btn-mobile.active {
+  background: var(--primary-color);
+  color: white;
+}
+
+.lang-btn-mobile:hover {
+  background: var(--bg-tertiary);
+}
+
+.mobile-menu-close {
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--text-primary);
+  padding: 6px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  outline: none !important;
+}
+
+.mobile-menu-close:hover {
+  background: var(--bg-secondary);
 }
 
 /* Mobile Search - Completely Borderless */
@@ -1129,436 +1648,6 @@ const vClickOutside = {
   margin-top: 0;
 }
 
-/* Theme Switcher */
-.theme-nav-item {
-  margin-left: 4px;
-}
-
-.theme-switcher-nav {
-  display: flex;
-}
-
-.theme-btn-nav {
-  padding: 6px 10px;
-  border: none;
-  border-radius: 14px;
-  background: var(--bg-secondary);
-  color: var(--primary-color);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 40px;
-  outline: none !important;
-}
-
-.theme-btn-nav:hover {
-  background: var(--bg-tertiary);
-  transform: scale(1.05);
-}
-
-/* Language Switcher */
-.language-nav-item {
-  margin-left: 4px;
-}
-
-.language-switcher-nav {
-  display: flex;
-  gap: 1px;
-  background: var(--bg-secondary);
-  border-radius: 16px;
-  padding: 2px;
-  transition: all 0.3s ease;
-}
-
-.lang-btn-nav {
-  padding: 5px 10px;
-  border: none;
-  border-radius: 14px;
-  background: transparent;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 11px;
-  font-weight: 600;
-  min-width: 36px;
-  color: var(--text-primary);
-  outline: none !important;
-}
-
-.lang-btn-nav.active {
-  background: var(--primary-color);
-  color: white;
-}
-
-.lang-btn-nav:hover {
-  background: var(--bg-tertiary);
-}
-
-.lang-btn-nav.active:hover {
-  background: var(--primary-hover);
-}
-
-/* Profile Dropdown */
-.profile-wrapper {
-  position: relative;
-}
-
-.profile-trigger {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--bg-secondary);
-  padding: 6px 12px;
-  border-radius: 16px;
-  border: none;
-  color: var(--text-primary);
-  font-weight: 500;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  outline: none !important;
-}
-
-.profile-trigger:hover {
-  background: var(--bg-tertiary);
-}
-
-.profile-trigger i.fa-user-circle {
-  font-size: 16px;
-  color: var(--primary-color);
-}
-
-.profile-trigger .fa-chevron-down {
-  font-size: 11px;
-  transition: transform 0.3s ease;
-}
-
-.rotate {
-  transform: rotate(180deg);
-}
-
-.profile-dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  background: var(--bg-primary);
-  min-width: 280px;
-  border-radius: 10px;
-  box-shadow: var(--shadow-lg);
-  padding: 0;
-  margin-top: 6px;
-  z-index: 1001;
-  border: 1px solid var(--border-color);
-  overflow: hidden;
-}
-
-.dropdown-header {
-  padding: 16px 20px;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.student-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.student-avatar {
-  font-size: 36px;
-  color: var(--primary-color);
-}
-
-.student-details {
-  flex: 1;
-  min-width: 0;
-}
-
-.student-name {
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--text-primary);
-  margin-bottom: 3px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.student-email {
-  font-size: 11px;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.dropdown-menu-items {
-  padding: 8px 8px;
-}
-
-.dropdown-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 20px;
-  color: var(--text-primary);
-  text-decoration: none;
-  transition: all 0.3s ease;
-  font-size: 13px;
-  border: none;
-  background: none;
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-  margin: 0;
-  outline: none !important;
-}
-
-.dropdown-item:hover {
-  background: var(--bg-secondary);
-  color: var(--primary-color);
-}
-
-.dropdown-item i {
-  width: 14px;
-  color: var(--text-muted);
-  font-size: 13px;
-  text-align: center;
-}
-
-.dropdown-item:hover i {
-  color: var(--primary-color);
-}
-
-.dropdown-text {
-  flex: 1;
-  font-weight: 500;
-}
-
-.dropdown-divider {
-  height: 1px;
-  background: var(--border-color);
-  margin: 6px 0;
-  border: none;
-}
-
-.logout {
-  color: #ef4444;
-}
-
-.logout:hover {
-  background: #fef2f2;
-  color: #dc2626;
-}
-
-.dark-theme .logout:hover {
-  background: #7f1d1d;
-  color: #fca5a5;
-}
-
-.logout:hover i {
-  color: #dc2626;
-}
-
-/* ===== SIMPLE TEXT AUTH BUTTONS ===== */
-.auth-buttons-simple {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-left: 8px;
-}
-
-.text-link {
-  text-decoration: none;
-  font-weight: 500;
-  font-size: 15px;
-  color: var(--text-primary);
-  transition: color 0.3s ease;
-  white-space: nowrap;
-  padding: 8px 0;
-}
-
-.text-link.primary {
-  font-weight: 600;
-  color: var(--primary-color);
-}
-
-.text-link:hover {
-  color: var(--primary-color);
-}
-
-.text-link.primary:hover {
-  color: var(--primary-hover);
-}
-
-.separator {
-  color: var(--border-color);
-  font-size: 14px;
-}
-
-/* Mobile Simple Links */
-.mobile-auth-section {
-  border-top: 1px solid var(--border-light);
-  padding: 20px 0;
-}
-
-.mobile-auth-simple {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 0 16px;
-}
-
-.mobile-text-link {
-  text-decoration: none;
-  font-weight: 500;
-  font-size: 16px;
-  color: var(--text-primary);
-  padding: 12px 0;
-  text-align: center;
-  border-bottom: 1px solid var(--border-light);
-  transition: color 0.3s ease;
-}
-
-.mobile-text-link.primary {
-  font-weight: 600;
-  color: var(--primary-color);
-  border-bottom: none;
-}
-
-.mobile-text-link:hover {
-  color: var(--primary-color);
-}
-
-.mobile-text-link.primary:hover {
-  color: var(--primary-hover);
-}
-
-/* Mobile Menu */
-.mobile-menu-toggler {
-  display: none;
-  cursor: pointer;
-  font-size: 22px;
-  color: var(--text-primary);
-  padding: 6px;
-  transition: color 0.3s ease;
-  outline: none !important;
-}
-
-.mobile-menu {
-  position: fixed;
-  top: 0;
-  left: -100%;
-  width: 300px;
-  height: 100vh;
-  background: var(--bg-primary);
-  z-index: 1002;
-  transition: left 0.3s ease;
-  box-shadow: var(--shadow-lg);
-}
-
-.mobile-menu.open {
-  left: 0;
-}
-
-.mobile-menu-content {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.mobile-menu-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.mobile-menu-close {
-  cursor: pointer;
-  font-size: 18px;
-  color: var(--text-primary);
-  padding: 6px;
-  border-radius: 4px;
-  transition: all 0.3s ease;
-  outline: none !important;
-}
-
-.mobile-menu-close:hover {
-  background: var(--bg-secondary);
-}
-
-/* Mobile Controls */
-.mobile-controls {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-right: 8px;
-}
-
-.mobile-theme-switcher {
-  display: flex;
-}
-
-.theme-btn-mobile {
-  padding: 6px 10px;
-  border: none;
-  border-radius: 14px;
-  background: var(--bg-secondary);
-  color: var(--primary-color);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 40px;
-  outline: none !important;
-}
-
-.theme-btn-mobile:hover {
-  background: var(--bg-tertiary);
-  transform: scale(1.05);
-}
-
-.mobile-language-switcher {
-  display: flex;
-  gap: 1px;
-  background: var(--bg-secondary);
-  border-radius: 16px;
-  padding: 2px;
-}
-
-.lang-btn-mobile {
-  padding: 5px 10px;
-  border: none;
-  border-radius: 14px;
-  background: transparent;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 11px;
-  font-weight: 600;
-  min-width: 36px;
-  color: var(--text-primary);
-  outline: none !important;
-}
-
-.lang-btn-mobile.active {
-  background: var(--primary-color);
-  color: white;
-}
-
-.lang-btn-mobile:hover {
-  background: var(--bg-tertiary);
-}
-
 .mobile-navigation {
   flex: 1;
   overflow-y: auto;
@@ -1647,6 +1736,44 @@ const vClickOutside = {
   text-overflow: ellipsis;
 }
 
+/* Mobile Simple Links */
+.mobile-auth-section {
+  border-top: 1px solid var(--border-light);
+  padding: 20px 0;
+}
+
+.mobile-auth-simple {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 16px;
+}
+
+.mobile-text-link {
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 16px;
+  color: var(--text-primary);
+  padding: 12px 0;
+  text-align: center;
+  border-bottom: 1px solid var(--border-light);
+  transition: color 0.3s ease;
+}
+
+.mobile-text-link.primary {
+  font-weight: 600;
+  color: var(--primary-color);
+  border-bottom: none;
+}
+
+.mobile-text-link:hover {
+  color: var(--primary-color);
+}
+
+.mobile-text-link.primary:hover {
+  color: var(--primary-hover);
+}
+
 .mobile-overlay {
   position: fixed;
   top: 0;
@@ -1663,7 +1790,8 @@ const vClickOutside = {
 
 /* Responsive */
 @media (max-width: 1199px) {
-  .desktop-menu {
+  .nav-components-section,
+  .utilities-section {
     display: none;
   }
   
@@ -1806,5 +1934,20 @@ const vClickOutside = {
 .search-suggestions::-webkit-scrollbar-thumb:hover,
 .mobile-search-suggestions::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+/* Responsive adjustments for larger screens */
+@media (min-width: 1200px) {
+  .main-nav {
+    gap: 30px;
+  }
+  
+  .navigation {
+    gap: 28px;
+  }
+  
+  .utilities-section {
+    gap: 16px;
+  }
 }
 </style>

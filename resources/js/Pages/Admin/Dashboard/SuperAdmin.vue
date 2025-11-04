@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50 flex">
+  <div class="min-h-screen bg-gray-50 flex" style="font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol' !important;">
     <!-- Sidebar -->
     <Sidebar />
 
@@ -11,7 +11,7 @@
       <div class="p-6">
         <!-- Welcome Message -->
         <div class="mb-6">
-          <h1 class="custom-heading mb-2">Welcome back, {{ $page.props.auth.user?.name || 'Admin' }}!</h1>
+          <h2 class="mb-2">Welcome back, {{ $page.props.auth.user?.name || 'Admin' }}!</h2>
           <p class="text-gray-600">Here's what's happening in your LMS today.</p>
         </div>
 
@@ -296,10 +296,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* Use deep selector to override */
+:deep(*) {
+    font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+}
+
 .custom-heading {
-  font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-  font-size: 27.8417px;
-  font-weight: 800;
-  color: #1f2937; /* text-gray-900 equivalent */
+    font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
 }
 </style>

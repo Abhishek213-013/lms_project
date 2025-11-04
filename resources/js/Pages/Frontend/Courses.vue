@@ -224,12 +224,12 @@ const handlePagination = (url) => {
 const getCourseTitle = (course) => {
   if (course.type === 'regular') {
     // For regular classes: "Class 1 - Mathematics"
-    const className = course.name || `Class ${course.grade || ''}`;
-    const subjectName = course.subject || 'General';
+    const className = course.name || `${t('Class')} ${course.grade || ''}`;
+    const subjectName = course.subject || t('General');
     return `${className} - ${subjectName}`;
   } else {
     // For other courses: Use the course name directly
-    return course.name || course.class_name || 'Untitled Course';
+    return course.name || course.class_name || t('Untitled Course');
   }
 };
 
@@ -328,9 +328,13 @@ const getCourseDescription = (course) => {
   
   const courseType = course.type || 'regular';
   if (courseType === 'regular') {
-    return `Comprehensive ${course.subject || 'subject'} curriculum for ${course.name || `Class ${course.grade}`} students`;
+    const className = course.name || `Class ${course.grade}`;
+    const subjectName = course.subject || t('General');
+    return t('Comprehensive curriculum for students. This course covers all essential subjects and prepares students for academic success.');
   } else {
-    return `Explore ${course.name || course.class_name || 'this course'} - ${course.category || 'Specialized course'}`;
+    const courseName = course.name || course.class_name || t('this course');
+    const category = course.category || t('Specialized course');
+    return t('Explore this course - learn essential skills and knowledge from expert instructors.');
   }
 };
 

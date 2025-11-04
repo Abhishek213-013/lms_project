@@ -21,48 +21,7 @@
             </svg>
           </div>
           
-          <!-- Theme Toggle -->
-          <button
-            @click="toggleTheme"
-            class="w-9 h-9 flex items-center justify-center rounded-full bg-orange-50 hover:bg-orange-100 transition"
-          >
-            <svg
-              v-if="!isDark"
-              class="w-5 h-5 text-orange-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 3v1m0 16v1m8.66-9h-1M4.34 12H3m15.36 6.36l-.7-.7M6.34 6.34l-.7-.7m12.02 0l-.7.7M6.34 17.66l-.7.7M12 8a4 4 0 100 8 4 4 0 000-8z"
-              />
-            </svg>
-            <svg
-              v-else
-              class="w-5 h-5 text-indigo-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"
-              />
-            </svg>
-          </button>
-          
-          <!-- Notifications -->
-          <button class="relative p-2 text-gray-600 hover:text-blue-600 rounded-lg hover:bg-gray-100">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM10.5 3.75a6 6 0 010 11.25"></path>
-            </svg>
-            <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-          </button>
+
 
           <!-- User Menu -->
           <div class="relative">

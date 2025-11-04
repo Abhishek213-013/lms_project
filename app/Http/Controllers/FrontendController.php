@@ -30,27 +30,30 @@ class FrontendController extends Controller
             
             Log::info("Home content loaded for language {$language}:", $content);
             
-            // ... rest of your home method code remains the same ...
+            // Get featured courses with language support
             $featuredCourses = ClassModel::where('status', 'active')
                 ->with(['teacher:id,name', 'students'])
                 ->select(['id', 'name', 'subject', 'type', 'category', 'description', 'grade', 'created_at'])
                 ->inRandomOrder()
                 ->limit(6)
                 ->get()
-                ->map(function($course) {
+                ->map(function($course) use ($language) {
                     return [
                         'id' => $course->id,
-                        'name' => $course->name,
-                        'subject' => $course->subject,
+                        'name' => $this->getTranslatedCourseName($course, $language),
+                        'subject' => $this->getTranslatedSubject($course->subject, $language),
                         'type' => $course->type,
-                        'category' => $course->category,
-                        'description' => $course->description,
+                        'category' => $this->getTranslatedCategory($course->category, $language),
+                        'description' => $this->getTranslatedDescription($course, $language),
                         'thumbnail' => $this->getCourseThumbnail($course),
                         'fee' => 0,
                         'student_count' => $course->students->count(),
                         'teacher' => $course->teacher,
                         'slug' => $this->generateSlug($course->name),
-                        'grade' => $course->grade
+                        'grade' => $course->grade,
+                        'original_name' => $course->name,
+                        'original_subject' => $course->subject,
+                        'original_description' => $course->description,
                     ];
                 });
 
@@ -58,17 +61,30 @@ class FrontendController extends Controller
                 ->select(['id', 'name', 'username', 'education_qualification', 'institute', 'experience'])
                 ->limit(8)
                 ->get()
-                ->map(function($instructor) {
+                ->map(function($instructor) use ($language) {
+                    // Calculate courses count for this instructor
+                    $coursesCount = ClassModel::where('teacher_id', $instructor->id)->count();
+                    
+                    // Calculate total students for this instructor
+                    $totalStudents = DB::table('class_student')
+                        ->join('classes', 'class_student.class_id', '=', 'classes.id')
+                        ->where('classes.teacher_id', $instructor->id)
+                        ->distinct('class_student.student_id')
+                        ->count();
+
                     return [
                         'id' => $instructor->id,
                         'name' => $instructor->name,
                         'username' => $instructor->username,
-                        'education_qualification' => $instructor->education_qualification,
+                        'education_qualification' => $this->getTranslatedQualification($instructor->education_qualification, $language),
                         'institute' => $instructor->institute,
-                        'experience' => $instructor->experience,
+                        'experience' => $this->getTranslatedExperience($instructor->experience, $language),
                         'avatar' => $this->getInstructorAvatar($instructor),
-                        'courses_count' => ClassModel::where('teacher_id', $instructor->id)->count(),
-                        'rating' => 4.8
+                        'courses_count' => $coursesCount,
+                        'students_count' => $totalStudents,
+                        'rating' => 4.8,
+                        'original_qualification' => $instructor->education_qualification,
+                        'original_experience' => $instructor->experience,
                     ];
                 });
 
@@ -82,25 +98,31 @@ class FrontendController extends Controller
             $testimonials = [
                 [
                     'id' => 1,
-                    'name' => 'Sarah Johnson',
-                    'role' => 'Student',
-                    'content' => 'SkillGro transformed my learning experience. The courses are well-structured and the instructors are amazing!',
+                    'name' => $language === 'bn' ? 'সারা জনসন' : 'Sarah Johnson',
+                    'role' => $language === 'bn' ? 'শিক্ষার্থী' : 'Student',
+                    'content' => $language === 'bn' 
+                        ? 'স্কিলগ্রো আমার শেখার অভিজ্ঞতা পরিবর্তন করেছে। কোর্সগুলো ভালোভাবে সাজানো এবং ইন্সট্রাক্টররা অসাধারণ!' 
+                        : 'SkillGro transformed my learning experience. The courses are well-structured and the instructors are amazing!',
                     'avatar' => '/assets/img/testimonials/1.jpg',
                     'rating' => 5
                 ],
                 [
                     'id' => 2,
-                    'name' => 'Mike Chen',
-                    'role' => 'Professional',
-                    'content' => 'The flexibility of online learning combined with expert instruction helped me advance my career.',
+                    'name' => $language === 'bn' ? 'মাইক চেন' : 'Mike Chen',
+                    'role' => $language === 'bn' ? 'পেশাদার' : 'Professional',
+                    'content' => $language === 'bn'
+                        ? 'অনলাইন লার্নিংয়ের নমনীয়তা বিশেষজ্ঞ নির্দেশনার সাথে মিলে আমার ক্যারিয়ার এগিয়ে নিতে সাহায্য করেছে।'
+                        : 'The flexibility of online learning combined with expert instruction helped me advance my career.',
                     'avatar' => '/assets/img/testimonials/2.jpg',
                     'rating' => 5
                 ],
                 [
                     'id' => 3,
-                    'name' => 'Emily Davis',
-                    'role' => 'Parent',
-                    'content' => 'My children love the interactive classes. The teachers are patient and knowledgeable.',
+                    'name' => $language === 'bn' ? 'এমিলি ডেভিস' : 'Emily Davis',
+                    'role' => $language === 'bn' ? 'অভিভাবক' : 'Parent',
+                    'content' => $language === 'bn'
+                        ? 'আমার সন্তানরা ইন্টারেক্টিভ ক্লাসগুলো পছন্দ করে। শিক্ষকরা ধৈর্যশীল এবং জ্ঞানী।'
+                        : 'My children love the interactive classes. The teachers are patient and knowledgeable.',
                     'avatar' => '/assets/img/testimonials/3.jpg',
                     'rating' => 4
                 ]
@@ -112,8 +134,10 @@ class FrontendController extends Controller
                 'instructors' => $instructors,
                 'stats' => $stats,
                 'testimonials' => $testimonials,
-                'pageTitle' => 'SkillGro - Learn with Expert Teachers',
-                'metaDescription' => 'Discover quality education with SkillGro. Learn from expert teachers, explore diverse courses, and transform your learning journey.',
+                'pageTitle' => $language === 'bn' ? 'স্কিলগ্রো - বিশেষজ্ঞ শিক্ষকদের সাথে শিখুন' : 'SkillGro - Learn with Expert Teachers',
+                'metaDescription' => $language === 'bn' 
+                    ? 'স্কিলগ্রোর সাথে মানসম্মত শিক্ষা আবিষ্কার করুন। বিশেষজ্ঞ শিক্ষকদের থেকে শিখুন, বিভিন্ন কোর্স এক্সপ্লোর করুন এবং আপনার শেখার যাত্রা রূপান্তর করুন।'
+                    : 'Discover quality education with SkillGro. Learn from expert teachers, explore diverse courses, and transform your learning journey.',
                 'auth' => [
                     'user' => Auth::check() ? [
                         'id' => Auth::user()->id,
@@ -146,14 +170,184 @@ class FrontendController extends Controller
                     'total_enrollments' => 2500
                 ],
                 'testimonials' => [],
-                'pageTitle' => 'SkillGro - Learn with Expert Teachers',
+                'pageTitle' => $language === 'bn' ? 'স্কিলগ্রো - বিশেষজ্ঞ শিক্ষকদের সাথে শিখুন' : 'SkillGro - Learn with Expert Teachers',
                 'currentLanguage' => $language,
                 'availableLanguages' => ['en', 'bn']
             ]);
         }
     }
 
+    private function getTranslatedCourseName($course, $language)
+    {
+        if ($language === 'bn') {
+            $translations = [
+                'Mathematics' => 'গণিত',
+                'Science' => 'বিজ্ঞান',
+                'English' => 'ইংরেজি',
+                'Bangla' => 'বাংলা',
+                'Physics' => 'পদার্থবিজ্ঞান',
+                'Chemistry' => 'রসায়ন',
+                'Biology' => 'জীববিজ্ঞান',
+                'Computer Science' => 'কম্পিউটার বিজ্ঞান',
+                'History' => 'ইতিহাস',
+                'Geography' => 'ভূগোল',
+                'Class' => 'ক্লাস',
+                'Grade' => 'গ্রেড',
+            ];
+            
+            $name = $course->name;
+            foreach ($translations as $en => $bn) {
+                $name = str_ireplace($en, $bn, $name);
+            }
+            
+            return $name;
+        }
+        
+        return $course->name;
+    }
 
+    private function getTranslatedSubject($subject, $language)
+    {
+        if ($language === 'bn') {
+            $translations = [
+                'Mathematics' => 'গণিত',
+                'Science' => 'বিজ্ঞান',
+                'English' => 'ইংরেজি',
+                'Bangla' => 'বাংলা',
+                'Physics' => 'পদার্থবিজ্ঞান',
+                'Chemistry' => 'রসায়ন',
+                'Biology' => 'জীববিজ্ঞান',
+                'Computer' => 'কম্পিউটার',
+                'History' => 'ইতিহাস',
+                'Geography' => 'ভূগোল',
+                'General' => 'সাধারণ',
+                'Social Science' => 'সামাজিক বিজ্ঞান',
+                'Religion' => 'ধর্ম',
+                'Arts' => 'শিল্প',
+                'Music' => 'সঙ্গীত',
+            ];
+            
+            return $translations[$subject] ?? $subject;
+        }
+        
+        return $subject;
+    }
+
+    private function getTranslatedCategory($category, $language)
+    {
+        if ($language === 'bn') {
+            $translations = [
+                'Primary' => 'প্রাথমিক',
+                'Junior' => 'জুনিয়র',
+                'Secondary' => 'সেকেন্ডারি',
+                'Higher Secondary' => 'উচ্চ মাধ্যমিক',
+                'Skill Course' => 'স্কিল কোর্স',
+                'Language' => 'ভাষা',
+                'Technology' => 'প্রযুক্তি',
+                'Science' => 'বিজ্ঞান',
+                'Mathematics' => 'গণিত',
+                'Arts' => 'শিল্প',
+                'Business' => 'ব্যবসা',
+                'Professional' => 'পেশাদার',
+            ];
+            
+            return $translations[$category] ?? $category;
+        }
+        
+        return $category;
+    }
+
+    private function getTranslatedDescription($course, $language)
+    {
+        if ($language === 'bn' && $course->description) {
+            $translations = [
+                'comprehensive' => 'ব্যাপক',
+                'curriculum' => 'কারিকুলাম',
+                'students' => 'শিক্ষার্থী',
+                'essential' => 'অপরিহার্য',
+                'subjects' => 'বিষয়',
+                'academic success' => 'একাডেমিক সাফল্য',
+                'expert instructors' => 'বিশেষজ্ঞ ইন্সট্রাক্টর',
+                'skills' => 'দক্ষতা',
+                'knowledge' => 'জ্ঞান',
+                'learn' => 'শিখুন',
+                'explore' => 'অন্বেষণ করুন',
+                'course' => 'কোর্স',
+                'class' => 'ক্লাস',
+                'teaching' => 'শিক্ষাদান',
+                'learning' => 'শেখা',
+                'education' => 'শিক্ষা',
+                'study' => 'অধ্যায়ন',
+                'practice' => 'অনুশীলন',
+                'understand' => 'বুঝুন',
+                'develop' => 'বিকাশ করুন',
+                'improve' => 'উন্নত করুন',
+                'master' => 'আয়ত্ত করুন',
+            ];
+            
+            $description = $course->description;
+            foreach ($translations as $en => $bn) {
+                $description = str_ireplace($en, $bn, $description);
+            }
+            
+            return $description;
+        }
+        
+        return $course->description;
+    }
+
+    private function getTranslatedQualification($qualification, $language)
+    {
+        if ($language === 'bn') {
+            $translations = [
+                'Higher Secondary Certificate (HSC)' => 'উচ্চ মাধ্যমিক সার্টিফিকেট (এইচএসসি)',
+                'Bachelor of Science (BSC)' => 'বিজ্ঞানে স্নাতক (বিএসসি)',
+                'Bachelor of Arts (BA)' => 'কলায় স্নাতক (বিএ)',
+                'Master of Arts (MA)' => 'কলায় স্নাতকোত্তর (এমএ)',
+                'Master of Science (MSC)' => 'বিজ্ঞানে স্নাতকোত্তর (এমএসসি)',
+                'Doctor of Philosophy (PhD)' => 'পিএইচডি',
+                'Other' => 'অন্যান্য',
+                'Not specified' => 'নির্দিষ্ট করা হয়নি',
+            ];
+            
+            return $translations[$qualification] ?? $qualification;
+        }
+        
+        return $qualification;
+    }
+
+    private function getTranslatedExperience($experience, $language)
+    {
+        if ($language === 'bn' && $experience) {
+            $translations = [
+                'years' => 'বছর',
+                'year' => 'বছর',
+                'teaching' => 'শিক্ষণ',
+                'experience' => 'অভিজ্ঞতা',
+                'in' => 'এ',
+                'Mathematics' => 'গণিত',
+                'Science' => 'বিজ্ঞান',
+                'English' => 'ইংরেজি',
+                'Bangla' => 'বাংলা',
+                'Physics' => 'পদার্থবিজ্ঞান',
+                'Chemistry' => 'রসায়ন',
+                'Biology' => 'জীববিজ্ঞান',
+                'Computer' => 'কম্পিউটার',
+                'over' => 'এর বেশি',
+                'more than' => 'এর চেয়ে বেশি',
+                'plus' => 'প্লাস',
+            ];
+            
+            $translated = $experience;
+            foreach ($translations as $en => $bn) {
+                $translated = str_ireplace($en, $bn, $translated);
+            }
+            
+            return $translated;
+        }
+        
+        return $experience;
+    }
 
     public function switchLanguage($language)
     {
@@ -187,11 +381,9 @@ class FrontendController extends Controller
         return redirect($referer)->with('error', 'Invalid language');
     }
 
-
     // About page
     public function about()
     {
-        // Get the language from request or session, default to 'en'
         $language = $this->getCurrentLanguage();
         
         Log::info("Loading about page with language: " . $language);
@@ -223,7 +415,8 @@ class FrontendController extends Controller
     public function courses(Request $request): Response
     {
         try {
-            Log::info('📚 Loading courses page');
+            $language = $this->getCurrentLanguage();
+            Log::info('📚 Loading courses page with language: ' . $language);
 
             $query = ClassModel::with(['teacher:id,name', 'students'])
                 ->select('id', 'name', 'subject', 'grade', 'type', 'category', 'description', 'capacity', 'status', 'created_at')
@@ -271,16 +464,16 @@ class FrontendController extends Controller
 
             $courses = $query->paginate(12)->withQueryString();
 
-            // Transform courses for frontend
-            $courses->getCollection()->transform(function ($course) {
+            // Transform courses for frontend with language support
+            $courses->getCollection()->transform(function ($course) use ($language) {
                 return [
                     'id' => $course->id,
-                    'name' => $course->name,
-                    'subject' => $course->subject,
+                    'name' => $this->getTranslatedCourseName($course, $language),
+                    'subject' => $this->getTranslatedSubject($course->subject, $language),
                     'grade' => $course->grade,
                     'type' => $course->type,
-                    'category' => $course->category,
-                    'description' => $course->description,
+                    'category' => $this->getTranslatedCategory($course->category, $language),
+                    'description' => $this->getTranslatedDescription($course, $language),
                     'thumbnail' => $this->getCourseThumbnail($course),
                     'fee' => 0,
                     'capacity' => $course->capacity,
@@ -288,7 +481,10 @@ class FrontendController extends Controller
                     'teacher' => $course->teacher,
                     'created_at' => $course->created_at->format('M d, Y'),
                     'slug' => $this->generateSlug($course->name),
-                    'status' => $course->status
+                    'status' => $course->status,
+                    'original_name' => $course->name,
+                    'original_subject' => $course->subject,
+                    'original_description' => $course->description,
                 ];
             });
 
@@ -337,11 +533,17 @@ class FrontendController extends Controller
                     'grade' => $request->grade,
                     'sort' => $sort,
                 ],
-                'categories' => $categories,
+                'categories' => $categories->map(function($category) use ($language) {
+                    return $this->getTranslatedCategory($category, $language);
+                })->toArray(),
                 'types' => $types,
                 'grades' => $grades,
-                'pageTitle' => 'Our Courses - SkillGro',
-                'metaDescription' => 'Browse our comprehensive catalog of courses and classes. Find the perfect learning path for your educational journey.'
+                'pageTitle' => $language === 'bn' ? 'আমাদের কোর্সসমূহ - স্কিলগ্রো' : 'Our Courses - SkillGro',
+                'metaDescription' => $language === 'bn' 
+                    ? 'আমাদের ব্যাপক কোর্স এবং ক্লাস ক্যাটালগ ব্রাউজ করুন। আপনার শিক্ষাগত যাত্রার জন্য নিখুঁত লার্নিং পথ খুঁজুন।'
+                    : 'Browse our comprehensive catalog of courses and classes. Find the perfect learning path for your educational journey.',
+                'currentLanguage' => $language,
+                'availableLanguages' => ['en', 'bn']
             ]);
 
         } catch (\Exception $e) {
@@ -354,17 +556,20 @@ class FrontendController extends Controller
 
     private function renderCoursesWithFallback(Request $request): Response
     {
-        Log::info('🔄 Using fallback courses data');
+        $language = $this->getCurrentLanguage();
+        Log::info('🔄 Using fallback courses data with language: ' . $language);
         
         $fallbackCourses = [
             [
                 'id' => 1,
-                'name' => 'Mathematics Grade 1',
-                'subject' => 'Mathematics',
+                'name' => $language === 'bn' ? 'গণিত গ্রেড ১' : 'Mathematics Grade 1',
+                'subject' => $language === 'bn' ? 'গণিত' : 'Mathematics',
                 'grade' => 1,
                 'type' => 'regular',
-                'category' => 'Primary',
-                'description' => 'Basic mathematics for first grade students covering numbers, counting, and simple arithmetic.',
+                'category' => $language === 'bn' ? 'প্রাথমিক' : 'Primary',
+                'description' => $language === 'bn' 
+                    ? 'প্রথম গ্রেডের শিক্ষার্থীদের জন্য মৌলিক গণিত সংখ্যা, গণনা এবং সাধারণ গাণিতিক বিষয় covering।'
+                    : 'Basic mathematics for first grade students covering numbers, counting, and simple arithmetic.',
                 'thumbnail' => '/assets/img/courses/course_thumb01.png',
                 'fee' => 0,
                 'capacity' => 30,
@@ -376,12 +581,14 @@ class FrontendController extends Controller
             ],
             [
                 'id' => 2,
-                'name' => 'English Language',
-                'subject' => 'English',
+                'name' => $language === 'bn' ? 'ইংরেজি ভাষা' : 'English Language',
+                'subject' => $language === 'bn' ? 'ইংরেজি' : 'English',
                 'grade' => null,
                 'type' => 'other',
-                'category' => 'Language',
-                'description' => 'Improve your English language skills with practical conversation practice.',
+                'category' => $language === 'bn' ? 'ভাষা' : 'Language',
+                'description' => $language === 'bn'
+                    ? 'ব্যবহারিক কথোপকথন অনুশীলনের সাথে আপনার ইংরেজি ভাষার দক্ষতা উন্নত করুন।'
+                    : 'Improve your English language skills with practical conversation practice.',
                 'thumbnail' => '/assets/img/courses/course_thumb02.png',
                 'fee' => 0,
                 'capacity' => 25,
@@ -396,100 +603,25 @@ class FrontendController extends Controller
         return Inertia::render('Frontend/Courses', [
             'courses' => $fallbackCourses,
             'filters' => $request->only(['search', 'category', 'type', 'grade', 'sort']),
-            'categories' => ['Primary', 'Junior', 'Secondary', 'Language', 'Technology'],
+            'categories' => $language === 'bn' 
+                ? ['প্রাথমিক', 'জুনিয়র', 'সেকেন্ডারি', 'ভাষা', 'প্রযুক্তি'] 
+                : ['Primary', 'Junior', 'Secondary', 'Language', 'Technology'],
             'types' => ['regular', 'other'],
             'grades' => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-            'pageTitle' => 'Our Courses - SkillGro',
-            'metaDescription' => 'Browse our comprehensive catalog of courses and classes.'
+            'pageTitle' => $language === 'bn' ? 'আমাদের কোর্সসমূহ - স্কিলগ্রো' : 'Our Courses - SkillGro',
+            'metaDescription' => $language === 'bn'
+                ? 'আমাদের ব্যাপক কোর্স এবং ক্লাস ক্যাটালগ ব্রাউজ করুন।'
+                : 'Browse our comprehensive catalog of courses and classes.',
+            'currentLanguage' => $language,
+            'availableLanguages' => ['en', 'bn']
         ]);
-    }
-
-    public function courseSingle($id): Response
-    {
-        try {
-            $course = ClassModel::where('status', 'active')
-                ->with(['teacher:id,name,email,experience,education_qualification,institute', 'students'])
-                ->find($id);
-
-            if (!$course) {
-                return $this->renderNotFound('Course not found');
-            }
-
-            $courseData = [
-                'id' => $course->id,
-                'name' => $course->name,
-                'subject' => $course->subject,
-                'grade' => $course->grade,
-                'type' => $course->type,
-                'category' => $course->category,
-                'description' => $course->description,
-                'full_description' => $course->description,
-                'thumbnail' => $this->getCourseThumbnail($course),
-                'fee' => 0,
-                'capacity' => $course->capacity,
-                'duration' => '12 weeks',
-                'level' => 'Beginner',
-                'student_count' => $course->students->count(),
-                'teacher' => $course->teacher,
-                'schedule' => $course->schedule,
-                'requirements' => 'No specific requirements',
-                'learning_outcomes' => 'Comprehensive understanding of the subject matter',
-                'slug' => $this->generateSlug($course->name),
-                'created_at' => $course->created_at->format('M d, Y'),
-                'updated_at' => $course->updated_at->format('M d, Y')
-            ];
-
-            // Check if user is enrolled (if authenticated)
-            $isEnrolled = false;
-            if (Auth::check()) {
-                $isEnrolled = $course->students()->where('student_id', Auth::id())->exists();
-            }
-
-            // Get related courses
-            $relatedCourses = ClassModel::where('status', 'active')
-                ->where(function($query) use ($course) {
-                    $query->where('category', $course->category)
-                          ->orWhere('type', $course->type)
-                          ->orWhere('teacher_id', $course->teacher_id);
-                })
-                ->where('id', '!=', $course->id)
-                ->with(['teacher:id,name', 'students'])
-                ->limit(4)
-                ->get()
-                ->map(function($relatedCourse) {
-                    return [
-                        'id' => $relatedCourse->id,
-                        'name' => $relatedCourse->name,
-                        'subject' => $relatedCourse->subject,
-                        'description' => $relatedCourse->description,
-                        'thumbnail' => $this->getCourseThumbnail($relatedCourse),
-                        'fee' => 0,
-                        'student_count' => $relatedCourse->students->count(),
-                        'teacher' => $relatedCourse->teacher,
-                        'slug' => $this->generateSlug($relatedCourse->name),
-                        'type' => $relatedCourse->type
-                    ];
-                });
-
-            return Inertia::render('Frontend/CourseSingle', [
-                'course' => $courseData,
-                'relatedCourses' => $relatedCourses,
-                'isEnrolled' => $isEnrolled,
-                'pageTitle' => $course->name . ' - SkillGro',
-                'metaDescription' => $course->description
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Course single page error: ' . $e->getMessage());
-            
-            return $this->renderNotFound('Course not found');
-        }
     }
 
     public function instructors(Request $request): Response
     {
         try {
-            Log::info('🎯 Loading instructors page from database');
+            $language = $this->getCurrentLanguage();
+            Log::info('🎯 Loading instructors page with language: ' . $language);
 
             // Get all teachers from database
             $teachers = User::where('role', 'teacher')
@@ -503,67 +635,35 @@ class FrontendController extends Controller
 
             Log::info("📊 Found {$teachers->count()} teachers in database");
 
-            // Debug: Check if teachers exist and have IDs
-            $teachers->each(function($teacher) {
-                Log::info("👨‍🏫 Teacher: {$teacher->name} (ID: {$teacher->id})");
-            });
+            // Transform teachers data with proper variable definitions
+            $instructors = $teachers->map(function ($teacher) use ($language) {
+                // Calculate courses count for this instructor
+                $coursesCount = ClassModel::where('teacher_id', $teacher->id)->count();
+                
+                // Calculate total students for this instructor
+                $totalStudents = DB::table('class_student')
+                    ->join('classes', 'class_student.class_id', '=', 'classes.id')
+                    ->where('classes.teacher_id', $teacher->id)
+                    ->distinct('class_student.student_id')
+                    ->count();
 
-            // Transform teachers data
-            $instructors = $teachers->map(function ($teacher) {
-                try {
-                    // DEBUG: Count courses for this teacher
-                    $coursesCount = ClassModel::where('teacher_id', $teacher->id)->count();
-                    
-                    // DEBUG: Check if any classes exist for this teacher
-                    $teacherClasses = ClassModel::where('teacher_id', $teacher->id)->get();
-                    Log::info("📚 Teacher {$teacher->name} (ID: {$teacher->id}): {$coursesCount} courses found");
-                    
-                    if ($coursesCount > 0) {
-                        Log::info("   Classes: " . $teacherClasses->pluck('name')->implode(', '));
-                    }
-
-                    // Count unique students
-                    $totalStudents = DB::table('class_student')
-                        ->join('classes', 'class_student.class_id', '=', 'classes.id')
-                        ->where('classes.teacher_id', $teacher->id)
-                        ->distinct('class_student.student_id')
-                        ->count();
-
-                    Log::info("   Students: {$totalStudents} students");
-
-                    return [
-                        'id' => $teacher->id,
-                        'name' => $teacher->name ?? 'Unknown Instructor',
-                        'username' => $teacher->username ?? '',
-                        'email' => $teacher->email ?? '',
-                        'avatar' => $this->getInstructorAvatar($teacher),
-                        'education_qualification' => $teacher->education_qualification ?? 'Not specified',
-                        'institute' => $teacher->institute ?? 'Not specified',
-                        'experience' => $teacher->experience ?? 'Experienced educator',
-                        'bio' => $teacher->bio ?? 'Professional instructor dedicated to student success.',
-                        'courses_count' => $coursesCount,
-                        'students_count' => $totalStudents,
-                        'rating' => 4.8,
-                        'created_at' => $teacher->created_at ? $teacher->created_at->format('M d, Y') : 'Unknown'
-                    ];
-                } catch (\Exception $e) {
-                    Log::error("❌ Error processing teacher {$teacher->id}: " . $e->getMessage());
-                    return [
-                        'id' => $teacher->id,
-                        'name' => $teacher->name ?? 'Unknown Instructor',
-                        'username' => $teacher->username ?? '',
-                        'email' => $teacher->email ?? '',
-                        'avatar' => $this->getInstructorAvatar($teacher),
-                        'education_qualification' => $teacher->education_qualification ?? 'Not specified',
-                        'institute' => $teacher->institute ?? 'Not specified',
-                        'experience' => $teacher->experience ?? 'Experienced educator',
-                        'bio' => $teacher->bio ?? 'Professional instructor.',
-                        'courses_count' => 0,
-                        'students_count' => 0,
-                        'rating' => 4.5,
-                        'created_at' => $teacher->created_at ? $teacher->created_at->format('M d, Y') : 'Unknown'
-                    ];
-                }
+                return [
+                    'id' => $teacher->id,
+                    'name' => $teacher->name ?? 'Unknown Instructor',
+                    'username' => $teacher->username ?? '',
+                    'email' => $teacher->email ?? '',
+                    'avatar' => $this->getInstructorAvatar($teacher),
+                    'education_qualification' => $this->getTranslatedQualification($teacher->education_qualification, $language),
+                    'institute' => $teacher->institute ?? 'Not specified',
+                    'experience' => $this->getTranslatedExperience($teacher->experience, $language),
+                    'bio' => $teacher->bio ?? ($language === 'bn' ? 'পেশাদার ইন্সট্রাক্টর শিক্ষার্থীদের সাফল্যের জন্য নিবেদিত।' : 'Professional instructor dedicated to student success.'),
+                    'courses_count' => $coursesCount,
+                    'students_count' => $totalStudents,
+                    'rating' => 4.8,
+                    'created_at' => $teacher->created_at ? $teacher->created_at->format('M d, Y') : 'Unknown',
+                    'original_qualification' => $teacher->education_qualification,
+                    'original_experience' => $teacher->experience,
+                ];
             });
 
             // Get specializations for filter dropdown
@@ -582,9 +682,15 @@ class FrontendController extends Controller
                     'search' => $request->search ?? '',
                     'specialization' => $request->specialization ?? '',
                 ],
-                'specializations' => $specializations->toArray(),
-                'pageTitle' => 'Our Instructors - SkillGro',
-                'metaDescription' => 'Meet our team of expert instructors and teachers. Learn from experienced professionals dedicated to your success.'
+                'specializations' => $specializations->map(function($spec) use ($language) {
+                    return $this->getTranslatedQualification($spec, $language);
+                })->toArray(),
+                'pageTitle' => $language === 'bn' ? 'আমাদের ইন্সট্রাক্টরগণ - স্কিলগ্রো' : 'Our Instructors - SkillGro',
+                'metaDescription' => $language === 'bn'
+                    ? 'আমাদের বিশেষজ্ঞ ইন্সট্রাক্টর এবং শিক্ষকদের দলের সাথে পরিচিত হোন। আপনার সাফল্যের জন্য নিবেদিত অভিজ্ঞ পেশাদারদের থেকে শিখুন।'
+                    : 'Meet our team of expert instructors and teachers. Learn from experienced professionals dedicated to your success.',
+                'currentLanguage' => $language,
+                'availableLanguages' => ['en', 'bn']
             ]);
 
         } catch (\Exception $e) {
@@ -597,6 +703,13 @@ class FrontendController extends Controller
             if ($teachers->count() > 0) {
                 // If we have teachers but there was an error in processing, return basic data
                 $basicInstructors = $teachers->map(function ($teacher) {
+                    $coursesCount = ClassModel::where('teacher_id', $teacher->id)->count();
+                    $totalStudents = DB::table('class_student')
+                        ->join('classes', 'class_student.class_id', '=', 'classes.id')
+                        ->where('classes.teacher_id', $teacher->id)
+                        ->distinct('class_student.student_id')
+                        ->count();
+
                     return [
                         'id' => $teacher->id,
                         'name' => $teacher->name,
@@ -607,8 +720,8 @@ class FrontendController extends Controller
                         'institute' => $teacher->institute,
                         'experience' => $teacher->experience,
                         'bio' => $teacher->bio,
-                        'courses_count' => 0,
-                        'students_count' => 0,
+                        'courses_count' => $coursesCount,
+                        'students_count' => $totalStudents,
                         'rating' => 4.5,
                         'created_at' => $teacher->created_at->format('M d, Y')
                     ];
@@ -640,6 +753,43 @@ class FrontendController extends Controller
                 'metaDescription' => 'Meet our team of expert instructors.'
             ]);
         }
+    }
+
+    // ... rest of your existing methods remain the same ...
+
+    private function getInstructorAvatar($instructor)
+    {
+        $defaultAvatars = [
+            '/assets/img/instructor/instructor01.png',
+            '/assets/img/instructor/instructor02.png',
+            '/assets/img/instructor/instructor03.png',
+            '/assets/img/instructor/instructor04.png',
+        ];
+
+        $nameHash = crc32($instructor->name ?? 'default');
+        $index = $nameHash % count($defaultAvatars);
+
+        return $defaultAvatars[$index];
+    }
+
+    private function getCourseThumbnail($course)
+    {
+        $defaultThumbnails = [
+            '/assets/img/courses/h5_course_thumb01.jpg',
+            '/assets/img/courses/h5_course_thumb02.jpg',
+            '/assets/img/courses/h5_course_thumb03.jpg',
+            '/assets/img/courses/h5_course_thumb04.jpg'
+        ];
+
+        $index = 0;
+        if ($course->type === 'regular') {
+            $index = (($course->grade ?? 1) - 1) % 4;
+        } else {
+            $categoryHash = crc32($course->category ?? 'default');
+            $index = $categoryHash % 4;
+        }
+
+        return $defaultThumbnails[$index] ?? $defaultThumbnails[0];
     }
 
     public function instructorDetails($id): Response
@@ -872,41 +1022,6 @@ class FrontendController extends Controller
                 'created_at' => 'Mar 22, 2023'
             ]
         ];
-    }
-
-    private function getInstructorAvatar($instructor)
-    {
-        $defaultAvatars = [
-            '/assets/img/instructor/instructor01.png',
-            '/assets/img/instructor/instructor02.png',
-            '/assets/img/instructor/instructor03.png',
-            '/assets/img/instructor/instructor04.png',
-        ];
-
-        $nameHash = crc32($instructor->name ?? 'default');
-        $index = $nameHash % count($defaultAvatars);
-
-        return $defaultAvatars[$index];
-    }
-
-    private function getCourseThumbnail($course)
-    {
-        $defaultThumbnails = [
-            '/assets/img/courses/h5_course_thumb01.jpg',
-            '/assets/img/courses/h5_course_thumb02.jpg',
-            '/assets/img/courses/h5_course_thumb03.jpg',
-            '/assets/img/courses/h5_course_thumb04.jpg'
-        ];
-
-        $index = 0;
-        if ($course->type === 'regular') {
-            $index = (($course->grade ?? 1) - 1) % 4;
-        } else {
-            $categoryHash = crc32($course->category ?? 'default');
-            $index = $categoryHash % 4;
-        }
-
-        return $defaultThumbnails[$index] ?? $defaultThumbnails[0];
     }
 
     private function getVideoThumbnail($resource)

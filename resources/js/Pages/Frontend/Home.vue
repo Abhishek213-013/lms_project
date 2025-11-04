@@ -48,7 +48,7 @@
         </div>
       </section>
 
-      <!-- Popular Courses -->
+      <!-- Popular Courses Section -->
       <section class="courses-section py-5">
         <div class="container">
           <div class="row mb-5">
@@ -62,17 +62,17 @@
               <div class="card course-card h-100">
                 <img :src="course.thumbnail" class="card-img-top" :alt="course.name" style="height: 200px; object-fit: cover;">
                 <div class="card-body">
-                  <h5 class="card-title">{{ course.name }}</h5>
-                  <p class="card-text">{{ course.description }}</p>
+                  <h5 class="card-title">{{ getCourseTitle(course) }}</h5>
+                  <p class="card-text">{{ getCourseDescription(course) }}</p>
                   <div class="course-meta d-flex justify-content-between align-items-center mb-3">
-                    <span class="badge bg-primary">{{ course.category }}</span>
-                    <span class="course-type">{{ course.type }}</span>
+                    <span class="badge bg-primary">{{ getCourseCategoryText(course) }}</span>
+                    <span class="course-type">{{ getCourseTypeText(course.type) }}</span>
                   </div>
                   <div class="course-info d-flex justify-content-between align-items-center">
                     <small class="students-count">
                       <i class="fas fa-users icon-fixed"></i> {{ course.student_count }} {{ t('students') }}
                     </small>
-                    <strong class="course-price">${{ course.fee }}</strong>
+                    <strong class="course-price">৳{{ course.fee }}</strong>
                   </div>
                 </div>
                 <div class="card-footer">
@@ -290,6 +290,13 @@ const handleThemeChange = (event) => {
   currentTheme.value = event.detail.theme
 }
 
+const handleLanguageChange = (event) => {
+  console.log('Language change received in home page:', event.detail.language)
+  // Force re-computation by accessing currentLanguage
+  // The computed properties will automatically update
+  refreshIcons()
+}
+
 const refreshIcons = () => {
   if (window.FontAwesome && window.FontAwesome.dom && window.FontAwesome.dom.i2svg) {
     setTimeout(() => {
@@ -317,6 +324,57 @@ const getInstructorAvatar = (instructor) => {
 const handleImageError = (event) => {
   event.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y3ZmFmYyIvPjx0ZXh0IHg9IjEwMCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5Y2EwYTYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIwLjM1ZW0iPuKKojwvdGV4dD48L3N2Zz4=';
 }
+
+// Methods for course data
+const getCourseTitle = (course) => {
+  if (course.type === 'regular') {
+    const className = course.name || `${t('Class')} ${course.grade || ''}`;
+    const subjectName = course.subject || t('General');
+    return `${className} - ${subjectName}`;
+  } else {
+    return course.name || course.class_name || t('Untitled Course');
+  }
+};
+
+const getCourseDescription = (course) => {
+  if (course.description) {
+    return course.description.length > 120 ? course.description.substring(0, 120) + '...' : course.description;
+  }
+  
+  const courseType = course.type || 'regular';
+  if (courseType === 'regular') {
+    const className = course.name || `Class ${course.grade}`;
+    const subjectName = course.subject || t('General');
+    return t('Comprehensive curriculum for students. This course covers all essential subjects and prepares students for academic success.');
+  } else {
+    const courseName = course.name || course.class_name || t('this course');
+    const category = course.category || t('Specialized course');
+    return t('Explore this course - learn essential skills and knowledge from expert instructors.');
+  }
+};
+
+const getCourseCategoryText = (course) => {
+  const category = getCourseCategory(course);
+  return t(category);
+};
+
+const getCourseTypeText = (courseType) => {
+  return courseType === 'regular' ? t('Class') : t('Course');
+};
+
+const getCourseCategory = (course) => {
+  const courseType = course.type || 'regular';
+  
+  if (courseType === 'regular') {
+    const grade = course.grade || 1;
+    if (grade <= 5) return 'Primary';
+    if (grade <= 8) return 'Junior';
+    if (grade <= 10) return 'Secondary';
+    return 'Higher Secondary';
+  } else {
+    return course.category || 'Skill Course';
+  }
+};
 
 const getExpertise = (instructor) => {
   const qual = instructor.education_qualification || '';
@@ -360,15 +418,23 @@ onMounted(() => {
   // Listen for theme changes
   window.addEventListener('themeChanged', handleThemeChange)
   
+  // Listen for language changes from header
+  window.addEventListener('languageChanged', handleLanguageChange)
+  
+  // Listen for content refresh events
+  window.addEventListener('contentRefresh', refreshIcons)
+  
   // Initialize icons
   refreshIcons()
   
+  console.log('Home page mounted with language:', currentLanguage.value)
   console.log('Home page content received:', props.content)
-  console.log('Current language:', currentLanguage.value)
 })
 
 onUnmounted(() => {
   window.removeEventListener('themeChanged', handleThemeChange)
+  window.removeEventListener('languageChanged', handleLanguageChange)
+  window.removeEventListener('contentRefresh', refreshIcons)
 })
 </script>
 
@@ -938,6 +1004,7 @@ onUnmounted(() => {
 }
 
 .course-price {
+  font-family: Arial, sans-serif; /* Ensures Taka symbol displays properly */
   color: var(--primary-color);
 }
 

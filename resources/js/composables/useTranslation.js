@@ -3,7 +3,6 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 export const translations = {
   en: {
-    
     // Header & Navigation
     'Home': 'Home',
     'Courses': 'Courses',
@@ -20,7 +19,7 @@ export const translations = {
     'View Course': 'View Course',
 
     // Home Page
-    'Learning is What You Make of it. Make it Yours at SkillGro.': 'Learning is What You Make of it. Make it Yours at SkillGro.',
+    'Learning is What You Make of it. Make it Yours at Pathshala LMS.': 'Learning is What You Make of it. Make it Yours at Pathshala LMS.',
     'Unlock your potential with our expert-led courses and transform your career.': 'Unlock your potential with our expert-led courses and transform your career.',
     'Browse Courses': 'Browse Courses',
     'Join Now': 'Join Now',
@@ -249,7 +248,7 @@ export const translations = {
     'Personalized learning paths': 'Personalized learning paths',
     'Industry-relevant curriculum': 'Industry-relevant curriculum',
     'Continuous innovation': 'Continuous innovation in EdTech',
-    'about_story_content': 'SkillGro was founded with a simple yet powerful vision: to make quality education accessible to everyone, everywhere. We believe that learning should be engaging, personalized, and available to all regardless of geographical or financial barriers.',
+    'about_story_content': 'Pathshala LMS was founded with a simple yet powerful vision: to make quality education accessible to everyone, everywhere. We believe that learning should be engaging, personalized, and available to all regardless of geographical or financial barriers.',
     'about_mission_content': 'To democratize education by providing high-quality, accessible, and affordable learning opportunities that empower individuals to achieve their personal and professional goals.',
     'about_vision_content': 'To create a world where anyone, anywhere can transform their life through access to the world\'s best learning experiences and educational resources.',
 
@@ -327,7 +326,7 @@ export const translations = {
     'View Course': 'কোর্স দেখুন',
     
     // Home Page
-    'Learning is What You Make of it. Make it Yours at SkillGro.': 'শেখা হলো আপনার যা বানাতে চান। এটিকে আপনার নিজের করে নিন স্কিলগ্রোতে।',
+    'Learning is What You Make of it. Make it Yours at Pathshala LMS.': 'শেখা হলো আপনার যা বানাতে চান। এটিকে আপনার নিজের করে নিন পাঠশালা LMS এ।',
     'Unlock your potential with our expert-led courses and transform your career.': 'আমাদের বিশেষজ্ঞ-নির্দেশিত কোর্সের মাধ্যমে আপনার সম্ভাবনা উন্মুক্ত করুন এবং আপনার ক্যারিয়ার রূপান্তর করুন।',
     'Browse Courses': 'কোর্স ব্রাউজ করুন',
     'Join Now': 'এখনই যোগ দিন',
@@ -555,7 +554,7 @@ export const translations = {
     'Personalized learning paths': 'ব্যক্তিগতকৃত শিক্ষার পথ',
     'Industry-relevant curriculum': 'শিল্প-প্রাসঙ্গিক পাঠ্যক্রম',
     'Continuous innovation': 'এডটেকে ধারাবাহিক উদ্ভাবন',
-    'about_story_content': 'স্কিলগ্রো একটি সহজ কিন্তু শক্তিশালী ভিশন নিয়ে প্রতিষ্ঠিত হয়েছিল: মানসম্মত শিক্ষা সবার জন্য, সর্বত্র সহজলভ্য করা। আমরা বিশ্বাস করি যে শিক্ষা আকর্ষণীয়, ব্যক্তিগতকৃত এবং ভৌগলিক বা আর্থিক বাধা নির্বিশেষে সবার জন্য উপলব্ধ হওয়া উচিত।',
+    'about_story_content': 'পাঠশালা একটি সহজ কিন্তু শক্তিশালী ভিশন নিয়ে প্রতিষ্ঠিত হয়েছিল: মানসম্মত শিক্ষা সবার জন্য, সর্বত্র সহজলভ্য করা। আমরা বিশ্বাস করি যে শিক্ষা আকর্ষণীয়, ব্যক্তিগতকৃত এবং ভৌগলিক বা আর্থিক বাধা নির্বিশেষে সবার জন্য উপলব্ধ হওয়া উচিত।',
     'about_mission_content': 'উচ্চ-গুণমান, সহজলভ্য এবং সাশ্রয়ী মূল্যের শিক্ষার সুযোগ প্রদানের মাধ্যমে শিক্ষাকে গণতান্ত্রিক করা যা ব্যক্তিদের তাদের ব্যক্তিগত এবং পেশাদার লক্ষ্য অর্জনে সক্ষম করে।',
     'about_vision_content': 'এমন একটি বিশ্ব তৈরি করা যেখানে anyone, anywhere বিশ্বের সেরা লার্নিং অভিজ্ঞতা এবং শিক্ষাগত সম্পদের অ্যাক্সেসের মাধ্যমে তাদের জীবন পরিবর্তন করতে পারে।',
 
@@ -618,83 +617,178 @@ export const translations = {
   }
 }
 
-// Create a reactive current language
-const currentLanguage = ref('bn')
+// Create a reactive current language with proper initialization
+const currentLanguage = ref('en')
 
-// Translation function
+// Initialize language from localStorage or default
+const initializeLanguage = () => {
+  if (typeof window !== 'undefined') {
+    // Check URL parameter first
+    const urlParams = new URLSearchParams(window.location.search)
+    const urlLang = urlParams.get('lang')
+    
+    // Check localStorage next
+    const savedLang = localStorage.getItem('preferredLanguage')
+    
+    // Priority: URL param > localStorage > default
+    let lang = urlLang || savedLang || 'en'
+    
+    // Validate language
+    if (!['en', 'bn'].includes(lang)) {
+      lang = 'en'
+    }
+    
+    currentLanguage.value = lang
+    applyLanguageSettings(lang)
+    
+    console.log('🌐 Language initialized to:', lang, {
+      fromURL: urlLang,
+      fromStorage: savedLang,
+      final: lang
+    })
+  }
+}
+
+// Apply language-specific settings
+const applyLanguageSettings = (lang) => {
+  if (typeof document !== 'undefined') {
+    // Update body classes
+    document.body.classList.remove('en-lang', 'bn-lang')
+    document.body.classList.add(`${lang}-lang`)
+    
+    // Update HTML lang attribute
+    document.documentElement.lang = lang
+    
+    // Update page title
+    document.title = lang === 'bn' 
+      ? 'পাঠশালা - অনলাইন লার্নিং প্ল্যাটফর্ম'
+      : 'Pathshala - Online Learning Platform'
+    
+    // Update meta description if needed
+    const metaDescription = document.querySelector('meta[name="description"]')
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 
+        lang === 'bn' 
+          ? 'পাঠশালা - বাংলাদেশের সেরা অনলাইন লার্নিং প্ল্যাটফর্ম'
+          : 'Pathshala - The Best Online Learning Platform in Bangladesh'
+      )
+    }
+  }
+}
+
+// Translation function with enhanced capabilities
 export const t = (key, replacements = {}) => {
-  let translated = translations[currentLanguage.value]?.[key] || key
+  if (!key) return ''
   
+  let translated = translations[currentLanguage.value]?.[key] || 
+                  translations['en']?.[key] || 
+                  key
+  
+  // Handle replacements
   Object.keys(replacements).forEach(replacementKey => {
-    translated = translated.replace(`{${replacementKey}}`, replacements[replacementKey])
+    const regex = new RegExp(`\\{${replacementKey}\\}`, 'g')
+    translated = translated.replace(regex, replacements[replacementKey])
   })
   
   return translated
 }
 
-// Switch language function
+// Enhanced switch language function
 export const switchLanguage = (lang) => {
-  if (lang === currentLanguage.value) return
-  
-  currentLanguage.value = lang
-  localStorage.setItem('preferredLanguage', lang)
-  
-  // Update body class for Bengali fonts
-  if (lang === 'bn') {
-    document.body.classList.add('bn-lang')
-    document.documentElement.lang = 'bn'
-  } else {
-    document.body.classList.remove('bn-lang')
-    document.documentElement.lang = 'en'
+  if (!lang || !['en', 'bn'].includes(lang)) {
+    console.warn('Invalid language:', lang)
+    return
   }
   
-  // Update page title
-  document.title = lang === 'bn' 
-    ? 'স্কিলগ্রো - অনলাইন লার্নিং প্ল্যাটফর্ম'
-    : 'SkillGro - Online Learning Platform'
+  if (lang === currentLanguage.value) {
+    console.log('Language already set to:', lang)
+    return
+  }
   
-  // Dispatch event for other components
-  window.dispatchEvent(new CustomEvent('languageChanged', { 
-    detail: { language: lang } 
-  }))
+  console.log('🔄 Switching language from', currentLanguage.value, 'to', lang)
   
-  console.log('🌐 Language changed to:', lang)
+  // Update reactive value
+  currentLanguage.value = lang
+  
+  // Persist to localStorage
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('preferredLanguage', lang)
+    
+    // Update URL without page reload
+    const url = new URL(window.location)
+    url.searchParams.set('lang', lang)
+    window.history.replaceState({}, '', url)
+  }
+  
+  // Apply language settings
+  applyLanguageSettings(lang)
+  
+  // Dispatch global event for all components
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('languageChanged', { 
+      detail: { 
+        language: lang,
+        timestamp: Date.now()
+      } 
+    }))
+  }
+  
+  console.log('✅ Language switched to:', lang)
 }
 
 // Handle global language changes
 const handleLanguageChange = (event) => {
   const newLang = event.detail.language
-  if (newLang !== currentLanguage.value) {
+  if (newLang && newLang !== currentLanguage.value) {
+    console.log('🔄 Language updated from global event:', newLang)
     currentLanguage.value = newLang
-    console.log('🔄 Language updated from event:', newLang)
+    applyLanguageSettings(newLang)
   }
 }
 
-// Composable function
+// Composable function with enhanced lifecycle management
 export function useTranslation() {
-  // Load language preference from localStorage on mount
+  // Initialize language on mount
   onMounted(() => {
-    const savedLang = localStorage.getItem('preferredLanguage')
-    if (savedLang && (savedLang === 'en' || savedLang === 'bn')) {
-      currentLanguage.value = savedLang
-      switchLanguage(savedLang)
-    } else {
-      // Set default language
-      switchLanguage('bn')
-    }
+    console.log('🚀 useTranslation composable mounted')
+    initializeLanguage()
     
     // Listen for global language changes
     window.addEventListener('languageChanged', handleLanguageChange)
+    
+    // Listen for storage changes (in case language is changed in another tab)
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'preferredLanguage' && event.newValue) {
+        const newLang = event.newValue
+        if (['en', 'bn'].includes(newLang) && newLang !== currentLanguage.value) {
+          console.log('🔄 Language updated from storage event:', newLang)
+          switchLanguage(newLang)
+        }
+      }
+    })
   })
 
+  // Clean up on unmount
   onUnmounted(() => {
-    // Clean up event listener
+    console.log('🧹 useTranslation composable unmounted')
     window.removeEventListener('languageChanged', handleLanguageChange)
   })
 
   return {
     currentLanguage: computed(() => currentLanguage.value),
     t,
-    switchLanguage
+    switchLanguage,
+    // Add helper methods
+    isEnglish: computed(() => currentLanguage.value === 'en'),
+    isBengali: computed(() => currentLanguage.value === 'bn'),
+    // Add translation stats for debugging
+    translationStats: computed(() => ({
+      currentLanguage: currentLanguage.value,
+      totalTranslations: Object.keys(translations[currentLanguage.value] || {}).length,
+      availableLanguages: Object.keys(translations)
+    }))
   }
 }
+
+// Export for direct use
+export default useTranslation
