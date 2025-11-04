@@ -155,6 +155,7 @@ body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;
+  font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
 }
 
 /* Smooth transitions for all elements */
@@ -162,12 +163,44 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
-/* Override the problematic rule */
+/* Primary font family for all elements */
 * {
     font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
 }
 
-.bn-lang * {
+/* Bengali language support - UPDATED without problematic wildcard */
+.bn-lang {
+    font-family: "Nunito Sans", 'Kalpurush', 'SolaimanLipi', 'Siyam Rupali', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+    line-height: 1.6;
+}
+
+/* Improve readability for Bengali */
+.bn-lang {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Specific adjustments for Bengali typography */
+.bn-lang p {
+    line-height: 1.8;
+}
+
+.bn-lang h1, 
+.bn-lang h2, 
+.bn-lang h3, 
+.bn-lang h4, 
+.bn-lang h5, 
+.bn-lang h6 {
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+/* Ensure Vue components use the correct font */
+:deep(*) {
     font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
 }
 
+:deep(.bn-lang) {
+    font-family: "Nunito Sans", 'Kalpurush', 'SolaimanLipi', 'Siyam Rupali', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+}

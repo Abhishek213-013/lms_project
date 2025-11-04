@@ -799,20 +799,13 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.rotate-180 {
-  transform: rotate(180deg);
+/* Use deep selector to override */
+:deep(*) {
+    font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+    font-weight: 400;
 }
 
-.submenu-link {
-  display: block;
-  padding: 0.5rem 0.75rem;
-  color: #4b5563;
-  border-radius: 0.5rem;
-  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
-}
-
-.submenu-link:hover {
-  color: #4f46e5;
-  background-color: #f9fafb;
+.custom-heading {
+    font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
 }
 </style>

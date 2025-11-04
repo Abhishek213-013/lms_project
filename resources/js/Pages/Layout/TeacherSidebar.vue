@@ -170,16 +170,16 @@ const toggleMenu = (menu) => {
 </script>
 
 <style scoped>
-/* Main font family for entire sidebar */
+/* Font family for the entire sidebar */
 .sidebar-font {
-  font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
 }
 
 /* Main navigation text */
 .sidebar-text {
-  font-size: 13px;
-  font-weight: 600;
-  font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-size: 12px;
+  font-weight: 400;
+  font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
 }
 
 /* Section labels */
@@ -189,15 +189,15 @@ const toggleMenu = (menu) => {
   color: #9ca3af;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
 }
 
-/* Back to admin link */
-.sidebar-back-link {
-  font-size: 13px;
+/* Collapsed view text */
+.sidebar-collapsed-text {
+  font-size: 12px;
   font-weight: 600;
   color: #4f46e5;
-  font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
 }
 
 .rotate-180 {
@@ -211,7 +211,7 @@ const toggleMenu = (menu) => {
   border-radius: 0.375rem;
   transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
   text-decoration: none;
-  font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
 }
 
 .submenu-link:hover {
@@ -220,19 +220,8 @@ const toggleMenu = (menu) => {
   text-decoration: none;
 }
 
-/* Remove underline from all links and buttons */
-.no-underline {
-  text-decoration: none !important;
-}
-
-/* Ensure no underline appears on hover for any element */
-button:hover,
-a:hover {
-  text-decoration: none !important;
-}
-
-/* Apply font to sidebar items */
-.sidebar-item {
-  font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+.logo-image {
+  max-width: 180px;
+  height: auto;
 }
 </style>

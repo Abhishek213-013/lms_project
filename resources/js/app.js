@@ -6,8 +6,8 @@ import { ZiggyVue } from 'ziggy-js';
 import '../css/app.css';
 import './bootstrap';
 
-
 const appName = import.meta.env.VITE_APP_NAME || 'Pathshala LMS';
+
 // Complete translation system
 const translations = {
     en: {
@@ -211,7 +211,7 @@ const translations = {
         'Learning Reminders': 'শেখার অনুস্মারক',
         'Get reminders to continue your learning journey': 'আপনার শেখার যাত্রা চালিয়ে যাওয়ার জন্য অনুস্মারক পান',
         'Dark Mode': 'ডার্ক মোড',
-        'Switch between light and dark theme': 'হালকা এবং গাঢ় থিমের মধ্যে স্যুইচ করুন',
+        'Switch between light and dark theme': 'হালকা এবং গাঢ় থিমের মধ্যে স্যুচ করুন',
         'Security': 'নিরাপত্তা',
         'Manage your account security and privacy settings': 'আপনার অ্যাকাউন্ট নিরাপত্তা এবং গোপনীয়তা সেটিংস পরিচালনা করুন',
         'Two-Factor Authentication': 'দুই-ফ্যাক্টর প্রমাণীকরণ',
@@ -246,7 +246,14 @@ const globalT = (key, replacements = {}) => {
     return translated;
 };
 
-// Initialize Bengali Fonts
+// Admin page detection
+const isAdminPage = () => {
+    const adminPaths = ['/admin', '/super-admin', '/teacher'];
+    const currentPath = window.location.pathname;
+    return adminPaths.some(path => currentPath.startsWith(path));
+};
+
+// Initialize Bengali Fonts - UPDATED to exclude admin pages
 const initializeBengaliFonts = () => {
     // Method 1: Google Fonts (Kalpurush)
     const kalpurushLink = document.createElement('link');
@@ -254,49 +261,57 @@ const initializeBengaliFonts = () => {
     kalpurushLink.rel = 'stylesheet';
     document.head.appendChild(kalpurushLink);
 
-    // Method 2: Local Bengali font stack
+    // Method 2: Local Bengali font stack - UPDATED with admin page exclusion
     const style = document.createElement('style');
     style.textContent = `
-        .bn-lang {
-            font-family: 'Kalpurush', 'SolaimanLipi', 'Siyam Rupali', 'AdorshoLipi', 'AponaLohit', 
-                        'Bangla', 'Nikosh', 'Mina', 'Lohit Bengali', 'Noto Sans Bengali', 
-                        'Arial Unicode MS', Arial, sans-serif !important;
-            line-height: 1.6;
-        }
-        
-        /* Ensure proper rendering for Bengali text */
-        .bn-lang * {
+        /* Bengali font inheritance - EXCLUDES admin pages */
+        .bn-lang:not(.admin-page) * {
             font-family: inherit !important;
         }
         
+        .bn-lang:not(.admin-page) {
+            font-family: 'Kalpurush', 'SolaimanLipi', 'Siyam Rupali', 'AdorshoLipi', 'AponaLohit', 
+                        'Bangla', 'Nikosh', 'Mina', 'Lohit Bengali', 'Noto Sans Bengali', 
+                        "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+            line-height: 1.6;
+        }
+        
+        /* Admin pages always use Nunito Sans */
+        .admin-page,
+        .admin-page *,
+        .admin-page.bn-lang,
+        .admin-page.bn-lang * {
+            font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+        }
+        
         /* Improve readability for Bengali */
-        .bn-lang {
+        .bn-lang:not(.admin-page) {
             text-rendering: optimizeLegibility;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
         
         /* Specific adjustments for Bengali typography */
-        .bn-lang p {
+        .bn-lang:not(.admin-page) p {
             line-height: 1.8;
         }
         
-        .bn-lang h1, 
-        .bn-lang h2, 
-        .bn-lang h3, 
-        .bn-lang h4, 
-        .bn-lang h5, 
-        .bn-lang h6 {
+        .bn-lang:not(.admin-page) h1, 
+        .bn-lang:not(.admin-page) h2, 
+        .bn-lang:not(.admin-page) h3, 
+        .bn-lang:not(.admin-page) h4, 
+        .bn-lang:not(.admin-page) h5, 
+        .bn-lang:not(.admin-page) h6 {
             font-weight: 700;
             line-height: 1.4;
         }
     `;
     document.head.appendChild(style);
 
-    console.log('✅ Bengali fonts initialized');
+    console.log('✅ Bengali fonts initialized with admin page exclusion');
 };
 
-// Initialize language system
+// Initialize language system - UPDATED with admin detection
 const initializeLanguageSystem = () => {
     // Set default language to Bengali if not set
     if (!localStorage.getItem('preferredLanguage')) {
@@ -311,6 +326,12 @@ const initializeLanguageSystem = () => {
         document.body.classList.add('bn-lang');
     } else {
         document.body.classList.remove('bn-lang');
+    }
+    
+    // Add admin-page class if current page is admin
+    if (isAdminPage()) {
+        document.body.classList.add('admin-page');
+        console.log('🚫 Admin page detected - Bengali font inheritance disabled');
     }
     
     console.log(`🌐 Language system initialized: ${currentLanguage}`);
@@ -370,7 +391,7 @@ const provideTranslation = (vueApp) => {
     vueApp.config.globalProperties.currentLanguage = localStorage.getItem('preferredLanguage') || 'bn';
     vueApp.config.globalProperties.currentTheme = localStorage.getItem('preferredTheme') || 'light';
     
-    // Add language switching method
+    // Add language switching method - UPDATED with admin detection
     vueApp.config.globalProperties.switchLanguage = (lang) => {
         if (lang === 'en' || lang === 'bn') {
             localStorage.setItem('preferredLanguage', lang);
@@ -381,6 +402,11 @@ const provideTranslation = (vueApp) => {
                 document.body.classList.add('bn-lang');
             } else {
                 document.body.classList.remove('bn-lang');
+            }
+            
+            // Remove admin-page class if not admin page (to allow Bengali fonts)
+            if (!isAdminPage()) {
+                document.body.classList.remove('admin-page');
             }
             
             // Update page title
@@ -658,6 +684,7 @@ createInertiaApp({
             console.log('🌐 Current language:', currentLang);
             console.log('🎨 Current theme:', currentTheme);
             console.log('👤 User auth:', safeProps.initialPage?.props?.auth);
+            console.log('🏢 Is admin page:', isAdminPage());
         } catch (mountError) {
             console.error('❌ Failed to mount Vue app:', mountError);
             
@@ -734,6 +761,11 @@ window.PathshalaLMS = {
         } else {
             document.body.classList.remove('bn-lang');
         }
+        
+        // Remove admin-page class if not admin page (to allow Bengali fonts)
+        if (!isAdminPage()) {
+            document.body.classList.remove('admin-page');
+        }
     },
     getCurrentLanguage: () => {
         return localStorage.getItem('preferredLanguage') || 'bn';
@@ -746,7 +778,8 @@ window.PathshalaLMS = {
     getCurrentTheme: () => {
         return localStorage.getItem('preferredTheme') || 'light';
     },
-    t: globalT
+    t: globalT,
+    isAdminPage: isAdminPage
 };
 
-console.log('🚀 Pathshala LMS app initialized with Bengali support');
+console.log('🚀 Pathshala LMS app initialized with Bengali support and admin page detection');

@@ -363,21 +363,13 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.description-text {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-clamp: 2;
-  /* Standard property for future compatibility */
-  line-clamp: 2;
+/* Use deep selector to override */
+:deep(*) {
+    font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+    font-weight: 400;
 }
 
-/* Fallback for browsers that don't support line-clamp */
-@supports not (line-clamp: 2) {
-  .description-text {
-    max-height: 2.8em;
-    line-height: 1.4em;
-  }
+.custom-heading {
+    font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
 }
 </style>

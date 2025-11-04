@@ -348,7 +348,7 @@ const goBackToTeacherPortal = () => {
   if (teacherId) {
     router.visit(`/admin/teacher-portal/${teacherId}`)
   } else {
-    router.visit('/teacher')
+    router.visit('/teacher/portal')
   }
 }
 
@@ -434,6 +434,16 @@ const resetResourceForm = () => {
 </script>
 
 <style scoped>
+
+/* Use deep selector to override */
+:deep(*) {
+    font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+    font-weight: 400;
+}
+
+.custom-heading {
+    font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+}
 /* Remove underline from all elements */
 .no-underline {
   text-decoration: none !important;

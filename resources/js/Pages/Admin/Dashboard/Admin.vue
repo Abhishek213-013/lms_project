@@ -68,6 +68,7 @@ import { useRouter } from 'vue-router'
 import Sidebar from '../../Layout/Sidebar.vue'
 import Navbar from '../../Layout/Navbar.vue'
 
+
 const router = useRouter()
 const activeMenu = ref('dashboard')
 const isDark = ref(false)
@@ -266,20 +267,13 @@ const DashboardCard = {
 </script>
 
 <style scoped>
-.submenu-link {
-  display: block;
-  padding: 0.5rem 0.75rem;
-  color: #6b7280;
-  border-radius: 0.5rem;
-  transition: all 0.2s;
+/* Use deep selector to override */
+:deep(*) {
+    font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+    font-weight: 500;
 }
 
-.submenu-link:hover {
-  color: #4f46e5;
-  background-color: #f9fafb;
-}
-
-.rotate-180 {
-  transform: rotate(180deg);
+.custom-heading {
+    font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
 }
 </style>
