@@ -10,14 +10,106 @@
     <!-- Main Content -->
     <div class="flex-1 ml-64 min-w-0">
       <!-- Top Navbar -->
-      <Navbar :pageTitle="`Class Schedule - ${classInfo.name}`" />
+      <nav class="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div class="px-6 py-4">
+          <div class="flex justify-between items-center">
+            <div class="flex items-center min-w-0">
+              <h1 class="custom-heading truncate">Class Schedule - {{ classInfo?.name || 'Loading...' }}</h1>
+            </div>
+            
+            <div class="flex items-center space-x-4 flex-shrink-0">
+              <!-- Search -->
+              <div class="relative hidden md:block">
+                <input 
+                  type="text" 
+                  placeholder="Search..." 
+                  class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+                >
+                <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+              </div>
+              
+
+              <!-- User Menu -->
+              <div class="relative flex-shrink-0">
+                <button 
+                  @click="toggleUserMenu"
+                  class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 min-w-0"
+                >
+                  <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    <img 
+                      v-if="effectiveTeacher.profile_picture_url" 
+                      :src="effectiveTeacher.profile_picture_url" 
+                      :alt="effectiveTeacher.name"
+                      class="w-full h-full object-cover"
+                    >
+                    <span v-else class="text-white text-sm font-semibold">{{ userInitials }}</span>
+                  </div>
+                  <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </button>
+
+                <!-- User Dropdown -->
+                <div v-show="userMenuOpen" class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-20">
+                  <!-- User Info in Dropdown Header -->
+                  <div class="px-4 py-3 border-b border-gray-200">
+                    <div class="flex items-center space-x-3">
+                      <div class="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center overflow-hidden">
+                        <img 
+                          v-if="effectiveTeacher.profile_picture_url" 
+                          :src="effectiveTeacher.profile_picture_url" 
+                          :alt="effectiveTeacher.name"
+                          class="w-full h-full object-cover"
+                        >
+                        <span v-else class="text-white text-sm font-semibold">{{ userInitials }}</span>
+                      </div>
+                      <div class="text-left min-w-0">
+                        <p class="text-sm font-medium text-gray-700 truncate">{{ effectiveTeacher.name || 'Teacher' }}</p>
+                        <p class="text-xs text-gray-500 capitalize truncate">Teacher</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Dropdown Menu Items -->
+                  <a href="#" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center" @click="editProfile">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    Profile
+                  </a>
+                  <a href="#" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center" @click="navigateToSettings">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    Settings
+                  </a>
+                  <div class="border-t border-gray-200 my-1"></div>
+                  <button 
+                    @click="logout"
+                    class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center"
+                  >
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                    Sign out
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+
 
       <!-- Page Content -->
       <div class="p-6 max-w-full overflow-x-hidden">
         <!-- Header -->
         <div class="flex justify-between items-center mb-6">
           <div>
-            <h1 class="text-2xl font-bold text-gray-900">Class Schedule - {{ classInfo.name }}</h1>
+            <h1 class="text-2xl font-bold text-gray-900">Class Schedule - {{ classInfo?.name || 'Class' }}</h1>
             <p class="text-gray-600">Manage your class schedule and timings</p>
           </div>
           <div class="flex space-x-3">
@@ -310,7 +402,7 @@
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                       </svg>
-                      <span>{{ schedule.students_attending }}/{{ classInfo.student_count }} students</span>
+                      <span>{{ schedule.students_attending }}/{{ classInfo?.student_count || 0 }} students</span>
                     </div>
                   </div>
                   
@@ -521,30 +613,127 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { router, Link, usePage } from '@inertiajs/vue3'
 import TeacherSidebar from '../../Layout/TeacherSidebar.vue'
-import Navbar from '../../Layout/Navbar.vue'
 
+// Get props from Laravel
 const props = defineProps({
   classId: String,
+  classData: Object,
+  teacher: Object,
   initialData: Object,
   auth: Object
 })
 
-const page = usePage()
+// DEBUG: Comprehensive logging
+console.log('🔍 === SCHEDULE COMPONENT DEBUG ===')
+console.log('📦 All props:', props)
+console.log('👨‍🏫 Teacher prop:', props.teacher)
+console.log('🔐 Auth user:', props.auth?.user)
+console.log('🏫 Class data:', props.classData)
+console.log('📊 Initial data:', props.initialData)
+console.log('🆔 Class ID:', props.classId)
 
-// ==================== NAVBAR & SIDEBAR STATE ====================
-const activeMenu = ref('classes') // Default open for current page
+// Check if teacher data exists in different locations
+console.log('🔎 Teacher data sources:')
+console.log('   - From teacher prop:', props.teacher ? '✅ YES' : '❌ NO')
+console.log('   - From auth user:', props.auth?.user ? '✅ YES' : '❌ NO')
+console.log('   - From classData teacher:', props.classData?.teacher ? '✅ YES' : '❌ NO')
 
-// ==================== SCHEDULE STATE ====================
-const schedules = ref(props.initialData.schedules || [])
-const classInfo = ref(props.initialData.classInfo || {
-  id: props.classId,
-  name: 'Class',
-  student_count: 0
+if (props.teacher) {
+  console.log('📸 Teacher profile picture details:')
+  console.log('   - profile_picture:', props.teacher.profile_picture)
+  console.log('   - profile_picture_url:', props.teacher.profile_picture_url)
+  console.log('   - name:', props.teacher.name)
+  console.log('   - id:', props.teacher.id)
+}
+
+console.log('🔍 === END DEBUG ===')
+
+// FALLBACK APPROACH: Use multiple sources for teacher data
+const effectiveTeacher = computed(() => {
+  console.log('🔄 Computing effectiveTeacher...')
+  
+  // Priority 1: Use teacher prop from Laravel
+  if (props.teacher && Object.keys(props.teacher).length > 0) {
+    console.log('🎯 Using teacher from props')
+    const teacher = { ...props.teacher }
+    // Ensure profile_picture_url is set
+    if (teacher.profile_picture && !teacher.profile_picture_url) {
+      teacher.profile_picture_url = `/storage/${teacher.profile_picture}`
+      console.log('🖼️ Generated profile_picture_url:', teacher.profile_picture_url)
+    }
+    console.log('✅ Final teacher data:', teacher)
+    return teacher
+  }
+  
+  // Priority 2: Use auth user (fallback)
+  if (props.auth?.user) {
+    console.log('🔐 Using teacher from auth user')
+    const teacher = { ...props.auth.user }
+    // Ensure profile_picture_url is set
+    if (teacher.profile_picture && !teacher.profile_picture_url) {
+      teacher.profile_picture_url = `/storage/${teacher.profile_picture}`
+      console.log('🖼️ Generated profile_picture_url from auth:', teacher.profile_picture_url)
+    }
+    console.log('✅ Final teacher data from auth:', teacher)
+    return teacher
+  }
+  
+  // Priority 3: Try to get from classData
+  if (props.classData?.teacher) {
+    console.log('🏫 Using teacher from classData')
+    const teacher = { ...props.classData.teacher }
+    if (teacher.profile_picture && !teacher.profile_picture_url) {
+      teacher.profile_picture_url = `/storage/${teacher.profile_picture}`
+      console.log('🖼️ Generated profile_picture_url from classData:', teacher.profile_picture_url)
+    }
+    return teacher
+  }
+  
+  // Priority 4: Default fallback
+  console.log('⚠️ Using default teacher data - no teacher data found!')
+  return {
+    name: 'Teacher',
+    email: '',
+    profile_picture_url: null,
+    profile_picture: null
+  }
 })
-const scheduleStats = ref(props.initialData.scheduleStats || {
+
+// User initials for profile picture fallback
+const userInitials = computed(() => {
+  const teacherName = effectiveTeacher.value?.name
+  console.log('💫 User initials computed, teacher name:', teacherName)
+  
+  if (!teacherName) {
+    console.log('❌ No teacher name found, using default "T"')
+    return 'T'
+  }
+  
+  const initials = teacherName
+    .split(' ')
+    .map(word => word[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+  
+  console.log('✅ Generated initials:', initials)
+  return initials
+})
+
+// Initialize classInfo with proper fallbacks
+const classInfo = computed(() => {
+  return props.classData || props.initialData?.classInfo || {
+    id: props.classId,
+    name: 'Class',
+    student_count: 0
+  }
+})
+
+const schedules = ref(props.initialData?.schedules || [])
+const scheduleStats = ref(props.initialData?.scheduleStats || {
   total_schedules: 0,
   upcoming_schedules: 0,
   completed_schedules: 0,
@@ -552,7 +741,7 @@ const scheduleStats = ref(props.initialData.scheduleStats || {
   completion_rate: 0
 })
 
-const scheduleTypes = ref(props.initialData.scheduleTypes || [
+const scheduleTypes = ref(props.initialData?.scheduleTypes || [
   { value: 'regular', label: 'Regular Class', color: 'blue' },
   { value: 'extra', label: 'Extra Class', color: 'green' },
   { value: 'revision', label: 'Revision', color: 'purple' },
@@ -561,7 +750,7 @@ const scheduleTypes = ref(props.initialData.scheduleTypes || [
   { value: 'workshop', label: 'Workshop', color: 'teal' },
 ])
 
-const recurrencePatterns = ref(props.initialData.recurrencePatterns || [
+const recurrencePatterns = ref(props.initialData?.recurrencePatterns || [
   { value: 'daily', label: 'Daily' },
   { value: 'weekly', label: 'Weekly' },
   { value: 'monthly', label: 'Monthly' },
@@ -573,6 +762,7 @@ const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const saving = ref(false)
 const currentDate = ref(new Date())
+const userMenuOpen = ref(false)
 
 const scheduleForm = ref({
   id: null,
@@ -589,24 +779,48 @@ const scheduleForm = ref({
   status: 'scheduled'
 })
 
-// ==================== NAVBAR & SIDEBAR METHODS ====================
-
-// Menu management
-const toggleMenu = (menu) => {
-  activeMenu.value = activeMenu.value === menu ? null : menu
+// Navigation methods
+const navigateToSettings = () => {
+  router.visit('/teacher/settings')
 }
 
 const goBackToAdmin = () => {
   router.visit('/admin/users/other-users')
 }
 
+const editProfile = () => {
+  router.visit('/teacher/profile/edit')
+}
+
+const logout = async () => {
+  try {
+    router.post('/logout')
+  } catch (error) {
+    console.error('Logout error:', error)
+  }
+}
+
+// UI Methods
+const toggleUserMenu = () => {
+  userMenuOpen.value = !userMenuOpen.value
+}
+
+const handleClickOutside = (event) => {
+  if (!event.target.closest('.relative')) {
+    userMenuOpen.value = false
+  }
+}
+
+// Menu management
+const toggleMenu = (menu) => {
+  // Your existing code
+}
+
 const createAssignment = () => {
   router.visit(`/teacher/class/${props.classId}/assignments/create`)
 }
 
-// ==================== SCHEDULE METHODS ====================
-
-// Save schedule using API calls
+// Schedule Methods
 const saveSchedule = async () => {
   saving.value = true
   
@@ -683,9 +897,6 @@ const fetchSchedules = async () => {
         // Update stats if available
         if (result.scheduleStats) {
           scheduleStats.value = result.scheduleStats
-        }
-        if (result.classInfo) {
-          classInfo.value = result.classInfo
         }
       } else {
         throw new Error(result.message || 'Failed to fetch schedules')
@@ -923,8 +1134,7 @@ const getSchedulesForDay = (date) => {
 }
 
 const getSlotTime = (date, timeSlot) => {
-  const [startTime] = timeSlot.split(' - ')
-  const [hours, minutes] = startTime.split(':')
+  const [hours, minutes] = timeSlot.split(':')
   const slotDate = new Date(date)
   slotDate.setHours(parseInt(hours), parseInt(minutes))
   return slotDate
@@ -939,18 +1149,23 @@ const nextMonth = () => {
   currentDate.value = new Date(currentDate.value.getFullYear(), currentDate.value.getMonth() + 1, 1)
 }
 
-// ==================== LIFECYCLE ====================
+// Lifecycle
 onMounted(() => {
   console.log('📅 Schedule component mounted')
-  console.log('Initial schedules:', schedules.value.length)
+  console.log('Effective teacher:', effectiveTeacher.value)
+  console.log('Class info:', classInfo.value)
+  
+  document.addEventListener('click', handleClickOutside)
   
   // Fetch initial schedules
   fetchSchedules()
 })
+
+// REMOVED onUnmounted since we don't need it for this fix
 </script>
 
 <style scoped>
-
+/* Your existing styles remain the same */
 :deep(*) {
     font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
     font-weight: 400;
@@ -959,6 +1174,7 @@ onMounted(() => {
 .custom-heading {
     font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
 }
+
 .rotate-180 {
   transform: rotate(180deg);
 }
@@ -978,12 +1194,10 @@ onMounted(() => {
   text-decoration: none;
 }
 
-/* Remove underline from all elements */
 .no-underline {
   text-decoration: none !important;
 }
 
-/* Ensure no underline appears on hover for any element */
 button:hover,
 a:hover {
   text-decoration: none !important;

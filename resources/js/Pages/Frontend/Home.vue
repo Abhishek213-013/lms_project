@@ -60,7 +60,6 @@
         </div>
       </section>
 
-      <!-- Rest of the sections remain the same -->
       <!-- Popular Courses Section -->
       <section class="courses-section py-5">
         <div class="container">
@@ -73,7 +72,15 @@
           <div class="row">
             <div class="col-md-4 mb-4" v-for="course in featuredCourses" :key="course.id">
               <div class="card course-card h-100">
-                <img :src="course.thumbnail" class="card-img-top" :alt="course.name" style="height: 200px; object-fit: cover;">
+                <!-- Updated Image Handling -->
+                <img 
+                  :src="getCourseThumbnail(course)" 
+                  :alt="getCourseTitle(course)" 
+                  class="card-img-top" 
+                  style="height: 200px; object-fit: cover;"
+                  @error="handleCourseImageError"
+                  loading="lazy"
+                />
                 <div class="card-body">
                   <h5 class="card-title">{{ getCourseTitle(course) }}</h5>
                   <p class="card-text">{{ getCourseDescription(course) }}</p>
@@ -124,8 +131,10 @@
                   <img 
                     :src="getInstructorAvatar(instructor)" 
                     :alt="instructor.name"
+                    :data-instructor-id="instructor.id"
                     class="profile-image-rectangular"
                     @error="handleImageError"
+                    loading="lazy"
                   >
                 </div>
 
@@ -333,10 +342,28 @@ const refreshIcons = () => {
 }
 
 const getInstructorAvatar = (instructor) => {
+  console.log('🖼️ Instructor image data for home page:', {
+    id: instructor.id,
+    name: instructor.name,
+    profile_picture: instructor.profile_picture,
+    avatar: instructor.avatar
+  });
+
+  // First priority: Use profile_picture from database if available
+  if (instructor.profile_picture && instructor.profile_picture !== 'null' && instructor.profile_picture !== 'NULL') {
+    const profilePicUrl = formatInstructorImageUrl(instructor.profile_picture);
+    console.log('✅ Using profile_picture from database:', profilePicUrl);
+    return profilePicUrl;
+  }
+
+  // Second priority: Use avatar field if available
   if (instructor.avatar && instructor.avatar !== '/assets/img/instructors/default.jpg') {
+    console.log('✅ Using avatar field:', instructor.avatar);
     return instructor.avatar;
   }
-  
+
+  // Fallback to default avatars only if no database image exists
+  console.log('📸 No database image found, using fallback for instructor:', instructor.id);
   const avatars = [
     '/assets/img/instructor/instructor01.png',
     '/assets/img/instructor/instructor02.png',
@@ -346,11 +373,61 @@ const getInstructorAvatar = (instructor) => {
   
   const avatarIndex = ((instructor.id || 1) - 1) % avatars.length;
   return avatars[avatarIndex];
-}
+};
+
+const formatInstructorImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  
+  console.log('🔄 Formatting instructor image path:', imagePath);
+  
+  // If it's already a full URL, return as is
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  // If it starts with storage/, remove the storage/ prefix for public access
+  if (imagePath.startsWith('storage/')) {
+    const publicPath = imagePath.replace('storage/', '');
+    return `/storage/${publicPath}`;
+  }
+  
+  // If it's a relative path, assume it's in storage
+  if (imagePath.startsWith('instructors/') || imagePath.startsWith('profiles/')) {
+    return `/storage/${imagePath}`;
+  }
+  
+  // Default case - prepend /storage/
+  return `/storage/${imagePath}`;
+};
 
 const handleImageError = (event) => {
-  event.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y3ZmFmYyIvPjx0ZXh0IHg9IjEwMCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5Y2EwYTYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIwLjM1ZW0iPuKKojwvdGV4dD48L3N2Zz4=';
-}
+  const instructorId = event.target.getAttribute('data-instructor-id');
+  console.warn(`❌ Failed to load profile picture for instructor ${instructorId}`);
+  
+  // Try different fallback strategies
+  const fallbacks = [
+    '/assets/img/instructor/instructor01.png',
+    '/assets/img/instructor/instructor02.png',
+    '/assets/img/instructor/instructor03.png',
+    '/assets/img/instructor/instructor04.png'
+  ];
+  
+  let currentFallbackIndex = 0;
+  
+  const tryNextFallback = () => {
+    if (currentFallbackIndex < fallbacks.length) {
+      event.target.src = fallbacks[currentFallbackIndex];
+      currentFallbackIndex++;
+    } else {
+      // All fallbacks failed, use a data URL placeholder
+      event.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y3ZmFmYyIvPjx0ZXh0IHg9IjEwMCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5Y2EwYTYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIwLjM1ZW0iPuKKojwvdGV4dD48L3N2Zz4=';
+      event.target.onerror = null; // Prevent infinite loop
+    }
+  };
+  
+  event.target.onerror = tryNextFallback;
+  tryNextFallback();
+};
 
 const handleHeroImageError = (event) => {
   console.error('Hero image failed to load:', event.target.src);
@@ -384,13 +461,126 @@ const preloadHeroImage = () => {
   };
 }
 
+const getCourseThumbnail = (course) => {
+  console.log('🖼️ Course image data for home page:', {
+    id: course.id,
+    name: course.name,
+    image: course.image,
+    image_url: course.image_url,
+    thumbnail: course.thumbnail,
+    thumbnail_url: course.thumbnail_url
+  });
+
+  // Use the image data from backend
+  if (course.image_url && course.image_url !== 'null' && course.image_url !== 'NULL') {
+    console.log('✅ Using image_url from backend:', course.image_url);
+    return course.image_url;
+  }
+
+  if (course.thumbnail_url && course.thumbnail_url !== 'null' && course.thumbnail_url !== 'NULL') {
+    console.log('✅ Using thumbnail_url from backend:', course.thumbnail_url);
+    return course.thumbnail_url;
+  }
+
+  if (course.image && course.image !== 'null' && course.image !== 'NULL') {
+    const imageUrl = formatImageUrl(course.image);
+    console.log('✅ Using raw image path from backend:', imageUrl);
+    return imageUrl;
+  }
+
+  if (course.thumbnail && course.thumbnail !== 'null' && course.thumbnail !== 'NULL') {
+    const thumbnailUrl = formatImageUrl(course.thumbnail);
+    console.log('✅ Using raw thumbnail path from backend:', thumbnailUrl);
+    return thumbnailUrl;
+  }
+
+  // Fallback to demo thumbnails only if no database image exists
+  console.log('📸 No database image found, using fallback for course:', course.id);
+  const courseType = course.type || 'regular';
+  
+  if (courseType === 'regular') {
+    const grade = course.grade || 1;
+    const thumbnails = [
+      '/assets/img/courses/h5_course_thumb1.jpg',
+      '/assets/img/courses/h5_course_thumb02.jpg',
+      '/assets/img/courses/h5_course_thumb03.jpg',
+      '/assets/img/courses/h5_course_thumb04.jpg'
+    ];
+    return thumbnails[(grade - 1) % thumbnails.length];
+  } else {
+    const thumbnails = {
+      'Language': '/assets/img/courses/h5_course_thumb05.jpg',
+      'Technology': '/assets/img/courses/h5_course_thumb06.jpg',
+      'Personal Development': '/assets/img/courses/h5_course_thumb07.jpg',
+      'default': '/assets/img/courses/h5_course_thumb08.jpg'
+    };
+    return thumbnails[course.category] || thumbnails.default;
+  }
+};
+
+const formatImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  
+  console.log('🔄 Formatting image path:', imagePath);
+  
+  // If it's already a full URL, return as is
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  // If it starts with storage/, remove the storage/ prefix for public access
+  if (imagePath.startsWith('storage/')) {
+    const publicPath = imagePath.replace('storage/', '');
+    return `/storage/${publicPath}`;
+  }
+  
+  // If it's a relative path, assume it's in storage
+  if (imagePath.startsWith('courses/')) {
+    return `/storage/${imagePath}`;
+  }
+  
+  // Default case - prepend /storage/
+  return `/storage/${imagePath}`;
+};
+
+const handleCourseImageError = (event) => {
+  const img = event.target;
+  
+  console.warn('❌ Course image failed to load:', img.src);
+  
+  // Try different fallback strategies
+  const fallbacks = [
+    '/assets/img/courses/h5_course_thumb01.jpg',
+    '/assets/img/courses/default-course.jpg',
+    '/assets/img/placeholder-course.jpg'
+  ];
+  
+  let currentFallbackIndex = 0;
+  
+  const tryNextFallback = () => {
+    if (currentFallbackIndex < fallbacks.length) {
+      img.src = fallbacks[currentFallbackIndex];
+      currentFallbackIndex++;
+    } else {
+      // All fallbacks failed, use a data URL placeholder
+      img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIyMCIgZmlsbD0iI2YzZjRmNiIvPjx0ZXh0IHg9IjIwMCIgeT0iMTEwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5OTk5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkNvdXJzZSBJbWFnZTwvdGV4dD48L3N2Zz4=';
+      img.onerror = null; // Prevent infinite loop
+    }
+  };
+  
+  img.onerror = tryNextFallback;
+  tryNextFallback();
+};
+
 // Methods for course data
 const getCourseTitle = (course) => {
   if (course.type === 'regular') {
+    // For regular classes: "Class 1 - Mathematics"
     const className = course.name || `${t('Class')} ${course.grade || ''}`;
     const subjectName = course.subject || t('General');
     return `${className} - ${subjectName}`;
   } else {
+    // For other courses: Use the course name directly
     return course.name || course.class_name || t('Untitled Course');
   }
 };

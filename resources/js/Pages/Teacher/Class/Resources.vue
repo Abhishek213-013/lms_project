@@ -10,9 +10,98 @@
     <!-- Main Content -->
     <div class="flex-1 ml-64 min-w-0">
       <!-- Top Navbar -->
-      <Navbar 
-        :pageTitle="`Teacher Portal - ${teacherName}`"
-      />
+      <nav class="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div class="px-6 py-4">
+          <div class="flex justify-between items-center">
+            <div class="flex items-center min-w-0">
+              <h1 class="custom-heading truncate">Resources - {{ classData.name || 'Loading...' }}</h1>
+            </div>
+            
+            <div class="flex items-center space-x-4 flex-shrink-0">
+              <!-- Search -->
+              <div class="relative hidden md:block">
+                <input 
+                  type="text" 
+                  placeholder="Search..." 
+                  class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+                >
+                <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+              </div>
+              
+
+              <!-- User Menu -->
+              <div class="relative flex-shrink-0">
+                <button 
+                  @click="toggleUserMenu"
+                  class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 min-w-0"
+                >
+                  <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    <img 
+                      v-if="teacher?.profile_picture_url" 
+                      :src="teacher.profile_picture_url" 
+                      :alt="teacher?.name"
+                      class="w-full h-full object-cover"
+                    >
+                    <span v-else class="text-white text-sm font-semibold">{{ userInitials }}</span>
+                  </div>
+                  <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </button>
+
+                <!-- User Dropdown -->
+                <div v-show="userMenuOpen" class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-20">
+                  <!-- User Info in Dropdown Header -->
+                  <div class="px-4 py-3 border-b border-gray-200">
+                    <div class="flex items-center space-x-3">
+                      <div class="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center overflow-hidden">
+                        <img 
+                          v-if="teacher?.profile_picture_url" 
+                          :src="teacher.profile_picture_url" 
+                          :alt="teacher?.name"
+                          class="w-full h-full object-cover"
+                        >
+                        <span v-else class="text-white text-sm font-semibold">{{ userInitials }}</span>
+                      </div>
+                      <div class="text-left min-w-0">
+                        <p class="text-sm font-medium text-gray-700 truncate">{{ teacher?.name || 'Teacher' }}</p>
+                        <p class="text-xs text-gray-500 capitalize truncate">Teacher</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Dropdown Menu Items -->
+                  <a href="#" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center" @click="editProfile">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    Profile
+                  </a>
+                  <a href="#" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center" @click="navigateToSettings">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    Settings
+                  </a>
+                  <div class="border-t border-gray-200 my-1"></div>
+                  <button 
+                    @click="logout"
+                    class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center"
+                  >
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                    Sign out
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
 
       <!-- Page Content -->
       <div class="p-6 max-w-full overflow-x-hidden">
@@ -257,8 +346,6 @@
                 </div>
               </div>
               
-              
-              
               <!-- Ensure borders are always visible -->
               <div class="absolute inset-0 border-2 border-gray-300 pointer-events-none rounded-lg"></div>
             </div>
@@ -420,10 +507,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { usePage, router, useForm, Link } from '@inertiajs/vue3'
+import { ref, onMounted, computed, onUnmounted } from 'vue'
+import { usePage, router, useForm } from '@inertiajs/vue3'
 import TeacherSidebar from '../../Layout/TeacherSidebar.vue'
-import Navbar from '../../Layout/Navbar.vue'
 
 // Use Inertia.js page props
 const page = usePage()
@@ -431,27 +517,52 @@ const props = defineProps({
   classId: String,
   classData: Object,
   resources: Array,
-  teacher: Object,
+  teacher: { // ADD THIS PROP
+    type: Object,
+    default: () => ({
+      name: 'Teacher',
+      id: null,
+      email: '',
+      profile_picture_url: null,
+      profile_picture: null
+    })
+  }
 })
 
-// UI State for sidebar and header
+// ==================== TEACHER DATA ====================
+// Use the teacher prop directly
+const teacher = computed(() => {
+  // Ensure profile_picture_url is set if profile_picture exists
+  if (props.teacher?.profile_picture && !props.teacher.profile_picture_url) {
+    props.teacher.profile_picture_url = `/storage/${props.teacher.profile_picture}`
+  }
+  return props.teacher || {}
+})
+
+// User initials for profile picture fallback
+const userInitials = computed(() => {
+  if (!props.teacher?.name) return 'T'
+  return props.teacher.name
+    .split(' ')
+    .map(word => word[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+})
+
+// ==================== RESOURCES STATE ====================
 const showVideoUpload = ref(false)
 const showVideoPlayer = ref(false)
 const currentVideo = ref(null)
 const uploading = ref(false)
-const videoPlayer = ref(null);
+const videoPlayer = ref(null)
 const loading = ref(!props.resources)
-let youtubePlayer = null;
-const isPlaying = ref(false);
+const userMenuOpen = ref(false)
+const isPlaying = ref(false)
 
 // Check if we're in development mode
 const isDevelopment = computed(() => {
   return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-})
-
-// Safe computed properties for teacher data
-const teacherName = computed(() => {
-  return props.teacher?.name || page.props.auth?.user?.name || 'Teacher'
 })
 
 // Use reactive refs for local state
@@ -471,12 +582,11 @@ const videoForm = useForm({
   assigned_class: props.classId || null
 })
 
-// Navigation
+// ==================== NAVIGATION METHODS ====================
 const goBack = () => {
   router.get(`/teacher/class/${props.classId}`)
 }
 
-// Sidebar and header methods
 const goBackToAdmin = () => {
   router.visit('/admin/users/other-users')
 }
@@ -489,8 +599,36 @@ const createAssignment = () => {
   }
 }
 
-// All your existing video resource methods remain the same...
-// (getVideoContent, playVideo, uploadVideoFinal, etc.)
+const navigateToSettings = () => {
+  router.visit('/teacher/settings')
+}
+
+const editProfile = () => {
+  router.visit('/teacher/profile/edit')
+}
+
+const logout = async () => {
+  try {
+    router.post('/logout')
+  } catch (error) {
+    console.error('Logout error:', error)
+  }
+}
+
+// ==================== UI METHODS ====================
+const toggleUserMenu = () => {
+  userMenuOpen.value = !userMenuOpen.value
+}
+
+const handleClickOutside = (event) => {
+  if (!event.target.closest('.relative')) {
+    userMenuOpen.value = false
+  }
+}
+
+// ==================== VIDEO RESOURCE METHODS ====================
+// (Keep all your existing video resource methods exactly as they were)
+// getVideoContent, playVideo, uploadVideoFinal, getResourceThumbnail, etc.
 
 // Debug function to check resource structure
 const debugResources = () => {
@@ -524,55 +662,6 @@ const debugResources = () => {
       console.log('   ❌ NO VIDEO CONTENT FOUND');
     }
   });
-};
-
-
-const getVideoSourceTitle = (video) => {
-  if (video.isDirectStream || video.isDirectVideo) {
-    return 'Direct Video Stream';
-  } else if (video.isEmbed) {
-    return 'YouTube Video';
-  }
-  return 'Video Source';
-};
-
-// Play/pause video
-const playPauseVideo = () => {
-  if (videoPlayer.value) {
-    if (videoPlayer.value.paused) {
-      videoPlayer.value.play();
-      isPlaying.value = true;
-    } else {
-      videoPlayer.value.pause();
-      isPlaying.value = false;
-    }
-  }
-};
-
-const extractYouTubeUrlFromDescription = (description) => {
-  if (!description) return null;
-  
-  // Look for YouTube URLs in the description
-  const youtubePatterns = [
-    /(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/,
-    /(https?:\/\/)?(www\.)?youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
-    /youtu\.be\/([a-zA-Z0-9_-]{11})/
-  ];
-  
-  for (const pattern of youtubePatterns) {
-    const match = description.match(pattern);
-    if (match) {
-      let url = match[0];
-      // Ensure it has http protocol
-      if (!url.startsWith('http')) {
-        url = 'https://' + url;
-      }
-      return url;
-    }
-  }
-  
-  return null;
 };
 
 // Enhanced getVideoContent function
@@ -779,86 +868,11 @@ const getYouTubeThumbnail = (url) => {
   return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
 };
 
-// Generate clean embed URL that hides YouTube branding
-const generateCleanEmbedUrl = (videoId) => {
-  const params = new URLSearchParams({
-    'autoplay': '1',
-    'rel': '0',
-    'modestbranding': '1',
-    'controls': '0',
-    'showinfo': '0',
-    'iv_load_policy': '3',
-    'fs': '1',
-    'disablekb': '1',
-    'playsinline': '1',
-    'enablejsapi': '1',
-    'origin': window.location.origin,
-    'widget_referrer': window.location.origin,
-    'cc_load_policy': '0',
-    'color': 'white'
-  });
-  
-  return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
-};
-
-// Emergency fallback mapping for resources without proper URLs
-const emergencyVideoMapping = {
-  'Second Intro': 'https://www.youtube.com/watch?v=YOUR_ACTUAL_VIDEO_ID'
-  // Add more mappings as needed
-};
-
-// Enhanced URL validation in upload form
-const validateAndNormalizeYouTubeUrl = (url) => {
-  if (!url) return null;
-  
-  let normalizedUrl = url.trim();
-  
-  // Ensure URL has proper protocol
-  if (!normalizedUrl.startsWith('http')) {
-    normalizedUrl = 'https://' + normalizedUrl;
-  }
-  
-  // Validate it's a YouTube URL
-  if (!isYouTubeUrl(normalizedUrl)) {
-    // Try to extract YouTube URL from text
-    const extractedUrl = extractYouTubeUrlFromDescription(normalizedUrl);
-    if (extractedUrl) {
-      return extractedUrl;
-    }
-    return null;
-  }
-  
-  return normalizedUrl;
-};
-
-// Enhanced video content extraction with fallbacks
-const getVideoContentWithFallback = (resource) => {
-  // First try normal extraction
-  const normalContent = getVideoContent(resource);
-  if (normalContent) return normalContent;
-  
-  // Then try emergency mapping
-  if (emergencyVideoMapping[resource.title]) {
-    console.log('🚨 Using emergency mapping for:', resource.title);
-    return emergencyVideoMapping[resource.title];
-  }
-  
-  // Try to extract from description
-  const urlFromDescription = extractYouTubeUrlFromDescription(resource.description);
-  if (urlFromDescription) {
-    console.log('📝 Found URL in description:', urlFromDescription);
-    return urlFromDescription;
-  }
-  
-  return null;
-};
-
 // Enhanced playVideo function with better error handling
 const playVideo = async (resource) => {
   console.log('🎬 [playVideo] Attempting to play video:', resource.title);
-  debugVideoResource(resource);
   
-  const videoContent = getVideoContentWithFallback(resource);
+  const videoContent = getVideoContent(resource);
   
   if (!videoContent) {
     alert(`No video content found for: ${resource.title}`);
@@ -871,30 +885,14 @@ const playVideo = async (resource) => {
     if (videoId) {
       console.log('✅ Playing YouTube video with ID:', videoId);
       
-      // Try to get direct video stream first
-      const directVideoUrl = await getDirectVideoStream(videoId);
-      
-      if (directVideoUrl) {
-        console.log('🎯 Using direct video stream');
-        // Use direct video stream (pure video, no YouTube UI)
-        currentVideo.value = {
-          ...resource,
-          directVideoUrl: directVideoUrl,
-          videoId: videoId,
-          thumbnail: getYouTubeThumbnail(videoContent),
-          isDirectStream: true
-        };
-      } else {
-        console.log('🔄 Using ultra-clean embed as fallback');
-        // Fallback to ultra-clean embed
-        currentVideo.value = {
-          ...resource,
-          ultraCleanUrl: generateUltraCleanEmbedUrl(videoId),
-          videoId: videoId,
-          originalUrl: videoContent,
-          isEmbed: true
-        };
-      }
+      // Generate ultra-clean embed URL
+      currentVideo.value = {
+        ...resource,
+        ultraCleanUrl: generateUltraCleanEmbedUrl(videoId),
+        videoId: videoId,
+        originalUrl: videoContent,
+        isEmbed: true
+      };
       
       showVideoPlayer.value = true;
       
@@ -913,81 +911,6 @@ const playVideo = async (resource) => {
   }
 };
 
-// Updated method to get direct video stream
-const getDirectVideoStream = async (videoId) => {
-  try {
-    console.log('🔍 Getting direct video stream for:', videoId);
-    
-    // Method 1: Try our new backend API first
-    try {
-      const response = await fetch(`/api/youtube-direct-stream?videoId=${videoId}`);
-      const data = await response.json();
-      
-      if (data.success && data.directUrl) {
-        console.log('✅ Got direct video stream from API:', data.directUrl);
-        return data.directUrl;
-      }
-    } catch (apiError) {
-      console.log('❌ API method failed, trying proxy...');
-    }
-    
-    // Method 2: Use our proxy as fallback
-    const proxyUrl = `/api/video-proxy/${videoId}`;
-    console.log('🔄 Using proxy URL:', proxyUrl);
-    
-    // Test if proxy URL is accessible
-    try {
-      const testResponse = await fetch(proxyUrl, { method: 'HEAD' });
-      if (testResponse.ok) {
-        console.log('✅ Proxy URL is accessible');
-        return proxyUrl;
-      }
-    } catch (proxyError) {
-      console.log('❌ Proxy URL not accessible');
-    }
-    
-    // Method 3: Fallback to ultra-clean embed
-    console.log('🔄 Falling back to ultra-clean embed');
-    return null;
-    
-  } catch (error) {
-    console.error('❌ Error getting direct video stream:', error);
-    return null;
-  }
-};
-
-// Helper function to open URLs in new tab
-const openInNewTab = (url) => {
-  window.open(url, '_blank', 'noopener,noreferrer');
-};
-
-const getYouTubeDirectStream = async (videoId) => {
-  try {
-    // This would call your backend service that fetches direct video URLs
-    const response = await fetch(`/api/youtube-direct-stream?videoId=${videoId}`);
-    const data = await response.json();
-    
-    if (data.success && data.directUrl) {
-      return data.directUrl;
-    }
-    return null;
-  } catch (error) {
-    console.log('External service failed, trying proxy...');
-    return null;
-  }
-};
-
-// Method 2: Use backend proxy to serve video
-const getVideoThroughProxy = async (videoId) => {
-  try {
-    // Your backend would handle fetching and serving the video
-    return `/api/video-proxy/${videoId}`;
-  } catch (error) {
-    console.log('Proxy method failed');
-    return null;
-  }
-};
-
 // Generate ultra-clean YouTube embed as fallback
 const generateUltraCleanEmbedUrl = (videoId) => {
   // Maximum parameters to hide everything
@@ -998,7 +921,6 @@ const generateUltraCleanEmbedUrl = (videoId) => {
     'controls': '0', // No controls
     'showinfo': '0',
     'iv_load_policy': '3',
-    //'fs': '0', // No fullscreen
     'disablekb': '1',
     'playsinline': '1',
     'enablejsapi': '1',
@@ -1016,26 +938,22 @@ const generateUltraCleanEmbedUrl = (videoId) => {
   return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
 };
 
-const debugVideoResource = (resource) => {
-  console.log('🔍 [DEBUG] Video Resource Analysis:');
-  console.log('Full resource data:', resource);
-  
-  // Check all possible URL fields
-  const urlFields = ['content', 'file_path', 'url', 'video_url', 'link', 'source'];
-  urlFields.forEach(field => {
-    if (resource[field]) {
-      console.log(`📍 ${field}:`, resource[field]);
+// Play/pause video
+const playPauseVideo = () => {
+  if (videoPlayer.value) {
+    if (videoPlayer.value.paused) {
+      videoPlayer.value.play();
+      isPlaying.value = true;
+    } else {
+      videoPlayer.value.pause();
+      isPlaying.value = false;
     }
-  });
-  
-  // Try to extract video content
-  const videoContent = getVideoContent(resource);
-  console.log('🎬 Extracted video content:', videoContent);
-  
-  if (videoContent) {
-    console.log('🔍 Is YouTube URL:', isYouTubeUrl(videoContent));
-    console.log('🆔 YouTube Video ID:', getYouTubeVideoId(videoContent));
   }
+};
+
+// Helper function to open URLs in new tab
+const openInNewTab = (url) => {
+  window.open(url, '_blank', 'noopener,noreferrer');
 };
 
 const closeVideoPlayer = () => {
@@ -1182,7 +1100,7 @@ const fetchResources = async () => {
 
 // Share resource
 const shareResource = async (resource) => {
-  const videoContent = getVideoContentWithFallback(resource)
+  const videoContent = getVideoContent(resource)
   const shareData = {
     title: resource.title,
     text: resource.description,
@@ -1283,29 +1201,21 @@ const formatDate = (dateString) => {
   })
 }
 
-// Initialize
-onMounted(() => {
-  const tag = document.createElement('script');
-  tag.src = "https://www.youtube.com/iframe_api";
-  document.body.appendChild(tag);
+// ==================== LIFECYCLE ====================
+onMounted(async () => {
+  document.addEventListener('click', handleClickOutside)
+  
+  // Ensure teacher object has profile_picture_url
+  if (props.teacher?.profile_picture && !props.teacher.profile_picture_url) {
+    props.teacher.profile_picture_url = `/storage/${props.teacher.profile_picture}`
+  }
+  
+  await fetchResources()
+})
 
-  window.onYouTubeIframeAPIReady = () => {
-    new YT.Player('player', {
-      videoId: currentVideo.videoId,
-      playerVars: {
-        autoplay: 1,
-        controls: 0,
-        rel: 0,
-        fs: 0,
-        modestbranding: 1,
-        disablekb: 1,
-        iv_load_policy: 3,
-        playsinline: 1,
-      },
-    });
-  };
-});
-
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <style scoped>

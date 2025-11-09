@@ -26,15 +26,11 @@
           <div class="relative">
             <button 
               @click="toggleUserMenu"
-              class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100"
+              class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100"
               style="font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol' !important;"
             >
               <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
                 <span class="text-white text-sm font-semibold">{{ userInitials }}</span>
-              </div>
-              <div class="text-left">
-                <p class="text-sm font-medium text-gray-700">{{ user?.name || 'Admin User' }}</p>
-                <p class="text-xs text-gray-500 capitalize">{{ user?.role || 'Administrator' }}</p>
               </div>
               <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -42,7 +38,21 @@
             </button>
 
             <!-- User Dropdown -->
-            <div v-show="userMenuOpen" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20" style="font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol' !important;">
+            <div v-show="userMenuOpen" class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-20" style="font-family: 'Nunito Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol' !important;">
+              <!-- User Info in Dropdown Header -->
+              <div class="px-4 py-3 border-b border-gray-200">
+                <div class="flex items-center space-x-3">
+                  <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                    <span class="text-white text-sm font-semibold">{{ userInitials }}</span>
+                  </div>
+                  <div class="text-left">
+                    <p class="text-sm font-medium text-gray-700">{{ user?.name || 'Admin User' }}</p>
+                    <p class="text-xs text-gray-500 capitalize">{{ user?.role || 'Administrator' }}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Dropdown Menu Items -->
               <a href="#" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>

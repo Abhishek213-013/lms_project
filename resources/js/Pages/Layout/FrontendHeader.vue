@@ -134,7 +134,6 @@
                     <div class="profile-wrapper">
                       <button class="profile-trigger" @click="toggleProfileDropdown">
                         <i class="fas fa-user-circle"></i>
-                        {{ $page.props.auth.user.name }}
                         <i class="fas fa-chevron-down" :class="{ 'rotate': profileOpen }"></i>
                       </button>
                       
@@ -1294,7 +1293,7 @@ const vClickOutside = {
   align-items: center;
   gap: 6px;
   background: var(--bg-secondary);
-  padding: 6px 12px;
+  padding: 8px 12px;
   border-radius: 16px;
   border: none;
   color: var(--text-primary);
@@ -1303,9 +1302,6 @@ const vClickOutside = {
   cursor: pointer;
   transition: all 0.3s ease;
   white-space: nowrap;
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
   outline: none !important;
 }
 
@@ -1314,13 +1310,14 @@ const vClickOutside = {
 }
 
 .profile-trigger i.fa-user-circle {
-  font-size: 16px;
+  font-size: 18px;
   color: var(--primary-color);
 }
 
 .profile-trigger .fa-chevron-down {
   font-size: 11px;
   transition: transform 0.3s ease;
+  margin-left: 2px;
 }
 
 .rotate {
@@ -1953,9 +1950,7 @@ const vClickOutside = {
   }
   
   .profile-trigger {
-    max-width: 140px;
-    font-size: 13px;
-    padding: 5px 10px;
+    padding: 6px 10px;
   }
   
   .mobile-controls {
@@ -1982,15 +1977,9 @@ const vClickOutside = {
   }
 }
 
-/* Truncate long names */
-.profile-trigger {
-  max-width: 160px;
-}
-
 @media (max-width: 480px) {
   .profile-trigger {
-    max-width: 120px;
-    font-size: 12px;
+    padding: 5px 8px;
   }
   
   .logo-image {

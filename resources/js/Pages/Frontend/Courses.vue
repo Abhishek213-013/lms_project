@@ -48,6 +48,26 @@
                 <option value="grade">{{ t('Sort by Grade') }}</option>
                 <option value="studentCount">{{ t('Sort by Popularity') }}</option>
               </select>
+
+              <select v-model="perPage" class="filter-select" @change="updatePageSize">
+                <option value="12">{{ t('12 per page') }}</option>
+                <option value="24">{{ t('24 per page') }}</option>
+                <option value="48">{{ t('48 per page') }}</option>
+                <option value="96">{{ t('96 per page') }}</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Courses Count and Pagination Info -->
+          <div class="pagination-info-section">
+            <div class="pagination-info">
+              <span class="results-count">
+                {{ t('Showing') }} 
+                <strong>{{ pagination.from }}-{{ pagination.to }}</strong> 
+                {{ t('of') }} 
+                <strong>{{ pagination.total }}</strong> 
+                {{ t('courses') }}
+              </span>
             </div>
           </div>
 
@@ -56,7 +76,7 @@
             <div class="courses-grid">
               <div 
                 class="course-card" 
-                v-for="course in filteredCourses" 
+                v-for="course in coursesData" 
                 :key="course.id"
                 @click="viewCourseDetails(course)"
               >
@@ -111,22 +131,101 @@
             </div>
           </div>
 
-          <!-- Pagination Section -->
-          <div v-if="courses.links && courses.links.length > 3" class="pagination-section">
-            <div class="pagination-links">
-              <template v-for="link in courses.links">
+          <!-- Enhanced Pagination Section -->
+          <div v-if="showPagination" class="pagination-section">
+            <div class="pagination-container">
+              <!-- Previous Button -->
+              <button
+                @click="goToPage(pagination.current_page - 1)"
+                :disabled="!pagination.prev_page_url"
+                class="pagination-btn pagination-prev"
+                :class="{ 'disabled': !pagination.prev_page_url }"
+              >
+                <i class="fas fa-chevron-left"></i>
+                {{ t('Previous') }}
+              </button>
+
+              <!-- Page Numbers -->
+              <div class="pagination-numbers">
+                <!-- First Page -->
                 <button
-                  v-if="link.url"
-                  :key="link.label"
-                  @click="handlePagination(link.url)"
-                  class="pagination-link"
-                  :class="{ 
-                    'active': link.active,
-                    'disabled': !link.url
-                  }"
-                  v-html="link.label"
-                ></button>
-              </template>
+                  v-if="pagination.current_page > 2"
+                  @click="goToPage(1)"
+                  class="pagination-number"
+                  :class="{ 'active': pagination.current_page === 1 }"
+                >
+                  1
+                </button>
+
+                <!-- Ellipsis before current page if needed -->
+                <span 
+                  v-if="pagination.current_page > 3" 
+                  class="pagination-ellipsis"
+                >
+                  ...
+                </span>
+
+                <!-- Pages around current page -->
+                <template v-for="page in visiblePages" :key="page">
+                  <button
+                    v-if="page > 0 && page <= pagination.last_page"
+                    @click="goToPage(page)"
+                    class="pagination-number"
+                    :class="{ 'active': page === pagination.current_page }"
+                  >
+                    {{ page }}
+                  </button>
+                </template>
+
+                <!-- Ellipsis after current page if needed -->
+                <span 
+                  v-if="pagination.current_page < pagination.last_page - 2" 
+                  class="pagination-ellipsis"
+                >
+                  ...
+                </span>
+
+                <!-- Last Page -->
+                <button
+                  v-if="pagination.current_page < pagination.last_page - 1"
+                  @click="goToPage(pagination.last_page)"
+                  class="pagination-number"
+                  :class="{ 'active': pagination.current_page === pagination.last_page }"
+                >
+                  {{ pagination.last_page }}
+                </button>
+              </div>
+
+              <!-- Next Button -->
+              <button
+                @click="goToPage(pagination.current_page + 1)"
+                :disabled="!pagination.next_page_url"
+                class="pagination-btn pagination-next"
+                :class="{ 'disabled': !pagination.next_page_url }"
+              >
+                {{ t('Next') }}
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+
+            <!-- Page Jump -->
+            <div class="page-jump-section">
+              <span>{{ t('Go to page') }}:</span>
+              <input
+                type="number"
+                v-model="pageJump"
+                :min="1"
+                :max="pagination.last_page"
+                class="page-jump-input"
+                @keyup.enter="goToPage(parseInt(pageJump))"
+              >
+              <button 
+                @click="goToPage(parseInt(pageJump))"
+                class="page-jump-btn"
+                :disabled="!pageJump || pageJump < 1 || pageJump > pagination.last_page"
+              >
+                {{ t('Go') }}
+              </button>
             </div>
           </div>
 
@@ -194,6 +293,8 @@ const courseType = ref(props.filters.type || '');
 const sortBy = ref(props.filters.sort || 'name');
 const currentTheme = ref('light');
 const imageLoading = ref({}); // Track image loading states
+const perPage = ref(props.filters.per_page || 12); // Items per page
+const pageJump = ref(''); // For page jump input
 
 // Add icon render key to prevent disappearing icons
 const iconRenderKey = ref(0);
@@ -229,16 +330,109 @@ const coursesData = computed(() => {
   return data;
 });
 
+// Enhanced Pagination Computed Properties
+const pagination = computed(() => {
+  if (Array.isArray(props.courses)) {
+    // If courses is an array (no pagination), return default values
+    return {
+      current_page: 1,
+      last_page: 1,
+      per_page: perPage.value,
+      from: 1,
+      to: props.courses.length,
+      total: props.courses.length,
+      prev_page_url: null,
+      next_page_url: null,
+      path: window.location.pathname
+    };
+  }
+
+  // Handle paginated response
+  const paginationData = props.courses;
+  return {
+    current_page: paginationData.current_page || 1,
+    last_page: paginationData.last_page || 1,
+    per_page: paginationData.per_page || perPage.value,
+    from: paginationData.from || 1,
+    to: paginationData.to || paginationData.data?.length || 0,
+    total: paginationData.total || 0,
+    prev_page_url: paginationData.prev_page_url || null,
+    next_page_url: paginationData.next_page_url || null,
+    path: paginationData.path || window.location.pathname
+  };
+});
+
+// Compute visible pages for pagination
+const visiblePages = computed(() => {
+  const current = pagination.value.current_page;
+  const last = pagination.value.last_page;
+  const delta = 2; // Number of pages to show around current page
+  const range = [];
+  const rangeWithDots = [];
+
+  for (let i = Math.max(2, current - delta); i <= Math.min(last - 1, current + delta); i++) {
+    range.push(i);
+  }
+
+  if (current - delta > 2) {
+    rangeWithDots.push(1);
+    if (current - delta > 3) {
+      rangeWithDots.push('...');
+    }
+  } else {
+    rangeWithDots.push(1);
+  }
+
+  rangeWithDots.push(...range);
+
+  if (current + delta < last - 1) {
+    if (current + delta < last - 2) {
+      rangeWithDots.push('...');
+    }
+    rangeWithDots.push(last);
+  } else if (last > 1) {
+    rangeWithDots.push(last);
+  }
+
+  return rangeWithDots.filter(page => page !== '...');
+});
+
+const showPagination = computed(() => {
+  return pagination.value.total > pagination.value.per_page;
+});
+
+// Pagination Methods
+const goToPage = (page) => {
+  if (page < 1 || page > pagination.value.last_page || page === pagination.value.current_page) return;
+  
+  const currentParams = new URLSearchParams(window.location.search);
+  currentParams.set('page', page);
+  
+  // Preserve existing filters
+  if (searchQuery.value) currentParams.set('search', searchQuery.value);
+  if (courseType.value) currentParams.set('type', courseType.value);
+  if (sortBy.value !== 'name') currentParams.set('sort', sortBy.value);
+  if (perPage.value !== 12) currentParams.set('per_page', perPage.value);
+  
+  router.visit(`${window.location.pathname}?${currentParams.toString()}`);
+};
+
+const updatePageSize = () => {
+  const currentParams = new URLSearchParams(window.location.search);
+  currentParams.set('per_page', perPage.value);
+  currentParams.delete('page'); // Go to first page when changing page size
+  
+  // Preserve existing filters
+  if (searchQuery.value) currentParams.set('search', searchQuery.value);
+  if (courseType.value) currentParams.set('type', courseType.value);
+  if (sortBy.value !== 'name') currentParams.set('sort', sortBy.value);
+  
+  router.visit(`${window.location.pathname}?${currentParams.toString()}`);
+};
+
 // Refresh courses
 const refreshCourses = () => {
   router.reload({ only: ['courses'] });
-};
-
-// Handle pagination
-const handlePagination = (url) => {
-  if (url) {
-    router.visit(url);
-  }
 };
 
 // Get course title in "Class Name - Subject Name" format
@@ -265,57 +459,60 @@ const getStatusText = (status) => {
   return t(status.charAt(0).toUpperCase() + status.slice(1));
 };
 
-// Computed filtered courses
-const filteredCourses = computed(() => {
-  let filtered = coursesData.value;
-
+// Search and Filter Methods
+const searchCourses = () => {
+  const currentParams = new URLSearchParams(window.location.search);
+  
   if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    filtered = filtered.filter(course => {
-      const courseName = course.name || course.class_name || '';
-      const courseDescription = course.description || '';
-      const courseCategory = course.category || '';
-      const courseSubject = course.subject || '';
-      
-      return courseName.toLowerCase().includes(query) ||
-             courseDescription.toLowerCase().includes(query) ||
-             courseCategory.toLowerCase().includes(query) ||
-             courseSubject.toLowerCase().includes(query);
-    });
+    currentParams.set('search', searchQuery.value);
+  } else {
+    currentParams.delete('search');
   }
+  
+  currentParams.delete('page'); // Reset to first page when searching
+  
+  router.visit(`${window.location.pathname}?${currentParams.toString()}`);
+};
 
+const filterCourses = () => {
+  const currentParams = new URLSearchParams(window.location.search);
+  
   if (courseType.value) {
-    filtered = filtered.filter(course => {
-      const courseType = course.type || 'regular';
-      return courseType === courseType.value;
-    });
+    currentParams.set('type', courseType.value);
+  } else {
+    currentParams.delete('type');
   }
+  
+  currentParams.delete('page'); // Reset to first page when filtering
+  
+  router.visit(`${window.location.pathname}?${currentParams.toString()}`);
+};
 
-  switch (sortBy.value) {
-    case 'name':
-      filtered.sort((a, b) => {
-        const nameA = getCourseTitle(a);
-        const nameB = getCourseTitle(b);
-        return nameA.localeCompare(nameB);
-      });
-      break;
-    case 'grade':
-      filtered.sort((a, b) => (a.grade || 0) - (b.grade || 0));
-      break;
-    case 'studentCount':
-      filtered.sort((a, b) => {
-        const countA = a.student_count || a.enrollment_count || a.studentCount || 0;
-        const countB = b.student_count || b.enrollment_count || b.studentCount || 0;
-        return countB - countA;
-      });
-      break;
+const sortCourses = () => {
+  const currentParams = new URLSearchParams(window.location.search);
+  
+  if (sortBy.value !== 'name') {
+    currentParams.set('sort', sortBy.value);
+  } else {
+    currentParams.delete('sort');
   }
+  
+  currentParams.delete('page'); // Reset to first page when sorting
+  
+  router.visit(`${window.location.pathname}?${currentParams.toString()}`);
+};
 
-  return filtered;
-});
+const clearFilters = () => {
+  searchQuery.value = '';
+  courseType.value = '';
+  sortBy.value = 'name';
+  perPage.value = 12;
+  
+  // Clear all filters and go to first page
+  router.visit(window.location.pathname);
+};
 
-// Methods
-// In your Vue component - update the getCourseThumbnail function
+// Image handling methods
 const getCourseThumbnail = (course) => {
   console.log('🖼️ Course image data for frontend:', {
     id: course.id,
@@ -373,38 +570,6 @@ const getCourseThumbnail = (course) => {
   }
 };
 
-const debugCoursesData = computed(() => {
-  console.log('🔍 DEBUG: Courses data received:', props.courses);
-  
-  if (Array.isArray(props.courses)) {
-    console.log('📦 Courses data (array):', props.courses);
-    return props.courses.map(course => ({
-      id: course.id,
-      name: course.name,
-      subject: course.subject,
-      image: course.image,
-      thumbnail: course.thumbnail,
-      type: course.type,
-      grade: course.grade
-    }));
-  } else if (props.courses && props.courses.data) {
-    console.log('📦 Courses data (paginated):', props.courses.data);
-    return props.courses.data.map(course => ({
-      id: course.id,
-      name: course.name,
-      subject: course.subject,
-      image: course.image,
-      thumbnail: course.thumbnail,
-      type: course.type,
-      grade: course.grade
-    }));
-  }
-  
-  console.warn('📦 No courses data found');
-  return [];
-});
-
-// 🔥 ADD: Helper function to format image URLs properly
 const formatImageUrl = (imagePath) => {
   if (!imagePath) return null;
   
@@ -516,24 +681,6 @@ const getCourseCategory = (course) => {
   }
 };
 
-const searchCourses = () => {
-  console.log('🔍 Searching for:', searchQuery.value);
-};
-
-const filterCourses = () => {
-  console.log('🎯 Filtering by type:', courseType.value);
-};
-
-const sortCourses = () => {
-  console.log('📊 Sorting by:', sortBy.value);
-};
-
-const clearFilters = () => {
-  searchQuery.value = '';
-  courseType.value = '';
-  sortBy.value = 'name';
-};
-
 const viewCourseDetails = (course) => {
   const courseId = course.id || course.course_id;
   if (!courseId) {
@@ -633,7 +780,7 @@ onUnmounted(() => {
   background: var(--bg-secondary);
   padding: 32px;
   border-radius: 16px;
-  margin-bottom: 60px;
+  margin-bottom: 40px;
   border: 1px solid var(--border-color);
   transition: all 0.3s ease;
 }
@@ -719,6 +866,32 @@ onUnmounted(() => {
 .filter-select:focus {
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 20%, transparent);
+}
+
+/* ==================== */
+/* PAGINATION INFO SECTION */
+/* ==================== */
+.pagination-info-section {
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.pagination-info {
+  background: var(--bg-secondary);
+  padding: 16px 24px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  display: inline-block;
+}
+
+.results-count {
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.results-count strong {
+  color: var(--text-primary);
 }
 
 /* ==================== */
@@ -829,7 +1002,6 @@ onUnmounted(() => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  /* Standard line-clamp property */
   line-clamp: 2;
 }
 
@@ -843,7 +1015,6 @@ onUnmounted(() => {
   -webkit-box-orient: vertical;
   overflow: hidden;
   min-height: 44px;
-  /* Standard line-clamp property */
   line-clamp: 2;
 }
 
@@ -940,28 +1111,66 @@ onUnmounted(() => {
 }
 
 /* ==================== */
-/* PAGINATION SECTION */
+/* ENHANCED PAGINATION SECTION */
 /* ==================== */
 .pagination-section {
   padding: 40px 0;
   border-top: 1px solid var(--border-color);
   margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
   transition: border-color 0.3s ease;
 }
 
-.pagination-links {
+.pagination-container {
   display: flex;
+  align-items: center;
   gap: 8px;
-  justify-content: center;
-  flex-wrap: wrap;
 }
 
-.pagination-link {
-  padding: 12px 18px;
+.pagination-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
   border: 2px solid var(--border-color);
   background: var(--card-bg);
   color: var(--text-primary);
   border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  min-width: 100px;
+}
+
+.pagination-btn:hover:not(.disabled) {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+}
+
+.pagination-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--bg-tertiary);
+}
+
+.pagination-numbers {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.pagination-number {
+  padding: 12px 16px;
+  border: 2px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s ease;
   font-weight: 600;
@@ -971,23 +1180,68 @@ onUnmounted(() => {
   justify-content: center;
 }
 
-.pagination-link:hover:not(.disabled) {
+.pagination-number:hover:not(.active) {
   background: var(--primary-color);
   color: white;
   border-color: var(--primary-color);
   transform: translateY(-2px);
 }
 
-.pagination-link.active {
+.pagination-number.active {
   background: var(--primary-color);
   color: white;
   border-color: var(--primary-color);
 }
 
-.pagination-link.disabled {
+.pagination-ellipsis {
+  padding: 12px 8px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Page Jump Section */
+.page-jump-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.page-jump-input {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  width: 60px;
+  text-align: center;
+  outline: none;
+}
+
+.page-jump-input:focus {
+  border-color: var(--primary-color);
+}
+
+.page-jump-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--primary-color);
+  background: var(--primary-color);
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+}
+
+.page-jump-btn:hover:not(:disabled) {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+.page-jump-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background: var(--bg-tertiary);
 }
 
 /* ==================== */
@@ -1170,6 +1424,27 @@ onUnmounted(() => {
     padding: 24px;
   }
   
+  .pagination-section {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .pagination-container {
+    order: 2;
+  }
+  
+  .page-jump-section {
+    order: 1;
+  }
+  
+  .pagination-numbers {
+    display: none; /* Hide page numbers on mobile, show only prev/next */
+  }
+  
+  .pagination-btn {
+    min-width: 120px;
+  }
+  
   .action-buttons {
     flex-direction: column;
     align-items: center;
@@ -1180,15 +1455,6 @@ onUnmounted(() => {
     width: 100%;
     max-width: 300px;
     justify-content: center;
-  }
-  
-  .pagination-links {
-    gap: 6px;
-  }
-  
-  .pagination-link {
-    padding: 10px 14px;
-    min-width: 42px;
   }
 }
 
@@ -1232,6 +1498,25 @@ onUnmounted(() => {
     font-size: 1.125rem;
   }
   
+  .pagination-btn {
+    padding: 10px 16px;
+    min-width: 100px;
+    font-size: 14px;
+  }
+  
+  .page-jump-section {
+    font-size: 12px;
+  }
+  
+  .page-jump-input {
+    padding: 6px 10px;
+    width: 50px;
+  }
+  
+  .page-jump-btn {
+    padding: 6px 12px;
+  }
+  
   .btn {
     padding: 14px 20px;
     min-height: 50px;
@@ -1266,7 +1551,10 @@ onUnmounted(() => {
 .search-input:focus,
 .filter-select:focus,
 .btn:focus,
-.pagination-link:focus {
+.pagination-btn:focus,
+.pagination-number:focus,
+.page-jump-input:focus,
+.page-jump-btn:focus {
   outline: 3px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
   outline-offset: 2px;
 }
@@ -1280,14 +1568,16 @@ onUnmounted(() => {
   .search-input-group,
   .btn,
   .course-thumb img,
-  .pagination-link {
+  .pagination-btn,
+  .pagination-number {
     animation: none;
     transition: none;
   }
   
   .course-card:hover,
   .btn:hover,
-  .pagination-link:hover {
+  .pagination-btn:hover,
+  .pagination-number:hover {
     transform: none;
   }
   
@@ -1329,7 +1619,7 @@ onUnmounted(() => {
 }
 
 /* Improve contrast for disabled states in dark mode */
-.dark-theme .pagination-link.disabled {
+.dark-theme .pagination-btn.disabled {
   background: var(--bg-tertiary);
   color: var(--text-muted);
 }

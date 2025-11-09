@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50 flex transition-colors duration-200" :class="{ 'dark bg-gray-900': isDark }">
+  <div class="min-h-screen bg-gray-50 flex">
     <!-- Sidebar -->
     <TeacherSidebar 
       @showUploadModal="showUploadModal = true"
@@ -8,12 +8,101 @@
     />
 
     <!-- Main Content -->
-    <div class="flex-1 ml-64 min-w-0 transition-all duration-200">
+    <div class="flex-1 ml-64 min-w-0">
       <!-- Top Navbar -->
-      <Navbar 
-        :pageTitle="`Assignments - ${classData.name}`"
-        @toggleTheme="toggleTheme"
-      />
+      <nav class="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div class="px-6 py-4">
+          <div class="flex justify-between items-center">
+            <div class="flex items-center min-w-0">
+              <h1 class="custom-heading truncate">Assignments - {{ classData.name || 'Loading...' }}</h1>
+            </div>
+            
+            <div class="flex items-center space-x-4 flex-shrink-0">
+              <!-- Search -->
+              <div class="relative hidden md:block">
+                <input 
+                  type="text" 
+                  placeholder="Search..." 
+                  class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+                >
+                <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+              </div>
+              
+
+              <!-- User Menu -->
+              <div class="relative flex-shrink-0">
+                <button 
+                  @click="toggleUserMenu"
+                  class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 min-w-0"
+                >
+                  <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    <img 
+                      v-if="teacher?.profile_picture_url" 
+                      :src="teacher.profile_picture_url" 
+                      :alt="teacher?.name"
+                      class="w-full h-full object-cover"
+                    >
+                    <span v-else class="text-white text-sm font-semibold">{{ userInitials }}</span>
+                  </div>
+                  <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                  </svg>
+                </button>
+
+                <!-- User Dropdown -->
+                <div v-show="userMenuOpen" class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-20">
+                  <!-- User Info in Dropdown Header -->
+                  <div class="px-4 py-3 border-b border-gray-200">
+                    <div class="flex items-center space-x-3">
+                      <div class="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center overflow-hidden">
+                        <img 
+                          v-if="teacher?.profile_picture_url" 
+                          :src="teacher.profile_picture_url" 
+                          :alt="teacher?.name"
+                          class="w-full h-full object-cover"
+                        >
+                        <span v-else class="text-white text-sm font-semibold">{{ userInitials }}</span>
+                      </div>
+                      <div class="text-left min-w-0">
+                        <p class="text-sm font-medium text-gray-700 truncate">{{ teacher?.name || 'Teacher' }}</p>
+                        <p class="text-xs text-gray-500 capitalize truncate">Teacher</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Dropdown Menu Items -->
+                  <a href="#" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center" @click="editProfile">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    Profile
+                  </a>
+                  <a href="#" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center" @click="navigateToSettings">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    Settings
+                  </a>
+                  <div class="border-t border-gray-200 my-1"></div>
+                  <button 
+                    @click="logout"
+                    class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center"
+                  >
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                    Sign out
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+
 
       <!-- Page Content -->
       <div class="p-6 max-w-full overflow-x-hidden">
@@ -157,23 +246,23 @@
             <form @submit.prevent="saveAssignment" class="p-6 space-y-4">
               <!-- Assignment Title -->
               <div>
-                <label class="block text-sm font-medium text-black dark:text-black mb-2">Assignment Title *</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Assignment Title *</label>
                 <input 
                   v-model="assignmentForm.title"
                   type="text" 
                   required
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-black dark:text-black transition-colors duration-200"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors duration-200"
                   placeholder="Enter assignment title"
                 >
               </div>
 
               <!-- Assignment Description -->
               <div>
-                <label class="block text-sm font-medium text-black dark:text-black mb-2">Instructions</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Instructions</label>
                 <textarea 
                   v-model="assignmentForm.description"
                   rows="4"
-                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-black transition-colors duration-200"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors duration-200"
                   placeholder="Provide instructions for the assignment..."
                 ></textarea>
               </div>
@@ -181,21 +270,21 @@
               <!-- Due Date and Points -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-black dark:text-gray-300 mb-2">Due Date *</label>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Due Date *</label>
                   <input 
                     v-model="assignmentForm.due_date"
                     type="datetime-local" 
                     required
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-black transition-colors duration-200"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors duration-200"
                   >
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-black mb-2">Points</label>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Points</label>
                   <input 
                     v-model="assignmentForm.points"
                     type="number" 
                     min="0"
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-black transition-colors duration-200"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors duration-200"
                     placeholder="100"
                   >
                 </div>
@@ -278,13 +367,32 @@ import { ref, onMounted, computed, watch, onUnmounted } from 'vue'
 import { router, Link } from '@inertiajs/vue3'
 import apiClient from '../../../api/client'
 import TeacherSidebar from '../../Layout/TeacherSidebar.vue'
-import Navbar from '../../Layout/Navbar.vue'
 
-// Get classId from Inertia props
+// Get props from Laravel - ADD TEACHER PROP
 const props = defineProps({
   classId: {
     type: [String, Number],
     required: true
+  },
+  classData: {
+    type: Object,
+    default: () => ({
+      id: null,
+      name: 'Class',
+      subject: 'Subject',
+      studentCount: 0,
+      teacher_name: 'Teacher'
+    })
+  },
+  teacher: { // ADD THIS PROP
+    type: Object,
+    default: () => ({
+      name: 'Teacher',
+      id: null,
+      email: '',
+      profile_picture_url: null,
+      profile_picture: null
+    })
   },
   errors: Object,
   auth: Object,
@@ -294,23 +402,34 @@ const props = defineProps({
 // ==================== THEME STATE ====================
 const isDark = ref(localStorage.getItem('darkMode') === 'true')
 
-// Current user data
-const currentUser = computed(() => {
-  return props.auth?.user || JSON.parse(localStorage.getItem('user') || '{}')
+// ==================== TEACHER DATA ====================
+// Use the teacher prop directly
+const teacher = computed(() => {
+  // Ensure profile_picture_url is set if profile_picture exists
+  if (props.teacher?.profile_picture && !props.teacher.profile_picture_url) {
+    props.teacher.profile_picture_url = `/storage/${props.teacher.profile_picture}`
+  }
+  return props.teacher || {}
+})
+
+// User initials for profile picture fallback
+const userInitials = computed(() => {
+  if (!props.teacher?.name) return 'T'
+  return props.teacher.name
+    .split(' ')
+    .map(word => word[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
 })
 
 // ==================== ASSIGNMENTS STATE ====================
-const classData = ref({
-  id: props.classId,
-  name: 'Loading...',
-  studentCount: 0
-})
-
 const assignments = ref([])
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const saving = ref(false)
 const loading = ref(true)
+const userMenuOpen = ref(false)
 
 const assignmentForm = ref({
   id: null,
@@ -350,24 +469,24 @@ const editProfile = () => {
 
 const logout = async () => {
   try {
-    const token = localStorage.getItem('token')
-    await apiClient.post('/logout', {}, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    })
+    router.post('/logout')
   } catch (error) {
     console.error('Logout error:', error)
-  } finally {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    localStorage.removeItem('darkMode')
-    router.visit('/login')
+  }
+}
+
+// UI Methods
+const toggleUserMenu = () => {
+  userMenuOpen.value = !userMenuOpen.value
+}
+
+const handleClickOutside = (event) => {
+  if (!event.target.closest('.relative')) {
+    userMenuOpen.value = false
   }
 }
 
 // ==================== ASSIGNMENTS METHODS ====================
-
 // Fetch assignments from API
 const fetchAssignments = async () => {
   try {
@@ -385,27 +504,6 @@ const fetchAssignments = async () => {
     assignments.value = []
   } finally {
     loading.value = false
-  }
-}
-
-// Fetch class data
-const fetchClassData = async () => {
-  try {
-    const response = await apiClient.get(`/courses/${props.classId}`)
-    if (response.data.success) {
-      classData.value = {
-        id: response.data.data.id,
-        name: response.data.data.name,
-        studentCount: response.data.data.studentCount || 0
-      }
-    }
-  } catch (error) {
-    console.error('Error fetching class data:', error)
-    classData.value = {
-      id: props.classId,
-      name: `Class ${props.classId}`,
-      studentCount: 0
-    }
   }
 }
 
@@ -536,13 +634,23 @@ const formatDate = (dateString) => {
 // ==================== LIFECYCLE ====================
 onMounted(async () => {
   document.documentElement.classList.toggle('dark', isDark.value)
+  document.addEventListener('click', handleClickOutside)
   
-  await fetchClassData()
+  // Ensure teacher object has profile_picture_url
+  if (props.teacher?.profile_picture && !props.teacher.profile_picture_url) {
+    props.teacher.profile_picture_url = `/storage/${props.teacher.profile_picture}`
+  }
+  
   await fetchAssignments()
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
 <style scoped>
+/* Keep all your existing styles exactly as they were */
 .rotate-180 {
   transform: rotate(180deg);
 }
@@ -581,5 +689,19 @@ a:hover {
 /* Custom dark mode styles */
 .dark .bg-gray-750 {
   background-color: #2d3748;
+}
+
+/* Profile picture hover effects */
+.group:hover .group-hover\:opacity-100 {
+  opacity: 1;
+}
+
+:deep(*) {
+    font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+    font-weight: 400;
+}
+
+.custom-heading {
+    font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
 }
 </style>

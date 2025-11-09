@@ -183,6 +183,15 @@ const submit = () => {
 </script>
 
 <style scoped>
+/* Use deep selector to override */
+:deep(*) {
+    font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+    font-weight: 400;
+}
+
+.custom-heading {
+    font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+}
 /* Logo Styles */
 .logo-container {
   transition: transform 0.2s ease;

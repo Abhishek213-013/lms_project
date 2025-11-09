@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Student;
 use App\Models\Resource;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -33,7 +34,10 @@ class FrontendController extends Controller
             // Get featured courses with language support
             $featuredCourses = ClassModel::where('status', 'active')
                 ->with(['teacher:id,name', 'students'])
-                ->select(['id', 'name', 'subject', 'type', 'category', 'description', 'grade', 'created_at'])
+                ->select([
+                    'id', 'name', 'subject', 'type', 'category', 'description', 
+                    'grade', 'created_at', 'image', 'thumbnail' // 🔥 ADD image fields here
+                ])
                 ->inRandomOrder()
                 ->limit(6)
                 ->get()
@@ -45,7 +49,9 @@ class FrontendController extends Controller
                         'type' => $course->type,
                         'category' => $this->getTranslatedCategory($course->category, $language),
                         'description' => $this->getTranslatedDescription($course, $language),
-                        'thumbnail' => $this->getCourseThumbnail($course),
+                        'thumbnail' => $this->getCourseThumbnail($course), // 🔥 Use the fixed method
+                        'image' => $course->image, // Include raw image data
+                        'thumbnail_url' => $this->getCourseThumbnail($course), // Alias for frontend
                         'fee' => 0,
                         'student_count' => $course->students->count(),
                         'teacher' => $course->teacher,
@@ -58,7 +64,10 @@ class FrontendController extends Controller
                 });
 
             $instructors = User::where('role', 'teacher')
-                ->select(['id', 'name', 'username', 'education_qualification', 'institute', 'experience'])
+                ->select([
+                    'id', 'name', 'username', 'education_qualification', 
+                    'institute', 'experience', 'profile_picture' // 🔥 ADD profile_picture here
+                ])
                 ->limit(8)
                 ->get()
                 ->map(function($instructor) use ($language) {
@@ -79,6 +88,7 @@ class FrontendController extends Controller
                         'education_qualification' => $this->getTranslatedQualification($instructor->education_qualification, $language),
                         'institute' => $instructor->institute,
                         'experience' => $this->getTranslatedExperience($instructor->experience, $language),
+                        'profile_picture' => $instructor->profile_picture, // 🔥 Include this
                         'avatar' => $this->getInstructorAvatar($instructor),
                         'courses_count' => $coursesCount,
                         'students_count' => $totalStudents,
@@ -426,7 +436,7 @@ class FrontendController extends Controller
 
             // 🔥 FIX: Include image and thumbnail fields in the select
             $query = ClassModel::with(['teacher:id,name', 'students'])
-                ->select('id', 'name', 'subject', 'grade', 'type', 'category', 'description', 'capacity', 'status', 'created_at', 'image', 'thumbnail') // Added image and thumbnail
+                ->select('id', 'name', 'subject', 'grade', 'type', 'category', 'description', 'capacity', 'status', 'created_at', 'image', 'thumbnail')
                 ->where('status', 'active');
 
             // Filter by category
@@ -463,17 +473,22 @@ class FrontendController extends Controller
                 case 'grade':
                     $query->orderBy('grade', 'asc');
                     break;
+                case 'popular':
+                    // We'll handle this after transformation
+                    $query->orderBy('created_at', 'desc');
+                    break;
                 case 'latest':
                 default:
                     $query->orderBy('created_at', 'desc');
                     break;
             }
 
-            $courses = $query->paginate(12)->withQueryString();
+            // Get paginated results
+            $perPage = $request->get('per_page', 12);
+            $courses = $query->paginate($perPage)->withQueryString();
 
             // Transform courses for frontend with language support
             $courses->getCollection()->transform(function ($course) use ($language) {
-                // 🔥 FIX: Include all image data in the transformation
                 return [
                     'id' => $course->id,
                     'name' => $this->getTranslatedCourseName($course, $language),
@@ -482,16 +497,18 @@ class FrontendController extends Controller
                     'type' => $course->type,
                     'category' => $this->getTranslatedCategory($course->category, $language),
                     'description' => $this->getTranslatedDescription($course, $language),
-                    'thumbnail' => $this->getCourseThumbnail($course),
-                    // 🔥 ADD: Include all image fields for frontend
-                    'image' => $course->image, // Raw image path from database
-                    'thumbnail' => $course->thumbnail, // Raw thumbnail path from database
-                    'image_url' => $course->image_url, // Full URL from model accessor
-                    'thumbnail_url' => $course->thumbnail_url, // Full URL from model accessor
-                    'raw_image' => $course->image, // Raw path for debugging
+                    // Image data
+                    'image' => $course->image,
+                    'thumbnail' => $course->thumbnail,
+                    'image_url' => $course->image_url,
+                    'thumbnail_url' => $course->thumbnail_url,
+                    'raw_image' => $course->image,
+                    // Additional data
                     'fee' => 0,
                     'capacity' => $course->capacity,
                     'student_count' => $course->students->count(),
+                    'enrollment_count' => $course->students->count(), // Alias for frontend
+                    'studentCount' => $course->students->count(), // Alias for frontend
                     'teacher' => $course->teacher,
                     'created_at' => $course->created_at->format('M d, Y'),
                     'slug' => $this->generateSlug($course->name),
@@ -544,21 +561,16 @@ class FrontendController extends Controller
 
             Log::info("✅ Successfully loaded {$courses->count()} courses with image data");
 
+            // 🔥 FIX: Return the paginated object directly instead of splitting it
             return Inertia::render('Frontend/Courses', [
-                'courses' => $courses->items(),
-                'pagination' => [
-                    'current_page' => $courses->currentPage(),
-                    'last_page' => $courses->lastPage(),
-                    'per_page' => $courses->perPage(),
-                    'total' => $courses->total(),
-                    'links' => $courses->linkCollection()->toArray()
-                ],
+                'courses' => $courses, // Return the full paginator object
                 'filters' => [
                     'search' => $request->search,
                     'category' => $request->category,
                     'type' => $request->type,
                     'grade' => $request->grade,
                     'sort' => $sort,
+                    'per_page' => $perPage,
                 ],
                 'categories' => $categories->map(function($category) use ($language) {
                     return $this->getTranslatedCategory($category, $language);
@@ -725,145 +737,104 @@ class FrontendController extends Controller
             return $this->renderNotFound('Course not found');
         }
     }
-    public function instructors(Request $request): Response
+
+    public function instructors(): Response
     {
+        $teachers = User::where('role', 'teacher')
+        ->where('status', 'active')
+        ->select([
+            'id', 
+            'name', 
+            'username', 
+            'email', 
+            'dob',
+            'education_qualification', 
+            'institute', 
+            'experience', 
+            'bio',
+            'profile_picture',
+            'order_column', // ADD THIS LINE
+            'created_at'
+        ])
+        ->withCount(['classes as courses_count'])
+        ->orderBy('order_column') // CHANGE FROM orderBy('name') to orderBy('order_column')
+        ->get()
+        ->map(function ($teacher) {
+            return [
+                'id' => $teacher->id,
+                'name' => $teacher->name,
+                'email' => $teacher->email,
+                'education_qualification' => $teacher->education_qualification,
+                'institute' => $teacher->institute,
+                'experience' => $teacher->experience,
+                'profile_picture' => $teacher->profile_picture,
+                'order_column' => $teacher->order_column, // ADD THIS LINE
+                'courses_count' => $teacher->courses_count,
+                'students_count' => $this->getTeacherStudentsCount($teacher->id),
+                'rating' => $this->getTeacherRating($teacher->id),
+                'created_at' => $teacher->created_at,
+            ];
+        });
+
+        $specializations = User::where('role', 'teacher')
+            ->whereNotNull('education_qualification')
+            ->where('education_qualification', '!=', '')
+            ->distinct()
+            ->pluck('education_qualification')
+            ->toArray();
+
+        return Inertia::render('Frontend/Instructors', [
+            'instructors' => $teachers,
+            'specializations' => $specializations,
+            'filters' => request()->only(['search', 'specialization']),
+            'meta' => [
+                'title' => 'Our Instructors - SkillGro',
+                'description' => 'Meet our qualified and experienced instructors dedicated to your learning journey.'
+            ]
+        ]);
+    }
+
+    public function reorder(Request $request)
+    {
+        $request->validate([
+            'order' => 'required|array',
+            'order.*' => 'required|integer|exists:users,id'
+        ]);
+
         try {
-            $language = $this->getCurrentLanguage();
-            Log::info('🎯 Loading instructors page with language: ' . $language);
-
-            // Get all teachers from database
-            $teachers = User::where('role', 'teacher')
-                ->select([
-                    'id', 'name', 'username', 'email',
-                    'education_qualification', 'institute', 'experience',
-                    'bio', 'created_at'
-                ])
-                ->orderBy('name')
-                ->get();
-
-            Log::info("📊 Found {$teachers->count()} teachers in database");
-
-            // Transform teachers data with proper variable definitions
-            $instructors = $teachers->map(function ($teacher) use ($language) {
-                // Calculate courses count for this instructor
-                $coursesCount = ClassModel::where('teacher_id', $teacher->id)->count();
-                
-                // Calculate total students for this instructor
-                $totalStudents = DB::table('class_student')
-                    ->join('classes', 'class_student.class_id', '=', 'classes.id')
-                    ->where('classes.teacher_id', $teacher->id)
-                    ->distinct('class_student.student_id')
-                    ->count();
-
-                return [
-                    'id' => $teacher->id,
-                    'name' => $teacher->name ?? 'Unknown Instructor',
-                    'username' => $teacher->username ?? '',
-                    'email' => $teacher->email ?? '',
-                    'avatar' => $this->getInstructorAvatar($teacher),
-                    'education_qualification' => $this->getTranslatedQualification($teacher->education_qualification, $language),
-                    'institute' => $teacher->institute ?? 'Not specified',
-                    'experience' => $this->getTranslatedExperience($teacher->experience, $language),
-                    'bio' => $teacher->bio ?? ($language === 'bn' ? 'পেশাদার ইন্সট্রাক্টর শিক্ষার্থীদের সাফল্যের জন্য নিবেদিত।' : 'Professional instructor dedicated to student success.'),
-                    'courses_count' => $coursesCount,
-                    'students_count' => $totalStudents,
-                    'rating' => 4.8,
-                    'created_at' => $teacher->created_at ? $teacher->created_at->format('M d, Y') : 'Unknown',
-                    'original_qualification' => $teacher->education_qualification,
-                    'original_experience' => $teacher->experience,
-                ];
+            DB::transaction(function () use ($request) {
+                foreach ($request->order as $position => $instructorId) {
+                    User::where('id', $instructorId)
+                        ->where('role', 'teacher')
+                        ->update(['order_column' => $position + 1]);
+                }
             });
 
-            // Get specializations for filter dropdown
-            $specializations = User::where('role', 'teacher')
-                ->whereNotNull('education_qualification')
-                ->where('education_qualification', '!=', '')
-                ->distinct()
-                ->pluck('education_qualification')
-                ->values();
-
-            Log::info("✅ Successfully loaded {$instructors->count()} instructors with data");
-
-            return Inertia::render('Frontend/Instructors', [
-                'instructors' => $instructors->toArray(),
-                'filters' => [
-                    'search' => $request->search ?? '',
-                    'specialization' => $request->specialization ?? '',
-                ],
-                'specializations' => $specializations->map(function($spec) use ($language) {
-                    return $this->getTranslatedQualification($spec, $language);
-                })->toArray(),
-                'pageTitle' => $language === 'bn' ? 'আমাদের ইন্সট্রাক্টরগণ - স্কিলগ্রো' : 'Our Instructors - SkillGro',
-                'metaDescription' => $language === 'bn'
-                    ? 'আমাদের বিশেষজ্ঞ ইন্সট্রাক্টর এবং শিক্ষকদের দলের সাথে পরিচিত হোন। আপনার সাফল্যের জন্য নিবেদিত অভিজ্ঞ পেশাদারদের থেকে শিখুন।'
-                    : 'Meet our team of expert instructors and teachers. Learn from experienced professionals dedicated to your success.',
-                'currentLanguage' => $language,
-                'availableLanguages' => ['en', 'bn']
+            return response()->json([
+                'success' => true,
+                'message' => 'Instructor order updated successfully'
             ]);
 
         } catch (\Exception $e) {
-            Log::error('❌ Instructors page error: ' . $e->getMessage());
-            Log::error('📝 Stack trace: ' . $e->getTraceAsString());
-            
-            // Only use fallback if there's a serious error
-            $teachers = User::where('role', 'teacher')->get();
-            
-            if ($teachers->count() > 0) {
-                // If we have teachers but there was an error in processing, return basic data
-                $basicInstructors = $teachers->map(function ($teacher) {
-                    $coursesCount = ClassModel::where('teacher_id', $teacher->id)->count();
-                    $totalStudents = DB::table('class_student')
-                        ->join('classes', 'class_student.class_id', '=', 'classes.id')
-                        ->where('classes.teacher_id', $teacher->id)
-                        ->distinct('class_student.student_id')
-                        ->count();
-
-                    return [
-                        'id' => $teacher->id,
-                        'name' => $teacher->name,
-                        'username' => $teacher->username,
-                        'email' => $teacher->email,
-                        'avatar' => $this->getInstructorAvatar($teacher),
-                        'education_qualification' => $teacher->education_qualification,
-                        'institute' => $teacher->institute,
-                        'experience' => $teacher->experience,
-                        'bio' => $teacher->bio,
-                        'courses_count' => $coursesCount,
-                        'students_count' => $totalStudents,
-                        'rating' => 4.5,
-                        'created_at' => $teacher->created_at->format('M d, Y')
-                    ];
-                });
-                
-                return Inertia::render('Frontend/Instructors', [
-                    'instructors' => $basicInstructors->toArray(),
-                    'filters' => [
-                        'search' => $request->search ?? '',
-                        'specialization' => $request->specialization ?? '',
-                    ],
-                    'specializations' => [],
-                    'pageTitle' => 'Our Instructors - SkillGro',
-                    'metaDescription' => 'Meet our team of expert instructors.'
-                ]);
-            }
-            
-            // Only use mock data as last resort
-            $fallbackInstructors = $this->getFallbackInstructors();
-            
-            return Inertia::render('Frontend/Instructors', [
-                'instructors' => $fallbackInstructors,
-                'filters' => [
-                    'search' => $request->search ?? '',
-                    'specialization' => $request->specialization ?? '',
-                ],
-                'specializations' => ['HSC', 'BSC', 'BA', 'MA', 'MSC', 'PhD', 'Other'],
-                'pageTitle' => 'Our Instructors - SkillGro',
-                'metaDescription' => 'Meet our team of expert instructors.'
-            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update order: ' . $e->getMessage()
+            ], 500);
         }
     }
+    
+    // Helper methods
+    private function getTeacherStudentsCount($teacherId)
+    {
+        return \App\Models\Student::whereHas('class', function($query) use ($teacherId) {
+            $query->where('teacher_id', $teacherId);
+        })->count();
+    }
 
-    // ... rest of your existing methods remain the same ...
+    private function getTeacherRating($teacherId)
+    {
+        return '4.8'; // Placeholder - implement your rating logic
+    }
 
     private function getInstructorAvatar($instructor)
     {
@@ -882,24 +853,26 @@ class FrontendController extends Controller
 
     private function getCourseThumbnail($course)
     {
-        // 🔥 FIX: First priority - Use database images
+        // 🔥 FIX: First priority - Use database images with proper URL formatting
         if ($course->thumbnail && $course->thumbnail !== 'null' && $course->thumbnail !== 'NULL') {
-            Log::info("✅ Using database thumbnail for course {$course->id}: {$course->thumbnail}");
-            return $course->thumbnail_url; // Use model accessor for full URL
+            $thumbnailUrl = $this->formatImageUrl($course->thumbnail);
+            Log::info("✅ Using database thumbnail for course {$course->id}: {$thumbnailUrl}");
+            return $thumbnailUrl;
         }
 
         if ($course->image && $course->image !== 'null' && $course->image !== 'NULL') {
-            Log::info("✅ Using database image for course {$course->id}: {$course->image}");
-            return $course->image_url; // Use model accessor for full URL
+            $imageUrl = $this->formatImageUrl($course->image);
+            Log::info("✅ Using database image for course {$course->id}: {$imageUrl}");
+            return $imageUrl;
         }
 
         // Fallback to demo thumbnails only if no database image exists
         Log::info("📸 No database image found for course {$course->id}, using fallback");
         
-        $courseType = $course->type || 'regular';
+        $courseType = $course->type ?? 'regular';
         
         if ($courseType === 'regular') {
-            $grade = $course->grade || 1;
+            $grade = $course->grade ?? 1;
             $thumbnails = [
                 '/assets/img/courses/h5_course_thumb1.jpg',
                 '/assets/img/courses/h5_course_thumb02.jpg',
@@ -918,22 +891,43 @@ class FrontendController extends Controller
         }
     }
 
+    private function formatImageUrl($imagePath)
+    {
+        if (!$imagePath) return null;
+        
+        Log::info("🔄 Formatting image path: {$imagePath}");
+        
+        // If it's already a full URL, return as is
+        if (str_starts_with($imagePath, 'http')) {
+            return $imagePath;
+        }
+        
+        // If it starts with storage/, remove the storage/ prefix for public access
+        if (str_starts_with($imagePath, 'storage/')) {
+            $publicPath = str_replace('storage/', '', $imagePath);
+            return asset("storage/{$publicPath}");
+        }
+        
+        // If it's a relative path, assume it's in storage
+        if (str_starts_with($imagePath, 'courses/')) {
+            return asset("storage/{$imagePath}");
+        }
+        
+        // Default case - prepend /storage/
+        return asset("storage/{$imagePath}");
+    }
     public function instructorDetails($id): Response
     {
         try {
             Log::info("🎯 Loading instructor details for ID: {$id}");
 
-            // Validate ID
-            if (!is_numeric($id) || $id <= 0) {
-                return $this->renderNotFound('Invalid instructor ID');
-            }
-
-            // Get instructor
+            // Get instructor with profile_picture
             $instructor = User::where('role', 'teacher')
                 ->where('id', $id)
                 ->select([
                     'id', 'name', 'username', 'email',
                     'education_qualification', 'institute', 'experience',
+                    'profile_picture', // MAKE SURE THIS IS INCLUDED
                     'created_at'
                 ])
                 ->first();
@@ -943,6 +937,7 @@ class FrontendController extends Controller
             }
 
             Log::info("✅ Found instructor: {$instructor->name}");
+            Log::info("🖼️ Instructor profile picture: {$instructor->profile_picture}");
 
             // Get instructor's classes
             $classes = ClassModel::where('teacher_id', $id)
@@ -1051,10 +1046,10 @@ class FrontendController extends Controller
                 'name' => $instructor->name,
                 'username' => $instructor->username,
                 'email' => $instructor->email,
-                'avatar' => $this->getInstructorAvatar($instructor),
                 'education_qualification' => $instructor->education_qualification,
                 'institute' => $instructor->institute,
                 'experience' => $instructor->experience,
+                'profile_picture' => $instructor->profile_picture, // THIS IS CRITICAL
                 'bio' => $this->generateBio($instructor),
                 'teaching_philosophy' => $this->generateTeachingPhilosophy($instructor),
                 'expertise' => $this->getExpertiseFromClasses($classes),
@@ -1068,6 +1063,11 @@ class FrontendController extends Controller
                 'students_count' => $totalStudents,
                 'created_at' => $instructor->created_at->format('M d, Y'),
             ];
+
+            Log::info("📤 Sending instructor data to frontend:", [
+                'has_profile_picture' => !empty($instructorData['profile_picture']),
+                'profile_picture_path' => $instructorData['profile_picture']
+            ]);
 
             return Inertia::render('Frontend/InstructorDetails', [
                 'instructor' => $instructorData,
@@ -1086,8 +1086,6 @@ class FrontendController extends Controller
 
         } catch (\Exception $e) {
             Log::error('❌ Instructor details page error: ' . $e->getMessage());
-            Log::error('📝 Stack trace: ' . $e->getTraceAsString());
-            
             return $this->renderNotFound('Error loading instructor details: ' . $e->getMessage());
         }
     }
@@ -1108,10 +1106,6 @@ class FrontendController extends Controller
             'metaDescription' => 'Get in touch with SkillGro. We\'re here to answer your questions and help you start your learning journey.'
         ]);
     }
-
-    // REMOVED BLOG METHODS - They are now handled by BlogController
-    // Blog page - REMOVED
-    // Blog post page - REMOVED
 
     // Helper methods
     private function getFallbackInstructors()

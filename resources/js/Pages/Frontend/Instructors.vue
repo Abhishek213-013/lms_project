@@ -91,16 +91,36 @@
 
             <!-- UPDATED: Instructor Cards with Rectangular Profile Image Layout (Same as Home Page) -->
             <div class="col-xl-3 col-lg-4 col-md-6" v-for="instructor in displayedInstructors" :key="instructor.id">
-              <div class="instructor-card-new">
-                <!-- Profile Picture - Rectangular Shape -->
-                <div class="profile-image-container">
-                  <img 
-                    :src="getInstructorAvatar(instructor)" 
-                    :alt="instructor.name"
-                    class="profile-image-rectangular"
-                    @error="handleImageError"
-                  >
+              <div 
+                class="instructor-card-new"
+                :class="{ 
+                  'dragging': instructor.id === draggingInstructorId,
+                  'drag-over': instructor.id === dragOverInstructorId
+                }"
+                draggable="true"
+                @dragstart="onDragStart($event, instructor)"
+                @dragend="onDragEnd"
+                @dragover.prevent="onDragOver($event, instructor)"
+                @dragenter.prevent="onDragEnter($event, instructor)"
+                @dragleave="onDragLeave"
+                @drop="onDrop($event, instructor)"
+              >
+                <!-- Drag Handle - ALWAYS VISIBLE -->
+                <div class="drag-handle">
+                  <i class="fas fa-grip-vertical icon-fixed"></i>
                 </div>
+
+                 <!-- Profile Picture - Rectangular Shape -->
+                  <div class="profile-image-container">
+                    <img 
+                      :src="getInstructorAvatar(instructor)" 
+                      :alt="instructor.name"
+                      :data-instructor-id="instructor.id"
+                      class="profile-image-rectangular"
+                      @error="handleImageError"
+                      loading="lazy"
+                    >
+                  </div>
 
                 <!-- Teacher Name Section -->
                 <div class="teacher-name-section">
@@ -409,19 +429,30 @@
           </button>
         </div>
       </div>
+
+      <!-- Success Toast Notification -->
+      <div v-if="showToast" class="toast-notification" :class="toastType">
+        <div class="toast-content">
+          <i class="fas" :class="toastIcon"></i>
+          <span>{{ toastMessage }}</span>
+        </div>
+        <button class="toast-close" @click="showToast = false">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
     </main>
   </FrontendLayout>
 </template>
 
 <script setup>
 import { Link } from '@inertiajs/vue3';
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { router } from '@inertiajs/vue3';
 import FrontendLayout from '../Layout/FrontendLayout.vue';
 import { useTranslation } from '@/composables/useTranslation';
 
 // Use the global translation composable
-const { t, currentLanguage, switchLanguage } = useTranslation()
+const { t } = useTranslation()
 
 // Reactive data
 const loading = ref(false);
@@ -431,6 +462,18 @@ const itemsPerPage = 8;
 const showInstructorModal = ref(false);
 const showSuccessModal = ref(false);
 const submitting = ref(false);
+
+// Drag & Drop state
+const draggingInstructorId = ref(null);
+const dragOverInstructorId = ref(null);
+const currentOrder = ref([]);
+const savingOrder = ref(false);
+
+// Toast notification
+const showToast = ref(false);
+const toastMessage = ref('');
+const toastType = ref('success');
+const toastIcon = ref('fa-check-circle');
 
 // Instructor application form
 const instructorForm = ref({
@@ -468,14 +511,6 @@ const props = defineProps({
 // Local filters state
 const localFilters = ref({ ...props.filters });
 
-// Add icon render key to force re-render icons when language changes
-const iconRenderKey = ref(0);
-
-// Watch for language changes and force icon re-render
-watch(currentLanguage, () => {
-  iconRenderKey.value++;
-});
-
 // Compute max date for date of birth (18 years ago)
 const maxDate = computed(() => {
   const date = new Date();
@@ -502,6 +537,19 @@ const displayedInstructors = computed(() => {
     filtered = filtered.filter(instructor => 
       instructor.education_qualification === localFilters.value.specialization
     );
+  }
+
+  // Use custom order if available
+  if (currentOrder.value.length > 0) {
+    // Create a map for quick lookup
+    const orderMap = new Map(currentOrder.value.map((id, index) => [id, index]));
+    
+    // Sort the filtered array based on the custom order
+    filtered.sort((a, b) => {
+      const orderA = orderMap.get(a.id) ?? Number.MAX_SAFE_INTEGER;
+      const orderB = orderMap.get(b.id) ?? Number.MAX_SAFE_INTEGER;
+      return orderA - orderB;
+    });
   }
 
   return filtered.slice(0, visibleCount.value);
@@ -553,6 +601,13 @@ const loadMore = () => {
 };
 
 const getInstructorAvatar = (instructor) => {
+  if (instructor.profile_picture) {
+    if (instructor.profile_picture.startsWith('http')) {
+      return instructor.profile_picture;
+    }
+    return `/storage/${instructor.profile_picture}`;
+  }
+  
   if (instructor.avatar && instructor.avatar !== '/assets/img/instructors/default.jpg') {
     return instructor.avatar;
   }
@@ -569,17 +624,11 @@ const getInstructorAvatar = (instructor) => {
 };
 
 const handleImageError = (event) => {
+  const instructorId = event.target.getAttribute('data-instructor-id');
+  console.warn(`Failed to load profile picture for instructor ${instructorId}`);
+  
   event.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y3ZmFmYyIvPjx0ZXh0IHg9IjEwMCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5Y2EwYTYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIwLjM1ZW0iPuKKojwvdGV4dD48L3N2Zz4=';
-};
-
-const getExpertise = (instructor) => {
-  const qual = instructor.education_qualification || '';
-  if (qual.includes('Science')) return t('Science Expert');
-  if (qual.includes('English')) return t('English Specialist');
-  if (qual.includes('Mathematics')) return t('Mathematics Teacher');
-  if (qual.includes('Bangla')) return t('Bangla Instructor');
-  if (qual.includes('Sports')) return t('Sports Coach');
-  return t('Teaching Specialist');
+  event.target.classList.add('profile-image-error');
 };
 
 const getEducation = (instructor) => {
@@ -606,12 +655,10 @@ const submitInstructorApplication = async () => {
     const data = await response.json();
 
     if (data.success) {
-      // Reset form and show success message
       resetInstructorForm();
       showInstructorModal.value = false;
       showSuccessModal.value = true;
     } else {
-      // Handle validation errors
       if (data.errors) {
         const errorMessages = Object.values(data.errors).flat().join('\n');
         alert('Please fix the following errors:\n' + errorMessages);
@@ -642,12 +689,363 @@ const resetInstructorForm = () => {
     agree_terms: false
   };
 };
+
+// Drag & Drop Methods
+const onDragStart = (event, instructor) => {
+  draggingInstructorId.value = instructor.id;
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('text/plain', instructor.id.toString());
+  
+  setTimeout(() => {
+    event.target.classList.add('dragging');
+  }, 0);
+};
+
+const onDragEnd = () => {
+  draggingInstructorId.value = null;
+  dragOverInstructorId.value = null;
+  
+  document.querySelectorAll('.instructor-card-new').forEach(el => {
+    el.classList.remove('dragging');
+  });
+};
+
+const onDragOver = (event, instructor) => {
+  if (draggingInstructorId.value === instructor.id) {
+    return;
+  }
+  
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+};
+
+const onDragEnter = (event, instructor) => {
+  if (draggingInstructorId.value === instructor.id) {
+    return;
+  }
+  
+  dragOverInstructorId.value = instructor.id;
+};
+
+const onDragLeave = (event) => {
+  const relatedTarget = event.relatedTarget;
+  if (!relatedTarget || !event.currentTarget.contains(relatedTarget)) {
+    dragOverInstructorId.value = null;
+  }
+};
+
+const onDrop = async (event, targetInstructor) => {
+  event.preventDefault();
+  
+  if (!draggingInstructorId.value || draggingInstructorId.value === targetInstructor.id) {
+    return;
+  }
+  
+  const draggedInstructorId = draggingInstructorId.value;
+  const targetInstructorId = targetInstructor.id;
+  
+  const draggedIndex = currentOrder.value.indexOf(draggedInstructorId);
+  const targetIndex = currentOrder.value.indexOf(targetInstructorId);
+  
+  if (draggedIndex !== -1 && targetIndex !== -1) {
+    [currentOrder.value[draggedIndex], currentOrder.value[targetIndex]] = 
+    [currentOrder.value[targetIndex], currentOrder.value[draggedIndex]];
+    
+    await saveOrder();
+  }
+  
+  draggingInstructorId.value = null;
+  dragOverInstructorId.value = null;
+};
+
+const saveOrder = async () => {
+  savingOrder.value = true;
+  
+  try {
+    const url = '/instructors/reorder';
+    console.log('Making POST request to:', url);
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      },
+      body: JSON.stringify({
+        order: currentOrder.value
+      })
+    });
+
+    console.log('Response status:', response.status);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('Response data:', data);
+
+    if (data.success) {
+      showNotification(t('Instructor order saved successfully!'), 'success');
+      
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+      
+    } else {
+      throw new Error(data.message || 'Failed to save order');
+    }
+  } catch (error) {
+    console.error('Error saving order:', error);
+    showNotification(t('Failed to save order. Please try again.'), 'error');
+    
+    const originalOrder = [...displayedInstructors.value]
+      .sort((a, b) => (a.order_column || 0) - (b.order_column || 0))
+      .map(instructor => instructor.id);
+    currentOrder.value = originalOrder;
+  } finally {
+    savingOrder.value = false;
+  }
+};
+
+// Alternative saveOrder method that doesn't reload the page (if you prefer)
+const saveOrderWithoutReload = async () => {
+  savingOrder.value = true;
+  
+  try {
+    const response = await fetch('/instructors/reorder', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      },
+      body: JSON.stringify({
+        order: currentOrder.value
+      })
+    });
+
+    if (response.ok) {
+      showNotification(t('Instructor order saved successfully!'), 'success');
+    } else {
+      throw new Error('Failed to save order');
+    }
+  } catch (error) {
+    console.error('Error saving order:', error);
+    showNotification(t('Failed to save order. Please try again.'), 'error');
+  } finally {
+    savingOrder.value = false;
+  }
+};
+
+// Toast notification methods
+const showNotification = (message, type = 'success') => {
+  toastMessage.value = message;
+  toastType.value = type;
+  toastIcon.value = type === 'success' ? 'fa-check-circle' : 
+                    type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
+  showToast.value = true;
+  
+  setTimeout(() => {
+    showToast.value = false;
+  }, 3000);
+};
+
+// Initialize on component mount
+onMounted(() => {
+  const sortedInstructors = [...displayedInstructors.value]
+    .sort((a, b) => (a.order_column || 0) - (b.order_column || 0));
+  
+  currentOrder.value = sortedInstructors.map(instructor => instructor.id);
+  currentOrder.value = displayedInstructors.value.map(instructor => instructor.id);
+});
 </script>
 
 <style scoped>
 /* ==================== */
-/* ICON FIXES FOR LANGUAGE SWITCH */
+/* DRAG & DROP STYLES - SIMPLIFIED */
 /* ==================== */
+
+/* Drag Handle - ALWAYS VISIBLE */
+.drag-handle {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  z-index: 10;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  border: 1px solid var(--border-light);
+  opacity: 0.7;
+}
+
+.drag-handle:hover {
+  background: white;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.drag-handle i {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* Drag States */
+.instructor-card-new.dragging {
+  opacity: 0.6;
+  transform: scale(0.98) rotate(2deg);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+  z-index: 100;
+  cursor: grabbing;
+}
+
+.instructor-card-new.drag-over {
+  position: relative;
+  transform: scale(1.02);
+  box-shadow: 0 0 0 2px var(--primary-color), 0 8px 25px rgba(0, 0, 0, 0.15);
+  z-index: 50;
+  transition: all 0.2s ease;
+}
+
+.instructor-card-new.drag-over::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: color-mix(in srgb, var(--primary-color) 5%, transparent);
+  border-radius: 14px;
+  z-index: -1;
+}
+
+/* Hover effect for draggable cards */
+.instructor-card-new:hover .drag-handle {
+  opacity: 1;
+}
+
+/* Toast Notification */
+.toast-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--card-bg);
+  border-left: 4px solid var(--primary-color);
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 300px;
+  z-index: 10000;
+  animation: slideInRight 0.3s ease-out;
+  border: 1px solid var(--border-color);
+  font-size: 0.9rem;
+}
+
+.toast-notification.success {
+  border-left-color: #10b981;
+}
+
+.toast-notification.error {
+  border-left-color: #ef4444;
+}
+
+.toast-notification.info {
+  border-left-color: #3b82f6;
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.toast-content i {
+  font-size: 1.1rem;
+}
+
+.toast-notification.success .toast-content i {
+  color: #10b981;
+}
+
+.toast-notification.error .toast-content i {
+  color: #ef4444;
+}
+
+.toast-notification.info .toast-content i {
+  color: #3b82f6;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  font-size: 0.8rem;
+}
+
+.toast-close:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ==================== */
+/* RESPONSIVE DESIGN FOR DRAG CONTROLS */
+/* ==================== */
+@media (max-width: 768px) {
+  .toast-notification {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+}
+
+@media (max-width: 576px) {
+  .drag-handle {
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+  }
+  
+  .drag-handle i {
+    font-size: 10px;
+  }
+}
+
+/* ==================== */
+/* EXISTING STYLES (KEEPING YOUR ORIGINAL STYLES) */
+/* ==================== */
+
+/* ICON FIXES FOR LANGUAGE SWITCH */
 .icon-fixed {
   font-family: 'Font Awesome 6 Free' !important;
   font-weight: 900 !important;
@@ -689,6 +1087,7 @@ const resetInstructorForm = () => {
   display: flex;
   flex-direction: column;
   padding: 0;
+  position: relative;
 }
 
 .instructor-card-new:hover {

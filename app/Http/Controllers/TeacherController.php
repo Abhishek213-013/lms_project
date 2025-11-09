@@ -42,6 +42,160 @@ class TeacherController extends Controller
         ]);
     }
 
+    public function uploadProfilePicture(Request $request, $id)
+    {
+        try {
+            Log::info("📸 [PROFILE_PICTURE] Starting upload for teacher ID: {$id}");
+            Log::info("📸 [PROFILE_PICTURE] Request data:", $request->all());
+
+            $validator = Validator::make($request->all(), [
+                'profile_picture' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB max
+            ], [
+                'profile_picture.required' => 'Please select a profile picture.',
+                'profile_picture.image' => 'The file must be an image.',
+                'profile_picture.mimes' => 'The image must be a JPEG, PNG, JPG, GIF, or WEBP.',
+                'profile_picture.max' => 'The image size must not exceed 5MB.',
+            ]);
+
+            if ($validator->fails()) {
+                Log::error("❌ [PROFILE_PICTURE] Validation failed:", $validator->errors()->toArray());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please check your image file.',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            $teacher = User::findOrFail($id);
+            
+            // Ensure the authenticated user can update this profile
+            if (Auth::id() != $id && !in_array(Auth::user()->role, ['admin', 'super_admin'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to update this profile.'
+                ], 403);
+            }
+
+            // Delete old profile picture if exists
+            if ($teacher->profile_picture && Storage::disk('public')->exists($teacher->profile_picture)) {
+                Storage::disk('public')->delete($teacher->profile_picture);
+                Log::info("🗑️ [PROFILE_PICTURE] Deleted old profile picture: {$teacher->profile_picture}");
+            }
+
+            // Upload new profile picture
+            $image = $request->file('profile_picture');
+            $imageName = 'teacher_' . $id . '_' . time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+            $imagePath = $image->storeAs('profile-pictures', $imageName, 'public');
+
+            // Update teacher record
+            $teacher->update([
+                'profile_picture' => $imagePath
+            ]);
+
+            Log::info("✅ [PROFILE_PICTURE] Profile picture uploaded successfully: {$imagePath}");
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Profile picture updated successfully',
+                'profile_picture_url' => Storage::disk('public')->url($imagePath),
+                'profile_picture_path' => $imagePath
+                // REMOVED: 'avatar' => Storage::disk('public')->url($imagePath)
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('❌ [PROFILE_PICTURE] Error uploading profile picture: ' . $e->getMessage());
+            Log::error('❌ [PROFILE_PICTURE] Stack trace: ' . $e->getTraceAsString());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload profile picture: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete profile picture
+     */
+    public function deleteProfilePicture($id)
+    {
+        try {
+            Log::info("🗑️ [PROFILE_PICTURE] Deleting profile picture for teacher ID: {$id}");
+
+            $teacher = User::findOrFail($id);
+            
+            // Ensure the authenticated user can update this profile
+            if (Auth::id() != $id && !in_array(Auth::user()->role, ['admin', 'super_admin'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to update this profile.'
+                ], 403);
+            }
+
+            if (!$teacher->profile_picture) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No profile picture found to delete.'
+                ], 404);
+            }
+
+            // Delete the file from storage
+            if (Storage::disk('public')->exists($teacher->profile_picture)) {
+                Storage::disk('public')->delete($teacher->profile_picture);
+                Log::info("🗑️ [PROFILE_PICTURE] Deleted profile picture file: {$teacher->profile_picture}");
+            }
+
+            // Update teacher record
+            $teacher->update([
+                'profile_picture' => null
+            ]);
+
+            Log::info("✅ [PROFILE_PICTURE] Profile picture deleted successfully");
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Profile picture deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('❌ [PROFILE_PICTURE] Error deleting profile picture: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete profile picture: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get profile picture URL
+     */
+    public function getProfilePicture($id)
+    {
+        try {
+            $teacher = User::findOrFail($id);
+            
+            if (!$teacher->profile_picture) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No profile picture found.'
+                ], 404);
+            }
+
+            $url = Storage::disk('public')->url($teacher->profile_picture);
+
+            return response()->json([
+                'success' => true,
+                'profile_picture_url' => $url,
+                'profile_picture_path' => $teacher->profile_picture
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching profile picture: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch profile picture'
+            ], 500);
+        }
+    }
     /**
      * Display teacher dashboard
      */
@@ -85,10 +239,11 @@ class TeacherController extends Controller
     /**
      * Display class dashboard
      */
+
     public function classDashboard($classId): Response
     {
         $class = ClassModel::with([
-                'teacher:id,name', 
+                'teacher:id,name,profile_picture', // Add profile_picture here
                 'students.user:id,name,email'
             ])
             ->withCount('students')
@@ -113,6 +268,7 @@ class TeacherController extends Controller
             'studentCount' => $class->students_count,
             'description' => $class->description,
             'teacher_name' => $class->teacher->name ?? 'Unknown Teacher',
+            'teacher_id' => $class->teacher_id,
             'students' => $class->students->map(function($student) {
                 return [
                     'id' => $student->id,
@@ -121,6 +277,17 @@ class TeacherController extends Controller
                     'roll_number' => $student->roll_number,
                 ];
             })
+        ];
+
+        // Get teacher data with profile picture
+        $teacher = $class->teacher ?? $user;
+        $teacherData = [
+            'id' => $teacher->id,
+            'name' => $teacher->name,
+            'email' => $teacher->email,
+            'profile_picture' => $teacher->profile_picture,
+            'profile_picture_url' => $teacher->profile_picture ? 
+                Storage::url($teacher->profile_picture) : null,
         ];
 
         return Inertia::render('Teacher/Class/Dashboard', [
@@ -133,6 +300,7 @@ class TeacherController extends Controller
                 'totalSchedules' => 0, // You can implement this if you have a schedule system
             ],
             'recentActivities' => $recentActivities,
+            'teacher' => $teacherData, // Add teacher data here
         ]);
     }
 
@@ -159,11 +327,47 @@ class TeacherController extends Controller
      */
     public function classAssignments($classId): Response
     {
-        $class = ClassModel::findOrFail($classId);
-        
+        $class = ClassModel::with([
+                'teacher:id,name,profile_picture', // Add profile_picture here
+                'students.user:id,name,email'
+            ])
+            ->withCount('students')
+            ->findOrFail($classId);
+
+        // Check if the current user has access to this class
+        $user = Auth::user();
+        if ($user->role === 'teacher' && $class->teacher_id !== $user->id) {
+            abort(403, 'You do not have access to this class.');
+        }
+
+        // Format class data for the frontend
+        $classData = [
+            'id' => $class->id,
+            'name' => $class->name,
+            'subject' => $class->subject,
+            'grade' => $class->grade,
+            'studentCount' => $class->students_count,
+            'description' => $class->description,
+            'teacher_name' => $class->teacher->name ?? 'Unknown Teacher',
+            'teacher_id' => $class->teacher_id,
+        ];
+
+        // Get teacher data with profile picture
+        $teacher = $class->teacher ?? $user;
+        $teacherData = [
+            'id' => $teacher->id,
+            'name' => $teacher->name,
+            'email' => $teacher->email,
+            'profile_picture' => $teacher->profile_picture,
+            'profile_picture_url' => $teacher->profile_picture ? 
+                Storage::url($teacher->profile_picture) : null,
+        ];
+
         return Inertia::render('Teacher/Class/Assignments', [
-            'user' => Auth::user(),
+            'user' => $user,
             'classId' => $classId,
+            'classData' => $classData,
+            'teacher' => $teacherData, // Add teacher data here
             'initialData' => [
                 'classInfo' => $this->getClassInfo($classId),
                 'assignments' => $this->getClassAssignmentsData($classId),
@@ -176,68 +380,139 @@ class TeacherController extends Controller
      * Display class resources page
      */
     public function classResources($classId): Response
-    {
-        $class = ClassModel::findOrFail($classId);
-        
-        // Get resources for the class
-        $resources = Resource::where('class_id', $classId)
-            ->orWhereNull('class_id')
-            ->with(['teacher:id,name,email', 'class:id,name'])
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($resource) {
-                $fileInfo = [];
-                
-                if ($resource->file_path) {
-                    try {
-                        $fileSize = Storage::disk('public')->size($resource->file_path);
-                        $fileInfo['size'] = $this->formatFileSize($fileSize);
-                    } catch (\Exception $e) {
-                        $fileInfo['size'] = 'Unknown';
-                    }
+{
+    $class = ClassModel::with([
+            'teacher:id,name,profile_picture', // Add profile_picture here
+            'students.user:id,name,email'
+        ])
+        ->withCount('students')
+        ->findOrFail($classId);
+
+    // Check if the current user has access to this class
+    $user = Auth::user();
+    if ($user->role === 'teacher' && $class->teacher_id !== $user->id) {
+        abort(403, 'You do not have access to this class.');
+    }
+
+    // Get resources for the class
+    $resources = Resource::where('class_id', $classId)
+        ->orWhereNull('class_id')
+        ->with(['teacher:id,name,email', 'class:id,name'])
+        ->orderBy('created_at', 'desc')
+        ->get()
+        ->map(function ($resource) {
+            $fileInfo = [];
+            
+            if ($resource->file_path) {
+                try {
+                    $fileSize = Storage::disk('public')->size($resource->file_path);
+                    $fileInfo['size'] = $this->formatFileSize($fileSize);
+                } catch (\Exception $e) {
+                    $fileInfo['size'] = 'Unknown';
                 }
+            }
 
-                return [
-                    'id' => $resource->id,
-                    'title' => $resource->title,
-                    'type' => $resource->type,
-                    'description' => $resource->description,
-                    'file_info' => $fileInfo,
-                    'file_path' => $resource->file_path,
-                    'thumbnail_path' => $resource->thumbnail_path,
-                    'download_count' => $resource->download_count ?? 0,
-                    'created_at' => $resource->created_at->toISOString(),
-                    'teacher' => $resource->teacher,
-                    'class' => $resource->class ? $resource->class->name : 'General'
-                ];
-            });
+            return [
+                'id' => $resource->id,
+                'title' => $resource->title,
+                'type' => $resource->type,
+                'description' => $resource->description,
+                'file_info' => $fileInfo,
+                'file_path' => $resource->file_path,
+                'thumbnail_path' => $resource->thumbnail_path,
+                'download_count' => $resource->download_count ?? 0,
+                'created_at' => $resource->created_at->toISOString(),
+                'teacher' => $resource->teacher,
+                'class' => $resource->class ? $resource->class->name : 'General'
+            ];
+        });
 
-        // Always return Inertia response for page requests
-        return Inertia::render('Teacher/Class/Resources', [
-            'user' => Auth::user(),
+    // Format class data for the frontend
+    $classData = [
+        'id' => $class->id,
+        'name' => $class->name,
+        'subject' => $class->subject,
+        'grade' => $class->grade,
+        'studentCount' => $class->students_count,
+        'description' => $class->description,
+        'teacher_name' => $class->teacher->name ?? 'Unknown Teacher',
+        'teacher_id' => $class->teacher_id,
+    ];
+
+    // Get teacher data with profile picture
+    $teacher = $class->teacher ?? $user;
+    $teacherData = [
+        'id' => $teacher->id,
+        'name' => $teacher->name,
+        'email' => $teacher->email,
+        'profile_picture' => $teacher->profile_picture,
+        'profile_picture_url' => $teacher->profile_picture ? 
+            Storage::url($teacher->profile_picture) : null,
+    ];
+
+    return Inertia::render('Teacher/Class/Resources', [
+        'user' => $user,
+        'classId' => $classId,
+        'classData' => $classData,
+        'resources' => $resources,
+        'teacher' => $teacherData, // Add teacher data here
+    ]);
+}
+
+        /**
+     * Display class schedule page
+     */
+    public function classSchedule($classId): Response
+    {
+        $class = ClassModel::with([
+                'teacher:id,name,email,profile_picture', // Make sure profile_picture is included
+                'students.user:id,name,email'
+            ])
+            ->withCount('students')
+            ->findOrFail($classId);
+
+        $user = Auth::user();
+
+        // FORCE teacher data to be available
+        $teacherData = [];
+        
+        // Try class teacher first
+        if ($class->teacher) {
+            $teacherData = [
+                'id' => $class->teacher->id,
+                'name' => $class->teacher->name,
+                'email' => $class->teacher->email,
+                'profile_picture' => $class->teacher->profile_picture,
+                'profile_picture_url' => $class->teacher->profile_picture ? 
+                    Storage::url($class->teacher->profile_picture) : null,
+            ];
+        } 
+        // Fallback to current user
+        else {
+            $teacherData = [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'profile_picture' => $user->profile_picture,
+                'profile_picture_url' => $user->profile_picture ? 
+                    Storage::url($user->profile_picture) : null,
+            ];
+        }
+
+        // LOG for debugging
+        \Log::info('Schedule Page - Teacher Data:', $teacherData);
+
+        return Inertia::render('Teacher/Class/Schedule', [
+            'user' => $user,
             'classId' => $classId,
             'classData' => [
                 'id' => $class->id,
                 'name' => $class->name,
                 'subject' => $class->subject,
-                'grade' => $class->grade,
-                'teacher_name' => $class->teacher->name ?? 'Unknown Teacher',
-                'student_count' => $class->students_count ?? 0,
+                'studentCount' => $class->students_count,
+                'teacher_name' => $class->teacher->name ?? $user->name,
             ],
-            'resources' => $resources,
-        ]);
-    }
-
-    /**
-     * Display class schedule page
-     */
-    public function classSchedule($classId): Response
-    {
-        $class = ClassModel::findOrFail($classId);
-        
-        return Inertia::render('Teacher/Class/Schedule', [
-            'user' => Auth::user(),
-            'classId' => $classId,
+            'teacher' => $teacherData, // This should definitely be passed now
             'initialData' => [
                 'classInfo' => $this->getClassInfo($classId),
                 'schedule' => $this->getClassScheduleData($classId),
@@ -337,16 +612,39 @@ class TeacherController extends Controller
     public function getPublicTeachers(Request $request)
     {
         try {
-            Log::info('Fetching public teachers');
-            
             $teachers = User::where('role', 'teacher')
+                ->where('status', 'active')
                 ->select([
-                    'id', 'name', 'username', 'email', 'dob',
-                    'education_qualification', 'institute', 'experience', 'bio',
+                    'id', 
+                    'name', 
+                    'username', 
+                    'email', 
+                    'dob',
+                    'education_qualification', 
+                    'institute', 
+                    'experience', 
+                    'bio',
+                    'profile_picture', // Make sure this is included
                     'created_at'
                 ])
+                ->withCount(['classes as courses_count', 'resources as resources_count'])
                 ->orderBy('name')
-                ->get();
+                ->get()
+                ->map(function ($teacher) {
+                    return [
+                        'id' => $teacher->id,
+                        'name' => $teacher->name,
+                        'email' => $teacher->email,
+                        'education_qualification' => $teacher->education_qualification,
+                        'institute' => $teacher->institute,
+                        'experience' => $teacher->experience,
+                        'profile_picture' => $teacher->profile_picture,
+                        'courses_count' => $teacher->courses_count,
+                        'students_count' => $this->getTeacherStudentsCount($teacher->id),
+                        'rating' => $this->getTeacherRating($teacher->id),
+                        'created_at' => $teacher->created_at,
+                    ];
+                });
 
             return response()->json([
                 'success' => true,
@@ -364,6 +662,19 @@ class TeacherController extends Controller
         }
     }
 
+    private function getTeacherStudentsCount($teacherId)
+    {
+        // Implement your logic to count students for this teacher
+        return \App\Models\Student::whereHas('class', function($query) use ($teacherId) {
+            $query->where('teacher_id', $teacherId);
+        })->count();
+    }
+
+    private function getTeacherRating($teacherId)
+    {
+        // Implement your rating logic
+        return '4.8'; // Placeholder
+    }
     /**
      * Get active teachers
      */
@@ -437,15 +748,22 @@ class TeacherController extends Controller
     public function getTeacherPublicProfile($id)
     {
         try {
-            Log::info("Fetching teacher public profile with ID: {$id}");
-            
             $teacher = User::where('role', 'teacher')
                 ->where('id', $id)
                 ->select([
-                    'id', 'name', 'username', 'email', 'dob',
-                    'education_qualification', 'institute', 'experience', 'bio',
+                    'id', 
+                    'name', 
+                    'username', 
+                    'email', 
+                    'dob',
+                    'education_qualification', 
+                    'institute', 
+                    'experience', 
+                    'bio',
+                    'profile_picture', // Make sure this is included
                     'created_at'
                 ])
+                ->withCount(['classes as courses_count', 'resources as resources_count'])
                 ->first();
 
             if (!$teacher) {
@@ -455,9 +773,24 @@ class TeacherController extends Controller
                 ], 404);
             }
 
+            $teacherData = [
+                'id' => $teacher->id,
+                'name' => $teacher->name,
+                'email' => $teacher->email,
+                'education_qualification' => $teacher->education_qualification,
+                'institute' => $teacher->institute,
+                'experience' => $teacher->experience,
+                'bio' => $teacher->bio,
+                'profile_picture' => $teacher->profile_picture,
+                'courses_count' => $teacher->courses_count,
+                'students_count' => $this->getTeacherStudentsCount($teacher->id),
+                'rating' => $this->getTeacherRating($teacher->id),
+                'created_at' => $teacher->created_at,
+            ];
+
             return response()->json([
                 'success' => true,
-                'data' => $teacher
+                'data' => $teacherData
             ]);
 
         } catch (\Exception $e) {

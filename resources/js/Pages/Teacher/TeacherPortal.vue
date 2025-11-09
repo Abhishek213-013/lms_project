@@ -30,61 +30,21 @@
                 </svg>
               </div>
               
-              <!-- Theme Toggle -->
-              <button
-                @click="toggleTheme"
-                class="w-9 h-9 flex items-center justify-center rounded-full bg-orange-50 hover:bg-orange-100 transition flex-shrink-0"
-              >
-                <svg
-                  v-if="!isDark"
-                  class="w-5 h-5 text-orange-500"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 3v1m0 16v1m8.66-9h-1M4.34 12H3m15.36 6.36l-.7-.7M6.34 6.34l-.7-.7m12.02 0l-.7.7M6.34 17.66l-.7.7M12 8a4 4 0 100 8 4 4 0 000-8z"
-                  />
-                </svg>
-                <svg
-                  v-else
-                  class="w-5 h-5 text-indigo-500"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"
-                  />
-                </svg>
-              </button>
-
-              <!-- Notifications -->
-              <button class="relative p-2 text-gray-600 hover:text-blue-600 rounded-lg hover:bg-gray-100 flex-shrink-0">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM10.5 3.75a6 6 0 010 11.25"></path>
-                </svg>
-                <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
 
               <!-- User Menu -->
               <div class="relative flex-shrink-0">
                 <button 
                   @click="toggleUserMenu"
-                  class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 min-w-0"
+                  class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 min-w-0"
                 >
-                  <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span class="text-white text-sm font-semibold">{{ userInitials }}</span>
-                  </div>
-                  <div class="text-left min-w-0 hidden md:block">
-                    <p class="text-sm font-medium text-gray-700 truncate">{{ teacher.name || 'Teacher' }}</p>
-                    <p class="text-xs text-gray-500 capitalize truncate">Teacher</p>
+                  <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    <img 
+                      v-if="teacher.profile_picture_url" 
+                      :src="teacher.profile_picture_url" 
+                      :alt="teacher.name"
+                      class="w-full h-full object-cover"
+                    >
+                    <span v-else class="text-white text-sm font-semibold">{{ userInitials }}</span>
                   </div>
                   <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -92,7 +52,27 @@
                 </button>
 
                 <!-- User Dropdown -->
-                <div v-show="userMenuOpen" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                <div v-show="userMenuOpen" class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-20">
+                  <!-- User Info in Dropdown Header -->
+                  <div class="px-4 py-3 border-b border-gray-200">
+                    <div class="flex items-center space-x-3">
+                      <div class="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center overflow-hidden">
+                        <img 
+                          v-if="teacher.profile_picture_url" 
+                          :src="teacher.profile_picture_url" 
+                          :alt="teacher.name"
+                          class="w-full h-full object-cover"
+                        >
+                        <span v-else class="text-white text-sm font-semibold">{{ userInitials }}</span>
+                      </div>
+                      <div class="text-left min-w-0">
+                        <p class="text-sm font-medium text-gray-700 truncate">{{ teacher.name || 'Teacher' }}</p>
+                        <p class="text-xs text-gray-500 capitalize truncate">Teacher</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Dropdown Menu Items -->
                   <a href="#" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center" @click="editProfile">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
@@ -131,11 +111,48 @@
           <div class="bg-white rounded-lg border border-gray-200 p-6">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between">
               <div class="flex items-center space-x-4 mb-4 md:mb-0">
-                <div class="w-20 h-20 bg-purple-600 rounded-full flex items-center justify-center">
-                  <span class="text-white text-2xl font-semibold">
-                    {{ getUserInitials(teacher.name) }}
-                  </span>
+                <!-- Profile Picture with Upload Functionality -->
+                <div class="relative group">
+                  <div class="w-20 h-20 bg-purple-600 rounded-full flex items-center justify-center overflow-hidden cursor-pointer"
+                       @click="triggerProfilePictureUpload">
+                    <img 
+                      v-if="teacher.profile_picture_url" 
+                      :src="teacher.profile_picture_url" 
+                      :alt="teacher.name"
+                      class="w-full h-full object-cover"
+                    >
+                    <span v-else class="text-white text-2xl font-semibold">
+                      {{ getUserInitials(teacher.name) }}
+                    </span>
+                    
+                    <!-- Upload Overlay -->
+                    <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                      <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                      </svg>
+                    </div>
+                  </div>
+                  
+                  <!-- Remove Picture Button (only shown when picture exists) -->
+                  <button 
+                    v-if="teacher.profile_picture_url"
+                    @click.stop="removeProfilePicture"
+                    class="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors shadow-md"
+                    title="Remove profile picture"
+                  >
+                    ×
+                  </button>
+
+                  <!-- Upload Indicator -->
+                  <div v-if="uploadingPicture" class="absolute inset-0 bg-black bg-opacity-70 rounded-full flex items-center justify-center">
+                    <svg class="animate-spin w-6 h-6 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </div>
                 </div>
+                
                 <div>
                   <h2 class="text-2xl font-bold text-gray-900">{{ teacher.name }}</h2>
                   <p class="text-gray-600">{{ teacher.email }}</p>
@@ -364,6 +381,82 @@
     </div>
   </div>
 
+  <!-- Profile Picture Upload Modal -->
+  <div v-if="showProfilePictureModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-lg w-full max-w-md mx-4">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-800">Upload Profile Picture</h3>
+      </div>
+
+      <div class="p-6">
+        <!-- Image Preview -->
+        <div v-if="profilePicturePreview" class="mb-4 flex justify-center">
+          <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-200">
+            <img :src="profilePicturePreview" alt="Preview" class="w-full h-full object-cover">
+          </div>
+        </div>
+
+        <!-- Upload Area -->
+        <div 
+          @drop="handleDrop"
+          @dragover="handleDragOver"
+          @dragleave="handleDragLeave"
+          :class="`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+            isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
+          }`"
+          @click="triggerFileInput"
+        >
+          <input 
+            type="file" 
+            ref="fileInput"
+            @change="handleFileSelect"
+            accept="image/jpeg,image/png,image/jpg,image/gif"
+            class="hidden"
+          >
+          
+          <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+          
+          <p class="text-gray-600 mb-2">
+            <span class="text-blue-600 font-medium">Click to upload</span> or drag and drop
+          </p>
+          <p class="text-xs text-gray-500">
+            PNG, JPG, GIF up to 2MB
+          </p>
+        </div>
+
+        <!-- Error Message -->
+        <div v-if="uploadError" class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p class="text-sm text-red-600">{{ uploadError }}</p>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 mt-4">
+          <button 
+            type="button"
+            @click="cancelProfilePictureUpload"
+            class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            type="button"
+            @click="uploadProfilePicture"
+            :disabled="!selectedFile || uploadingPicture"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
+          >
+            <svg v-if="uploadingPicture" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ uploadingPicture ? 'Uploading...' : 'Upload Picture' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Upload Resource Modal -->
   <div v-if="showUploadModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4">
@@ -487,6 +580,33 @@
       </div>
 
       <form @submit.prevent="saveProfile" class="p-6 space-y-4">
+        <!-- Profile Picture in Edit Modal -->
+        <div class="flex items-center space-x-4">
+          <div class="relative">
+            <div class="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center overflow-hidden">
+              <img 
+                v-if="teacher.profile_picture_url" 
+                :src="teacher.profile_picture_url" 
+                :alt="teacher.name"
+                class="w-full h-full object-cover"
+              >
+              <span v-else class="text-white text-lg font-semibold">
+                {{ getUserInitials(teacher.name) }}
+              </span>
+            </div>
+          </div>
+          <div>
+            <p class="text-sm text-gray-600">Profile Picture</p>
+            <button 
+              type="button"
+              @click="triggerProfilePictureUploadFromEdit"
+              class="text-sm text-blue-600 hover:text-blue-700"
+            >
+              Change picture
+            </button>
+          </div>
+        </div>
+
         <!-- Name -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
@@ -722,9 +842,18 @@ const isDark = ref(false)
 const showUploadModal = ref(false)
 const showEditProfileModal = ref(false)
 const showMessageModal = ref(false)
+const showProfilePictureModal = ref(false)
 const uploading = ref(false)
 const savingProfile = ref(false)
 const sendingMessage = ref(false)
+const uploadingPicture = ref(false)
+
+// Profile Picture State
+const selectedFile = ref(null)
+const profilePicturePreview = ref(null)
+const isDragging = ref(false)
+const uploadError = ref(null)
+const fileInput = ref(null)
 
 // Forms
 const newResource = ref({
@@ -768,6 +897,177 @@ const userInitials = computed(() => {
 const totalStudents = computed(() => {
   return props.teacherClasses.reduce((sum, classItem) => sum + (classItem.studentCount || 0), 0)
 })
+
+// Profile Picture Methods
+const triggerProfilePictureUpload = () => {
+  showProfilePictureModal.value = true
+  uploadError.value = null
+  selectedFile.value = null
+  profilePicturePreview.value = null
+}
+
+const triggerProfilePictureUploadFromEdit = () => {
+  showEditProfileModal.value = false
+  triggerProfilePictureUpload()
+}
+
+const triggerFileInput = () => {
+  fileInput.value?.click()
+}
+
+const handleFileSelect = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    validateAndSetFile(file)
+  }
+}
+
+const handleDrop = (event) => {
+  event.preventDefault()
+  isDragging.value = false
+  
+  const files = event.dataTransfer.files
+  if (files.length > 0) {
+    validateAndSetFile(files[0])
+  }
+}
+
+const handleDragOver = (event) => {
+  event.preventDefault()
+  isDragging.value = true
+}
+
+const handleDragLeave = (event) => {
+  event.preventDefault()
+  isDragging.value = false
+}
+
+const validateAndSetFile = (file) => {
+  uploadError.value = null
+  
+  // Validate file type
+  const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif']
+  if (!validTypes.includes(file.type)) {
+    uploadError.value = 'Please select a valid image file (JPEG, PNG, JPG, GIF)'
+    return
+  }
+  
+  // Validate file size (2MB)
+  if (file.size > 2 * 1024 * 1024) {
+    uploadError.value = 'File size must be less than 2MB'
+    return
+  }
+  
+  selectedFile.value = file
+  
+  // Create preview
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    profilePicturePreview.value = e.target.result
+  }
+  reader.readAsDataURL(file)
+}
+
+const uploadProfilePicture = async () => {
+  if (!selectedFile.value) return
+  
+  uploadingPicture.value = true
+  uploadError.value = null
+  
+  try {
+    const formData = new FormData()
+    formData.append('profile_picture', selectedFile.value)
+    
+    const response = await fetch(`/api/profile-picture/teacher/${props.teacher.id}/upload`, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+        'Accept': 'application/json', // Explicitly ask for JSON
+      },
+      body: formData
+    })
+    
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type');
+    let result;
+    
+    if (contentType && contentType.includes('application/json')) {
+      result = await response.json();
+    } else {
+      // Handle non-JSON response (likely an error page)
+      const text = await response.text();
+      console.error('Non-JSON response:', text);
+      throw new Error('Server returned an error. Please try again.');
+    }
+    
+    if (result.success) {
+      // Update the teacher object with new profile picture URL
+      props.teacher.profile_picture_url = result.profile_picture_url
+      props.teacher.profile_picture = result.profile_picture_path
+      
+      showProfilePictureModal.value = false
+      selectedFile.value = null
+      profilePicturePreview.value = null
+      
+      // Show success message
+      alert('Profile picture updated successfully!')
+    } else {
+      uploadError.value = result.message || 'Failed to upload profile picture'
+    }
+  } catch (error) {
+    console.error('Error uploading profile picture:', error)
+    uploadError.value = error.message || 'An error occurred while uploading the picture'
+    
+    // If it's a server error, show more details
+    if (error.message.includes('Server returned an error')) {
+      uploadError.value = 'Server error occurred. Please check if the upload endpoint is working.';
+    }
+  } finally {
+    uploadingPicture.value = false
+  }
+}
+
+const removeProfilePicture = async () => {
+  if (!confirm('Are you sure you want to remove your profile picture?')) {
+    return
+  }
+  
+  uploadingPicture.value = true
+  
+  try {
+    const response = await fetch(`/api/profile-picture/teacher/${props.teacher.id}`, {
+      method: 'DELETE',
+      headers: {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+        'Content-Type': 'application/json',
+      },
+    })
+    
+    const result = await response.json()
+    
+    if (result.success) {
+      // Remove profile picture from teacher object
+      props.teacher.profile_picture_url = null
+      props.teacher.profile_picture = null
+      
+      alert('Profile picture removed successfully!')
+    } else {
+      alert(result.message || 'Failed to remove profile picture')
+    }
+  } catch (error) {
+    console.error('Error removing profile picture:', error)
+    alert('An error occurred while removing the picture')
+  } finally {
+    uploadingPicture.value = false
+  }
+}
+
+const cancelProfilePictureUpload = () => {
+  showProfilePictureModal.value = false
+  selectedFile.value = null
+  profilePicturePreview.value = null
+  uploadError.value = null
+}
 
 // Helper Functions
 const getUserInitials = (name) => {
@@ -1009,12 +1309,15 @@ const handleClickOutside = (event) => {
 // Lifecycle
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  
+  // Ensure teacher object has profile_picture_url
+  if (props.teacher?.profile_picture && !props.teacher.profile_picture_url) {
+    props.teacher.profile_picture_url = `/storage/${props.teacher.profile_picture}`
+  }
 })
 </script>
 
 <style scoped>
-
-
 /* Use deep selector to override */
 :deep(*) {
     font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
@@ -1024,7 +1327,6 @@ onMounted(() => {
 .custom-heading {
     font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
 }
-
 
 .rotate-180 {
   transform: rotate(180deg);
@@ -1041,5 +1343,19 @@ onMounted(() => {
 .submenu-link:hover {
   color: #4f46e5;
   background-color: #f9fafb;
+}
+
+/* Profile picture hover effects */
+.group:hover .group-hover\:opacity-100 {
+  opacity: 1;
+}
+
+:deep(*) {
+    font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+    font-weight: 400;
+}
+
+.custom-heading {
+    font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
 }
 </style>

@@ -20,6 +20,7 @@ use App\Http\Controllers\StudentProfileController;
 use App\Http\Controllers\MyCoursesController;
 use App\Http\Controllers\LearningProgressController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\InstructorController; // Add this line
 use Illuminate\Support\Facades\Route;
 
 // ============ PUBLIC ROUTES ============
@@ -30,12 +31,13 @@ Route::get('/courses', [FrontendController::class, 'courses'])->name('courses');
 Route::get('/course/{id}', [FrontendController::class, 'courseSingle'])->name('course.single');
 Route::get('/instructors', [FrontendController::class, 'instructors'])->name('instructors');
 Route::get('/instructor/{id}', [FrontendController::class, 'instructorDetails'])->name('instructor.details');
+Route::post('/instructors/reorder', [FrontendController::class, 'reorder'])->name('instructors.reorder');
 Route::get('/about', [FrontendController::class, 'about'])->name('about');
 Route::get('/contact', [FrontendController::class, 'contact'])->name('contact');
 Route::get('/blog', [FrontendController::class, 'blog'])->name('blog');
 Route::get('/blog/{slug}', [FrontendController::class, 'blogPost'])->name('blog.post');
 
-// Language switching routes - ADDED HERE
+// Language switching routes
 Route::post('/switch-language/{lang}', [FrontendController::class, 'switchLanguage'])->name('switch.language');
 Route::get('/switch-language/{lang}', [FrontendController::class, 'switchLanguage'])->name('switch.language.get');
 
@@ -45,7 +47,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/registration', [AuthController::class, 'showRegistration'])->name('registration');
 Route::post('/register', [AuthController::class, 'register'])->name('register');
 
-// TEACHER REGISTRATION ROUTES - ADDED HERE
+// TEACHER REGISTRATION ROUTES
 Route::get('/teacher-registration', [AuthController::class, 'showTeacherRegistration'])->name('teacher.registration');
 Route::post('/teacher-registration', [AuthController::class, 'teacherRegister'])->name('teacher.registration.post');
 
@@ -65,15 +67,15 @@ Route::prefix('api')->middleware('web')->group(function () {
     Route::get('/public/teachers/{id}', [TeacherController::class, 'getTeacherPublicProfile']);
     Route::get('/public/categories', [CourseController::class, 'getPublicCategories']);
     
-    // 🔍 ADD THE MISSING SEARCH CLASSES ROUTE HERE
+    // Search classes route
     Route::get('/search-classes', [CourseController::class, 'searchClasses'])->name('api.search-classes');
     
-    // Content API Routes (Public - for frontend pages) - UPDATED WITH LANGUAGE SUPPORT
+    // Content API Routes (Public - for frontend pages)
     Route::get('/content/about/{language?}', [ContentController::class, 'getAboutContent'])->name('api.content.about');
     Route::get('/content/home/{language?}', [ContentController::class, 'getHomeContent'])->name('api.content.home');
     Route::get('/content/{language?}', [ContentController::class, 'getAllContent'])->name('api.content.all');
     
-    // Language API Routes - ADDED HERE
+    // Language API Routes
     Route::post('/switch-language/{lang}', [FrontendController::class, 'switchLanguage'])->name('api.switch.language');
     Route::get('/current-language', function() {
         return response()->json([
@@ -93,13 +95,17 @@ Route::prefix('api')->middleware('web')->group(function () {
     Route::get('/video-proxy', [VideoProxyController::class, 'proxy']);
     Route::get('/video-player', [VideoProxyController::class, 'player']);
     
-    // NEW: Direct Video Stream Routes
+    // Direct Video Stream Routes
     Route::get('/youtube-direct-stream', [VideoController::class, 'getYouTubeDirectStream']);
     Route::get('/video-proxy/{videoId}', [VideoController::class, 'proxyVideo']);
     
     // User Management Public Routes (for registration)
     Route::post('/public/users/check-username', [UserController::class, 'checkUsernameAvailability']);
     Route::post('/public/users/check-email', [UserController::class, 'checkEmailAvailability']);
+    
+    // 🔥 PROFILE PICTURE UPLOAD ROUTE - MOVE TO AUTHENTICATED SECTION
+    // Route::post('/profile-picture/teacher/{id}/upload', [TeacherController::class, 'uploadProfilePicture'])
+    //     ->name('api.profile-picture.upload');
     
     // Health check
     Route::get('/health', function () {
@@ -129,7 +135,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     // ============ STUDENT PROFILE ROUTES ============
-    // NEW: Student profile routes at root level (not under /student prefix)
     Route::middleware(['role:student'])->group(function () {
         // New Profile Dropdown Routes - accessible at root level
         Route::get('/student-profile', [StudentProfileController::class, 'show'])->name('student.profile.new');
@@ -232,7 +237,6 @@ Route::middleware(['auth'])->group(function () {
         });
 
         // Content Management Routes (for both admin and super_admin)
-        // Content management routes
         Route::prefix('admin/content-management')->group(function () {
             Route::get('/', [ContentManagementController::class, 'index'])->name('content.management');
             Route::post('/save', [ContentManagementController::class, 'save'])->name('content.save');
@@ -292,18 +296,18 @@ Route::middleware(['auth'])->group(function () {
 
         // ============ INDIVIDUAL CLASS MANAGEMENT ============
         Route::prefix('/class/{classId}')->group(function () {
-            // Class Dashboard
+            // Class Dashboard - FIXED: Added teacher data
             Route::get('/', [TeacherController::class, 'classDashboard'])->name('teacher.class.dashboard');
             
-            // Class-specific Assignments
-            Route::get('/assignments', [AssignmentController::class, 'classAssignments'])->name('teacher.class.assignments');
+            // Class-specific Assignments - FIXED: Added teacher data
+            Route::get('/assignments', [TeacherController::class, 'classAssignments'])->name('teacher.class.assignments');
             Route::get('/assignments/create', [AssignmentController::class, 'createAssignmentPage'])->name('teacher.class.assignments.create');
             Route::get('/assignments/{assignmentId}/edit', [AssignmentController::class, 'editAssignmentPage'])->name('teacher.class.assignments.edit');
             
-            // Class-specific Resources
+            // Class-specific Resources - FIXED: Added teacher data
             Route::get('/resources', [TeacherController::class, 'classResources'])->name('teacher.class.resources');
             
-            // Class Schedule
+            // Class Schedule - FIXED: Added teacher data
             Route::get('/schedule', [ScheduleController::class, 'classSchedule'])->name('teacher.class.schedule');
             Route::post('/schedules', [ScheduleController::class, 'storeSchedule'])->name('teacher.class.schedules.store');
             Route::put('/schedules/{scheduleId}', [ScheduleController::class, 'updateSchedule'])->name('teacher.class.schedules.update');
@@ -316,6 +320,9 @@ Route::middleware(['auth'])->group(function () {
         // Analytics & Settings
         Route::get('/analytics', [TeacherController::class, 'analytics'])->name('teacher.analytics');
         Route::get('/settings', [TeacherController::class, 'settings'])->name('teacher.settings');
+        
+        // Teacher Profile Edit
+        Route::get('/profile/edit', [TeacherController::class, 'editProfile'])->name('teacher.profile.edit');
     });
 
     // ============ PROTECTED API ROUTES ============
@@ -324,7 +331,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/video-proxy', [VideoProxyController::class, 'proxy']);
         Route::get('/video-player', [VideoProxyController::class, 'player']);
         
-        // ADD THE NEW VIDEO STREAM ROUTES HERE:
+        // Direct Video Stream Routes
         Route::get('/youtube-direct-stream', [VideoController::class, 'getYouTubeDirectStream']);
         Route::get('/video-proxy/{videoId}', [VideoController::class, 'proxyVideo']);
 
@@ -334,7 +341,7 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/save', [ContentController::class, 'saveContent']);
             Route::post('/save-bulk', [ContentController::class, 'saveBulkContent']);
             
-            // ADD CONTENT IMAGE UPLOAD ROUTES
+            // Content image upload routes
             Route::post('/upload-image', [ContentController::class, 'uploadImage'])->name('api.content.upload-image');
             Route::post('/remove-image', [ContentController::class, 'removeImage'])->name('api.content.remove-image');
         });
@@ -356,7 +363,7 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/students/create', [UserController::class, 'createStudent'])->name('api.users.students.create');
         });
 
-        // Course API Routes - FIXED SECTION
+        // Course API Routes
         Route::prefix('courses')->group(function () {
             Route::get('/classes', [CourseController::class, 'getClasses']);
             Route::post('/classes', [CourseController::class, 'createClass']);
@@ -365,7 +372,6 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/subject/{subjectId}/assign-teacher', [CourseController::class, 'assignTeacher']);
             Route::delete('/subject/{subjectId}/teacher/{teacherId}', [CourseController::class, 'removeTeacher']);
             
-            // 🔥 CRITICAL FIX: Make sure this route is properly defined
             Route::put('/{courseId}', [CourseController::class, 'updateCourse'])->name('api.courses.update');
             
             Route::get('/{courseId}', [CourseController::class, 'getCourse']);
@@ -391,7 +397,7 @@ Route::middleware(['auth'])->group(function () {
             // Debug route for course issues
             Route::get('/debug/courses', [CourseController::class, 'debugCourses']);
             
-            // 🔍 ADD THE SEARCH CLASSES ROUTE HERE TOO FOR CONSISTENCY
+            // Search classes route
             Route::get('/search-classes', [CourseController::class, 'searchClasses'])->name('api.courses.search-classes');
         });
 
@@ -409,6 +415,11 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{id}/public-profile', [TeacherController::class, 'getTeacherPublicProfile']);
             Route::get('/{id}/public-courses', [TeacherController::class, 'getTeacherPublicCourses']);
             Route::get('/{id}/portal-data', [TeacherController::class, 'getTeacherPortalData']);
+            
+            // 🔥 PROFILE PICTURE ROUTES - CORRECTLY PLACED IN AUTHENTICATED SECTION
+            Route::post('/{id}/profile-picture/upload', [TeacherController::class, 'uploadProfilePicture'])->name('api.teacher.profile-picture.upload');
+            Route::delete('/{id}/profile-picture', [TeacherController::class, 'deleteProfilePicture'])->name('api.teacher.profile-picture.delete');
+            Route::get('/{id}/profile-picture', [TeacherController::class, 'getProfilePicture'])->name('api.teacher.profile-picture.get');
             
             // Teacher roster and schedule
             Route::get('/{id}/roster', [TeacherController::class, 'getTeacherRoster'])->name('api.teacher.roster');
@@ -521,6 +532,7 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/{id}/reject', [InstructorRequestController::class, 'rejectRequest']);
         });
 
+
         // Student Profile API Routes
         Route::prefix('student-profile')->group(function () {
             Route::get('/data', [StudentProfileController::class, 'getProfileData'])->name('api.student-profile.data');
@@ -543,7 +555,7 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/files/{filename}', [TeacherController::class, 'deleteFile']);
             Route::post('/profile-image', [UserController::class, 'uploadProfileImage']);
             
-            // ADD CONTENT IMAGE UPLOAD ROUTE
+            // Content image upload route
             Route::post('/content-image', [ContentManagementController::class, 'uploadImage'])->name('api.upload.content-image');
         });
 
@@ -553,6 +565,13 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/teacher-stats', [TeacherController::class, 'getTeacherStats']);
             Route::get('/admin-stats', [AdminController::class, 'getAdminStats']);
             Route::get('/student-stats', [StudentController::class, 'getStudentStats']);
+        });
+
+        // 🔥 PROFILE PICTURE API ROUTES (Alternative location - also authenticated)
+        Route::prefix('profile-picture')->group(function () {
+            Route::post('/teacher/{id}/upload', [TeacherController::class, 'uploadProfilePicture'])->name('api.profile-picture.teacher.upload');
+            Route::delete('/teacher/{id}', [TeacherController::class, 'deleteProfilePicture'])->name('api.profile-picture.teacher.delete');
+            Route::get('/teacher/{id}', [TeacherController::class, 'getProfilePicture'])->name('api.profile-picture.teacher.get');
         });
     });
 });
@@ -578,7 +597,7 @@ Route::get('/storage/assignments/{filename}', function ($filename) {
     return response()->file($path);
 })->name('storage.assignments');
 
-// ADD CONTENT IMAGES PUBLIC ACCESS ROUTE
+// Content images public access route
 Route::get('/storage/content-images/{filename}', function ($filename) {
     $path = storage_path('app/public/content-images/' . $filename);
     
@@ -588,6 +607,17 @@ Route::get('/storage/content-images/{filename}', function ($filename) {
     
     return response()->file($path);
 })->name('storage.content-images');
+
+// 🔥 PROFILE PICTURES PUBLIC ACCESS ROUTE
+Route::get('/storage/profile-pictures/{filename}', function ($filename) {
+    $path = storage_path('app/public/profile-pictures/' . $filename);
+    
+    if (!file_exists($path)) {
+        abort(404);
+    }
+    
+    return response()->file($path);
+})->name('storage.profile-pictures');
 
 // Fallback route for SPA
 Route::get('/{any}', function () {

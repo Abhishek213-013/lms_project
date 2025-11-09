@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
 {
@@ -24,9 +25,11 @@ class User extends Authenticatable
         'password',
         'role',
         'experience',
-        'bio', // Make sure this is included
+        'bio',
         'status',
-        'rejection_reason'
+        'rejection_reason',
+        'profile_picture',
+        'order_column' // Add this line
     ];
 
     protected $hidden = [
@@ -75,12 +78,20 @@ class User extends Authenticatable
         return $query->where('status', 'inactive');
     }
 
+    public function scopeOrderedTeachers($query)
+    {
+        return $query->where('role', 'teacher')
+                    ->where('status', 'active')
+                    ->orderBy('order_column');
+    }
     /**
      * Scope a query to only include approved teachers (active status).
      */
     public function scopeApprovedTeachers($query)
     {
-        return $query->where('role', 'teacher')->where('status', 'active');
+        return $query->where('role', 'teacher')
+                    ->where('status', 'active')
+                    ->orderBy('order_column'); // Add order by
     }
 
     /**
@@ -348,18 +359,26 @@ class User extends Authenticatable
     /**
      * Get the user's avatar URL.
      */
-    public function getAvatarUrlAttribute(): string
+    // In User model
+    // In User model (app/Models/User.php)
+    public function getProfilePictureUrlAttribute()
     {
-        // You can implement your avatar logic here
-        $avatars = [
-            '/assets/img/instructor/instructor01.png',
-            '/assets/img/instructor/instructor02.png',
-            '/assets/img/instructor/instructor03.png',
-            '/assets/img/instructor/instructor04.png'
-        ];
+        if (!$this->profile_picture) {
+            return $this->avatar_url ?? '/assets/img/instructor/instructor01.png';
+        }
         
-        $avatarIndex = ($this->id - 1) % count($avatars);
-        return $avatars[$avatarIndex];
+        // If it's already a full URL, return it
+        if (filter_var($this->profile_picture, FILTER_VALIDATE_URL)) {
+            return $this->profile_picture;
+        }
+        
+        // Check if file exists in storage
+        if (Storage::disk('public')->exists($this->profile_picture)) {
+            return Storage::disk('public')->url($this->profile_picture);
+        }
+        
+        // Fallback
+        return '/assets/img/instructor/instructor01.png';
     }
 
     /**

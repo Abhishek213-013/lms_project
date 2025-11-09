@@ -12,7 +12,21 @@
                 <div class="sidebar-card profile-card">
                   <div class="profile-header">
                     <div class="profile-avatar">
-                      <img :src="instructor.avatar" :alt="instructor.name" @error="handleImageError">
+                      <img 
+                        :src="profilePictureUrl" 
+                        :alt="instructor.name" 
+                        @error="handleProfilePictureError"
+                        class="profile-picture"
+                      >
+                      <!-- Upload overlay for teacher's own profile -->
+                      <div 
+                        v-if="canEditProfile" 
+                        class="profile-upload-overlay"
+                        @click="triggerProfilePictureUpload"
+                      >
+                        <i class="fas fa-camera"></i>
+                        <span>{{ t('Change Photo') }}</span>
+                      </div>
                     </div>
                     <div class="profile-info">
                       <h2 class="title">{{ instructor.name }}</h2>
@@ -175,7 +189,6 @@
                         </div>
                         <div class="intro-video-content">
                           <h5 class="video-title">{{ getCleanTitle(introVideo.title) }}</h5>
-                          <!-- Removed description -->
                           <div class="video-stats-simple">
                             <span><i class="far fa-clock"></i> {{ introVideo.duration || '15:30' }}</span>
                             <span><i class="far fa-calendar"></i> {{ formatDate(introVideo.created_at) }}</span>
@@ -309,153 +322,147 @@
         </div>
       </section>
 
-      <!-- Video Player Modal - Fixed Z-Index Issue -->
+      <!-- Profile Picture Upload Modal -->
+      <div v-if="showProfilePictureModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg w-full max-w-md mx-4">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-800">{{ t('Upload Profile Picture') }}</h3>
+          </div>
+
+          <div class="p-6">
+            <!-- Image Preview -->
+            <div v-if="profilePicturePreview" class="mb-4 flex justify-center">
+              <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-200">
+                <img :src="profilePicturePreview" alt="Preview" class="w-full h-full object-cover">
+              </div>
+            </div>
+
+            <!-- Upload Area -->
+            <div 
+              @drop="handleDrop"
+              @dragover="handleDragOver"
+              @dragleave="handleDragLeave"
+              :class="`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+                isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
+              }`"
+              @click="triggerFileInput"
+            >
+              <input 
+                type="file" 
+                ref="fileInput"
+                @change="handleFileSelect"
+                accept="image/jpeg,image/png,image/jpg,image/gif"
+                class="hidden"
+              >
+              
+              <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+              
+              <p class="text-gray-600 mb-2">
+                <span class="text-blue-600 font-medium">{{ t('Click to upload') }}</span> {{ t('or drag and drop') }}
+              </p>
+              <p class="text-xs text-gray-500">
+                PNG, JPG, GIF {{ t('up to 2MB') }}
+              </p>
+            </div>
+
+            <!-- Error Message -->
+            <div v-if="uploadError" class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p class="text-sm text-red-600">{{ uploadError }}</p>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 mt-4">
+              <button 
+                type="button"
+                @click="cancelProfilePictureUpload"
+                class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                {{ t('Cancel') }}
+              </button>
+              <button 
+                type="button"
+                @click="uploadProfilePicture"
+                :disabled="!selectedFile || uploadingPicture"
+                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
+              >
+                <svg v-if="uploadingPicture" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                {{ uploadingPicture ? t('Uploading...') : t('Upload Picture') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Video Player Modal -->
       <div 
         v-if="showVideoPlayer && currentVideo" 
         class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-50 video-player-modal"
         @click.self="closeVideoPlayer"
       >
-        <div class="bg-white rounded-lg w-full max-w-4xl flex flex-col shadow-2xl border border-gray-300 max-h-[90vh] overflow-hidden relative z-50">
-          <!-- Header - Fixed z-index -->
-          <div class="px-6 py-4 bg-white border-b border-gray-200 flex-shrink-0 relative z-50">
-            <div class="flex justify-between items-center">
-              <h3 class="text-xl font-semibold text-gray-800 truncate flex-1 mr-4">
-                {{ getCleanTitle(currentVideo.title) }}
-              </h3>
-              <button 
-                @click="closeVideoPlayer" 
-                class="text-gray-500 hover:text-gray-700 transition-colors flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 flex-shrink-0 relative z-50"
-                aria-label="Close video player"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-              </button>
-            </div>
+        <div class="bg-white rounded-lg w-full max-w-4xl mx-4">
+          <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-800">{{ currentVideo.title }}</h3>
+            <button 
+              @click="closeVideoPlayer" 
+              class="text-gray-500 hover:text-gray-700 transition-colors"
+              aria-label="Close video player"
+            >
+              <i class="fas fa-times text-xl"></i>
+            </button>
           </div>
           
-          <!-- Video Content Area - With proper z-index containment -->
-          <div class="flex-1 min-h-0 bg-black flex items-center justify-center p-6 relative">
-            <div class="w-full max-w-3xl border-4 border-gray-300 rounded-xl overflow-hidden bg-black aspect-video relative video-container">
-              <!-- Pure Video Player for direct streams -->
-              <div v-if="currentVideo.directVideoUrl" class="w-full h-full relative z-10">
+          <div class="p-6">
+            <div class="video-container aspect-w-16 aspect-h-9 bg-black rounded-lg overflow-hidden">
+              <div v-if="currentVideo.isEmbed" class="iframe-container youtube-isolation-fix">
+                <iframe 
+                  :src="currentVideo.ultraCleanUrl" 
+                  frameborder="0" 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                  allowfullscreen
+                  class="w-full h-full"
+                ></iframe>
+              </div>
+              <div v-else-if="currentVideo.isDirectStream || currentVideo.isDirectVideo" class="w-full h-full">
                 <video 
                   ref="videoPlayer"
+                  :src="currentVideo.directVideoUrl" 
                   controls
-                  autoplay
                   class="w-full h-full"
-                  :poster="currentVideo.thumbnail"
                   @play="isPlaying = true"
                   @pause="isPlaying = false"
                   @ended="isPlaying = false"
                 >
-                  <source :src="currentVideo.directVideoUrl" type="video/mp4">
-                  {{ t('Your browser does not support the video tag.') }}
+                  Your browser does not support the video tag.
                 </video>
-                
-                <!-- Custom Play Button Overlay -->
-                <div 
-                  v-if="!isPlaying" 
-                  class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 cursor-pointer transition-opacity duration-300 z-20"
-                  @click="playPauseVideo"
-                >
-                  <div class="w-20 h-20 bg-white bg-opacity-95 rounded-full flex items-center justify-center shadow-2xl hover:bg-white transition-all hover:scale-110 border-2 border-gray-200">
-                    <svg class="w-10 h-10 text-gray-800 ml-1" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z"/>
-                    </svg>
-                  </div>
-                </div>
               </div>
-              
-              <!-- YouTube embed with z-index isolation -->
-              <div v-else-if="currentVideo.ultraCleanUrl" class="w-full h-full relative">
-                <!-- YouTube Container with transform to create new stacking context -->
-                <div class="absolute inset-0 flex items-center justify-center p-2 transform translate-z-0">
-                  <div class="w-full h-full rounded-lg overflow-hidden iframe-container relative z-0">
-                    <iframe 
-                      :src="currentVideo.ultraCleanUrl"
-                      class="w-full h-full"
-                      frameborder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowfullscreen
-                      @load="handleIframeLoad"
-                      style="position: relative; z-index: 0;"
-                    ></iframe>
-                  </div>
-                </div>
-                
-                <!-- Protective overlay to prevent YouTube from capturing clicks outside video area -->
-                <div class="absolute inset-0 pointer-events-none z-10">
-                  <div class="absolute -inset-4 bg-transparent"></div>
-                </div>
-                
-                <!-- Border overlay - always on top -->
-                <div class="absolute inset-0 border-2 border-gray-300 pointer-events-none rounded-lg z-30"></div>
+              <div v-else class="flex items-center justify-center h-64 text-white">
+                <p>Unable to load video</p>
               </div>
-              
-              <!-- Error state -->
-              <div v-else class="w-full h-full flex items-center justify-center text-white bg-gray-800 relative z-10">
-                <div class="text-center p-8">
-                  <svg class="w-16 h-16 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                  </svg>
-                  <p class="text-lg font-medium mb-2">{{ t('Unable to load video') }}</p>
-                  <p class="text-sm text-gray-300 mb-6">{{ t('The video could not be loaded.') }}</p>
-                  <div class="flex space-x-3 justify-center">
-                    <button 
-                      @click="closeVideoPlayer"
-                      class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium border border-blue-700 relative z-50"
-                    >
-                      {{ t('Close') }}
-                    </button>
-                    <button 
-                      v-if="currentVideo.originalUrl"
-                      @click="openInNewTab(currentVideo.originalUrl)"
-                      class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium border border-gray-700 relative z-50"
-                    >
-                      {{ t('Open Original') }}
-                    </button>
-                  </div>
-                </div>
+            </div>
+            
+            <div class="mt-4 video-info">
+              <h4 class="text-lg font-semibold mb-2">{{ currentVideo.title }}</h4>
+              <div class="flex flex-wrap gap-4 text-sm text-gray-600">
+                <span><i class="far fa-clock mr-1"></i> {{ currentVideo.duration || 'N/A' }}</span>
+                <span><i class="far fa-calendar mr-1"></i> {{ formatDate(currentVideo.created_at) }}</span>
+                <span class="video-class">{{ getClassName(currentVideo.class_id) }}</span>
               </div>
-              
-              <!-- Loading state -->
-              <div v-if="isLoading" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-80 z-40">
-                <div class="text-center">
-                  <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                  <p class="text-white text-sm">{{ t('Loading video...') }}</p>
-                </div>
-              </div>
+              <p v-if="currentVideo.description" class="mt-2 text-gray-700">{{ currentVideo.description }}</p>
             </div>
           </div>
           
-          <!-- Footer Area - Fixed z-index -->
-          <div class="bg-white px-6 py-4 border-t border-gray-200 flex-shrink-0 relative z-50">
-            <div class="flex justify-between items-center text-sm">
-              <div class="flex items-center space-x-4 text-gray-600">
-                <span class="font-medium">{{ t('Video Player') }}</span>
-                <span class="text-xs bg-gray-100 px-2 py-1 rounded">{{ currentVideo.isDirectStream ? t('Direct Stream') : t('YouTube') }}</span>
-              </div>
-              <div class="flex space-x-3">
-                <button 
-                  v-if="currentVideo.directVideoUrl"
-                  @click="playPauseVideo"
-                  class="flex items-center space-x-2 text-blue-600 hover:text-blue-800 font-medium transition-colors relative z-50"
-                >
-                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                    <path v-if="isPlaying" d="M6 4h4v16H6zM14 4h4v16h-4z"/>
-                    <path v-else d="M8 5v14l11-7z"/>
-                  </svg>
-                  <span>{{ isPlaying ? t('Pause') : t('Play') }}</span>
-                </button>
-                <button 
-                  @click="closeVideoPlayer"
-                  class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium text-sm relative z-50"
-                >
-                  {{ t('Close Player') }}
-                </button>
-              </div>
-            </div>
+          <div class="px-6 py-4 border-t border-gray-200 flex justify-end">
+            <button 
+              @click="closeVideoPlayer" 
+              class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+            >
+              {{ t('Close') }}
+            </button>
           </div>
         </div>
       </div>
@@ -489,10 +496,23 @@ const props = defineProps({
   stats: {
     type: Object,
     default: () => ({})
+  },
+  auth: {
+    type: Object,
+    default: () => ({})
   }
 });
 
-// Reactive data
+// Reactive data for profile picture
+const showProfilePictureModal = ref(false);
+const selectedFile = ref(null);
+const profilePicturePreview = ref(null);
+const isDragging = ref(false);
+const uploadError = ref(null);
+const uploadingPicture = ref(false);
+const fileInput = ref(null);
+
+// Existing reactive data
 const selectedVideo = ref(null);
 const currentVideo = ref(null);
 const showVideoPlayer = ref(false);
@@ -503,42 +523,196 @@ const currentPage = ref(1);
 const currentTheme = ref('light');
 const isPlaying = ref(false);
 const isLoading = ref(false);
-
-// Add icon render key to force re-render
 const iconRenderKey = ref(0);
 
-// Enhanced language change handler with icon preservation
-const handleLanguageChange = async (event) => {
-  // Force re-render of icons
-  iconRenderKey.value++;
-  
-  // Small delay to ensure DOM updates
-  await nextTick();
-};
-
-// Handle theme changes
-const handleThemeChange = (event) => {
-  currentTheme.value = event.detail.theme;
-};
-
-// Load language and theme preferences from localStorage
-onMounted(() => {
-  const savedTheme = localStorage.getItem('preferredTheme');
-  currentTheme.value = savedTheme || 'light';
-  
-  // Listen for language changes from navbar
-  window.addEventListener('languageChanged', handleLanguageChange);
-  
-  // Listen for theme changes
-  window.addEventListener('themeChanged', handleThemeChange);
+// Computed properties
+const canEditProfile = computed(() => {
+  // Check if the authenticated user is viewing their own profile
+  return props.auth.user && props.auth.user.id === props.instructor.id;
 });
 
-onUnmounted(() => {
-  window.removeEventListener('languageChanged', handleLanguageChange);
-  window.removeEventListener('themeChanged', handleThemeChange);
+const profilePictureUrl = computed(() => {
+  console.log('🔄 [profilePictureUrl] Computing profile picture URL');
+  console.log('📊 Instructor profile_picture field:', props.instructor?.profile_picture);
+  
+  // Use only profile_picture from database
+  if (props.instructor?.profile_picture) {
+    console.log('✅ Using profile_picture from database:', props.instructor.profile_picture);
+    
+    // If it's already a full URL, use it directly
+    if (props.instructor.profile_picture.startsWith('http')) {
+      console.log('🌐 Already a full URL');
+      return props.instructor.profile_picture;
+    }
+    
+    // Handle storage path - ensure it starts with /storage/
+    let picturePath = props.instructor.profile_picture;
+    
+    // Remove any leading slashes or storage/ prefixes to avoid double slashes
+    picturePath = picturePath.replace(/^\/+/, '').replace(/^storage\//, '');
+    
+    // Construct the proper URL
+    const finalUrl = `/storage/${picturePath}`;
+    
+    console.log('🖼️ Final profile picture URL:', finalUrl);
+    console.log('🔍 Path transformation:', {
+      original: props.instructor.profile_picture,
+      cleaned: picturePath,
+      final: finalUrl
+    });
+    
+    return finalUrl;
+  }
+  
+  // No profile picture found
+  console.log('❌ No profile picture found, using default');
+  console.log('🔍 Available instructor fields:', Object.keys(props.instructor || {}));
+  return '/assets/img/instructor/instructor01.png';
 });
 
-// COMPUTED PROPERTIES
+// Profile Picture Methods
+const triggerProfilePictureUpload = () => {
+  if (!canEditProfile.value) return;
+  
+  showProfilePictureModal.value = true;
+  uploadError.value = null;
+  selectedFile.value = null;
+  profilePicturePreview.value = null;
+};
+
+const triggerFileInput = () => {
+  fileInput.value?.click();
+};
+
+const handleFileSelect = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    validateAndSetFile(file);
+  }
+};
+
+const handleDrop = (event) => {
+  event.preventDefault();
+  isDragging.value = false;
+  
+  const files = event.dataTransfer.files;
+  if (files.length > 0) {
+    validateAndSetFile(files[0]);
+  }
+};
+
+const handleDragOver = (event) => {
+  event.preventDefault();
+  isDragging.value = true;
+};
+
+const handleDragLeave = (event) => {
+  event.preventDefault();
+  isDragging.value = false;
+};
+
+const validateAndSetFile = (file) => {
+  uploadError.value = null;
+  
+  // Validate file type
+  const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+  if (!validTypes.includes(file.type)) {
+    uploadError.value = t('Please select a valid image file (JPEG, PNG, JPG, GIF)');
+    return;
+  }
+  
+  // Validate file size (2MB)
+  if (file.size > 2 * 1024 * 1024) {
+    uploadError.value = t('File size must be less than 2MB');
+    return;
+  }
+  
+  selectedFile.value = file;
+  
+  // Create preview
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    profilePicturePreview.value = e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+
+const uploadProfilePicture = async () => {
+  if (!selectedFile.value || !canEditProfile.value) return;
+  
+  uploadingPicture.value = true;
+  uploadError.value = null;
+  
+  try {
+    const formData = new FormData();
+    formData.append('profile_picture', selectedFile.value);
+    
+    console.log('📤 [uploadProfilePicture] Uploading for instructor:', props.instructor.id);
+    
+    const response = await fetch(`/api/profile-picture/teacher/${props.instructor.id}/upload`, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+      },
+      body: formData
+    });
+    
+    // Handle both JSON and non-JSON responses
+    const text = await response.text();
+    let result;
+    
+    try {
+      result = JSON.parse(text);
+    } catch (parseError) {
+      console.error('❌ Failed to parse JSON:', text);
+      throw new Error(t('Server returned an invalid response'));
+    }
+    
+    if (result.success) {
+      console.log('✅ [uploadProfilePicture] Upload successful:', result);
+      
+      // Update the instructor object with new profile picture data
+      props.instructor.profile_picture = result.profile_picture_path;
+      
+      showProfilePictureModal.value = false;
+      selectedFile.value = null;
+      profilePicturePreview.value = null;
+      
+      // Show success message
+      alert(t('Profile picture updated successfully!'));
+      
+      // Force refresh the page to get updated data from server
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+      
+    } else {
+      uploadError.value = result.message || t('Failed to upload profile picture');
+      console.error('❌ [uploadProfilePicture] Upload failed:', result);
+    }
+  } catch (error) {
+    console.error('❌ [uploadProfilePicture] Error:', error);
+    uploadError.value = error.message || t('An error occurred while uploading the picture');
+  } finally {
+    uploadingPicture.value = false;
+  }
+};
+
+const cancelProfilePictureUpload = () => {
+  showProfilePictureModal.value = false;
+  selectedFile.value = null;
+  profilePicturePreview.value = null;
+  uploadError.value = null;
+};
+
+const handleProfilePictureError = (event) => {
+  console.log('❌ Profile picture failed to load, using fallback');
+  event.target.src = '/assets/img/instructor/instructor01.png';
+};
+
+// ... rest of the methods remain the same ...
+
+// Video related computed properties
 const uniqueClasses = computed(() => {
   return props.classes.filter((classItem, index, self) => 
     index === self.findIndex(c => c.id === classItem.id)
@@ -548,34 +722,12 @@ const uniqueClasses = computed(() => {
 const introVideo = computed(() => {
   if (props.videos.length === 0) return null;
   
-  // Find first class with videos
   const firstClassWithVideos = classesWithVideos.value[0];
   if (!firstClassWithVideos) return props.videos[0];
   
-  // Get videos for that class
   const firstClassVideos = getVideosByClass(firstClassWithVideos.id);
   return firstClassVideos[0] || props.videos[0];
 });
-
-const getCleanTitle = (title) => {
-  if (!title) return t('Untitled Video');
-  
-  // Remove URLs from title
-  let cleanTitle = title.replace(/https?:\/\/[^\s]+/g, '').trim();
-  
-  // Remove YouTube specific patterns
-  cleanTitle = cleanTitle.replace(/youtu\.be\/[^\s]+/g, '');
-  cleanTitle = cleanTitle.replace(/youtube\.com\/watch\?v=[^\s]+/g, '');
-  cleanTitle = cleanTitle.replace(/\?si=[^\s]+/g, '');
-  
-  // Remove extra spaces and clean up
-  cleanTitle = cleanTitle.replace(/\s+/g, ' ').trim();
-  
-  // If title is empty after cleaning, use a default
-  if (!cleanTitle) return t('Demo Video');
-  
-  return cleanTitle;
-};
 
 const classesWithVideos = computed(() => {
   const classMap = new Map();
@@ -620,256 +772,21 @@ const showLoadMore = computed(() => {
   return filteredVideos.value.length < totalVideos;
 });
 
-// VIDEO PLAYER METHODS
-const getVideoContent = (video) => {
-  if (!video) return null;
+// Utility methods
+const getCleanTitle = (title) => {
+  if (!title) return t('Untitled Video');
   
-  // Check all possible fields that might contain the URL
-  const possibleFields = [
-    'content',
-    'file_path',
-    'url',
-    'video_url',
-    'link',
-    'source',
-    'video_content',
-    'youtube_url',
-    'resource_url',
-    'videoUrl'
-  ];
+  let cleanTitle = title.replace(/https?:\/\/[^\s]+/g, '').trim();
+  cleanTitle = cleanTitle.replace(/youtu\.be\/[^\s]+/g, '');
+  cleanTitle = cleanTitle.replace(/youtube\.com\/watch\?v=[^\s]+/g, '');
+  cleanTitle = cleanTitle.replace(/\?si=[^\s]+/g, '');
+  cleanTitle = cleanTitle.replace(/\s+/g, ' ').trim();
   
-  for (const field of possibleFields) {
-    if (video[field] && typeof video[field] === 'string') {
-      const value = video[field].trim();
-      if (value.startsWith('http')) {
-        return value;
-      }
-      
-      // Check if it contains YouTube pattern but missing protocol
-      if ((value.includes('youtube.com') || value.includes('youtu.be')) && !value.startsWith('http')) {
-        return 'https://' + value.replace(/^\/\//, '');
-      }
-    }
-  }
+  if (!cleanTitle) return t('Demo Video');
   
-  return null;
+  return cleanTitle;
 };
 
-const isYouTubeUrl = (url) => {
-  if (!url || typeof url !== 'string') return false;
-  
-  const cleanUrl = url.trim();
-  const youtubePatterns = [
-    /youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/,
-    /youtu\.be\/([a-zA-Z0-9_-]+)/,
-    /youtube\.com\/embed\/([a-zA-Z0-9_-]+)/,
-    /youtube\.com\/v\/([a-zA-Z0-9_-]+)/,
-    /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]+)/,
-    /youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/,
-    /youtube\.com\/live\/([a-zA-Z0-9_-]+)/
-  ];
-  
-  return youtubePatterns.some(pattern => pattern.test(cleanUrl));
-};
-
-const getYouTubeVideoId = (url) => {
-  if (!url || typeof url !== 'string') return null;
-  
-  const cleanUrl = url.trim();
-  const patterns = [
-    /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
-    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
-    /youtube\.com\/live\/([a-zA-Z0-9_-]{11})/
-  ];
-  
-  for (const pattern of patterns) {
-    const match = cleanUrl.match(pattern);
-    if (match && match[1]) {
-      return match[1];
-    }
-  }
-  
-  return null;
-};
-
-const generateUltraCleanEmbedUrl = (videoId) => {
-  const params = new URLSearchParams({
-    'autoplay': '1',
-    'rel': '0',
-    'modestbranding': '1',
-    'controls': '0',
-    'showinfo': '0',
-    'iv_load_policy': '3',
-    'fs': '0',
-    'disablekb': '1',
-    'playsinline': '1',
-    'enablejsapi': '1',
-    'origin': window.location.origin,
-    'widget_referrer': window.location.origin,
-    'cc_load_policy': '0',
-    'color': 'white',
-    'hl': 'en',
-    'cc_lang_pref': 'en',
-    'version': '3',
-    'loop': '0',
-    'playlist': videoId,
-    'mute': '0',
-    'start': '0',
-    'end': '0'
-  });
-  
-  return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
-};
-
-const playVideo = async (video) => {
-  console.log('🎬 [playVideo] Attempting to play video:', video.title);
-  isLoading.value = true;
-  
-  // Create clean video object first
-  const cleanVideo = {
-    ...video,
-    title: getCleanTitle(video.title)
-  };
-  
-  const videoContent = getVideoContent(video);
-  
-  if (!videoContent) {
-    alert(`No video content found for: ${cleanVideo.title}`);
-    isLoading.value = false;
-    return;
-  }
-  
-  if (isYouTubeUrl(videoContent)) {
-    const videoId = getYouTubeVideoId(videoContent);
-    
-    if (videoId) {
-      console.log('✅ Playing YouTube video with ID:', videoId);
-      
-      // Try to get direct video stream first
-      const directVideoUrl = await getDirectVideoStream(videoId);
-      
-      if (directVideoUrl) {
-        console.log('🎯 Using direct video stream');
-        currentVideo.value = {
-          ...cleanVideo,
-          directVideoUrl: directVideoUrl,
-          videoId: videoId,
-          thumbnail: getVideoThumbnail(video),
-          isDirectStream: true
-        };
-      } else {
-        console.log('🔄 Using ultra-clean embed as fallback');
-        currentVideo.value = {
-          ...cleanVideo,
-          ultraCleanUrl: generateUltraCleanEmbedUrl(videoId),
-          videoId: videoId,
-          originalUrl: videoContent,
-          isEmbed: true
-        };
-      }
-      
-    } else {
-      alert('Could not extract YouTube video ID from the URL.');
-      isLoading.value = false;
-      return;
-    }
-  } else {
-    // Handle non-YouTube URLs (direct video files)
-    console.log('🎯 Using direct video file');
-    currentVideo.value = {
-      ...cleanVideo,
-      directVideoUrl: videoContent,
-      isDirectVideo: true
-    };
-  }
-  
-  showVideoPlayer.value = true;
-  document.body.style.overflow = 'hidden';
-  isLoading.value = false;
-};
-
-const closeVideoPlayer = () => {
-  // Stop video if playing
-  if (videoPlayer.value && videoPlayer.value.pause) {
-    videoPlayer.value.pause();
-    videoPlayer.value.currentTime = 0;
-  }
-  
-  showVideoPlayer.value = false;
-  currentVideo.value = null;
-  isPlaying.value = false;
-  isLoading.value = false;
-  document.body.style.overflow = 'auto';
-};
-
-const playPauseVideo = () => {
-  if (videoPlayer.value) {
-    if (videoPlayer.value.paused) {
-      videoPlayer.value.play();
-      isPlaying.value = true;
-    } else {
-      videoPlayer.value.pause();
-      isPlaying.value = false;
-    }
-  }
-};
-
-const handleIframeLoad = () => {
-  isLoading.value = false;
-  console.log('✅ YouTube iframe loaded successfully');
-};
-
-const openInNewTab = (url) => {
-  window.open(url, '_blank', 'noopener,noreferrer');
-};
-
-const getDirectVideoStream = async (videoId) => {
-  try {
-    console.log('🔍 Getting direct video stream for:', videoId);
-    
-    // Method 1: Try our new backend API first
-    try {
-      const response = await fetch(`/api/youtube-direct-stream?videoId=${videoId}`);
-      const data = await response.json();
-      
-      if (data.success && data.directUrl) {
-        console.log('✅ Got direct video stream from API:', data.directUrl);
-        return data.directUrl;
-      }
-    } catch (apiError) {
-      console.log('❌ API method failed, trying proxy...');
-    }
-    
-    // Method 2: Use our proxy as fallback
-    const proxyUrl = `/api/video-proxy/${videoId}`;
-    console.log('🔄 Using proxy URL:', proxyUrl);
-    
-    // Test if proxy URL is accessible
-    try {
-      const testResponse = await fetch(proxyUrl, { method: 'HEAD' });
-      if (testResponse.ok) {
-        console.log('✅ Proxy URL is accessible');
-        return proxyUrl;
-      }
-    } catch (proxyError) {
-      console.log('❌ Proxy URL not accessible');
-    }
-    
-    // Method 3: Fallback to ultra-clean embed
-    console.log('🔄 Falling back to ultra-clean embed');
-    return null;
-    
-  } catch (error) {
-    console.error('❌ Error getting direct video stream:', error);
-    return null;
-  }
-};
-
-// EXISTING METHODS
 const getInstructorTitle = (instructor) => {
   if (instructor.education_qualification) {
     const qual = instructor.education_qualification;
@@ -920,20 +837,77 @@ const getVideoThumbnail = (video) => {
   return '/assets/img/courses/video_thumb01.jpg';
 };
 
-const getEmbedUrl = (video) => {
-  if (video.youtube_embed_url) {
-    return video.youtube_embed_url;
-  }
+const getVideoContent = (video) => {
+  if (!video) return null;
   
-  const videoContent = getVideoContent(video);
-  if (videoContent && isYouTubeUrl(videoContent)) {
-    const videoId = getYouTubeVideoId(videoContent);
-    if (videoId) {
-      return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`;
+  const possibleFields = [
+    'content',
+    'file_path',
+    'url',
+    'video_url',
+    'link',
+    'source',
+    'video_content',
+    'youtube_url',
+    'resource_url',
+    'videoUrl'
+  ];
+  
+  for (const field of possibleFields) {
+    if (video[field] && typeof video[field] === 'string') {
+      const value = video[field].trim();
+      if (value.startsWith('http')) {
+        return value;
+      }
+      
+      if ((value.includes('youtube.com') || value.includes('youtu.be')) && !value.startsWith('http')) {
+        return 'https://' + value.replace(/^\/\//, '');
+      }
     }
   }
   
-  return video.videoUrl || '';
+  return null;
+};
+
+const isYouTubeUrl = (url) => {
+  if (!url || typeof url !== 'string') return false;
+  
+  const cleanUrl = url.trim();
+  const youtubePatterns = [
+    /youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/,
+    /youtu\.be\/([a-zA-Z0-9_-]+)/,
+    /youtube\.com\/embed\/([a-zA-Z0-9_-]+)/,
+    /youtube\.com\/v\/([a-zA-Z0-9_-]+)/,
+    /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]+)/,
+    /youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/,
+    /youtube\.com\/live\/([a-zA-Z0-9_-]+)/
+  ];
+  
+  return youtubePatterns.some(pattern => pattern.test(cleanUrl));
+};
+
+const getYouTubeVideoId = (url) => {
+  if (!url || typeof url !== 'string') return null;
+  
+  const cleanUrl = url.trim();
+  const patterns = [
+    /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
+    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/live\/([a-zA-Z0-9_-]{11})/
+  ];
+  
+  for (const pattern of patterns) {
+    const match = cleanUrl.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+  
+  return null;
 };
 
 const getVideosByClass = (classId) => {
@@ -977,16 +951,254 @@ const loadMoreVideos = () => {
   currentPage.value++;
 };
 
-const handleImageError = (event) => {
-  event.target.src = '/assets/img/instructor/instructor01.png';
-};
-
 const handleVideoThumbnailError = (event) => {
   event.target.src = '/assets/img/courses/video_thumb01.jpg';
 };
+
+// Video player methods
+const playVideo = async (video) => {
+  console.log('🎬 [playVideo] Attempting to play video:', video.title);
+  isLoading.value = true;
+  
+  const cleanVideo = {
+    ...video,
+    title: getCleanTitle(video.title)
+  };
+  
+  const videoContent = getVideoContent(video);
+  
+  if (!videoContent) {
+    alert(`No video content found for: ${cleanVideo.title}`);
+    isLoading.value = false;
+    return;
+  }
+  
+  if (isYouTubeUrl(videoContent)) {
+    const videoId = getYouTubeVideoId(videoContent);
+    
+    if (videoId) {
+      console.log('✅ Playing YouTube video with ID:', videoId);
+      
+      const directVideoUrl = await getDirectVideoStream(videoId);
+      
+      if (directVideoUrl) {
+        console.log('🎯 Using direct video stream');
+        currentVideo.value = {
+          ...cleanVideo,
+          directVideoUrl: directVideoUrl,
+          videoId: videoId,
+          thumbnail: getVideoThumbnail(video),
+          isDirectStream: true
+        };
+      } else {
+        console.log('🔄 Using ultra-clean embed as fallback');
+        currentVideo.value = {
+          ...cleanVideo,
+          ultraCleanUrl: generateUltraCleanEmbedUrl(videoId),
+          videoId: videoId,
+          originalUrl: videoContent,
+          isEmbed: true
+        };
+      }
+      
+    } else {
+      alert('Could not extract YouTube video ID from the URL.');
+      isLoading.value = false;
+      return;
+    }
+  } else {
+    console.log('🎯 Using direct video file');
+    currentVideo.value = {
+      ...cleanVideo,
+      directVideoUrl: videoContent,
+      isDirectVideo: true
+    };
+  }
+  
+  showVideoPlayer.value = true;
+  document.body.style.overflow = 'hidden';
+  isLoading.value = false;
+};
+
+const closeVideoPlayer = () => {
+  if (videoPlayer.value && videoPlayer.value.pause) {
+    videoPlayer.value.pause();
+    videoPlayer.value.currentTime = 0;
+  }
+  
+  showVideoPlayer.value = false;
+  currentVideo.value = null;
+  isPlaying.value = false;
+  isLoading.value = false;
+  document.body.style.overflow = 'auto';
+};
+
+const generateUltraCleanEmbedUrl = (videoId) => {
+  const params = new URLSearchParams({
+    'autoplay': '1',
+    'rel': '0',
+    'modestbranding': '1',
+    'controls': '0',
+    'showinfo': '0',
+    'iv_load_policy': '3',
+    'fs': '0',
+    'disablekb': '1',
+    'playsinline': '1',
+    'enablejsapi': '1',
+    'origin': window.location.origin,
+    'widget_referrer': window.location.origin,
+    'cc_load_policy': '0',
+    'color': 'white',
+    'hl': 'en',
+    'cc_lang_pref': 'en',
+    'version': '3',
+    'loop': '0',
+    'playlist': videoId,
+    'mute': '0',
+    'start': '0',
+    'end': '0'
+  });
+  
+  return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
+};
+
+const getDirectVideoStream = async (videoId) => {
+  try {
+    console.log('🔍 Getting direct video stream for:', videoId);
+    
+    try {
+      const response = await fetch(`/api/youtube-direct-stream?videoId=${videoId}`);
+      const data = await response.json();
+      
+      if (data.success && data.directUrl) {
+        console.log('✅ Got direct video stream from API:', data.directUrl);
+        return data.directUrl;
+      }
+    } catch (apiError) {
+      console.log('❌ API method failed, trying proxy...');
+    }
+    
+    const proxyUrl = `/api/video-proxy/${videoId}`;
+    console.log('🔄 Using proxy URL:', proxyUrl);
+    
+    try {
+      const testResponse = await fetch(proxyUrl, { method: 'HEAD' });
+      if (testResponse.ok) {
+        console.log('✅ Proxy URL is accessible');
+        return proxyUrl;
+      }
+    } catch (proxyError) {
+      console.log('❌ Proxy URL not accessible');
+    }
+    
+    console.log('🔄 Falling back to ultra-clean embed');
+    return null;
+    
+  } catch (error) {
+    console.error('❌ Error getting direct video stream:', error);
+    return null;
+  }
+};
+
+// Event handlers
+const handleLanguageChange = async (event) => {
+  iconRenderKey.value++;
+  await nextTick();
+};
+
+const handleThemeChange = (event) => {
+  currentTheme.value = event.detail.theme;
+};
+
+// Lifecycle
+onMounted(() => {
+  console.log('🎯 Instructor Details Component Mounted');
+  console.log('📊 Full instructor data:', props.instructor);
+  console.log('🖼️ Profile picture field:', props.instructor?.profile_picture);
+  console.log('🔍 All instructor props:', Object.keys(props.instructor));
+  
+  // Check if profile_picture exists and its value
+  if (props.instructor?.profile_picture) {
+    console.log('✅ Profile picture path:', props.instructor.profile_picture);
+    console.log('🔗 Constructed URL:', profilePictureUrl.value);
+  } else {
+    console.log('❌ No profile picture found in props');
+  }
+  
+  const savedTheme = localStorage.getItem('preferredTheme');
+  currentTheme.value = savedTheme || 'light';
+  
+  window.addEventListener('languageChanged', handleLanguageChange);
+  window.addEventListener('themeChanged', handleThemeChange);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('languageChanged', handleLanguageChange);
+  window.removeEventListener('themeChanged', handleThemeChange);
+});
 </script>
 
 <style scoped>
+/* Profile Picture Styles - Rectangular */
+.profile-avatar {
+  position: relative;
+  width: 210px; /* Increased by 50% from 140px */
+  height: 180px; /* Increased by 50% from 120px */
+  margin: 0 auto 30px; /* Increased margin to accommodate larger size */
+}
+
+.profile-picture {
+  width: 100%;
+  height: 100%;
+  border-radius: 20px; /* Slightly larger rounded corners */
+  object-fit: cover;
+  border: 6px solid #e5e7eb; /* Thicker border */
+  transition: all 0.3s ease;
+}
+
+.profile-upload-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 20px; /* Match the larger rounded corners */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  cursor: pointer;
+}
+
+.profile-upload-overlay:hover {
+  opacity: 1;
+}
+
+.profile-upload-overlay i {
+  font-size: 36px; /* Larger icon */
+  margin-bottom: 8px;
+}
+
+.profile-upload-overlay span {
+  font-size: 14px; /* Slightly larger text */
+  text-align: center;
+}
+
+/* Update the profile avatar in profile card */
+.profile-avatar img {
+  width: 210px; /* Increased by 50% from 140px */
+  height: 180px; /* Increased by 50% from 120px */
+  border-radius: 20px; /* Larger rounded corners */
+  object-fit: cover;
+  border: 6px solid var(--bg-secondary); /* Thicker border */
+  box-shadow: var(--shadow);
+  transition: all 0.3s ease;
+}
+
 /* ==================== */
 /* CRITICAL ICON FIXES */
 /* ==================== */
@@ -1202,25 +1414,26 @@ const handleVideoThumbnailError = (event) => {
 /* ==================== */
 .profile-header {
   text-align: center;
-  margin-bottom: 25px;
+  margin-bottom: 30px; /* Increased margin for larger profile picture */
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
 .profile-avatar {
-  margin-bottom: 20px;
+  margin-bottom: 30px; /* Increased margin for larger profile picture */
   display: flex;
   justify-content: center;
   width: 100%;
 }
 
+/* Updated profile avatar image to rectangular - 50% larger */
 .profile-avatar img {
-  width: 140px;
-  height: 140px;
-  border-radius: 50%;
+  width: 210px; /* 140px + 50% = 210px */
+  height: 180px; /* 120px + 50% = 180px */
+  border-radius: 20px; /* Larger rounded corners */
   object-fit: cover;
-  border: 5px solid var(--bg-secondary);
+  border: 6px solid var(--bg-secondary); /* Thicker border */
   box-shadow: var(--shadow);
   transition: all 0.3s ease;
 }
@@ -1231,7 +1444,7 @@ const handleVideoThumbnailError = (event) => {
 }
 
 .profile-info .title {
-  font-size: 24px;
+  font-size: 28px; /* Slightly larger title to match bigger profile */
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 5px;
@@ -1243,7 +1456,7 @@ const handleVideoThumbnailError = (event) => {
 .designation {
   color: var(--primary-color);
   font-weight: 600;
-  font-size: 16px;
+  font-size: 18px; /* Slightly larger designation */
   display: block;
   margin-bottom: 10px;
   transition: color 0.3s ease;
@@ -1255,7 +1468,7 @@ const handleVideoThumbnailError = (event) => {
   justify-content: center;
   gap: 8px;
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: 16px; /* Slightly larger rating */
   transition: color 0.3s ease;
 }
 
@@ -1900,66 +2113,91 @@ const handleVideoThumbnailError = (event) => {
 .text-center { text-align: center; }
 
 /* ==================== */
-/* LANGUAGE SUPPORT */
+/* VIDEO OVERLAY STYLES */
 /* ==================== */
-.bn-lang .sidebar-card,
-.bn-lang .demo-videos-section,
-.bn-lang .classes-section,
-.bn-lang .instructor__details-biography,
-.bn-lang .btn,
-.bn-lang .category-btn {
-  font-family: 'Kalpurush', 'SolaimanLipi', 'Siyam Rupali', Arial, sans-serif;
+.video-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
-.bn-lang .profile-info .title,
-.bn-lang .section-header .main-title,
-.bn-lang .video-title,
-.bn-lang .video-title-horizontal,
-.bn-lang .class-name {
-  line-height: 1.5;
+.intro-video-card:hover .video-overlay {
+  opacity: 1;
 }
 
-.bn-lang .profile-bio p,
-.bn-lang .class-description,
-.bn-lang .video-description {
-  line-height: 1.7;
+.play-button {
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+  font-size: 20px;
+  transition: all 0.3s ease;
 }
 
-.bn-lang .stat-label,
-.bn-lang .detail-item label,
-.bn-lang .detail-item span {
-  line-height: 1.4;
+.intro-video-card:hover .play-button {
+  background: #ffffff;
+  transform: scale(1.1);
 }
 
-/* ==================== */
-/* DARK THEME ENHANCEMENTS */
-/* ==================== */
-.dark-theme .video-modal .modal-content {
-  background: var(--bg-secondary);
+.video-duration {
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #ffffff;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
 }
 
-.dark-theme .video-info {
-  background: var(--bg-secondary);
+.video-badge {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: var(--error-color);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
 }
 
-.dark-theme .class-card {
-  background: var(--card-bg);
+.video-stats-simple,
+.video-meta-simple {
+  display: flex;
+  gap: 15px;
+  font-size: 13px;
+  color: var(--text-muted);
+  flex-wrap: wrap;
 }
 
-.dark-theme .intro-video-card {
-  background: var(--bg-secondary);
+.video-stats-simple span,
+.video-meta-simple span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
-.dark-theme .profile-stats .stat-item {
-  background: var(--card-bg);
-}
-
-.dark-theme .profile-bio {
-  background: var(--card-bg);
-}
-
-.dark-theme .profile-social .list-wrap li a {
-  background: var(--card-bg);
+.video-class,
+.video-class-simple {
+  background: var(--bg-tertiary);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--text-primary);
 }
 
 /* ==================== */
@@ -2046,6 +2284,17 @@ const handleVideoThumbnailError = (event) => {
   .video-thumbnail-horizontal {
     height: 140px;
   }
+  
+  /* Adjust profile picture for mobile - 50% larger */
+  .profile-avatar {
+    width: 180px; /* 120px + 50% */
+    height: 150px; /* 100px + 50% */
+  }
+  
+  .profile-avatar img {
+    width: 180px;
+    height: 150px;
+  }
 }
 
 @media (max-width: 575px) {
@@ -2073,9 +2322,15 @@ const handleVideoThumbnailError = (event) => {
     align-self: flex-start;
   }
   
+  /* Further adjust profile picture for small mobile */
+  .profile-avatar {
+    width: 150px;
+    height: 125px;
+  }
+  
   .profile-avatar img {
-    width: 120px;
-    height: 120px;
+    width: 150px;
+    height: 125px;
   }
   
   .profile-info .title {
@@ -2185,93 +2440,5 @@ const handleVideoThumbnailError = (event) => {
   to {
     transform: rotate(360deg);
   }
-}
-
-/* ==================== */
-/* VIDEO OVERLAY STYLES */
-/* ==================== */
-.video-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.intro-video-card:hover .video-overlay {
-  opacity: 1;
-}
-
-.play-button {
-  width: 60px;
-  height: 60px;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--primary-color);
-  font-size: 20px;
-  transition: all 0.3s ease;
-}
-
-.intro-video-card:hover .play-button {
-  background: #ffffff;
-  transform: scale(1.1);
-}
-
-.video-duration {
-  position: absolute;
-  bottom: 15px;
-  right: 15px;
-  background: rgba(0, 0, 0, 0.7);
-  color: #ffffff;
-  padding: 5px 10px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.video-badge {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  background: var(--error-color);
-  color: white;
-  padding: 5px 10px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: bold;
-}
-
-.video-stats-simple,
-.video-meta-simple {
-  display: flex;
-  gap: 15px;
-  font-size: 13px;
-  color: var(--text-muted);
-  flex-wrap: wrap;
-}
-
-.video-stats-simple span,
-.video-meta-simple span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.video-class,
-.video-class-simple {
-  background: var(--bg-tertiary);
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  color: var(--text-primary);
 }
 </style>
