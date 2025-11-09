@@ -123,6 +123,24 @@
             :key="subject.id"
             class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1"
           >
+            <!-- Subject Image -->
+            <div class="mb-4">
+              <div class="w-full h-32 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                <img 
+                  v-if="subject.image"
+                  :src="getImageUrl(subject.image)"
+                  :alt="subject.name"
+                  class="w-full h-full object-cover"
+                >
+                <div v-else class="text-gray-400 flex flex-col items-center">
+                  <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                  </svg>
+                  <span class="text-xs">No Image</span>
+                </div>
+              </div>
+            </div>
+
             <div class="flex justify-between items-start mb-4">
               <h3 class="font-semibold text-gray-800 text-lg">{{ subject.name }}</h3>
               <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
@@ -236,12 +254,99 @@
 
         <!-- Edit Subject Modal -->
         <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div class="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">Edit Subject</h3>
-            <form @submit.prevent="updateSubject">
-              <div class="space-y-4">
+          <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="px-6 py-4 border-b border-gray-200">
+              <h3 class="text-lg font-semibold text-gray-800">Edit Subject</h3>
+            </div>
+            
+            <form @submit.prevent="updateSubject" class="p-6 space-y-6">
+              <!-- Image Upload Section -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Subject Image</label>
+                
+                <!-- Current Image Display -->
+                <div v-if="editingSubject.image && !selectedImageFile" class="mb-4">
+                  <p class="text-sm text-gray-600 mb-2">Current Image:</p>
+                  <div class="relative inline-block">
+                    <img 
+                      :src="getImageUrl(editingSubject.image)" 
+                      alt="Current subject image"
+                      class="w-32 h-32 object-cover rounded-lg border"
+                    >
+                    <button 
+                      type="button"
+                      @click="removeCurrentImage"
+                      class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- No Image State -->
+                <div v-if="!editingSubject.image && !selectedImageFile" class="mb-4">
+                  <p class="text-sm text-gray-600 mb-2">No image currently set</p>
+                </div>
+
+                <!-- Image Upload Area -->
+                <div 
+                  @click="triggerImageInput"
+                  @drop="handleImageDrop"
+                  @dragover="handleDragOver"
+                  @dragleave="handleDragLeave"
+                  class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 transition-colors"
+                  :class="{ 'border-blue-500 bg-blue-50': isDragOver }"
+                >
+                  <input 
+                    type="file" 
+                    ref="imageInput"
+                    @change="handleImageSelect"
+                    accept="image/*"
+                    class="hidden"
+                  >
+                  
+                  <div v-if="!selectedImageFile" class="space-y-3">
+                    <svg class="w-12 h-12 text-gray-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <div>
+                      <p class="text-sm font-medium text-gray-700">Upload subject image</p>
+                      <p class="text-xs text-gray-500 mt-1">PNG, JPG, JPEG up to 5MB</p>
+                    </div>
+                    <button type="button" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                      Click to browse or drag & drop
+                    </button>
+                  </div>
+                  
+                  <div v-else class="space-y-3">
+                    <div class="relative inline-block">
+                      <img 
+                        :src="getImagePreview()" 
+                        alt="Subject image preview"
+                        class="w-32 h-32 object-cover rounded-lg mx-auto"
+                      >
+                      <button 
+                        type="button"
+                        @click.stop="removeImage"
+                        class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                      </button>
+                    </div>
+                    <p class="text-sm text-gray-600">New image ready for upload</p>
+                    <p class="text-xs text-gray-500">{{ selectedImageFile.name }} ({{ formatFileSize(selectedImageFile.size) }})</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Subject Details -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Subject Name</label>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Subject Name *</label>
                   <input 
                     v-model="editingSubject.name"
                     type="text" 
@@ -250,7 +355,7 @@
                   >
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Subject Code</label>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Subject Code *</label>
                   <input 
                     v-model="editingSubject.code"
                     type="text" 
@@ -258,30 +363,43 @@
                     required
                   >
                 </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Student Count</label>
-                  <input 
-                    v-model="editingSubject.studentCount"
-                    type="number" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    min="0"
-                    required
-                  >
-                </div>
               </div>
-              <div class="flex justify-end space-x-3 mt-6">
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Student Count</label>
+                <input 
+                  v-model="editingSubject.studentCount"
+                  type="number" 
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min="0"
+                  required
+                >
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea 
+                  v-model="editingSubject.description"
+                  rows="3"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Optional subject description..."
+                ></textarea>
+              </div>
+
+              <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
                 <button 
                   type="button"
-                  @click="showEditModal = false"
+                  @click="closeEditModal"
                   class="px-4 py-2 text-gray-600 hover:text-gray-800 text-sm font-medium"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
-                  class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                  :disabled="updating"
+                  class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
-                  Update Subject
+                  {{ updating ? 'Updating...' : 'Update Subject' }}
                 </button>
               </div>
             </form>
@@ -335,23 +453,15 @@ const error = ref('')
 const successMessage = ref('')
 const searchQuery = ref('')
 const dataSource = ref('')
-
+const isDragOver = ref(false)
+const selectedImageFile = ref(null)
+const imageInput = ref(null)
+const updating = ref(false)
 // Modal states
 const showEditModal = ref(false)
 const showDeleteModal = ref(false)
 const editingSubject = ref(null)
 const deletingSubject = ref(null)
-
-// Authentication check
-const checkAuthentication = () => {
-  const token = localStorage.getItem('token')
-  const userData = JSON.parse(localStorage.getItem('user') || '{}')
-  
-  if (!token) {
-    router.visit('/login')
-    return
-  }
-}
 
 const handleSearch = (searchQuery) => {
   console.log('Search query:', searchQuery)
@@ -384,7 +494,12 @@ const completionRate = computed(() => {
 
 // Subject management functions
 const editSubject = (subject) => {
-  editingSubject.value = { ...subject }
+  editingSubject.value = { 
+    ...subject,
+    // Ensure we have the raw image path for editing
+    image: subject.raw_image || subject.image
+  }
+  selectedImageFile.value = null
   showEditModal.value = true
 }
 
@@ -395,14 +510,54 @@ const deleteSubject = (subject) => {
 
 const updateSubject = async () => {
   try {
+    updating.value = true
     error.value = ''
     successMessage.value = ''
     
-    const response = await apiClient.put(`/courses/${editingSubject.value.id}`, {
-      subject: editingSubject.value.name,
-      code: editingSubject.value.code,
-      // Add other fields as needed
+    console.log('🔄 Starting subject update for ID:', editingSubject.value.id)
+    
+    // Create FormData for file upload
+    const formData = new FormData()
+    formData.append('_method', 'PUT')
+    formData.append('subject', editingSubject.value.name)
+    formData.append('code', editingSubject.value.code)
+    formData.append('student_count', editingSubject.value.studentCount)
+    formData.append('description', editingSubject.value.description || '')
+    
+    // 🔥 FIX: Properly handle image upload
+    console.log('📸 Image state:', {
+      selectedImageFile: selectedImageFile.value,
+      currentImage: editingSubject.value.image,
+      removeImage: editingSubject.value.image === null
     })
+    
+    // Append image file if selected
+    if (selectedImageFile.value) {
+      console.log('📸 Adding image to FormData:', selectedImageFile.value.name)
+      formData.append('image', selectedImageFile.value)
+    }
+    
+    // 🔥 FIX: Send remove_image as proper boolean value
+    if (editingSubject.value.image === null) {
+      console.log('🗑️ Removing current image')
+      // Send as proper boolean value
+      formData.append('remove_image', '1') // This will be converted to boolean true
+    }
+
+    console.log('🚀 Sending POST request to:', `/courses/${editingSubject.value.id}`)
+    console.log('📦 FormData entries:')
+    for (let [key, value] of formData.entries()) {
+      console.log(`  ${key}:`, value instanceof File ? `File: ${value.name}` : value)
+    }
+    
+    const response = await apiClient.post(`/courses/${editingSubject.value.id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      },
+      timeout: 30000
+    })
+    
+    console.log('✅ Update response:', response.data)
     
     if (response.data.success) {
       successMessage.value = 'Subject updated successfully'
@@ -410,18 +565,137 @@ const updateSubject = async () => {
       // Update the subject in the local state
       const index = subjects.value.findIndex(s => s.id === editingSubject.value.id)
       if (index !== -1) {
-        subjects.value[index] = { ...subjects.value[index], ...editingSubject.value }
+        subjects.value[index] = { 
+          ...subjects.value[index],
+          name: response.data.data.subject || response.data.data.name,
+          code: response.data.data.code,
+          studentCount: response.data.data.studentCount,
+          description: response.data.data.description,
+          image: response.data.data.image,
+          thumbnail: response.data.data.thumbnail,
+          raw_image: response.data.data.raw_image
+        }
       }
       
-      showEditModal.value = false
-      editingSubject.value = null
+      closeEditModal()
+      refreshData()
     } else {
       error.value = response.data.message || 'Failed to update subject'
     }
   } catch (err) {
-    console.error('Error updating subject:', err)
-    error.value = 'Failed to update subject'
+    console.error('💥 Error updating subject:', err)
+    console.error('💥 Full error details:', {
+      message: err.message,
+      status: err.response?.status,
+      data: err.response?.data,
+      url: err.config?.url
+    })
+    
+    if (err.response?.status === 422) {
+      // Show validation errors
+      const errors = err.response.data.errors
+      error.value = 'Validation errors: ' + Object.values(errors).flat().join(', ')
+    } else if (err.response?.status === 413) {
+      error.value = 'File too large. Please select a smaller image.'
+    } else if (err.response?.status === 404) {
+      error.value = 'Endpoint not found.'
+    } else {
+      error.value = 'Failed to update subject: ' + (err.response?.data?.message || err.message)
+    }
+  } finally {
+    updating.value = false
   }
+}
+
+// Image handling functions
+const triggerImageInput = () => {
+  imageInput.value?.click()
+}
+
+const handleImageSelect = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    console.log('📸 File selected:', file.name, file.size, file.type)
+    
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      error.value = 'Image size should be less than 5MB'
+      return
+    }
+    if (!file.type.startsWith('image/')) {
+      error.value = 'Please select a valid image file'
+      return
+    }
+    selectedImageFile.value = file
+    console.log('✅ Image file ready for upload')
+  } else {
+    console.log('📸 No file selected')
+  }
+}
+
+const handleImageDrop = (event) => {
+  event.preventDefault()
+  isDragOver.value = false
+  
+  const files = event.dataTransfer.files
+  if (files.length > 0) {
+    handleImageSelect({ target: { files } })
+  }
+}
+
+const handleDragOver = (event) => {
+  event.preventDefault()
+  isDragOver.value = true
+}
+
+const handleDragLeave = (event) => {
+  event.preventDefault()
+  isDragOver.value = false
+}
+
+const getImagePreview = () => {
+  if (selectedImageFile.value) {
+    return URL.createObjectURL(selectedImageFile.value)
+  }
+  return ''
+}
+
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return '/assets/img/courses/default-course.jpg'
+  
+  // Handle both full URLs and storage paths
+  if (imagePath.startsWith('http')) {
+    return imagePath
+  } else if (imagePath.startsWith('storage/')) {
+    return `/${imagePath}`
+  } else {
+    return `/storage/${imagePath}`
+  }
+}
+
+const removeImage = () => {
+  console.log('🗑️ Removing selected image')
+  selectedImageFile.value = null
+  if (imageInput.value) {
+    imageInput.value.value = ''
+  }
+}
+
+const removeCurrentImage = () => {
+  console.log('🗑️ Removing current image')
+  editingSubject.value.image = null
+  selectedImageFile.value = null
+  // Also clear the file input
+  if (imageInput.value) {
+    imageInput.value.value = ''
+  }
+}
+
+
+const closeEditModal = () => {
+  showEditModal.value = false
+  editingSubject.value = null
+  selectedImageFile.value = null
+  isDragOver.value = false
 }
 
 const confirmDelete = async () => {
@@ -444,8 +718,21 @@ const confirmDelete = async () => {
     }
   } catch (err) {
     console.error('Error deleting subject:', err)
-    error.value = 'Failed to delete subject'
+    if (err.response?.status === 404) {
+      error.value = 'Subject not found. It may have already been deleted.'
+    } else {
+      error.value = 'Failed to delete subject: ' + (err.response?.data?.message || err.message)
+    }
   }
+}
+
+// Helper function to format file size
+const formatFileSize = (bytes) => {
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
 // Fetch subjects for the current class
@@ -456,6 +743,7 @@ const fetchSubjects = async (grade) => {
     
     console.log(`📡 [DEBUG] Starting fetch for grade ${grade}`)
     
+    // FIXED: Remove the /api/ prefix since apiClient already handles it
     const response = await apiClient.get(`/courses/class/${grade}/subjects`)
     
     console.log('✅ [DEBUG] Subjects API Response received')
@@ -512,6 +800,7 @@ const getEnhancedMockSubjects = (grade) => {
     ...subject,
     id: subject.id + (grade * 100),
     studentCount: Math.floor(Math.random() * 30) + 20,
+    image: Math.random() > 0.5 ? null : `/assets/img/subjects/${subject.code.toLowerCase()}.jpg`,
     assignedTeachers: Math.random() > 0.3 ? [
       {
         id: grade * 10 + index,
@@ -537,91 +826,10 @@ const getInitials = (name) => {
   return name.split(' ').map(word => word[0]).join('').toUpperCase()
 }
 
-// Set up event listeners for teacher assignment updates
-const setupEventListeners = () => {
-  // Listen for localStorage changes
-  window.addEventListener('storage', handleStorageChange)
-  
-  // Listen for custom events
-  window.addEventListener('teacherAssigned', handleTeacherAssigned)
-  window.addEventListener('teacherUnassigned', handleTeacherUnassigned)
-}
-
-// Handle localStorage changes
-const handleStorageChange = (event) => {
-  if (event.key === 'teacherAssignmentUpdate' && event.newValue) {
-    try {
-      const data = JSON.parse(event.newValue)
-      console.log('🔄 [STORAGE] Teacher assignment update:', data)
-      
-      // Check if this update is for the current grade
-      if (data.grade && data.grade.toString() === props.grade.toString()) {
-        updateSubjectLocally(data)
-      }
-    } catch (error) {
-      console.error('Error parsing storage data:', error)
-    }
-  }
-}
-
-// Handle custom teacher assigned event
-const handleTeacherAssigned = (event) => {
-  console.log('🔄 [EVENT] Teacher assigned:', event.detail)
-  if (event.detail.grade && event.detail.grade.toString() === props.grade.toString()) {
-    updateSubjectLocally(event.detail)
-  }
-}
-
-// Handle custom teacher unassigned event
-const handleTeacherUnassigned = (event) => {
-  console.log('🔄 [EVENT] Teacher unassigned:', event.detail)
-  if (event.detail.grade && event.detail.grade.toString() === props.grade.toString()) {
-    updateSubjectLocally(event.detail)
-  }
-}
-
-// Update the specific subject locally
-const updateSubjectLocally = (data) => {
-  const subjectIndex = subjects.value.findIndex(s => s.id === data.subjectId)
-  
-  if (subjectIndex !== -1) {
-    if (data.teacher) {
-      // Teacher assigned
-      subjects.value[subjectIndex].assignedTeachers = [data.teacher]
-      console.log('✅ Updated subject (assigned):', subjects.value[subjectIndex].name)
-    } else if (data.teacherId) {
-      // Teacher unassigned
-      subjects.value[subjectIndex].assignedTeachers = []
-      console.log('✅ Updated subject (unassigned):', subjects.value[subjectIndex].name)
-    }
-    
-    // Force reactivity update
-    subjects.value = [...subjects.value]
-  } else {
-    // If subject not found locally, refresh from API
-    console.log('🔍 Subject not found locally, refreshing from API')
-    fetchSubjects(props.grade)
-  }
-}
-
-// Clean up event listeners
-const cleanupEventListeners = () => {
-  window.removeEventListener('storage', handleStorageChange)
-  window.removeEventListener('teacherAssigned', handleTeacherAssigned)
-  window.removeEventListener('teacherUnassigned', handleTeacherUnassigned)
-}
-
 onMounted(() => {
   console.log('🚀 ClassSubjects component mounted for grade:', props.grade)
-  
-  // Set up event listeners for real-time updates
-  setupEventListeners()
-  
   fetchSubjects(props.grade)
 })
-
-// Remove onUnmounted since we're not using it anymore
-// The event listeners will be cleaned up when the component is destroyed automatically
 </script>
 
 <style scoped>

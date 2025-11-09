@@ -356,7 +356,7 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/students/create', [UserController::class, 'createStudent'])->name('api.users.students.create');
         });
 
-        // Course API Routes
+        // Course API Routes - FIXED SECTION
         Route::prefix('courses')->group(function () {
             Route::get('/classes', [CourseController::class, 'getClasses']);
             Route::post('/classes', [CourseController::class, 'createClass']);
@@ -364,6 +364,10 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/subject/{subjectId}/teachers', [CourseController::class, 'getSubjectTeachers']);
             Route::post('/subject/{subjectId}/assign-teacher', [CourseController::class, 'assignTeacher']);
             Route::delete('/subject/{subjectId}/teacher/{teacherId}', [CourseController::class, 'removeTeacher']);
+            
+            // 🔥 CRITICAL FIX: Make sure this route is properly defined
+            Route::put('/{courseId}', [CourseController::class, 'updateCourse'])->name('api.courses.update');
+            
             Route::get('/{courseId}', [CourseController::class, 'getCourse']);
             Route::get('/class/{grade}/enrollments', [CourseController::class, 'getClassEnrollments']);
             Route::get('/categories', [CourseController::class, 'getCourseCategories']);
@@ -371,7 +375,6 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/academic-classes', [CourseController::class, 'getAcademicClasses']);
             Route::get('/other-courses', [CourseController::class, 'getOtherCourses']);
             Route::get('/all-classes', [CourseController::class, 'getAllClasses']);
-            Route::put('/{courseId}', [CourseController::class, 'updateCourse']);
             Route::delete('/{courseId}', [CourseController::class, 'deleteCourse']);
             Route::get('/{courseId}/teachers', [CourseController::class, 'getCourseTeachers']);
             Route::post('/{courseId}/assign-teacher', [CourseController::class, 'assignTeacherToCourse']);
@@ -380,6 +383,7 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/{courseId}/unenroll', [CourseController::class, 'unenrollStudent']);
             Route::get('/user/my-courses', [CourseController::class, 'getMyCourses']);
             Route::get('/{courseId}/subjects', [CourseController::class, 'getCourseSubjects']);
+            Route::post('/debug-upload', [CourseController::class, 'debugFileUpload']);
             
             // Teacher classes
             Route::get('/teacher/classes', [CourseController::class, 'getTeacherClasses'])->name('api.teacher.classes');

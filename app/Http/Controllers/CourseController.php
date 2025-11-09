@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -285,125 +286,6 @@ class CourseController extends Controller
         }
     }
 
-    // In FrontendController.php - instructors method
-    public function instructors(Request $request): Response
-    {
-        try {
-            $query = User::where('role', 'teacher')
-                ->where('status', 'active')
-                ->select([
-                    'id', 'name', 'username', 'email', 'avatar',
-                    'education_qualification', 'institute', 'experience',
-                    'bio', 'created_at'
-                ]);
-
-            // Search
-            if ($request->has('search') && $request->search) {
-                $query->where(function($q) use ($request) {
-                    $q->where('name', 'like', '%' . $request->search . '%')
-                    ->orWhere('education_qualification', 'like', '%' . $request->search . '%')
-                    ->orWhere('institute', 'like', '%' . $request->search . '%');
-                });
-            }
-
-            // Filter by specialization
-            if ($request->has('specialization') && $request->specialization) {
-                $query->where('education_qualification', 'like', '%' . $request->specialization . '%');
-            }
-
-            $instructors = $query->orderBy('name')->get();
-
-            // Add additional data for each instructor
-            $instructors->transform(function ($instructor) {
-                $coursesCount = ClassModel::where('teacher_id', $instructor->id)->count();
-                $totalStudents = DB::table('class_student')
-                    ->join('classes', 'class_student.class_id', '=', 'classes.id')
-                    ->where('classes.teacher_id', $instructor->id)
-                    ->distinct('class_student.student_id')
-                    ->count();
-                
-                return [
-                    'id' => $instructor->id,
-                    'name' => $instructor->name,
-                    'username' => $instructor->username,
-                    'email' => $instructor->email,
-                    'avatar' => $this->getInstructorAvatar($instructor),
-                    'education_qualification' => $instructor->education_qualification,
-                    'institute' => $instructor->institute,
-                    'experience' => $instructor->experience,
-                    'bio' => $instructor->bio,
-                    'courses_count' => $coursesCount,
-                    'students_count' => $totalStudents,
-                    'rating' => 4.8,
-                    'created_at' => $instructor->created_at->format('M d, Y')
-                ];
-            });
-
-            $specializations = User::where('role', 'teacher')
-                ->whereNotNull('education_qualification')
-                ->distinct()
-                ->pluck('education_qualification')
-                ->filter()
-                ->values();
-
-            return Inertia::render('Frontend/Instructors', [
-                'instructors' => $instructors, // Return array instead of paginated object
-                'filters' => [
-                    'search' => $request->search,
-                    'specialization' => $request->specialization,
-                ],
-                'specializations' => $specializations,
-                'pageTitle' => 'Our Instructors - SkillGro',
-                'metaDescription' => 'Meet our team of expert instructors and teachers. Learn from experienced professionals dedicated to your success.'
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Instructors page error: ' . $e->getMessage());
-            
-            return Inertia::render('Frontend/Instructors', [
-                'instructors' => [],
-                'filters' => $request->only(['search', 'specialization']),
-                'specializations' => [],
-                'pageTitle' => 'Our Instructors - SkillGro'
-            ]);
-        }
-    }
-
-    // Add this helper method to your controller
-    private function getMockEnrollments($grade)
-    {
-        $subjects = ['Mathematics', 'Science', 'English', 'Social Studies', 'Computer Science'];
-        $teachers = [
-            ['id' => 1, 'name' => 'Dr. Smith', 'email' => 'smith@school.com', 'qualification' => 'PhD in Mathematics', 'experience' => 10],
-            ['id' => 2, 'name' => 'Ms. Johnson', 'email' => 'johnson@school.com', 'qualification' => 'MSc in Physics', 'experience' => 8],
-            ['id' => 3, 'name' => 'Mr. Davis', 'email' => 'davis@school.com', 'qualification' => 'MA in English', 'experience' => 12],
-            null // Some subjects might not have teachers
-        ];
-        
-        $students = [
-            ['id' => 1, 'name' => 'John Doe', 'email' => 'john@student.com', 'roll_number' => '001', 'parent_name' => 'Jane Doe', 'parent_contact' => '123-456-7890'],
-            ['id' => 2, 'name' => 'Sarah Wilson', 'email' => 'sarah@student.com', 'roll_number' => '002', 'parent_name' => 'Mike Wilson', 'parent_contact' => '123-456-7891'],
-            ['id' => 3, 'name' => 'Alex Chen', 'email' => 'alex@student.com', 'roll_number' => '003', 'parent_name' => 'Lisa Chen', 'parent_contact' => '123-456-7892'],
-            ['id' => 4, 'name' => 'Emily Brown', 'email' => 'emily@student.com', 'roll_number' => '004', 'parent_name' => 'Robert Brown', 'parent_contact' => '123-456-7893'],
-            ['id' => 5, 'name' => 'Michael Taylor', 'email' => 'michael@student.com', 'roll_number' => '005', 'parent_name' => 'Sarah Taylor', 'parent_contact' => '123-456-7894']
-        ];
-
-        return [
-            'grade' => (int)$grade,
-            'className' => "Class {$grade}",
-            'subjects' => array_map(function($subject, $index) use ($teachers, $students) {
-                return [
-                    'id' => $index + 1,
-                    'subject' => $subject,
-                    'code' => $this->generateSubjectCode($subject),
-                    'teacher' => $teachers[$index % count($teachers)],
-                    'students' => $index % 2 === 0 ? array_slice($students, 0, 3) : array_slice($students, 0, 5),
-                    'totalStudents' => $index % 2 === 0 ? 3 : 5
-                ];
-            }, $subjects, array_keys($subjects))
-        ];
-    }
-
     public function courseDetails($courseId): Response
     {
         return Inertia::render('Admin/Courses/CourseDetails', [
@@ -443,7 +325,7 @@ class CourseController extends Controller
                 $response = $this->getMockClasses();
             } else {
                 // Get all classes from database
-                $databaseClasses = ClassModel::select('id', 'name', 'subject', 'grade', 'teacher_id', 'status', 'type', 'category', 'capacity')
+                $databaseClasses = ClassModel::select('id', 'name', 'subject', 'grade', 'teacher_id', 'status', 'type', 'category', 'capacity', 'image', 'thumbnail')
                     ->with(['teacher:id,name,email', 'students'])
                     ->get();
 
@@ -475,7 +357,11 @@ class CourseController extends Controller
                             'status' => $firstClass->status,
                             'type' => 'regular',
                             'capacity' => $firstClass->capacity,
-                            'description' => $firstClass->description
+                            'description' => $firstClass->description,
+                            'image' => $firstClass->image_url, // Use model accessor
+                            'thumbnail' => $firstClass->thumbnail_url, // Use model accessor
+                            'raw_image' => $firstClass->image, // Keep raw path for debugging
+                            'raw_thumbnail' => $firstClass->thumbnail // Keep raw path for debugging
                         ];
                     }
 
@@ -494,7 +380,11 @@ class CourseController extends Controller
                             'status' => $course->status,
                             'type' => 'other',
                             'capacity' => $course->capacity,
-                            'description' => $course->description
+                            'description' => $course->description,
+                            'image' => $course->image_url, // Use model accessor
+                            'thumbnail' => $course->thumbnail_url, // Use model accessor
+                            'raw_image' => $course->image, // Keep raw path for debugging
+                            'raw_thumbnail' => $course->thumbnail // Keep raw path for debugging
                         ];
                     }
 
@@ -543,8 +433,8 @@ class CourseController extends Controller
     }
 
     /**
- * Search classes for header suggestions
- */
+     * Search classes for header suggestions
+     */
     public function searchClasses(Request $request)
     {
         try {
@@ -569,7 +459,7 @@ class CourseController extends Controller
                     $q->orderBy('student_count', 'desc');
                 })
                 ->limit(10)
-                ->get(['id', 'name', 'subject', 'grade', 'type', 'category', 'description'])
+                ->get(['id', 'name', 'subject', 'grade', 'type', 'category', 'description', 'image', 'thumbnail'])
                 ->map(function($class) {
                     return [
                         'id' => $class->id,
@@ -580,6 +470,10 @@ class CourseController extends Controller
                         'category' => $class->category,
                         'description' => $class->description,
                         'student_count' => $class->student_count,
+                        'image' => $class->image_url, // Use model accessor
+                        'thumbnail' => $class->thumbnail_url, // Use model accessor
+                        'raw_image' => $class->image, // Debug info
+                        'raw_thumbnail' => $class->thumbnail // Debug info
                     ];
                 });
 
@@ -599,6 +493,7 @@ class CourseController extends Controller
             ], 500);
         }
     }
+
     /**
      * Mock data for development
      */
@@ -607,7 +502,6 @@ class CourseController extends Controller
         $mockClasses = [];
         $subjects = ['Mathematics', 'Science', 'English', 'Social Studies', 'Computer Science', 'Physical Education'];
         
-        // Regular classes 1-12
         for ($grade = 1; $grade <= 12; $grade++) {
             $mockClasses[] = [
                 'id' => $grade,
@@ -618,11 +512,12 @@ class CourseController extends Controller
                 'teachers' => [],
                 'status' => 'active',
                 'type' => 'regular',
-                'capacity' => 30
+                'capacity' => 30,
+                'image' => null,
+                'thumbnail' => null
             ];
         }
 
-        // Mock other courses
         $otherCourses = [
             [
                 'id' => 13,
@@ -632,7 +527,9 @@ class CourseController extends Controller
                 'teachers' => [],
                 'status' => 'active',
                 'type' => 'other',
-                'capacity' => 30
+                'capacity' => 30,
+                'image' => null,
+                'thumbnail' => null
             ],
             [
                 'id' => 14,
@@ -642,7 +539,9 @@ class CourseController extends Controller
                 'teachers' => [],
                 'status' => 'active',
                 'type' => 'other',
-                'capacity' => 25
+                'capacity' => 25,
+                'image' => null,
+                'thumbnail' => null
             ]
         ];
 
@@ -655,6 +554,7 @@ class CourseController extends Controller
             'message' => 'Using mock data - no classes found in database'
         ]);
     }
+
 
     /**
      * Get subjects for a specific class/grade
@@ -686,7 +586,7 @@ class CourseController extends Controller
                     }
                 })
                 ->orWhere('grade', $grade) // Also search by grade column
-                ->select('id', 'subject', 'teacher_id', 'description', 'name', 'grade', 'type')
+                ->select('id', 'subject', 'teacher_id', 'description', 'name', 'grade', 'type', 'image', 'thumbnail')
                 ->with(['teacher:id,name,email,experience', 'students'])
                 ->get();
 
@@ -724,6 +624,11 @@ class CourseController extends Controller
                     'studentCount' => $class->students->count(),
                     'className' => $class->name, // Include class name for debugging
                     'classGrade' => $class->grade, // Include grade for debugging
+                    'description' => $class->description,
+                    'image' => $class->image_url, // Use model accessor
+                    'thumbnail' => $class->thumbnail_url, // Use model accessor
+                    'raw_image' => $class->image, // Debug info
+                    'raw_thumbnail' => $class->thumbnail, // Debug info
                     'assignedTeachers' => $class->teacher ? [[
                         'id' => $class->teacher->id,
                         'name' => $class->teacher->name,
@@ -806,6 +711,9 @@ class CourseController extends Controller
                 'name' => $subject['name'],
                 'code' => $subject['code'],
                 'studentCount' => rand(25, 45),
+                'description' => $this->getSubjectDescription($subject['name']),
+                'image' => null,
+                'thumbnail' => null,
                 'assignedTeachers' => []
             ];
         }, $subjects);
@@ -827,7 +735,9 @@ class CourseController extends Controller
                 'studentCount' => 45, 
                 'capacity' => 50,
                 'description' => 'Essential life skills for personal development',
-                'status' => 'active'
+                'status' => 'active',
+                'image' => null,
+                'thumbnail' => null
             ],
             [ 
                 'id' => 2, 
@@ -836,19 +746,14 @@ class CourseController extends Controller
                 'studentCount' => 38, 
                 'capacity' => 40,
                 'description' => 'Improve English speaking and communication skills',
-                'status' => 'active'
-            ],
-            [ 
-                'id' => 3, 
-                'name' => 'Computer Basics', 
-                'category' => 'Technology',
-                'studentCount' => 52, 
-                'capacity' => 60,
-                'description' => 'Fundamental computer skills for beginners',
-                'status' => 'active'
+                'status' => 'active',
+                'image' => null,
+                'thumbnail' => null
             ]
         ];
     }
+
+
     /**
      * Get teachers for a specific subject
      */
@@ -900,7 +805,8 @@ class CourseController extends Controller
                         'id' => $class->id,
                         'name' => $class->subject,
                         'code' => $this->generateSubjectCode($class->subject),
-                        'className' => $class->name
+                        'className' => $class->name,
+                        'image' => $class->image ? Storage::url($class->image) : null
                     ],
                     'assignedTeachers' => $assignedTeachers,
                     'availableTeachers' => $availableTeachers->map(function($teacher) {
@@ -1021,7 +927,8 @@ class CourseController extends Controller
                         'id' => $class->id,
                         'name' => $class->subject,
                         'code' => $this->generateSubjectCode($class->subject),
-                        'className' => $class->name
+                        'className' => $class->name,
+                        'image' => $class->image ? Storage::url($class->image) : null
                     ],
                     'assignedTeachers' => $class->teacher ? [[
                         'id' => $class->teacher->id,
@@ -1310,12 +1217,16 @@ class CourseController extends Controller
                 'name' => "Class {$grade}",
                 'subjectCount' => rand(5, 8),
                 'studentCount' => rand(20, 40),
-                'capacity' => 30
+                'capacity' => 30,
+                'image' => null,
+                'thumbnail' => null
             ];
         }
         
         return $classes;
     }
+
+
     /**
      * Mock categories data
      */
@@ -1359,9 +1270,6 @@ class CourseController extends Controller
 
     /**
      * Get classes by category
-     */
-        /**
-     * Get classes by category - FIXED to use database data
      */
     public function getCategoryClasses($category)
     {
@@ -1414,7 +1322,9 @@ class CourseController extends Controller
                     'name' => "Class {$grade}",
                     'subjectCount' => $subjectCount,
                     'studentCount' => $studentCount,
-                    'capacity' => 30
+                    'capacity' => 30,
+                    'image' => $classData->first()->image ? Storage::url($classData->first()->image) : null,
+                    'thumbnail' => $classData->first()->thumbnail ? Storage::url($classData->first()->thumbnail) : null
                 ];
             }
 
@@ -1462,7 +1372,7 @@ class CourseController extends Controller
 
             $classes = ClassModel::where('type', 'regular')
                 ->whereNotNull('grade')
-                ->select('id', 'name', 'grade', 'subject', 'teacher_id', 'status')
+                ->select('id', 'name', 'grade', 'subject', 'teacher_id', 'status', 'image', 'thumbnail')
                 ->with(['teacher:id,name', 'students'])
                 ->get()
                 ->groupBy('grade')
@@ -1483,7 +1393,11 @@ class CourseController extends Controller
                         'name' => "Class {$grade}",
                         'subjectCount' => $subjectCount,
                         'studentCount' => $studentCount,
-                        'type' => 'academic'
+                        'type' => 'academic',
+                        'image' => $firstClass->image_url, // Use model accessor
+                        'thumbnail' => $firstClass->thumbnail_url, // Use model accessor
+                        'raw_image' => $firstClass->image, // Debug info
+                        'raw_thumbnail' => $firstClass->thumbnail // Debug info
                     ];
                 })
                 ->values();
@@ -1525,7 +1439,7 @@ class CourseController extends Controller
             }
 
             $courses = ClassModel::where('type', 'other')
-                ->select('id', 'name', 'category', 'capacity', 'status', 'description')
+                ->select('id', 'name', 'category', 'capacity', 'status', 'description', 'image', 'thumbnail')
                 ->withCount('students as studentCount')
                 ->get()
                 ->map(function($course) {
@@ -1536,7 +1450,11 @@ class CourseController extends Controller
                         'studentCount' => $course->studentCount,
                         'capacity' => $course->capacity,
                         'status' => $course->status,
-                        'description' => $course->description
+                        'description' => $course->description,
+                        'image' => $course->image_url, // Use model accessor
+                        'thumbnail' => $course->thumbnail_url, // Use model accessor
+                        'raw_image' => $course->image, // Debug info
+                        'raw_thumbnail' => $course->thumbnail // Debug info
                     ];
                 });
 
@@ -1582,7 +1500,6 @@ class CourseController extends Controller
         }
     }
 
-   
     public function getCourse($courseId)
     {
         try {
@@ -1623,6 +1540,10 @@ class CourseController extends Controller
                         'qualification' => $course->teacher->education_qualification
                     ]] : [],
                     'type' => 'other',
+                    'image' => $course->image_url, // Use model accessor
+                    'thumbnail' => $course->thumbnail_url, // Use model accessor
+                    'raw_image' => $course->image, // Debug info
+                    'raw_thumbnail' => $course->thumbnail, // Debug info
                     'created_at' => $course->created_at,
                     'updated_at' => $course->updated_at
                 ];
@@ -1645,6 +1566,10 @@ class CourseController extends Controller
                         'qualification' => $course->teacher->education_qualification
                     ]] : [],
                     'type' => 'regular',
+                    'image' => $course->image_url, // Use model accessor
+                    'thumbnail' => $course->thumbnail_url, // Use model accessor
+                    'raw_image' => $course->image, // Debug info
+                    'raw_thumbnail' => $course->thumbnail, // Debug info
                     'created_at' => $course->created_at,
                     'updated_at' => $course->updated_at
                 ];
@@ -1667,80 +1592,41 @@ class CourseController extends Controller
         }
     }
 
-    /**
-     * Get course details specifically for "other" type courses
-     */
-    public function getOtherCourseDetails($courseId)
-    {
-        try {
-            $course = ClassModel::where('type', 'other')
-                ->with(['teacher:id,name,email,experience,education_qualification', 'students'])
-                ->find($courseId);
-
-            if (!$course) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Course not found'
-                ], 404);
-            }
-
-            $formattedCourse = [
-                'id' => $course->id,
-                'name' => $course->name,
-                'category' => $course->category,
-                'description' => $course->description,
-                'capacity' => $course->capacity,
-                'status' => $course->status,
-                'code' => $course->code,
-                'studentCount' => $course->students->count(),
-                'teachers' => $course->teacher ? [[
-                    'id' => $course->teacher->id,
-                    'name' => $course->teacher->name,
-                    'email' => $course->teacher->email,
-                    'experience' => $course->teacher->experience,
-                    'qualification' => $course->teacher->education_qualification
-                ]] : []
-            ];
-
-            return response()->json([
-                'success' => true,
-                'data' => $formattedCourse
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error fetching course details: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch course details'
-            ], 500);
-        }
-    }
-
-    /**
-     * Update a course
-     */
     public function updateCourse(Request $request, $courseId)
     {
+        DB::beginTransaction();
         try {
+            Log::info("🔄 Starting course/subject update for ID: {$courseId}");
+            Log::info("📦 Request data:", $request->except(['image']));
+            Log::info("📸 Has image file:", ['has_image' => $request->hasFile('image')]);
+            
             $course = ClassModel::find($courseId);
 
             if (!$course) {
+                Log::error("❌ Course/Subject not found with ID: {$courseId}");
                 return response()->json([
                     'success' => false,
-                    'message' => 'Course not found'
+                    'message' => 'Course/Subject not found'
                 ], 404);
             }
 
+            Log::info("📊 Current course data:", [
+                'id' => $course->id,
+                'subject' => $course->subject,
+                'image' => $course->image,
+                'fillable' => $course->getFillable()
+            ]);
+
             $validator = Validator::make($request->all(), [
-                'name' => 'sometimes|string|max:255',
                 'subject' => 'sometimes|string|max:255',
-                'grade' => 'sometimes|integer|between:1,12',
-                'capacity' => 'sometimes|integer|min:1|max:100',
-                'status' => 'sometimes|in:active,inactive,upcoming',
+                'code' => 'sometimes|string|max:50',
+                'student_count' => 'sometimes|integer|min:0',
                 'description' => 'nullable|string',
-                'teacher_id' => 'nullable|exists:users,id'
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             ]);
 
             if ($validator->fails()) {
+                Log::error("❌ Validation failed:", $validator->errors()->toArray());
                 return response()->json([
                     'success' => false,
                     'message' => 'Validation error',
@@ -1748,22 +1634,207 @@ class CourseController extends Controller
                 ], 422);
             }
 
-            $course->update($request->all());
+            $updateData = [];
+
+            // Handle subject name update
+            if ($request->has('subject')) {
+                $updateData['subject'] = $request->subject;
+                Log::info("📝 Updating subject to: {$request->subject}");
+            }
+
+            // Handle code update
+            if ($request->has('code')) {
+                $updateData['code'] = $request->code;
+                Log::info("📝 Updating code to: {$request->code}");
+            }
+
+            // Handle description update
+            if ($request->has('description')) {
+                $updateData['description'] = $request->description;
+                Log::info("📝 Updating description");
+            }
+
+            // Handle new image upload
+            if ($request->hasFile('image')) {
+                Log::info("📸 Processing new image upload");
+                
+                // Delete old images if they exist
+                if ($course->image) {
+                    if (Storage::disk('public')->exists($course->image)) {
+                        Storage::disk('public')->delete($course->image);
+                        Log::info("✅ Deleted old image: {$course->image}");
+                    }
+                }
+
+                // Store new image
+                $imageFile = $request->file('image');
+                $originalName = pathinfo($imageFile->getClientOriginalName(), PATHINFO_FILENAME);
+                $extension = $imageFile->getClientOriginalExtension();
+                $filename = 'subject_' . $originalName . '_' . time() . '_' . rand(1000, 9999) . '.' . $extension;
+                $filename = preg_replace('/[^a-zA-Z0-9._-]/', '_', $filename);
+                
+                // Store image
+                $imagePath = $imageFile->storeAs('courses/images', $filename, 'public');
+                Log::info("✅ New image stored at: {$imagePath}");
+                
+                $updateData['image'] = $imagePath;
+                $updateData['thumbnail'] = null;
+                $updateData['image_alt'] = $course->name . ' image';
+                $updateData['image_caption'] = $course->name . ' - ' . ($course->subject ?? 'Subject');
+                
+                Log::info("🖼️ Image data to update:", [
+                    'image' => $imagePath,
+                    'thumbnail' => null,
+                    'image_alt' => $updateData['image_alt'],
+                    'image_caption' => $updateData['image_caption']
+                ]);
+            }
+
+            Log::info("📝 Final update data to save:", $updateData);
+
+            // Update the course/subject
+            if (!empty($updateData)) {
+                $updated = $course->update($updateData);
+                Log::info("💾 Database update result:", ['success' => $updated]);
+                
+                // Verify the update
+                $course->refresh();
+                Log::info("🔄 Refreshed course data:", [
+                    'id' => $course->id,
+                    'subject' => $course->subject,
+                    'image' => $course->image,
+                    'updated_at' => $course->updated_at
+                ]);
+            } else {
+                Log::info("ℹ️ No data to update");
+            }
+
+            DB::commit();
+
+            Log::info("✅ Course/Subject updated successfully", [
+                'id' => $course->id,
+                'name' => $course->name,
+                'subject' => $course->subject,
+                'image' => $course->image,
+                'image_url' => $course->image_url
+            ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Course updated successfully',
-                'data' => $course
+                'message' => 'Course/Subject updated successfully',
+                'data' => [
+                    'id' => $course->id,
+                    'name' => $course->name,
+                    'subject' => $course->subject,
+                    'code' => $course->code,
+                    'grade' => $course->grade,
+                    'studentCount' => $course->students->count(),
+                    'description' => $course->description,
+                    'image' => $course->image_url,
+                    'thumbnail' => $course->thumbnail_url,
+                    'raw_image' => $course->image, // This should show the actual database value
+                    'raw_thumbnail' => $course->thumbnail
+                ]
             ]);
+
         } catch (\Exception $e) {
-            Log::error('Error updating course: ' . $e->getMessage());
+            DB::rollBack();
+            Log::error('💥 Error updating course/subject: ' . $e->getMessage());
+            Log::error('💥 Stack trace: ' . $e->getTraceAsString());
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update course'
+                'message' => 'Failed to update course/subject: ' . $e->getMessage()
             ], 500);
         }
     }
 
+    /**
+ * Get public courses for frontend display
+ */
+    public function getPublicCourses()
+    {
+        try {
+            Log::info("🎯 Fetching public courses for frontend");
+
+            $courses = ClassModel::where('status', 'active')
+                ->select([
+                    'id', 
+                    'name', 
+                    'subject', 
+                    'grade', 
+                    'code', 
+                    'type', 
+                    'category', 
+                    'description', 
+                    'status',
+                    'image',           // Include image field
+                    'thumbnail',       // Include thumbnail field
+                    'image_alt',
+                    'image_caption',
+                    'teacher_id',
+                    'capacity',
+                    'created_at',
+                    'updated_at'
+                ])
+                ->withCount('students as student_count')
+                ->with(['teacher:id,name']) // Include teacher info if needed
+                ->get()
+                ->map(function($course) {
+                    return [
+                        'id' => $course->id,
+                        'name' => $course->name,
+                        'subject' => $course->subject,
+                        'grade' => $course->grade,
+                        'code' => $course->code,
+                        'type' => $course->type,
+                        'category' => $course->category,
+                        'description' => $course->description,
+                        'status' => $course->status,
+                        'student_count' => $course->student_count,
+                        'image' => $course->image,           // Raw image path from database
+                        'thumbnail' => $course->thumbnail,   // Raw thumbnail path from database
+                        'image_url' => $course->image_url,   // Full URL from accessor
+                        'thumbnail_url' => $course->thumbnail_url, // Full URL from accessor
+                        'raw_image' => $course->image,       // Raw path for debugging
+                        'teacher' => $course->teacher,
+                        'capacity' => $course->capacity,
+                        'created_at' => $course->created_at,
+                        'updated_at' => $course->updated_at
+                    ];
+                });
+
+            Log::info("📊 Public courses API response count: " . $courses->count());
+            
+            // Log sample data for debugging
+            if ($courses->count() > 0) {
+                Log::info("🖼️ Sample course image data:", [
+                    'first_course' => [
+                        'id' => $courses->first()['id'],
+                        'name' => $courses->first()['name'],
+                        'image' => $courses->first()['image'],
+                        'image_url' => $courses->first()['image_url'],
+                        'thumbnail' => $courses->first()['thumbnail'],
+                        'thumbnail_url' => $courses->first()['thumbnail_url']
+                    ]
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $courses,
+                'total' => $courses->count(),
+                'message' => 'Courses fetched successfully'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching public courses: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch courses',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
     /**
      * Delete a course
      */
@@ -1787,6 +1858,9 @@ class CourseController extends Controller
                 ], 400);
             }
 
+            // Delete associated images
+            $this->deleteImageFiles($course->image);
+
             $course->delete();
 
             return response()->json([
@@ -1802,28 +1876,27 @@ class CourseController extends Controller
         }
     }
 
-    /**
-     * Create a new class/course
-     */
     public function createClass(Request $request)
     {
+        DB::beginTransaction();
         try {
+            Log::info("🎯 ============ STARTING COURSE CREATION ============");
+            Log::info("📦 Request type: " . $request->type);
+            Log::info("📦 All request data:", $request->all());
+
+            // Basic validation first
             $validator = Validator::make($request->all(), [
                 'type' => 'required|in:regular,other',
                 'grade' => 'required_if:type,regular|integer|between:1,12',
                 'name' => 'required|string|max:255',
                 'category' => 'required_if:type,other|string|max:255',
-                'courseName' => 'required_if:type,other|string|max:255',
-                'courseCode' => 'required_if:type,other|string|max:50',
-                'subjects' => 'required_if:type,regular|array',
-                'subjects.*.name' => 'required_if:type,regular|string|max:255',
-                'subjects.*.code' => 'required_if:type,regular|string|max:10',
                 'capacity' => 'nullable|integer|min:1|max:100',
                 'status' => 'required|in:active,inactive,upcoming',
-                'description' => 'nullable|string'
+                'description' => 'nullable|string',
             ]);
 
             if ($validator->fails()) {
+                Log::error("❌ Validation failed:", $validator->errors()->toArray());
                 return response()->json([
                     'success' => false,
                     'message' => 'Validation error',
@@ -1831,52 +1904,127 @@ class CourseController extends Controller
                 ], 422);
             }
 
-            // For regular classes, create multiple class records for each subject
+            // For regular classes
             if ($request->type === 'regular') {
-                $createdClasses = [];
+                Log::info("📚 Creating regular class with subjects");
                 
-                foreach ($request->subjects as $subject) {
-                    $class = ClassModel::create([
-                        'name' => $request->name,
-                        'subject' => $subject['name'],
-                        'grade' => $request->grade,
-                        'code' => $subject['code'],
-                        'description' => $request->description,
-                        'capacity' => $request->capacity ?? 30,
-                        'status' => $request->status,
-                        'type' => 'regular'
-                    ]);
-                    
-                    $createdClasses[] = $class;
+                if (!$request->has('subjects') || !is_array($request->subjects)) {
+                    throw new \Exception('Subjects data is required for regular classes');
                 }
 
+                Log::info("📝 Subjects count: " . count($request->subjects));
+                Log::info("📝 Subjects data:", $request->subjects);
+
+                $createdClasses = [];
+                
+                foreach ($request->subjects as $index => $subjectData) {
+                    Log::info("🔍 ============ PROCESSING SUBJECT {$index} ============");
+                    Log::info("📝 Subject data:", $subjectData);
+                    
+                    // Handle subject image upload WITHOUT Intervention Image
+                    $subjectImageData = $this->processSubjectImageSimple($request, $index);
+                    
+                    $classData = [
+                        'name' => $request->name,
+                        'subject' => $subjectData['name'] ?? '',
+                        'grade' => (int) $request->grade,
+                        'code' => $subjectData['code'] ?? '',
+                        'description' => $request->description ?? '',
+                        'capacity' => $request->capacity ?? 30,
+                        'status' => $request->status,
+                        'type' => 'regular',
+                        'category' => null,
+                    ];
+
+                    // Add image data if available
+                    if ($subjectImageData['image']) {
+                        $classData['image'] = $subjectImageData['image'];
+                        $classData['thumbnail'] = null; // No thumbnail without Intervention Image
+                        $classData['image_alt'] = ($subjectData['name'] ?? 'Subject') . ' image';
+                        $classData['image_caption'] = ($subjectData['name'] ?? 'Subject') . ' - ' . $request->name;
+                        Log::info("🖼️ SUCCESS: Added image for subject {$index}: {$subjectImageData['image']}");
+                    } else {
+                        Log::info("📸 No image found for subject {$index}");
+                    }
+
+                    Log::info("💾 Saving class data to database:", $classData);
+                    
+                    try {
+                        $class = ClassModel::create($classData);
+                        
+                        if (!$class) {
+                            throw new \Exception("Database create failed for subject: " . ($subjectData['name'] ?? 'Unknown'));
+                        }
+                        
+                        Log::info("✅ SUCCESS: Created class for subject: " . ($subjectData['name'] ?? 'Unknown') . " (ID: {$class->id})");
+                        $createdClasses[] = $class;
+                        
+                    } catch (\Exception $dbError) {
+                        Log::error("❌ DATABASE ERROR for subject {$index}: " . $dbError->getMessage());
+                        throw $dbError;
+                    }
+                }
+
+                DB::commit();
+                Log::info("🎉 SUCCESS: Created class with " . count($createdClasses) . " subjects");
+
+                // Return the first class as representative
+                $firstClass = $createdClasses[0];
                 return response()->json([
                     'success' => true,
                     'message' => 'Class created successfully with ' . count($createdClasses) . ' subjects',
                     'data' => [
-                        'id' => $createdClasses[0]->id,
-                        'grade' => $request->grade,
-                        'name' => $request->name,
+                        'id' => $firstClass->id,
+                        'grade' => $firstClass->grade,
+                        'name' => $firstClass->name,
                         'subjectCount' => count($createdClasses),
                         'studentCount' => 0,
                         'teachers' => [],
-                        'status' => $request->status,
-                        'type' => 'regular'
+                        'status' => $firstClass->status,
+                        'type' => 'regular',
+                        'image' => $firstClass->image_url,
+                        'thumbnail' => $firstClass->thumbnail_url
                     ]
                 ], 201);
 
             } else {
-                // For other courses, create a single course record
-                $class = ClassModel::create([
-                    'name' => $request->courseName,
-                    'subject' => $request->category, // Using subject column for category
-                    'code' => $request->courseCode,
-                    'description' => $request->description,
+                // For other courses
+                Log::info("🎓 Creating other course");
+                
+                // Handle main course image WITHOUT Intervention Image
+                $imageData = $this->processMainImageSimple($request);
+
+                $classData = [
+                    'name' => $request->name,
+                    'subject' => $request->category,
+                    'code' => $request->courseCode ?? '',
+                    'description' => $request->description ?? '',
                     'capacity' => $request->capacity ?? 30,
                     'status' => $request->status,
                     'type' => 'other',
-                    'category' => $request->category
-                ]);
+                    'category' => $request->category,
+                    'grade' => null,
+                ];
+
+                // Add image data if available
+                if ($imageData['image']) {
+                    $classData['image'] = $imageData['image'];
+                    $classData['thumbnail'] = null; // No thumbnail without Intervention Image
+                    $classData['image_alt'] = $request->name . ' course image';
+                    $classData['image_caption'] = $request->name . ' - ' . $request->category;
+                    Log::info("🖼️ Added image for course: {$imageData['image']}");
+                }
+
+                Log::info("💾 Saving course data to database:", $classData);
+                
+                $class = ClassModel::create($classData);
+                
+                if (!$class) {
+                    throw new \Exception("Failed to create other course");
+                }
+
+                DB::commit();
+                Log::info("✅ SUCCESS: Created other course: " . $class->name . " (ID: {$class->id})");
 
                 return response()->json([
                     'success' => true,
@@ -1888,24 +2036,210 @@ class CourseController extends Controller
                         'studentCount' => 0,
                         'teachers' => [],
                         'status' => $class->status,
-                        'type' => 'other'
+                        'type' => 'other',
+                        'image' => $class->image_url,
+                        'thumbnail' => $class->thumbnail_url
                     ]
                 ], 201);
             }
 
         } catch (\Exception $e) {
-            Log::error('Error creating course: ' . $e->getMessage());
+            DB::rollBack();
+            Log::error('❌ ============ COURSE CREATION FAILED ============');
+            Log::error('❌ Error message: ' . $e->getMessage());
+            Log::error('❌ Stack trace: ' . $e->getTraceAsString());
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to create course',
-                'error' => $e->getMessage()
+                'message' => 'Failed to create course: ' . $e->getMessage(),
+                'error' => [
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ]
             ], 500);
         }
     }
 
-    /**
-     * Get course teachers
-     */
+    private function processSubjectImageSimple($request, $subjectIndex)
+    {
+        try {
+            Log::info("📸 Looking for subject {$subjectIndex} image");
+            
+            $allFiles = $request->allFiles();
+            $subjectImage = null;
+            
+            // Try multiple key patterns
+            $possibleKeys = [
+                "subject_image_{$subjectIndex}",
+                "subjects[{$subjectIndex}][image]",
+                "subjects.{$subjectIndex}.image",
+            ];
+
+            foreach ($possibleKeys as $key) {
+                Log::info("🔍 Checking key: {$key}");
+                
+                if ($request->hasFile($key)) {
+                    $subjectImage = $request->file($key);
+                    Log::info("✅ FOUND FILE with key: {$key}");
+                    break;
+                }
+            }
+
+            if (!$subjectImage) {
+                Log::info("📸 No image found for subject {$subjectIndex}");
+                return ['image' => null, 'thumbnail' => null];
+            }
+
+            // Validate image
+            $validator = Validator::make(['image' => $subjectImage], [
+                'image' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120'
+            ]);
+
+            if ($validator->fails()) {
+                Log::error("❌ Subject image validation failed: " . $validator->errors()->first());
+                throw new \Exception('Invalid subject image file: ' . $validator->errors()->first());
+            }
+
+            // Generate unique filename
+            $originalName = pathinfo($subjectImage->getClientOriginalName(), PATHINFO_FILENAME);
+            $extension = $subjectImage->getClientOriginalExtension();
+            $filename = 'subject_' . $originalName . '_' . time() . '_' . rand(1000, 9999) . '.' . $extension;
+            $filename = preg_replace('/[^a-zA-Z0-9._-]/', '_', $filename);
+            
+            // Store original image
+            $imagePath = $subjectImage->storeAs('courses/subject-images', $filename, 'public');
+            Log::info("✅ Subject image stored at: {$imagePath}");
+            
+            // No thumbnail creation - return null for thumbnail
+            Log::info("📸 Thumbnail creation skipped");
+
+            return [
+                'image' => $imagePath,
+                'thumbnail' => null
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('❌ Error handling subject image upload: ' . $e->getMessage());
+            return ['image' => null, 'thumbnail' => null];
+        }
+    }
+
+    private function processMainImageSimple($request)
+    {
+        try {
+            Log::info("📸 Checking for main course image");
+            
+            if (!$request->hasFile('image')) {
+                Log::info("📸 No main course image found");
+                return ['image' => null, 'thumbnail' => null];
+            }
+
+            $imageFile = $request->file('image');
+            Log::info("📸 Found main image file: " . $imageFile->getClientOriginalName());
+
+            // Validate image
+            $validator = Validator::make(['image' => $imageFile], [
+                'image' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120'
+            ]);
+
+            if ($validator->fails()) {
+                Log::error("❌ Main image validation failed: " . $validator->errors()->first());
+                throw new \Exception('Invalid image file: ' . $validator->errors()->first());
+            }
+
+            // Generate unique filename
+            $originalName = pathinfo($imageFile->getClientOriginalName(), PATHINFO_FILENAME);
+            $extension = $imageFile->getClientOriginalExtension();
+            $filename = 'course_' . $originalName . '_' . time() . '_' . rand(1000, 9999) . '.' . $extension;
+            $filename = preg_replace('/[^a-zA-Z0-9._-]/', '_', $filename);
+            
+            // Store original image
+            $imagePath = $imageFile->storeAs('courses/images', $filename, 'public');
+            Log::info("✅ Main course image stored at: {$imagePath}");
+            
+            // No thumbnail creation
+            Log::info("📸 Thumbnail creation skipped for main image");
+
+            return [
+                'image' => $imagePath,
+                'thumbnail' => null
+            ];
+            
+        } catch (\Exception $e) {
+            Log::error('❌ Error handling main image upload: ' . $e->getMessage());
+            return ['image' => null, 'thumbnail' => null];
+        }
+    }
+
+    public function debugFileUpload(Request $request)
+    {
+        try {
+            Log::info("🔍 ============ DEBUG FILE UPLOAD ============");
+            
+            // Log all request data
+            Log::info("📦 All POST data:", $request->except(['subjects']));
+            
+            // Log all files
+            $allFiles = $request->allFiles();
+            Log::info("📁 Total files: " . count($allFiles));
+            
+            foreach ($allFiles as $key => $file) {
+                Log::info("📄 File - Key: '{$key}', Name: '{$file->getClientOriginalName()}', Size: {$file->getSize()}");
+            }
+            
+            // Log subjects if present
+            if ($request->has('subjects')) {
+                Log::info("📚 Subjects data:", $request->subjects);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Debug information logged',
+                'data' => [
+                    'total_files' => count($allFiles),
+                    'file_keys' => array_keys($allFiles),
+                    'subjects_count' => $request->has('subjects') ? count($request->subjects) : 0,
+                    'request_data_keys' => array_keys($request->all())
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('❌ Debug error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Debug failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function deleteImageFiles($imagePath)
+    {
+        try {
+            if ($imagePath && Storage::disk('public')->exists($imagePath)) {
+                Storage::disk('public')->delete($imagePath);
+                Log::info("🗑️ Deleted image: {$imagePath}");
+            }
+
+            // Also delete thumbnail if exists
+            $thumbnailPath = $this->getThumbnailPath($imagePath);
+            if ($thumbnailPath && Storage::disk('public')->exists($thumbnailPath)) {
+                Storage::disk('public')->delete($thumbnailPath);
+                Log::info("🗑️ Deleted thumbnail: {$thumbnailPath}");
+            }
+        } catch (\Exception $e) {
+            Log::error('❌ Error deleting image files: ' . $e->getMessage());
+        }
+    }
+
+    private function getThumbnailPath($imagePath)
+    {
+        if (!$imagePath) return null;
+        
+        $filename = pathinfo($imagePath, PATHINFO_FILENAME);
+        return 'courses/thumbnails/' . $filename . '_thumb.jpg';
+    }
+
     public function getCourseTeachers($courseId)
     {
         try {
@@ -1943,7 +2277,8 @@ class CourseController extends Controller
                     'course' => [
                         'id' => $course->id,
                         'name' => $course->name,
-                        'type' => $course->type
+                        'type' => $course->type,
+                        'image' => $course->image ? Storage::url($course->image) : null
                     ],
                     'assignedTeachers' => $assignedTeachers,
                     'availableTeachers' => $availableTeachers
@@ -1958,9 +2293,6 @@ class CourseController extends Controller
         }
     }
 
-    /**
-     * Assign teacher to course
-     */
     public function assignTeacherToCourse(Request $request, $courseId)
     {
         try {
@@ -2003,9 +2335,6 @@ class CourseController extends Controller
         }
     }
 
-    /**
-     * Remove teacher from course
-     */
     public function removeTeacherFromCourse($courseId, $teacherId)
     {
         try {
@@ -2041,189 +2370,7 @@ class CourseController extends Controller
         }
     }
 
-    /**
-     * Enroll student in course
-     */
-    public function enrollStudent(Request $request, $courseId)
-    {
-        try {
-            $user = $request->user();
-            $course = ClassModel::find($courseId);
-
-            if (!$course) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Course not found'
-                ], 404);
-            }
-
-            // Check if already enrolled
-            if ($course->students()->where('user_id', $user->id)->exists()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Already enrolled in this course'
-                ], 400);
-            }
-
-            // Enroll student
-            $course->students()->attach($user->id, [
-                'enrolled_at' => now(),
-                'status' => 'active'
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Successfully enrolled in course',
-                'data' => [
-                    'course_id' => $course->id,
-                    'course_name' => $course->name,
-                    'enrolled_at' => now()
-                ]
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to enroll in course',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Get user's enrolled courses
-     */
-    public function getMyCourses(Request $request)
-    {
-        try {
-            $user = $request->user();
-            
-            $courses = $user->studentClasses()
-                ->with(['teacher:id,name,avatar', 'students'])
-                ->get()
-                ->map(function($course) {
-                    return [
-                        'id' => $course->id,
-                        'name' => $course->name,
-                        'subject' => $course->subject,
-                        'type' => $course->type,
-                        'description' => $course->description,
-                        'thumbnail' => $course->thumbnail,
-                        'teacher' => $course->teacher,
-                        'enrolled_at' => $course->pivot->enrolled_at,
-                        'progress' => 0, // You can implement progress tracking
-                        'slug' => $this->generateSlug($course->name)
-                    ];
-                });
-
-            return response()->json([
-                'success' => true,
-                'data' => $courses,
-                'message' => 'My courses retrieved successfully'
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to retrieve courses',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Unenroll student from course
-     */
-    public function unenrollStudent(Request $request, $courseId)
-    {
-        try {
-            $user = $request->user();
-            $course = ClassModel::find($courseId);
-
-            if (!$course) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Course not found'
-                ], 404);
-            }
-
-            $course->students()->detach($user->id);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Successfully unenrolled from course'
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to unenroll from course',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Generate slug for course
-     */
-    private function generateSlug($name)
-    {
-        return strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $name)));
-    }
-
-    /**
-     * Get course subjects
-     */
-    public function getCourseSubjects($courseId)
-    {
-        try {
-            Log::info("🔍 [DEBUG] Fetching subjects for course ID: {$courseId}");
-
-            // First, get the main course
-            $course = ClassModel::find($courseId);
-            
-            if (!$course) {
-                Log::warning("❌ [DEBUG] Course not found with ID: {$courseId}");
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Course not found'
-                ], 404);
-            }
-
-            Log::info("✅ [DEBUG] Found course: {$course->name} (Type: {$course->type})");
-
-            $subjects = [];
-
-            if ($course->type === 'regular') {
-                // For regular classes, get all subjects for this grade/class
-                $subjects = $this->getRegularCourseSubjects($course);
-            } else {
-                // For other courses, get the course itself as a subject
-                $subjects = $this->getOtherCourseSubjects($course);
-            }
-
-            Log::info("✅ [DEBUG] Returning {$subjects->count()} subjects for course");
-
-            return response()->json([
-                'success' => true,
-                'data' => $subjects,
-                'course' => [
-                    'id' => $course->id,
-                    'name' => $course->name,
-                    'type' => $course->type,
-                    'grade' => $course->grade
-                ]
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('❌ [DEBUG] Error fetching course subjects: ' . $e->getMessage());
-            Log::error('❌ [DEBUG] Stack trace: ' . $e->getTraceAsString());
-            
-            // Return mock data as fallback
-            return $this->getMockCourseSubjects($courseId);
-        }
-    }
-
-    /**
-     * Get regular course subjects
-     */
+    // ============ HELPER METHODS ============
 
     private function getMockEnrollmentClasses()
     {
@@ -2238,351 +2385,13 @@ class CourseController extends Controller
                 'studentCount' => rand(15, 35),
                 'subjectCount' => 6,
                 'capacity' => 40,
-                'type' => 'academic'
+                'type' => 'academic',
+                'image' => null,
+                'thumbnail' => null
             ];
         }
         
         return $classes;
-    }
-
-    private function getRegularCourseSubjects($course)
-    {
-        Log::info("📚 [DEBUG] Getting regular course subjects for: {$course->name}");
-
-        // Get all classes with the same name (for different subjects)
-        $subjectClasses = ClassModel::where('name', $course->name)
-            ->where('type', 'regular')
-            ->with(['teacher:id,name,email,education_qualification,experience,avatar', 'students'])
-            ->get();
-
-        Log::info("📚 [DEBUG] Found {$subjectClasses->count()} subject classes");
-
-        if ($subjectClasses->isEmpty()) {
-            Log::info("📚 [DEBUG] No subject classes found, using mock data");
-            return $this->getMockSubjectsForRegularCourse($course);
-        }
-
-        return $subjectClasses->map(function($class) {
-            return [
-                'id' => $class->id,
-                'name' => $class->subject ?: $class->name,
-                'description' => $class->description ?: $this->getSubjectDescription($class->subject ?: $class->name),
-                'lesson_count' => $class->students->count() > 0 ? rand(10, 20) : rand(5, 15),
-                'duration' => $this->generateRandomDuration(),
-                'student_count' => $class->students->count(),
-                'teacher' => $class->teacher ? [
-                    'id' => $class->teacher->id,
-                    'name' => $class->teacher->name,
-                    'email' => $class->teacher->email,
-                    'qualification' => $class->teacher->education_qualification,
-                    'experience' => $class->teacher->experience,
-                    'rating' => $this->generateTeacherRating(),
-                    'avatar' => $class->teacher->avatar ?: $this->getDefaultTeacherAvatar($class->teacher->name)
-                ] : $this->getMockTeacher($class->subject ?: $class->name)
-            ];
-        });
-    }
-
-    /**
-     * Get other course subjects
-     */
-    private function getOtherCourseSubjects($course)
-    {
-        Log::info("🎯 [DEBUG] Getting other course subjects for: {$course->name}");
-
-        // For other courses, we might have multiple modules/subjects
-        // For now, return the course itself as the main subject
-        $subjects = collect([$course]);
-
-        // If it's a comprehensive course, break it down into modules
-        if (str_contains(strtolower($course->name), 'programming') || 
-            str_contains(strtolower($course->name), 'development')) {
-            $subjects = $this->getProgrammingCourseSubjects($course);
-        } elseif (str_contains(strtolower($course->name), 'design')) {
-            $subjects = $this->getDesignCourseSubjects($course);
-        } elseif (str_contains(strtolower($course->name), 'language') || 
-                str_contains(strtolower($course->name), 'english')) {
-            $subjects = $this->getLanguageCourseSubjects($course);
-        }
-
-        return $subjects->map(function($subject) use ($course) {
-            return [
-                'id' => $subject->id ?? ($course->id + rand(100, 999)),
-                'name' => $subject->name ?? $subject->subject ?? $course->name,
-                'description' => $subject->description ?? $this->getSubjectDescription($subject->name ?? $course->name),
-                'lesson_count' => rand(8, 25),
-                'duration' => $this->generateRandomDuration(),
-                'student_count' => $subject->students->count() ?? rand(15, 40),
-                'teacher' => $subject->teacher ?? $course->teacher ? [
-                    'id' => $course->teacher->id,
-                    'name' => $course->teacher->name,
-                    'email' => $course->teacher->email,
-                    'qualification' => $course->teacher->education_qualification,
-                    'experience' => $course->teacher->experience,
-                    'rating' => $this->generateTeacherRating(),
-                    'avatar' => $course->teacher->avatar ?: $this->getDefaultTeacherAvatar($course->teacher->name)
-                ] : $this->getMockTeacher($subject->name ?? $course->name)
-            ];
-        });
-    }
-
-    /**
-     * Get programming course subjects
-     */
-    private function getProgrammingCourseSubjects($course)
-    {
-        $subjects = [
-            ['name' => 'HTML & CSS Fundamentals', 'description' => 'Learn the building blocks of web development'],
-            ['name' => 'JavaScript Programming', 'description' => 'Master dynamic web interactions and logic'],
-            ['name' => 'React.js Development', 'description' => 'Build modern user interfaces with React'],
-            ['name' => 'Node.js Backend', 'description' => 'Create server-side applications with Node.js'],
-            ['name' => 'Database Management', 'description' => 'Learn SQL and database design principles'],
-            ['name' => 'Project Development', 'description' => 'Build real-world applications']
-        ];
-
-        return collect($subjects)->map(function($subject, $index) use ($course) {
-            $class = clone $course;
-            $class->id = $course->id + $index + 1;
-            $class->name = $subject['name'];
-            $class->description = $subject['description'];
-            return $class;
-        });
-    }
-
-    /**
-     * Get design course subjects
-     */
-    private function getDesignCourseSubjects($course)
-    {
-        $subjects = [
-            ['name' => 'UI/UX Design Principles', 'description' => 'Learn user-centered design approaches'],
-            ['name' => 'Adobe Photoshop', 'description' => 'Master image editing and graphic design'],
-            ['name' => 'Figma Prototyping', 'description' => 'Create interactive prototypes with Figma'],
-            ['name' => 'Color Theory & Typography', 'description' => 'Understand visual design fundamentals'],
-            ['name' => 'Design Portfolio', 'description' => 'Build a professional design portfolio']
-        ];
-
-        return collect($subjects)->map(function($subject, $index) use ($course) {
-            $class = clone $course;
-            $class->id = $course->id + $index + 1;
-            $class->name = $subject['name'];
-            $class->description = $subject['description'];
-            return $class;
-        });
-    }
-
-    /**
-     * Get language course subjects
-     */
-    private function getLanguageCourseSubjects($course)
-    {
-        $subjects = [
-            ['name' => 'Grammar Fundamentals', 'description' => 'Master essential grammar rules'],
-            ['name' => 'Vocabulary Building', 'description' => 'Expand your word knowledge'],
-            ['name' => 'Speaking Practice', 'description' => 'Improve pronunciation and fluency'],
-            ['name' => 'Listening Comprehension', 'description' => 'Understand native speakers'],
-            ['name' => 'Writing Skills', 'description' => 'Develop effective writing techniques'],
-            ['name' => 'Reading Comprehension', 'description' => 'Understand complex texts']
-        ];
-
-        return collect($subjects)->map(function($subject, $index) use ($course) {
-            $class = clone $course;
-            $class->id = $course->id + $index + 1;
-            $class->name = $subject['name'];
-            $class->description = $subject['description'];
-            return $class;
-        });
-    }
-
-    /**
-     * Get mock subjects for regular course
-     */
-    private function getMockSubjectsForRegularCourse($course)
-    {
-        $commonSubjects = [
-            'Mathematics', 'English', 'Science', 'Social Studies', 
-            'Bengali', 'Computer Science', 'Physical Education'
-        ];
-
-        return collect($commonSubjects)->map(function($subject, $index) use ($course) {
-            return [
-                'id' => $course->id + $index + 1,
-                'name' => $subject,
-                'description' => $this->getSubjectDescription($subject),
-                'lesson_count' => rand(12, 24),
-                'duration' => $this->generateRandomDuration(),
-                'student_count' => rand(20, 45),
-                'teacher' => $this->getMockTeacher($subject)
-            ];
-        });
-    }
-
-    /**
-     * Get mock course subjects
-     */
-    private function getMockCourseSubjects($courseId)
-    {
-        Log::info("🎭 [DEBUG] Using mock subjects for course ID: {$courseId}");
-
-        $mockSubjects = [
-            [
-                'id' => $courseId + 1,
-                'name' => 'Mathematics',
-                'description' => 'Develop problem-solving skills and mathematical thinking',
-                'lesson_count' => 15,
-                'duration' => '12h 30m',
-                'student_count' => 35,
-                'teacher' => [
-                    'id' => 1,
-                    'name' => 'Dr. Ahmed Rahman',
-                    'email' => 'ahmed.rahman@school.edu',
-                    'qualification' => 'PhD in Mathematics',
-                    'experience' => '10+ years',
-                    'rating' => '4.9',
-                    'avatar' => '/assets/img/teachers/teacher1.jpg'
-                ]
-            ],
-            [
-                'id' => $courseId + 2,
-                'name' => 'Science',
-                'description' => 'Explore scientific concepts and experimental methods',
-                'lesson_count' => 12,
-                'duration' => '10h 45m',
-                'student_count' => 28,
-                'teacher' => [
-                    'id' => 2,
-                    'name' => 'Ms. Fatima Begum',
-                    'email' => 'fatima.begum@school.edu',
-                    'qualification' => 'MSc in Physics',
-                    'experience' => '8+ years',
-                    'rating' => '4.7',
-                    'avatar' => '/assets/img/teachers/teacher2.jpg'
-                ]
-            ],
-            [
-                'id' => $courseId + 3,
-                'name' => 'English',
-                'description' => 'Improve language proficiency and communication skills',
-                'lesson_count' => 18,
-                'duration' => '15h 20m',
-                'student_count' => 42,
-                'teacher' => [
-                    'id' => 3,
-                    'name' => 'Mr. Kabir Hossain',
-                    'email' => 'kabir.hossain@school.edu',
-                    'qualification' => 'MA in English Literature',
-                    'experience' => '12+ years',
-                    'rating' => '4.8',
-                    'avatar' => '/assets/img/teachers/teacher3.jpg'
-                ]
-            ]
-        ];
-
-        return collect($mockSubjects);
-    }
-
-    /**
-     * Get subject description
-     */
-    private function getSubjectDescription($subjectName)
-    {
-        $descriptions = [
-            'Mathematics' => 'Develop problem-solving skills and mathematical thinking',
-            'English' => 'Improve language proficiency and communication skills',
-            'Science' => 'Explore scientific concepts and experimental methods',
-            'Social Studies' => 'Understand society, culture, and human interactions',
-            'Bengali' => 'Master Bengali language and literature',
-            'Computer Science' => 'Learn programming and computational thinking',
-            'Physical Education' => 'Develop physical fitness and sports skills',
-            'HTML & CSS' => 'Build responsive websites with modern web technologies',
-            'JavaScript' => 'Create interactive web applications and dynamic content',
-            'React.js' => 'Build modern user interfaces with React framework',
-            'Node.js' => 'Create server-side applications with JavaScript',
-            'Database Management' => 'Learn SQL and database design principles',
-            'UI/UX Design' => 'Design user-friendly interfaces and experiences'
-        ];
-
-        return $descriptions[$subjectName] ?? 'Comprehensive learning materials and expert instruction';
-    }
-
-    /**
-     * Generate random duration
-     */
-    private function generateRandomDuration()
-    {
-        $hours = rand(5, 20);
-        $minutes = rand(0, 59);
-        return "{$hours}h {$minutes}m";
-    }
-
-    /**
-     * Generate teacher rating
-     */
-    private function generateTeacherRating()
-    {
-        return number_format(4.0 + (rand(0, 10) / 10), 1);
-    }
-
-    /**
-     * Get mock teacher
-     */
-    private function getMockTeacher($subjectName)
-    {
-        $teachers = [
-            'Mathematics' => [
-                'id' => 1,
-                'name' => 'Dr. Ahmed Rahman',
-                'email' => 'ahmed.rahman@school.edu',
-                'qualification' => 'PhD in Mathematics',
-                'experience' => '10+ years',
-                'rating' => '4.9',
-                'avatar' => '/assets/img/teachers/teacher1.jpg'
-            ],
-            'Science' => [
-                'id' => 2,
-                'name' => 'Ms. Fatima Begum',
-                'email' => 'fatima.begum@school.edu',
-                'qualification' => 'MSc in Physics',
-                'experience' => '8+ years',
-                'rating' => '4.7',
-                'avatar' => '/assets/img/teachers/teacher2.jpg'
-            ],
-            'English' => [
-                'id' => 3,
-                'name' => 'Mr. Kabir Hossain',
-                'email' => 'kabir.hossain@school.edu',
-                'qualification' => 'MA in English Literature',
-                'experience' => '12+ years',
-                'rating' => '4.8',
-                'avatar' => '/assets/img/teachers/teacher3.jpg'
-            ],
-            'default' => [
-                'id' => 4,
-                'name' => 'Expert Teacher',
-                'email' => 'teacher@school.edu',
-                'qualification' => 'Subject Expert',
-                'experience' => '5+ years',
-                'rating' => '4.5',
-                'avatar' => '/assets/img/teachers/default-teacher.jpg'
-            ]
-        ];
-
-        foreach ($teachers as $key => $teacher) {
-            if (str_contains(strtolower($subjectName), strtolower($key))) {
-                return $teacher;
-            }
-        }
-
-        return $teachers['default'];
-    }
-
-    /**
-     * Get default teacher avatar
-     */
-    private function getDefaultTeacherAvatar($teacherName)
-    {
-        // You can implement a logic to generate avatars based on teacher name
-        return '/assets/img/teachers/default-teacher.jpg';
     }
 
     private function getMockClassEnrollments($grade)
@@ -2630,49 +2439,24 @@ class CourseController extends Controller
         ];
     }
 
-    private function getCourseThumbnail($course)
+    private function getSubjectDescription($subjectName)
     {
-        // Use default thumbnails that actually exist
-        $defaultThumbnails = [
-            '/assets/img/courses/course_thumb01.png',
-            '/assets/img/courses/course_thumb02.png', 
-            '/assets/img/courses/course_thumb03.png',
-            '/assets/img/courses/course_thumb04.png'
+        $descriptions = [
+            'Mathematics' => 'Develop problem-solving skills and mathematical thinking',
+            'English' => 'Improve language proficiency and communication skills',
+            'Science' => 'Explore scientific concepts and experimental methods',
+            'Social Studies' => 'Understand society, culture, and human interactions',
+            'Bengali' => 'Master Bengali language and literature',
+            'Computer Science' => 'Learn programming and computational thinking',
+            'Physical Education' => 'Develop physical fitness and sports skills',
+            'HTML & CSS' => 'Build responsive websites with modern web technologies',
+            'JavaScript' => 'Create interactive web applications and dynamic content',
+            'React.js' => 'Build modern user interfaces with React framework',
+            'Node.js' => 'Create server-side applications with JavaScript',
+            'Database Management' => 'Learn SQL and database design principles',
+            'UI/UX Design' => 'Design user-friendly interfaces and experiences'
         ];
 
-        // Choose thumbnail based on course type or category
-        $index = 0;
-        if ($course->type === 'regular') {
-            $index = (($course->grade ?? 1) - 1) % 4;
-        } else {
-            $categoryHash = crc32($course->category ?? 'default');
-            $index = $categoryHash % 4;
-        }
-
-        return $defaultThumbnails[$index] ?? $defaultThumbnails[0];
-    }
-
-    /**
-     * Get instructor avatar with fallback
-     */
-    private function getInstructorAvatar($instructor)
-    {
-        if (!$instructor) {
-            return '/assets/img/instructors/instructor01.png';
-        }
-
-        // Use default avatars that exist
-        $defaultAvatars = [
-            '/assets/img/instructors/instructor01.png',
-            '/assets/img/instructors/instructor02.png',
-            '/assets/img/instructors/instructor03.png',
-            '/assets/img/instructors/instructor04.png'
-        ];
-
-        // Choose avatar based on instructor ID or name hash
-        $nameHash = crc32($instructor->name ?? 'default');
-        $index = $nameHash % 4;
-
-        return $defaultAvatars[$index] ?? $defaultAvatars[0];
+        return $descriptions[$subjectName] ?? 'Comprehensive learning materials and expert instruction';
     }
 }

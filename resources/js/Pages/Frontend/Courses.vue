@@ -64,10 +64,19 @@
                   <img 
                     :src="getCourseThumbnail(course)" 
                     :alt="getCourseTitle(course)" 
+                    :data-course-id="course.id"
+                    :data-image-src="course.image || 'none'"
+                    :data-thumbnail-src="course.thumbnail || 'none'"
                     @error="handleImageError"
+                    @load="handleImageLoad(course.id)"
+                    loading="lazy"
                   />
                   <div class="course-type-badge" :class="course.type || 'regular'">
                     {{ (course.type || 'regular') === 'regular' ? t('Class') : t('Course') }}
+                  </div>
+                  <!-- Image loading indicator -->
+                  <div v-if="imageLoading[course.id]" class="image-loading">
+                    <div class="loading-spinner"></div>
                   </div>
                 </div>
                 <div class="course-content">
@@ -184,6 +193,7 @@ const searchQuery = ref(props.filters.search || '');
 const courseType = ref(props.filters.type || '');
 const sortBy = ref(props.filters.sort || 'name');
 const currentTheme = ref('light');
+const imageLoading = ref({}); // Track image loading states
 
 // Add icon render key to prevent disappearing icons
 const iconRenderKey = ref(0);
@@ -200,12 +210,23 @@ const handleThemeChange = (event) => {
 
 // Extract courses data from paginated object or array
 const coursesData = computed(() => {
-  if (Array.isArray(props.courses)) {
-    return props.courses;
-  } else if (props.courses && props.courses.data) {
-    return props.courses.data;
+  const data = Array.isArray(props.courses) ? props.courses : (props.courses?.data || []);
+  
+  // Log the data structure to debug
+  console.log('📦 Courses data received:', data);
+  
+  if (data.length > 0) {
+    console.log('🖼️ First course image data:', {
+      id: data[0].id,
+      name: data[0].name,
+      image: data[0].image,
+      image_url: data[0].image_url,
+      thumbnail: data[0].thumbnail,
+      thumbnail_url: data[0].thumbnail_url
+    });
   }
-  return [];
+  
+  return data;
 });
 
 // Refresh courses
@@ -294,7 +315,42 @@ const filteredCourses = computed(() => {
 });
 
 // Methods
+// In your Vue component - update the getCourseThumbnail function
 const getCourseThumbnail = (course) => {
+  console.log('🖼️ Course image data for frontend:', {
+    id: course.id,
+    name: course.name,
+    image: course.image,
+    image_url: course.image_url,
+    thumbnail: course.thumbnail,
+    thumbnail_url: course.thumbnail_url
+  });
+
+  // 🔥 FIX: Use the image data from backend
+  if (course.image_url && course.image_url !== 'null' && course.image_url !== 'NULL') {
+    console.log('✅ Using image_url from backend:', course.image_url);
+    return course.image_url;
+  }
+
+  if (course.thumbnail_url && course.thumbnail_url !== 'null' && course.thumbnail_url !== 'NULL') {
+    console.log('✅ Using thumbnail_url from backend:', course.thumbnail_url);
+    return course.thumbnail_url;
+  }
+
+  if (course.image && course.image !== 'null' && course.image !== 'NULL') {
+    const imageUrl = formatImageUrl(course.image);
+    console.log('✅ Using raw image path from backend:', imageUrl);
+    return imageUrl;
+  }
+
+  if (course.thumbnail && course.thumbnail !== 'null' && course.thumbnail !== 'NULL') {
+    const thumbnailUrl = formatImageUrl(course.thumbnail);
+    console.log('✅ Using raw thumbnail path from backend:', thumbnailUrl);
+    return thumbnailUrl;
+  }
+
+  // Fallback to demo thumbnails only if no database image exists
+  console.log('📸 No database image found, using fallback for course:', course.id);
   const courseType = course.type || 'regular';
   
   if (courseType === 'regular') {
@@ -317,8 +373,116 @@ const getCourseThumbnail = (course) => {
   }
 };
 
+const debugCoursesData = computed(() => {
+  console.log('🔍 DEBUG: Courses data received:', props.courses);
+  
+  if (Array.isArray(props.courses)) {
+    console.log('📦 Courses data (array):', props.courses);
+    return props.courses.map(course => ({
+      id: course.id,
+      name: course.name,
+      subject: course.subject,
+      image: course.image,
+      thumbnail: course.thumbnail,
+      type: course.type,
+      grade: course.grade
+    }));
+  } else if (props.courses && props.courses.data) {
+    console.log('📦 Courses data (paginated):', props.courses.data);
+    return props.courses.data.map(course => ({
+      id: course.id,
+      name: course.name,
+      subject: course.subject,
+      image: course.image,
+      thumbnail: course.thumbnail,
+      type: course.type,
+      grade: course.grade
+    }));
+  }
+  
+  console.warn('📦 No courses data found');
+  return [];
+});
+
+// 🔥 ADD: Helper function to format image URLs properly
+const formatImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  
+  console.log('🔄 Formatting image path:', imagePath);
+  
+  // If it's already a full URL, return as is
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  // If it starts with storage/, remove the storage/ prefix for public access
+  if (imagePath.startsWith('storage/')) {
+    const publicPath = imagePath.replace('storage/', '');
+    return `/storage/${publicPath}`;
+  }
+  
+  // If it's a relative path, assume it's in storage
+  if (imagePath.startsWith('courses/')) {
+    return `/storage/${imagePath}`;
+  }
+  
+  // Default case - prepend /storage/
+  return `/storage/${imagePath}`;
+};
+
 const handleImageError = (event) => {
-  event.target.src = '/assets/img/courses/h5_course_thumb01.jpg';
+  const img = event.target;
+  const courseId = img.dataset.courseId;
+  
+  console.warn('❌ Image failed to load:', img.src, 'for course:', courseId);
+  
+  // Mark image as failed to load
+  if (courseId) {
+    imageLoading.value[courseId] = false;
+  }
+  
+  // Try different fallback strategies
+  const fallbacks = [
+    '/assets/img/courses/h5_course_thumb01.jpg',
+    '/assets/img/courses/default-course.jpg',
+    '/assets/img/placeholder-course.jpg'
+  ];
+  
+  let currentFallbackIndex = 0;
+  
+  const tryNextFallback = () => {
+    if (currentFallbackIndex < fallbacks.length) {
+      img.src = fallbacks[currentFallbackIndex];
+      currentFallbackIndex++;
+    } else {
+      // All fallbacks failed, use a data URL placeholder
+      img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIyMCIgZmlsbD0iI2YzZjRmNiIvPjx0ZXh0IHg9IjIwMCIgeT0iMTEwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5OTk5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkNvdXJzZSBJbWFnZTwvdGV4dD48L3N2Zz4=';
+      img.onerror = null; // Prevent infinite loop
+    }
+  };
+  
+  img.onerror = tryNextFallback;
+  tryNextFallback();
+};
+
+const handleImageLoad = (courseId) => {
+  imageLoading.value[courseId] = false;
+};
+
+const preloadImage = (src, courseId) => {
+  return new Promise((resolve, reject) => {
+    imageLoading.value[courseId] = true;
+    const img = new Image();
+    img.onload = () => {
+      imageLoading.value[courseId] = false;
+      resolve(src);
+    };
+    img.onerror = () => {
+      imageLoading.value[courseId] = false;
+      reject(new Error(`Failed to load image: ${src}`));
+    };
+    img.src = src;
+  });
 };
 
 const getCourseDescription = (course) => {
@@ -385,6 +549,7 @@ const viewCourseDetails = (course) => {
   });
 };
 
+// Preload images when component mounts
 onMounted(() => {
   // Load theme preference from localStorage
   const savedTheme = localStorage.getItem('preferredTheme')
@@ -394,6 +559,16 @@ onMounted(() => {
   
   // Listen for theme changes
   window.addEventListener('themeChanged', handleThemeChange)
+  
+  // Preload course images
+  coursesData.value.forEach(course => {
+    const imageUrl = getCourseThumbnail(course);
+    if (imageUrl && !imageUrl.includes('/assets/img/courses/')) {
+      preloadImage(imageUrl, course.id).catch(error => {
+        console.warn(`Failed to preload image for course ${course.id}:`, error);
+      });
+    }
+  });
 })
 
 onUnmounted(() => {
@@ -401,7 +576,6 @@ onUnmounted(() => {
 })
 </script>
 
-<!-- Keep your existing CSS styles the same -->
 <style scoped>
 /* ==================== */
 /* LAYOUT & CONTAINERS */
@@ -427,14 +601,14 @@ onUnmounted(() => {
 /* ==================== */
 .header-section {
   text-align: center;
-  padding: 40px 0 50px;
+  padding: 10px 0 20px;
   margin-bottom: 0;
   border-bottom: none;
 }
 
 .title {
-  font-size: 3rem;
-  font-weight: 800;
+  font-size: 2rem;
+  font-weight: 400;
   color: var(--text-primary);
   margin-bottom: 16px;
   line-height: 1.2;
@@ -595,6 +769,29 @@ onUnmounted(() => {
   transform: scale(1.08);
 }
 
+/* Image loading indicator */
+.image-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top: 3px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
 .course-type-badge {
   position: absolute;
   top: 16px;
@@ -606,6 +803,7 @@ onUnmounted(() => {
   color: white;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  z-index: 3;
 }
 
 .course-type-badge.regular {

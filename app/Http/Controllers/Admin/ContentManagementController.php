@@ -209,7 +209,177 @@ class ContentManagementController extends Controller
         return $result;
     }
 
-    // ... rest of your methods remain the same
+    public function getContent(Request $request, $language = 'en')
+    {
+        try {
+            $validLanguages = ['en', 'bn'];
+            $lang = in_array($language, $validLanguages) ? $language : 'en';
+            
+            $content = $this->getAllContentWithDefaults($lang);
+            
+            return response()->json([
+                'success' => true,
+                'content' => $content,
+                'language' => $lang
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to get content: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to fetch content'
+            ], 500);
+        }
+    }
+
+    public function uploadImage(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+                'field_key' => 'required|string',
+                'language' => 'required|in:en,bn'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Get the uploaded file
+            $image = $request->file('image');
+            $fieldKey = $request->field_key;
+            $language = $request->language;
+
+            // Generate unique filename
+            $filename = $fieldKey . '_' . $language . '_' . time() . '.' . $image->getClientOriginalExtension();
+            
+            // Store image in public disk
+            $path = $image->storeAs('content-images', $filename, 'public');
+
+            if (!$path) {
+                throw new \Exception('Failed to store image');
+            }
+
+            // Generate public URL - FIXED: Use manual URL construction
+            $imageUrl = $this->generateImageUrl($path);
+
+            Log::info('Image uploaded successfully', [
+                'field_key' => $fieldKey,
+                'language' => $language,
+                'path' => $path,
+                'url' => $imageUrl
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Image uploaded successfully',
+                'image_url' => $imageUrl,
+                'path' => $path
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Image upload error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload image: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+    /**
+     * Generate URL for stored image
+     */
+    private function generateImageUrl($path)
+    {
+        // If using local storage, construct URL manually
+        if (config('filesystems.default') === 'public') {
+            return url('storage/' . $path);
+        }
+        
+        // For other drivers (s3, etc.), use the Storage facade if available
+        try {
+            return Storage::url($path);
+        } catch (\Exception $e) {
+            // Fallback to manual URL construction
+            return url('storage/' . $path);
+        }
+    }
+
+    public function removeImage(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'field_key' => 'required|string',
+                'language' => 'required|in:en,bn'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $fieldKey = $request->field_key;
+            $language = $request->language;
+
+            // Find the content entry to get the current image URL
+            $content = Content::where('key', $fieldKey)->first();
+
+            if ($content) {
+                $currentImageUrl = $language === 'en' ? $content->value : $content->value_bn;
+                
+                // Extract filename from URL and delete the file
+                if ($currentImageUrl && strpos($currentImageUrl, 'content-images') !== false) {
+                    $filename = basename($currentImageUrl);
+                    $filePath = 'content-images/' . $filename;
+                    
+                    if (Storage::disk('public')->exists($filePath)) {
+                        Storage::disk('public')->delete($filePath);
+                        Log::info('Image file deleted', ['file_path' => $filePath]);
+                    }
+                }
+
+                // Reset the content value to default
+                $defaults = $this->getDefaultContent($language);
+                $defaultValue = $defaults[$fieldKey] ?? '';
+
+                if ($language === 'en') {
+                    $content->value = $defaultValue;
+                } else {
+                    $content->value_bn = $defaultValue;
+                }
+                
+                $content->save();
+            }
+
+            Log::info('Image removed successfully', [
+                'field_key' => $fieldKey,
+                'language' => $language
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Image removed successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Image removal error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to remove image: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Enhanced save method to handle image URLs
+     */
     public function save(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -247,28 +417,4 @@ class ContentManagementController extends Controller
             return back()->with('error', 'Failed to update content');
         }
     }
-
-    public function getContent(Request $request, $language = 'en')
-    {
-        try {
-            $validLanguages = ['en', 'bn'];
-            $lang = in_array($language, $validLanguages) ? $language : 'en';
-            
-            $content = $this->getAllContentWithDefaults($lang);
-            
-            return response()->json([
-                'success' => true,
-                'content' => $content,
-                'language' => $lang
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Failed to get content: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'error' => 'Failed to fetch content'
-            ], 500);
-        }
-    }
-
-    // ... other methods (uploadImage, removeImage, etc.)
 }

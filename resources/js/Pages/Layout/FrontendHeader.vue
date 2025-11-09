@@ -376,6 +376,72 @@ const showSuggestions = ref(false)
 const showMobileSuggestions = ref(false)
 const courseSuggestions = ref([])
 const isLoadingSuggestions = ref(false)
+const iconErrors = ref(0)
+
+// Enhanced refresh icons function
+const refreshIcons = () => {
+  console.log('🔄 Refreshing icons...')
+  
+  // Method 1: Use Font Awesome's built-in method
+  if (window.FontAwesome && window.FontAwesome.dom && window.FontAwesome.dom.i2svg) {
+    try {
+      window.FontAwesome.dom.i2svg()
+      console.log('✅ Font Awesome icons refreshed via i2svg')
+    } catch (error) {
+      console.error('❌ Error refreshing Font Awesome icons:', error)
+    }
+  }
+  
+  // Method 2: Force re-render by toggling display (fallback)
+  setTimeout(() => {
+    const icons = document.querySelectorAll('i[class*="fa-"]')
+    icons.forEach(icon => {
+      // Force reflow
+      icon.style.display = 'none'
+      icon.offsetHeight // Trigger reflow
+      icon.style.display = 'inline-block'
+    })
+    console.log(`✅ Forced re-render of ${icons.length} icons`)
+  }, 50)
+  
+  // Method 3: Check if Font Awesome CSS is loaded
+  const faStylesheet = Array.from(document.styleSheets).find(sheet => 
+    sheet.href && sheet.href.includes('fontawesome')
+  )
+  
+  if (!faStylesheet) {
+    console.warn('⚠️ Font Awesome stylesheet not found, reloading...')
+    loadFontAwesome()
+  }
+}
+
+// Function to dynamically load Font Awesome if needed
+const loadFontAwesome = () => {
+  const existingLink = document.querySelector('link[href*="fontawesome"]')
+  if (!existingLink) {
+    const link = document.createElement('link')
+    link.rel = 'stylesheet'
+    link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
+    link.integrity = 'sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=='
+    link.crossOrigin = 'anonymous'
+    document.head.appendChild(link)
+    console.log('✅ Font Awesome CSS loaded dynamically')
+  }
+}
+
+// Icon error handler
+const handleIconError = (event) => {
+  console.warn('⚠️ Icon loading error detected', event)
+  iconErrors.value++
+  
+  if (iconErrors.value < 3) {
+    // Try to refresh icons on error
+    setTimeout(refreshIcons, 100)
+  } else {
+    // If multiple errors, reload Font Awesome
+    loadFontAwesome()
+  }
+}
 
 // Global language state management
 const initializeLanguage = () => {
@@ -394,7 +460,7 @@ const initializeLanguage = () => {
   
   // Apply the language if different from current
   if (preferredLang !== currentLanguage.value) {
-    console.log('Initializing language to:', preferredLang)
+    console.log('🌐 Initializing language to:', preferredLang)
     switchLanguage(preferredLang)
     localStorage.setItem('preferredLanguage', preferredLang)
   }
@@ -438,7 +504,13 @@ const switchLanguageWithIcons = async (lang) => {
   if (lang === currentLanguage.value) return // No change needed
   
   try {
-    console.log('Switching language to:', lang)
+    console.log('🌐 Switching language to:', lang)
+    
+    // Close all dropdowns first
+    closeAll()
+    
+    // Show loading state for icons
+    document.body.classList.add('language-switching')
     
     // Update the translation composable
     switchLanguage(lang)
@@ -454,6 +526,10 @@ const switchLanguageWithIcons = async (lang) => {
     const currentUrl = new URL(window.location.href)
     currentUrl.searchParams.set('lang', lang)
     
+    // Force icon refresh before navigation
+    await nextTick()
+    refreshIcons()
+    
     // Dispatch global event for all components
     window.dispatchEvent(new CustomEvent('languageChanged', { 
       detail: { 
@@ -466,41 +542,38 @@ const switchLanguageWithIcons = async (lang) => {
     router.visit(currentUrl.toString(), {
       preserveState: true,
       preserveScroll: true,
-      replace: true, // Use replace instead of push to avoid history buildup
+      replace: true,
       onSuccess: () => {
-        console.log('Language switched successfully to:', lang)
-        closeAll()
+        console.log('✅ Language switched successfully to:', lang)
         
-        // Force refresh of all icons and dynamic content
-        setTimeout(() => {
-          refreshIcons()
-          // Force re-render of any dynamic content
-          window.dispatchEvent(new CustomEvent('contentRefresh'))
-        }, 150)
+        // Multiple icon refresh attempts
+        setTimeout(() => refreshIcons(), 100)
+        setTimeout(() => refreshIcons(), 500)
+        setTimeout(() => refreshIcons(), 1000)
+        
+        document.body.classList.remove('language-switching')
       },
       onError: (errors) => {
-        console.error('Error switching language:', errors)
+        console.error('❌ Error switching language:', errors)
         // Fallback: update URL without reloading entire page
         window.history.replaceState(null, '', currentUrl.toString())
-        refreshIcons()
+        
+        // Multiple icon refresh attempts on error too
+        setTimeout(() => refreshIcons(), 100)
+        setTimeout(() => refreshIcons(), 500)
+        
+        document.body.classList.remove('language-switching')
       }
     })
     
   } catch (error) {
-    console.error('Error switching language:', error)
+    console.error('❌ Error switching language:', error)
+    document.body.classList.remove('language-switching')
+    
     // Final fallback
     const currentUrl = new URL(window.location.href)
     currentUrl.searchParams.set('lang', lang)
     window.location.href = currentUrl.toString()
-  }
-}
-
-// Refresh icons function
-const refreshIcons = () => {
-  if (window.FontAwesome && window.FontAwesome.dom && window.FontAwesome.dom.i2svg) {
-    setTimeout(() => {
-      window.FontAwesome.dom.i2svg()
-    }, 100)
   }
 }
 
@@ -514,11 +587,11 @@ const fetchCourseSuggestions = async (query = '') => {
       const data = await response.json()
       courseSuggestions.value = data.data || []
     } else {
-      console.error('Failed to fetch course suggestions')
+      console.error('❌ Failed to fetch course suggestions')
       courseSuggestions.value = []
     }
   } catch (error) {
-    console.error('Error fetching course suggestions:', error)
+    console.error('❌ Error fetching course suggestions:', error)
     courseSuggestions.value = []
   } finally {
     isLoadingSuggestions.value = false
@@ -705,10 +778,18 @@ const logoutMobile = () => {
 
 // Lifecycle hooks
 onMounted(() => {
-  console.log('FrontendHeader mounted - initializing language and theme')
+  console.log('🚀 FrontendHeader mounted - initializing language, theme, and icons')
   
   // Initialize language first
   initializeLanguage()
+  
+  // Ensure Font Awesome is loaded
+  loadFontAwesome()
+  
+  // Initial icon refresh
+  setTimeout(() => {
+    refreshIcons()
+  }, 500)
   
   // Then load other resources
   fetchCourseSuggestions()
@@ -723,6 +804,21 @@ onMounted(() => {
     currentTheme.value = systemPrefersDark ? 'dark' : 'light'
     applyTheme(currentTheme.value)
   }
+  
+  // Add periodic icon refresh (as a safeguard)
+  const iconRefreshInterval = setInterval(() => {
+    // Only refresh if there are hidden icons
+    const hiddenIcons = document.querySelectorAll('i[class*="fa-"]:not(:visible)')
+    if (hiddenIcons.length > 0) {
+      console.log(`⚠️ Found ${hiddenIcons.length} hidden icons, refreshing...`)
+      refreshIcons()
+    }
+  }, 30000) // Check every 30 seconds
+  
+  // Cleanup interval on unmount
+  onUnmounted(() => {
+    clearInterval(iconRefreshInterval)
+  })
   
   // Listen for system theme changes
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
@@ -742,7 +838,7 @@ onMounted(() => {
   
   // Listen for language changes from other components (redundancy)
   window.addEventListener('languageChanged', (event) => {
-    console.log('Language change event received in header:', event.detail.language)
+    console.log('🌐 Language change event received in header:', event.detail.language)
     if (event.detail.language !== currentLanguage.value) {
       switchLanguage(event.detail.language)
       localStorage.setItem('preferredLanguage', event.detail.language)
@@ -754,7 +850,7 @@ onMounted(() => {
 // Watch for language changes to update UI and URL
 watch(currentLanguage, (newLang, oldLang) => {
   if (newLang !== oldLang) {
-    console.log('Language changed in header from', oldLang, 'to', newLang)
+    console.log('🌐 Language changed in header from', oldLang, 'to', newLang)
     // Update document class
     document.documentElement.classList.remove('bn-lang', 'en-lang')
     document.documentElement.classList.add(`${newLang}-lang`)
@@ -784,6 +880,53 @@ const vClickOutside = {
 </script>
 
 <style scoped>
+/* Add language switching state */
+.language-switching {
+  pointer-events: none;
+}
+
+.language-switching i {
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+
+/* Enhanced icon styles */
+:deep(i[class*="fa-"]) {
+  display: inline-block !important;
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900 !important;
+  font-style: normal !important;
+  font-variant: normal !important;
+  text-rendering: auto !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  line-height: 1 !important;
+  transition: opacity 0.3s ease;
+}
+
+/* Specific styles for different icon types */
+:deep(.fas) {
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 900 !important;
+}
+
+:deep(.far) {
+  font-family: 'Font Awesome 6 Free' !important;
+  font-weight: 400 !important;
+}
+
+:deep(.fab) {
+  font-family: 'Font Awesome 6 Brands' !important;
+  font-weight: 400 !important;
+}
+
+/* Force icon visibility during language switch */
+.bn-lang :deep(i[class*="fa-"]),
+.en-lang :deep(i[class*="fa-"]) {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
 /* Base header styles using CSS variables */
 .header-area {
   background: var(--header-bg);
@@ -1865,25 +2008,6 @@ const vClickOutside = {
   .text-link {
     font-size: 13px;
   }
-}
-
-/* Ensure Font Awesome icons are properly loaded */
-:deep(.fas),
-:deep(.fab) {
-  font-family: 'Font Awesome 6 Free' !important;
-  font-weight: 900 !important;
-  display: inline-block !important;
-  font-style: normal !important;
-  font-variant: normal !important;
-  text-rendering: auto !important;
-  line-height: 1 !important;
-}
-
-/* Force icon rendering */
-:deep(i[class*="fa-"]) {
-  display: inline-block !important;
-  font-family: 'Font Awesome 6 Free' !important;
-  font-weight: 900 !important;
 }
 
 /* Smooth transitions for all interactive elements */

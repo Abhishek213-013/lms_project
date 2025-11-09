@@ -242,7 +242,7 @@ export default {
 /* Breadcrumb Area - Reduced Height */
 .breadcrumb__area {
   position: relative;
-  padding: 30px 0 20px;
+  padding: 20px 0 10px;
   background-size: cover;
   background-position: center;
   z-index: 1;
@@ -271,8 +271,8 @@ export default {
 }
 
 .breadcrumb__content .title {
-  font-size: 36px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 400;
   color: var(--text-primary);
   margin-bottom: 10px;
   text-align: center;

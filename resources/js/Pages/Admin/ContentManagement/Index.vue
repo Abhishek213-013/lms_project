@@ -112,71 +112,263 @@
             <!-- Content Fields -->
             <div class="space-y-6">
               <div v-for="(fieldLabel, fieldKey) in activeSectionData.fields" :key="fieldKey">
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  {{ fieldLabel }}
-                  <span class="text-xs text-gray-500 ml-1">
-                    ({{ activeLanguage === 'en' ? 'English' : 'Bengali' }})
-                  </span>
-                </label>
-                
-                <!-- Show both languages side by side for better management -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-2">
-                  <!-- English Version -->
-                  <div class="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                    <label class="block text-xs font-medium text-gray-600 mb-1">
-                      English Version
-                    </label>
-                    <textarea
-                      v-model="englishContent[fieldKey]"
-                      @blur="saveContent(fieldKey, englishContent[fieldKey], bengaliContent[fieldKey])"
-                      :rows="fieldKey.includes('content') ? 4 : 2"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-                      :placeholder="`Enter ${fieldLabel.toLowerCase()} in English...`"
-                    ></textarea>
-                    <p class="mt-1 text-xs text-gray-500">
-                      Characters: {{ englishContent[fieldKey] ? englishContent[fieldKey].length : 0 }}
-                    </p>
+                <!-- Special handling for image fields -->
+                <div v-if="fieldKey.includes('_image')">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ fieldLabel }}
+                    <span class="text-xs text-gray-500 ml-1">
+                      ({{ activeLanguage === 'en' ? 'English' : 'Bengali' }})
+                    </span>
+                  </label>
+                  
+                  <!-- Image Upload Section -->
+                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-2">
+                    <!-- English Version Image -->
+                    <div class="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                      <label class="block text-xs font-medium text-gray-600 mb-1">
+                        English Version Image
+                      </label>
+                      
+                      <!-- Current Image Preview -->
+                      <div v-if="englishContent[fieldKey] && englishContent[fieldKey] !== getDefaultImage(fieldKey, 'en')" class="mb-3">
+                        <p class="text-xs text-gray-500 mb-2">Current Image:</p>
+                        <img 
+                          :src="englishContent[fieldKey]" 
+                          :alt="fieldLabel"
+                          class="w-full h-32 object-cover rounded-lg border border-gray-300"
+                        >
+                        <p class="text-xs text-gray-500 mt-1 truncate">{{ englishContent[fieldKey] }}</p>
+                      </div>
+                      
+                      <!-- Default Image Preview -->
+                      <div v-else class="mb-3">
+                        <p class="text-xs text-gray-500 mb-2">Default Image:</p>
+                        <img 
+                          :src="getDefaultImage(fieldKey, 'en')" 
+                          :alt="fieldLabel"
+                          class="w-full h-32 object-cover rounded-lg border border-gray-300 opacity-75"
+                        >
+                        <p class="text-xs text-gray-500 mt-1">Using default image</p>
+                      </div>
+                      
+                      <!-- Image Upload Controls -->
+                      <div class="space-y-2">
+                        <input
+                          type="file"
+                          :ref="el => addFileInputRef(el, fieldKey, 'en')"
+                          accept="image/*"
+                          class="hidden"
+                          @change="handleImageUpload($event, fieldKey, 'en')"
+                        />
+                        
+                        <button
+                          type="button"
+                          @click="triggerFileInput(fieldKey, 'en')"
+                          class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        >
+                          <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                          </svg>
+                          Upload New Image
+                        </button>
+                        
+                        <button
+                          v-if="englishContent[fieldKey] && englishContent[fieldKey] !== getDefaultImage(fieldKey, 'en')"
+                          type="button"
+                          @click="removeImage(fieldKey, 'en')"
+                          class="w-full px-3 py-2 bg-red-50 border border-red-200 rounded-md text-sm font-medium text-red-700 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                        >
+                          <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                          </svg>
+                          Remove Image
+                        </button>
+                      </div>
+                      
+                      <!-- Upload Progress -->
+                      <div v-if="uploadProgress[fieldKey]?.en > 0" class="mt-2">
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            class="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                            :style="{ width: uploadProgress[fieldKey].en + '%' }"
+                          ></div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Uploading: {{ uploadProgress[fieldKey].en }}%</p>
+                      </div>
+                    </div>
+
+                    <!-- Bengali Version Image -->
+                    <div class="border border-gray-200 rounded-lg p-3 bg-gray-50" :class="{ 'border-blue-300 bg-blue-50': activeLanguage === 'bn' }">
+                      <label class="block text-xs font-medium text-gray-600 mb-1">
+                        Bengali Version Image
+                      </label>
+                      
+                      <!-- Current Image Preview -->
+                      <div v-if="bengaliContent[fieldKey] && bengaliContent[fieldKey] !== getDefaultImage(fieldKey, 'bn')" class="mb-3">
+                        <p class="text-xs text-gray-500 mb-2">Current Image:</p>
+                        <img 
+                          :src="bengaliContent[fieldKey]" 
+                          :alt="fieldLabel"
+                          class="w-full h-32 object-cover rounded-lg border border-gray-300"
+                        >
+                        <p class="text-xs text-gray-500 mt-1 truncate">{{ bengaliContent[fieldKey] }}</p>
+                      </div>
+                      
+                      <!-- Default Image Preview -->
+                      <div v-else class="mb-3">
+                        <p class="text-xs text-gray-500 mb-2">Default Image:</p>
+                        <img 
+                          :src="getDefaultImage(fieldKey, 'bn')" 
+                          :alt="fieldLabel"
+                          class="w-full h-32 object-cover rounded-lg border border-gray-300 opacity-75"
+                        >
+                        <p class="text-xs text-gray-500 mt-1">Using default image</p>
+                      </div>
+                      
+                      <!-- Image Upload Controls -->
+                      <div class="space-y-2">
+                        <input
+                          type="file"
+                          :ref="el => addFileInputRef(el, fieldKey, 'bn')"
+                          accept="image/*"
+                          class="hidden"
+                          @change="handleImageUpload($event, fieldKey, 'bn')"
+                        />
+                        
+                        <button
+                          type="button"
+                          @click="triggerFileInput(fieldKey, 'bn')"
+                          class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        >
+                          <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                          </svg>
+                          Upload New Image
+                        </button>
+                        
+                        <button
+                          v-if="bengaliContent[fieldKey] && bengaliContent[fieldKey] !== getDefaultImage(fieldKey, 'bn')"
+                          type="button"
+                          @click="removeImage(fieldKey, 'bn')"
+                          class="w-full px-3 py-2 bg-red-50 border border-red-200 rounded-md text-sm font-medium text-red-700 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                        >
+                          <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                          </svg>
+                          Remove Image
+                        </button>
+                      </div>
+                      
+                      <!-- Upload Progress -->
+                      <div v-if="uploadProgress[fieldKey]?.bn > 0" class="mt-2">
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            class="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                            :style="{ width: uploadProgress[fieldKey].bn + '%' }"
+                          ></div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Uploading: {{ uploadProgress[fieldKey].bn }}%</p>
+                      </div>
+                    </div>
                   </div>
 
-                  <!-- Bengali Version -->
-                  <div class="border border-gray-200 rounded-lg p-3 bg-gray-50" :class="{ 'border-blue-300 bg-blue-50': activeLanguage === 'bn' }">
-                    <label class="block text-xs font-medium text-gray-600 mb-1">
-                      Bengali Version
-                    </label>
-                    <textarea
-                      v-model="bengaliContent[fieldKey]"
-                      @blur="saveContent(fieldKey, englishContent[fieldKey], bengaliContent[fieldKey])"
-                      :rows="fieldKey.includes('content') ? 4 : 2"
-                      class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm font-bengali"
-                      :placeholder="`Enter ${fieldLabel.toLowerCase()} in Bengali...`"
-                      dir="auto"
-                    ></textarea>
-                    <p class="mt-1 text-xs text-gray-500">
-                      Characters: {{ bengaliContent[fieldKey] ? bengaliContent[fieldKey].length : 0 }}
-                    </p>
+                  <!-- Image Notes -->
+                  <div class="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700">
+                    <p><strong>Note:</strong> Recommended image size: 1200x600px. Supported formats: JPG, PNG, WebP. Max file size: 2MB.</p>
+                  </div>
+
+                  <!-- Quick Actions for Images -->
+                  <div class="flex justify-between items-center text-xs text-gray-500 mt-2">
+                    <span>
+                      Last saved: {{ getLastSaved(fieldKey) }}
+                    </span>
+                    <div class="flex space-x-2">
+                      <button
+                        @click="copyImageToBengali(fieldKey)"
+                        class="text-blue-600 hover:text-blue-800"
+                        title="Copy English image to Bengali"
+                      >
+                        Copy EN → BN
+                      </button>
+                      <button
+                        @click="resetImageToDefault(fieldKey)"
+                        class="text-gray-600 hover:text-gray-800"
+                        title="Reset to default image"
+                      >
+                        Reset
+                      </button>
+                    </div>
                   </div>
                 </div>
 
-                <!-- Quick Actions -->
-                <div class="flex justify-between items-center text-xs text-gray-500">
-                  <span>
-                    Last saved: {{ getLastSaved(fieldKey) }}
-                  </span>
-                  <div class="flex space-x-2">
-                    <button
-                      @click="copyToBengali(fieldKey)"
-                      class="text-blue-600 hover:text-blue-800"
-                      title="Copy English to Bengali"
-                    >
-                      Copy EN → BN
-                    </button>
-                    <button
-                      @click="resetToDefault(fieldKey)"
-                      class="text-gray-600 hover:text-gray-800"
-                      title="Reset to default"
-                    >
-                      Reset
-                    </button>
+                <!-- Regular text fields -->
+                <div v-else>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ fieldLabel }}
+                    <span class="text-xs text-gray-500 ml-1">
+                      ({{ activeLanguage === 'en' ? 'English' : 'Bengali' }})
+                    </span>
+                  </label>
+                  
+                  <!-- Show both languages side by side for better management -->
+                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-2">
+                    <!-- English Version -->
+                    <div class="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                      <label class="block text-xs font-medium text-gray-600 mb-1">
+                        English Version
+                      </label>
+                      <textarea
+                        v-model="englishContent[fieldKey]"
+                        @blur="saveContent(fieldKey, englishContent[fieldKey], bengaliContent[fieldKey])"
+                        :rows="fieldKey.includes('content') ? 4 : 2"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                        :placeholder="`Enter ${fieldLabel.toLowerCase()} in English...`"
+                      ></textarea>
+                      <p class="mt-1 text-xs text-gray-500">
+                        Characters: {{ englishContent[fieldKey] ? englishContent[fieldKey].length : 0 }}
+                      </p>
+                    </div>
+
+                    <!-- Bengali Version -->
+                    <div class="border border-gray-200 rounded-lg p-3 bg-gray-50" :class="{ 'border-blue-300 bg-blue-50': activeLanguage === 'bn' }">
+                      <label class="block text-xs font-medium text-gray-600 mb-1">
+                        Bengali Version
+                      </label>
+                      <textarea
+                        v-model="bengaliContent[fieldKey]"
+                        @blur="saveContent(fieldKey, englishContent[fieldKey], bengaliContent[fieldKey])"
+                        :rows="fieldKey.includes('content') ? 4 : 2"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm font-bengali"
+                        :placeholder="`Enter ${fieldLabel.toLowerCase()} in Bengali...`"
+                        dir="auto"
+                      ></textarea>
+                      <p class="mt-1 text-xs text-gray-500">
+                        Characters: {{ bengaliContent[fieldKey] ? bengaliContent[fieldKey].length : 0 }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- Quick Actions -->
+                  <div class="flex justify-between items-center text-xs text-gray-500">
+                    <span>
+                      Last saved: {{ getLastSaved(fieldKey) }}
+                    </span>
+                    <div class="flex space-x-2">
+                      <button
+                        @click="copyToBengali(fieldKey)"
+                        class="text-blue-600 hover:text-blue-800"
+                        title="Copy English to Bengali"
+                      >
+                        Copy EN → BN
+                      </button>
+                      <button
+                        @click="resetToDefault(fieldKey)"
+                        class="text-gray-600 hover:text-gray-800"
+                        title="Reset to default"
+                      >
+                        Reset
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -306,6 +498,8 @@ const bengaliContent = reactive({})
 const lastSaved = reactive({})
 const successMessage = ref('')
 const errorMessage = ref('')
+const uploadProgress = reactive({})
+const fileInputs = reactive({})
 
 // Use Inertia form for content saving
 const saveForm = useForm({
@@ -373,6 +567,18 @@ const getDefaultBengali = (fieldKey) => {
   return defaultBengali[fieldKey] || ''
 }
 
+const getDefaultImage = (fieldKey, language) => {
+  const defaultImages = {
+    'home_hero_image': {
+      'en': '/assets/img/h2_banner_img.png',
+      'bn': '/assets/img/h2_banner_img.png'
+    }
+    // Add more default images for other image fields if needed
+  }
+  
+  return defaultImages[fieldKey]?.[language] || '/assets/img/placeholder-image.jpg'
+}
+
 const getLastSaved = (fieldKey) => {
   return lastSaved[fieldKey] || 'Never'
 }
@@ -384,10 +590,162 @@ const copyToBengali = (fieldKey) => {
   }
 }
 
+const copyImageToBengali = (fieldKey) => {
+  if (englishContent[fieldKey] && englishContent[fieldKey] !== getDefaultImage(fieldKey, 'en')) {
+    bengaliContent[fieldKey] = englishContent[fieldKey]
+    saveContent(fieldKey, englishContent[fieldKey], bengaliContent[fieldKey])
+    showMessage('Copied English image to Bengali', 'info')
+  }
+}
+
 const resetToDefault = (fieldKey) => {
   englishContent[fieldKey] = props.content[fieldKey] || ''
   bengaliContent[fieldKey] = getDefaultBengali(fieldKey)
   showMessage('Field reset to default values', 'info')
+}
+
+const resetImageToDefault = (fieldKey) => {
+  englishContent[fieldKey] = getDefaultImage(fieldKey, 'en')
+  bengaliContent[fieldKey] = getDefaultImage(fieldKey, 'bn')
+  saveContent(fieldKey, englishContent[fieldKey], bengaliContent[fieldKey])
+  showMessage('Image reset to default', 'info')
+}
+
+// File input management
+const addFileInputRef = (el, fieldKey, language) => {
+  if (el) {
+    const key = `${fieldKey}_${language}`
+    fileInputs[key] = el
+  }
+}
+
+const triggerFileInput = (fieldKey, language) => {
+  const key = `${fieldKey}_${language}`
+  if (fileInputs[key]) {
+    fileInputs[key].click()
+  }
+}
+
+const handleImageUpload = async (event, fieldKey, language) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  // Validate file type
+  const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+  if (!validTypes.includes(file.type)) {
+    showMessage('Please select a valid image file (JPG, PNG, WebP)', 'error')
+    return
+  }
+
+  // Validate file size (2MB)
+  if (file.size > 2 * 1024 * 1024) {
+    showMessage('Image size should be less than 2MB', 'error')
+    return
+  }
+
+  try {
+    // Initialize progress tracking
+    if (!uploadProgress[fieldKey]) {
+      uploadProgress[fieldKey] = { en: 0, bn: 0 }
+    }
+    uploadProgress[fieldKey][language] = 10 // Start at 10%
+
+    const formData = new FormData()
+    formData.append('image', file)
+    formData.append('field_key', fieldKey)
+    formData.append('language', language)
+
+    const response = await fetch('/admin/content-management/upload-image', {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+      },
+      body: formData,
+    })
+
+    // Simulate progress for better UX
+    uploadProgress[fieldKey][language] = 60
+
+    const result = await response.json()
+
+    if (response.ok && result.success) {
+      uploadProgress[fieldKey][language] = 100
+      
+      // Update the content with the new image URL
+      if (language === 'en') {
+        englishContent[fieldKey] = result.image_url
+      } else {
+        bengaliContent[fieldKey] = result.image_url
+      }
+      
+      // Save the image URL to content management
+      await saveContent(fieldKey, 
+        language === 'en' ? result.image_url : englishContent[fieldKey],
+        language === 'bn' ? result.image_url : bengaliContent[fieldKey]
+      )
+      
+      showMessage('Image uploaded successfully!', 'success')
+    } else {
+      throw new Error(result.message || 'Failed to upload image')
+    }
+  } catch (error) {
+    console.error('Image upload error:', error)
+    showMessage('Failed to upload image: ' + error.message, 'error')
+  } finally {
+    // Reset progress after a delay
+    setTimeout(() => {
+      if (uploadProgress[fieldKey]) {
+        uploadProgress[fieldKey][language] = 0
+      }
+    }, 1000)
+    // Reset file input
+    event.target.value = ''
+  }
+}
+
+const removeImage = async (fieldKey, language) => {
+  if (!confirm('Are you sure you want to remove this image?')) {
+    return
+  }
+
+  try {
+    const response = await fetch('/admin/content-management/remove-image', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+      },
+      body: JSON.stringify({
+        field_key: fieldKey,
+        language: language
+      })
+    })
+
+    const result = await response.json()
+
+    if (response.ok && result.success) {
+      // Update the content with default image
+      const defaultImage = getDefaultImage(fieldKey, language)
+      if (language === 'en') {
+        englishContent[fieldKey] = defaultImage
+      } else {
+        bengaliContent[fieldKey] = defaultImage
+      }
+      
+      // Save the change
+      await saveContent(fieldKey, 
+        language === 'en' ? defaultImage : englishContent[fieldKey],
+        language === 'bn' ? defaultImage : bengaliContent[fieldKey]
+      )
+      
+      showMessage('Image removed successfully!', 'success')
+    } else {
+      throw new Error(result.message || 'Failed to remove image')
+    }
+  } catch (error) {
+    console.error('Image removal error:', error)
+    showMessage('Failed to remove image: ' + error.message, 'error')
+  }
 }
 
 const saveContent = async (key, value, valueBn = null) => {
@@ -520,8 +878,13 @@ const resetSectionToDefaults = () => {
 
   const sectionFields = props.sections[activeSection.value]?.fields || {}
   Object.keys(sectionFields).forEach(fieldKey => {
-    englishContent[fieldKey] = props.content[fieldKey] || ''
-    bengaliContent[fieldKey] = getDefaultBengali(fieldKey)
+    if (fieldKey.includes('_image')) {
+      englishContent[fieldKey] = getDefaultImage(fieldKey, 'en')
+      bengaliContent[fieldKey] = getDefaultImage(fieldKey, 'bn')
+    } else {
+      englishContent[fieldKey] = props.content[fieldKey] || ''
+      bengaliContent[fieldKey] = getDefaultBengali(fieldKey)
+    }
   })
   
   showMessage('Section reset to defaults. Click "Save All Changes" to apply.')
@@ -550,13 +913,16 @@ onMounted(() => {
 
 <style scoped>
 /* Bengali font support */
-.font-bengali {
-  font-family: 'SolaimanLipi', 'Siyam Rupali', 'Kalpurush', 'Arial', sans-serif;
-  line-height: 1.6;
-}
+
 
 /* Ensure proper text direction for Bengali */
 [dir="auto"] {
   text-align: left;
+}
+
+/* Image preview styles */
+img {
+  max-width: 100%;
+  height: auto;
 }
 </style>

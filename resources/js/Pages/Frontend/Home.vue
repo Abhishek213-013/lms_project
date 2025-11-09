@@ -3,14 +3,14 @@
     <div class="home-page">
       <!-- Hero Section -->
       <section 
-        class="hero-section"
+        class="hero-section p-0"
         :style="heroSectionStyle"
       >
         <div class="container">
           <div class="row align-items-center">
             <div class="col-lg-6">
               <div class="hero-content">
-                <h1 class="hero-title">{{ displayContent.home_hero_title }}</h1>
+                <h1 class="hero-title md:w-[400px]">{{ displayContent.home_hero_title }}</h1>
                 <p class="hero-subtitle">{{ displayContent.home_hero_subtitle }}</p>
                 
                 <div class="hero-actions">
@@ -41,13 +41,26 @@
             </div>
             <div class="col-lg-6">
               <div class="hero-image">
-                <img src="/assets/img/h2_banner_img.png" :alt="t('Online Learning')" class="img-fluid">
+                <img 
+                  :src="heroImageUrl" 
+                  :alt="t('Online Learning')" 
+                  class="img-fluid hero-main-image"
+                  @error="handleHeroImageError"
+                >
+                <!-- Fallback image that's hidden by default -->
+                <img 
+                  src="/assets/img/h2_banner_img.png" 
+                  :alt="t('Online Learning')" 
+                  class="img-fluid hero-fallback-image"
+                  ref="fallbackImage"
+                >
               </div>
             </div>
           </div>
         </div>
       </section>
 
+      <!-- Rest of the sections remain the same -->
       <!-- Popular Courses Section -->
       <section class="courses-section py-5">
         <div class="container">
@@ -249,11 +262,27 @@ const props = defineProps({
 
 // Reactive data
 const currentTheme = ref('light')
+const heroImageLoaded = ref(false)
+const heroImageError = ref(false)
+const fallbackImage = ref(null)
 
 // Computed properties
 const displayContent = computed(() => {
   // Use props.content if available, otherwise use default content
   return Object.keys(props.content).length > 0 ? props.content : getDefaultContent()
+})
+
+const heroImageUrl = computed(() => {
+  // Get hero image from content management, fallback to default
+  const customImage = props.content?.home_hero_image;
+  
+  if (customImage && customImage !== '/assets/img/h2_banner_img.png') {
+    console.log('Using custom hero image:', customImage);
+    return customImage;
+  }
+  
+  console.log('Using default hero image');
+  return '/assets/img/h2_banner_img.png';
 })
 
 const heroSectionStyle = computed(() => {
@@ -292,8 +321,6 @@ const handleThemeChange = (event) => {
 
 const handleLanguageChange = (event) => {
   console.log('Language change received in home page:', event.detail.language)
-  // Force re-computation by accessing currentLanguage
-  // The computed properties will automatically update
   refreshIcons()
 }
 
@@ -323,6 +350,38 @@ const getInstructorAvatar = (instructor) => {
 
 const handleImageError = (event) => {
   event.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y3ZmFmYyIvPjx0ZXh0IHg9IjEwMCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5Y2EwYTYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIwLjM1ZW0iPuKKojwvdGV4dD48L3N2Zz4=';
+}
+
+const handleHeroImageError = (event) => {
+  console.error('Hero image failed to load:', event.target.src);
+  heroImageError.value = true;
+  
+  // Show fallback image
+  if (fallbackImage.value) {
+    const mainImage = event.target;
+    const fallback = fallbackImage.value;
+    
+    // Hide main image and show fallback
+    mainImage.style.display = 'none';
+    fallback.style.display = 'block';
+  }
+}
+
+const preloadHeroImage = () => {
+  const img = new Image();
+  img.src = heroImageUrl.value;
+  
+  img.onload = () => {
+    console.log('Hero image loaded successfully:', heroImageUrl.value);
+    heroImageLoaded.value = true;
+    heroImageError.value = false;
+  };
+  
+  img.onerror = () => {
+    console.error('Failed to preload hero image:', heroImageUrl.value);
+    heroImageError.value = true;
+    heroImageLoaded.value = false;
+  };
 }
 
 // Methods for course data
@@ -393,13 +452,21 @@ const getEducation = (instructor) => {
   return t('Teaching Degree');
 }
 
-// Force re-render when language changes
+// Watch for content changes to reload hero image
+watch(() => props.content?.home_hero_image, (newImageUrl, oldImageUrl) => {
+  if (newImageUrl !== oldImageUrl) {
+    console.log('Hero image URL changed:', newImageUrl);
+    heroImageLoaded.value = false;
+    heroImageError.value = false;
+    preloadHeroImage();
+  }
+})
+
+// Watch for language changes
 watch(currentLanguage, (newLang, oldLang) => {
   console.log('Language changed from', oldLang, 'to', newLang);
-  // Force re-computation of all translated content
   refreshIcons();
   
-  // Add a small delay to ensure DOM updates
   setTimeout(() => {
     if (window.FontAwesome && window.FontAwesome.dom && window.FontAwesome.dom.i2svg) {
       window.FontAwesome.dom.i2svg();
@@ -407,13 +474,16 @@ watch(currentLanguage, (newLang, oldLang) => {
   }, 200);
 });
 
-// Lifecycle hooks - properly placed
+// Lifecycle hooks
 onMounted(() => {
   // Get initial theme
   const savedTheme = localStorage.getItem('preferredTheme')
   const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
   
   currentTheme.value = savedTheme || (systemPrefersDark ? 'dark' : 'light')
+  
+  // Preload hero image
+  preloadHeroImage();
   
   // Listen for theme changes
   window.addEventListener('themeChanged', handleThemeChange)
@@ -429,16 +499,61 @@ onMounted(() => {
   
   console.log('Home page mounted with language:', currentLanguage.value)
   console.log('Home page content received:', props.content)
+  console.log('Hero image URL:', heroImageUrl.value)
 })
 
 onUnmounted(() => {
   window.removeEventListener('themeChanged', handleThemeChange)
   window.removeEventListener('languageChanged', handleLanguageChange)
-  window.removeEventListener('contentRefresh', refreshIcons)
+  window.removemountedEventListener('contentRefresh', refreshIcons)
 })
 </script>
 
 <style scoped>
+/* ==================== */
+/* HERO IMAGE STYLES */
+/* ==================== */
+.hero-image {
+  position: relative;
+  text-align: center;
+  animation: float 3s ease-in-out infinite;
+}
+
+.hero-main-image {
+  max-width: 100%;
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+  transition: opacity 0.3s ease;
+}
+
+.hero-fallback-image {
+  max-width: 100%;
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+  display: none; /* Hidden by default */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.hero-image img {
+  max-width: 100%;
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
 /* ==================== */
 /* ICON FIXES FOR LANGUAGE SWITCH */
 /* ==================== */
@@ -850,10 +965,10 @@ onUnmounted(() => {
 }
 
 .hero-title {
-  font-size: 3.5rem;
-  font-weight: 700;
+  font-size: 2rem;
+  font-weight: 400;
   line-height: 1.2;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   color: var(--text-primary);
 }
 
@@ -929,27 +1044,6 @@ onUnmounted(() => {
 .stat-label {
   font-size: 0.9rem;
   color: var(--text-secondary);
-}
-
-.hero-image {
-  position: relative;
-  text-align: center;
-  animation: float 3s ease-in-out infinite;
-}
-
-.hero-image img {
-  max-width: 100%;
-  border-radius: 10px;
-  box-shadow: var(--shadow-lg);
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-20px);
-  }
 }
 
 /* Section Titles */
@@ -1066,7 +1160,7 @@ onUnmounted(() => {
   }
   
   .hero-title {
-    font-size: 2.5rem;
+    font-size: 1.5rem;
   }
   
   .hero-actions {

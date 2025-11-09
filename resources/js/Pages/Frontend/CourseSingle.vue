@@ -769,11 +769,11 @@ const enrollCourse = async () => {
 
 // Helper methods
 const getCourseImage = (course) => {
-  return course?.thumbnail || '/assets/img/courses/h5_course_thumb01.jpg';
+  return course?.image || course?.thumbnail || '/assets/img/courses/h5_course_thumb01.jpg';
 };
 
 const getPreviewImage = (course) => {
-  return course?.thumbnail || '/assets/img/courses/h5_course_thumb02.jpg';
+  return course?.thumbnail || course?.image || '/assets/img/courses/h5_course_thumb02.jpg';
 };
 
 const getCourseCategory = (course) => {
@@ -999,7 +999,7 @@ const handleThemeChange = (event) => {
 /* ==================== */
 .breadcrumb__area {
   position: relative;
-  padding: 50px 0 50px;
+  padding: 20px 0 20px;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -1016,8 +1016,8 @@ const handleThemeChange = (event) => {
 }
 
 .breadcrumb__content .title {
-  font-size: 48px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 400;
   color: var(--text-primary);
   margin-bottom: 15px;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.1);

@@ -1383,7 +1383,7 @@ class TeacherController extends Controller
         }
     }
 
-    private function isYouTubeUrl($url)
+    public function isYouTubeUrl($url)
     {
         if (!is_string($url)) return false;
         
@@ -1409,7 +1409,7 @@ class TeacherController extends Controller
     /**
      * Get YouTube video ID from URL
      */
-    private function getYouTubeVideoId($url)
+    public function getYouTubeVideoId($url)
     {
         $patterns = [
             '/youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/',

@@ -1017,7 +1017,7 @@ const resetInstructorForm = () => {
 /* Breadcrumb Styles */
 .breadcrumb__area {
   position: relative;
-  padding: 4px 0 4px;
+  padding: 10px 0 10px;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -1035,8 +1035,8 @@ const resetInstructorForm = () => {
 }
 
 .breadcrumb__content .title {
-  font-size: 48px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 400;
   color: var(--text-primary);
   margin-bottom: 15px;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.1);

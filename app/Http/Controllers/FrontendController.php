@@ -355,7 +355,13 @@ class FrontendController extends Controller
         $referer = request()->header('referer') ?? '/';
         
         if (in_array($language, $validLanguages)) {
+            // Store language in session
             session(['lang' => $language]);
+            
+            // Also set the locale for current request
+            app()->setLocale($language);
+            
+            Log::info("Language switched to: {$language}, Referer: {$referer}");
             
             // If it's an API request, return JSON
             if (request()->expectsJson()) {
@@ -418,8 +424,9 @@ class FrontendController extends Controller
             $language = $this->getCurrentLanguage();
             Log::info('📚 Loading courses page with language: ' . $language);
 
+            // 🔥 FIX: Include image and thumbnail fields in the select
             $query = ClassModel::with(['teacher:id,name', 'students'])
-                ->select('id', 'name', 'subject', 'grade', 'type', 'category', 'description', 'capacity', 'status', 'created_at')
+                ->select('id', 'name', 'subject', 'grade', 'type', 'category', 'description', 'capacity', 'status', 'created_at', 'image', 'thumbnail') // Added image and thumbnail
                 ->where('status', 'active');
 
             // Filter by category
@@ -441,9 +448,9 @@ class FrontendController extends Controller
             if ($request->has('search') && $request->search) {
                 $query->where(function($q) use ($request) {
                     $q->where('name', 'like', '%' . $request->search . '%')
-                      ->orWhere('subject', 'like', '%' . $request->search . '%')
-                      ->orWhere('description', 'like', '%' . $request->search . '%')
-                      ->orWhere('category', 'like', '%' . $request->search . '%');
+                    ->orWhere('subject', 'like', '%' . $request->search . '%')
+                    ->orWhere('description', 'like', '%' . $request->search . '%')
+                    ->orWhere('category', 'like', '%' . $request->search . '%');
                 });
             }
 
@@ -466,6 +473,7 @@ class FrontendController extends Controller
 
             // Transform courses for frontend with language support
             $courses->getCollection()->transform(function ($course) use ($language) {
+                // 🔥 FIX: Include all image data in the transformation
                 return [
                     'id' => $course->id,
                     'name' => $this->getTranslatedCourseName($course, $language),
@@ -475,6 +483,12 @@ class FrontendController extends Controller
                     'category' => $this->getTranslatedCategory($course->category, $language),
                     'description' => $this->getTranslatedDescription($course, $language),
                     'thumbnail' => $this->getCourseThumbnail($course),
+                    // 🔥 ADD: Include all image fields for frontend
+                    'image' => $course->image, // Raw image path from database
+                    'thumbnail' => $course->thumbnail, // Raw thumbnail path from database
+                    'image_url' => $course->image_url, // Full URL from model accessor
+                    'thumbnail_url' => $course->thumbnail_url, // Full URL from model accessor
+                    'raw_image' => $course->image, // Raw path for debugging
                     'fee' => 0,
                     'capacity' => $course->capacity,
                     'student_count' => $course->students->count(),
@@ -515,7 +529,20 @@ class FrontendController extends Controller
                 ->values()
                 ->sort();
 
-            Log::info("✅ Successfully loaded {$courses->count()} courses");
+            // 🔥 ADD: Debug logging to see what image data is being sent
+            if ($courses->count() > 0) {
+                $firstCourse = $courses->first();
+                Log::info('🖼️ First course image data:', [
+                    'id' => $firstCourse['id'],
+                    'name' => $firstCourse['name'],
+                    'image' => $firstCourse['image'],
+                    'image_url' => $firstCourse['image_url'],
+                    'thumbnail' => $firstCourse['thumbnail'],
+                    'thumbnail_url' => $firstCourse['thumbnail_url']
+                ]);
+            }
+
+            Log::info("✅ Successfully loaded {$courses->count()} courses with image data");
 
             return Inertia::render('Frontend/Courses', [
                 'courses' => $courses->items(),
@@ -617,6 +644,87 @@ class FrontendController extends Controller
         ]);
     }
 
+    public function courseSingle($id): Response
+    {
+        try {
+            $course = ClassModel::where('status', 'active')
+                ->with(['teacher:id,name,email,experience,education_qualification,institute', 'students'])
+                ->find($id);
+
+            if (!$course) {
+                return $this->renderNotFound('Course not found');
+            }
+
+            $courseData = [
+                'id' => $course->id,
+                'name' => $course->name,
+                'subject' => $course->subject,
+                'grade' => $course->grade,
+                'type' => $course->type,
+                'category' => $course->category,
+                'description' => $course->description,
+                'full_description' => $course->description,
+                'thumbnail' => $this->getCourseThumbnail($course),
+                'fee' => 0,
+                'capacity' => $course->capacity,
+                'duration' => '12 weeks',
+                'level' => 'Beginner',
+                'student_count' => $course->students->count(),
+                'teacher' => $course->teacher,
+                'schedule' => $course->schedule,
+                'requirements' => 'No specific requirements',
+                'learning_outcomes' => 'Comprehensive understanding of the subject matter',
+                'slug' => $this->generateSlug($course->name),
+                'created_at' => $course->created_at->format('M d, Y'),
+                'updated_at' => $course->updated_at->format('M d, Y')
+            ];
+
+            // Check if user is enrolled (if authenticated)
+            $isEnrolled = false;
+            if (Auth::check()) {
+                $isEnrolled = $course->students()->where('student_id', Auth::id())->exists();
+            }
+
+            // Get related courses
+            $relatedCourses = ClassModel::where('status', 'active')
+                ->where(function($query) use ($course) {
+                    $query->where('category', $course->category)
+                          ->orWhere('type', $course->type)
+                          ->orWhere('teacher_id', $course->teacher_id);
+                })
+                ->where('id', '!=', $course->id)
+                ->with(['teacher:id,name', 'students'])
+                ->limit(4)
+                ->get()
+                ->map(function($relatedCourse) {
+                    return [
+                        'id' => $relatedCourse->id,
+                        'name' => $relatedCourse->name,
+                        'subject' => $relatedCourse->subject,
+                        'description' => $relatedCourse->description,
+                        'thumbnail' => $this->getCourseThumbnail($relatedCourse),
+                        'fee' => 0,
+                        'student_count' => $relatedCourse->students->count(),
+                        'teacher' => $relatedCourse->teacher,
+                        'slug' => $this->generateSlug($relatedCourse->name),
+                        'type' => $relatedCourse->type
+                    ];
+                });
+
+            return Inertia::render('Frontend/CourseSingle', [
+                'course' => $courseData,
+                'relatedCourses' => $relatedCourses,
+                'isEnrolled' => $isEnrolled,
+                'pageTitle' => $course->name . ' - SkillGro',
+                'metaDescription' => $course->description
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Course single page error: ' . $e->getMessage());
+            
+            return $this->renderNotFound('Course not found');
+        }
+    }
     public function instructors(Request $request): Response
     {
         try {
@@ -774,22 +882,40 @@ class FrontendController extends Controller
 
     private function getCourseThumbnail($course)
     {
-        $defaultThumbnails = [
-            '/assets/img/courses/h5_course_thumb01.jpg',
-            '/assets/img/courses/h5_course_thumb02.jpg',
-            '/assets/img/courses/h5_course_thumb03.jpg',
-            '/assets/img/courses/h5_course_thumb04.jpg'
-        ];
-
-        $index = 0;
-        if ($course->type === 'regular') {
-            $index = (($course->grade ?? 1) - 1) % 4;
-        } else {
-            $categoryHash = crc32($course->category ?? 'default');
-            $index = $categoryHash % 4;
+        // 🔥 FIX: First priority - Use database images
+        if ($course->thumbnail && $course->thumbnail !== 'null' && $course->thumbnail !== 'NULL') {
+            Log::info("✅ Using database thumbnail for course {$course->id}: {$course->thumbnail}");
+            return $course->thumbnail_url; // Use model accessor for full URL
         }
 
-        return $defaultThumbnails[$index] ?? $defaultThumbnails[0];
+        if ($course->image && $course->image !== 'null' && $course->image !== 'NULL') {
+            Log::info("✅ Using database image for course {$course->id}: {$course->image}");
+            return $course->image_url; // Use model accessor for full URL
+        }
+
+        // Fallback to demo thumbnails only if no database image exists
+        Log::info("📸 No database image found for course {$course->id}, using fallback");
+        
+        $courseType = $course->type || 'regular';
+        
+        if ($courseType === 'regular') {
+            $grade = $course->grade || 1;
+            $thumbnails = [
+                '/assets/img/courses/h5_course_thumb1.jpg',
+                '/assets/img/courses/h5_course_thumb02.jpg',
+                '/assets/img/courses/h5_course_thumb03.jpg',
+                '/assets/img/courses/h5_course_thumb04.jpg'
+            ];
+            return $thumbnails[($grade - 1) % count($thumbnails)];
+        } else {
+            $thumbnails = [
+                'Language' => '/assets/img/courses/h5_course_thumb05.jpg',
+                'Technology' => '/assets/img/courses/h5_course_thumb06.jpg',
+                'Personal Development' => '/assets/img/courses/h5_course_thumb07.jpg',
+                'default' => '/assets/img/courses/h5_course_thumb08.jpg'
+            ];
+            return $thumbnails[$course->category] ?? $thumbnails['default'];
+        }
     }
 
     public function instructorDetails($id): Response

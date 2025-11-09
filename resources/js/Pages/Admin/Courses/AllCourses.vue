@@ -111,7 +111,7 @@
 
         <!-- Create Course Modal -->
         <div v-if="showCreateModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div class="px-6 py-4 border-b border-gray-200">
               <h3 class="text-lg font-semibold text-gray-800">Create New Course</h3>
             </div>
@@ -214,36 +214,105 @@
               <!-- Subject Information -->
               <div v-if="newCourse.type === 'regular'">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Subjects *</label>
-                <div class="space-y-3">
+                <div class="space-y-4">
                   <div 
                     v-for="(subject, index) in newCourse.subjects" 
                     :key="index"
-                    class="flex items-center space-x-3"
+                    class="border border-gray-200 rounded-lg p-4 space-y-4"
                   >
-                    <input 
-                      v-model="subject.name"
-                      type="text" 
-                      required
-                      class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Subject name"
-                    >
-                    <input 
-                      v-model="subject.code"
-                      type="text" 
-                      required
-                      class="w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Code"
-                    >
-                    <button 
-                      type="button"
-                      @click="removeSubject(index)"
-                      class="p-2 text-red-600 hover:text-red-800"
-                      v-if="newCourse.subjects.length > 1"
-                    >
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                      </svg>
-                    </button>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Subject Name *</label>
+                        <input 
+                          v-model="subject.name"
+                          type="text" 
+                          required
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Mathematics, Science, etc."
+                        >
+                      </div>
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Subject Code *</label>
+                        <input 
+                          v-model="subject.code"
+                          type="text" 
+                          required
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="MATH, SCI, etc."
+                        >
+                      </div>
+                    </div>
+                    
+                    <!-- Subject Image Upload -->
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-2">Subject Image</label>
+                      <div 
+                        @click="triggerSubjectImageInput(index)"
+                        @drop="handleSubjectImageDrop($event, index)"
+                        @dragover="handleDragOver"
+                        @dragleave="handleDragLeave"
+                        class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-blue-400 transition-colors"
+                        :class="{ 'border-blue-500 bg-blue-50': subject.isDragOver }"
+                      >
+                        <input 
+                          type="file" 
+                          :ref="el => subjectImageInputs[index] = el"
+                          @change="handleSubjectImageSelect($event, index)"
+                          accept="image/*"
+                          class="hidden"
+                        >
+                        
+                        <div v-if="!subject.imageFile" class="space-y-2">
+                          <svg class="w-8 h-8 text-gray-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                          </svg>
+                          <div>
+                            <p class="text-sm font-medium text-gray-700">Upload subject image</p>
+                            <p class="text-xs text-gray-500 mt-1">PNG, JPG, JPEG up to 5MB</p>
+                          </div>
+                          <button type="button" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                            Click to browse or drag & drop
+                          </button>
+                        </div>
+                        
+                        <div v-else class="space-y-3">
+                          <div class="relative inline-block">
+                            <img 
+                              :src="getSubjectImagePreview(index)" 
+                              :alt="`${subject.name} image preview`"
+                              class="w-24 h-24 object-cover rounded-lg mx-auto"
+                            >
+                            <button 
+                              type="button"
+                              @click.stop="removeSubjectImage(index)"
+                              class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                            >
+                              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                              </svg>
+                            </button>
+                          </div>
+                          <p class="text-sm text-gray-600">Image ready for upload</p>
+                          <p class="text-xs text-gray-500">{{ subject.imageFile.name }} ({{ formatFileSize(subject.imageFile.size) }})</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="flex justify-between items-center">
+                      <div class="text-sm text-gray-500">
+                        Subject {{ index + 1 }} of {{ newCourse.subjects.length }}
+                      </div>
+                      <button 
+                        type="button"
+                        @click="removeSubject(index)"
+                        class="p-2 text-red-600 hover:text-red-800"
+                        v-if="newCourse.subjects.length > 1"
+                      >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <button 
@@ -261,21 +330,71 @@
               <!-- For Other Courses - Single Subject -->
               <div v-if="newCourse.type === 'other'">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Course Details *</label>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <input 
-                    v-model="newCourse.courseName"
-                    type="text" 
-                    required
-                    class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="Course name"
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Course Code</label>
+                    <input 
+                      v-model="newCourse.courseCode"
+                      type="text" 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      placeholder="Course code"
+                    >
+                  </div>
+                </div>
+                
+                <!-- Course Image Upload for Other Courses -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Course Image</label>
+                  <div 
+                    @click="triggerImageInput"
+                    @drop="handleImageDrop"
+                    @dragover="handleDragOver"
+                    @dragleave="handleDragLeave"
+                    class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-green-400 transition-colors"
+                    :class="{ 'border-green-500 bg-green-50': isDragOver }"
                   >
-                  <input 
-                    v-model="newCourse.courseCode"
-                    type="text" 
-                    required
-                    class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="Course code"
-                  >
+                    <input 
+                      type="file" 
+                      ref="imageInput"
+                      @change="handleImageSelect"
+                      accept="image/*"
+                      class="hidden"
+                    >
+                    
+                    <div v-if="!selectedImageFile" class="space-y-3">
+                      <svg class="w-12 h-12 text-gray-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                      </svg>
+                      <div>
+                        <p class="text-sm font-medium text-gray-700">Upload course image</p>
+                        <p class="text-xs text-gray-500 mt-1">PNG, JPG, JPEG up to 5MB</p>
+                      </div>
+                      <button type="button" class="text-green-600 hover:text-green-800 text-sm font-medium">
+                        Click to browse or drag & drop
+                      </button>
+                    </div>
+                    
+                    <div v-else class="space-y-3">
+                      <div class="relative inline-block">
+                        <img 
+                          :src="getImagePreview()" 
+                          :alt="`Course image preview`"
+                          class="w-32 h-32 object-cover rounded-lg mx-auto"
+                        >
+                        <button 
+                          type="button"
+                          @click.stop="removeImage"
+                          class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                          </svg>
+                        </button>
+                      </div>
+                      <p class="text-sm text-gray-600">Image ready for upload</p>
+                      <p class="text-xs text-gray-500">{{ selectedImageFile.name }} ({{ formatFileSize(selectedImageFile.size) }})</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -517,6 +636,10 @@ const error = ref('')
 const successMessage = ref('')
 const showCreateModal = ref(false)
 const creating = ref(false)
+const isDragOver = ref(false)
+const selectedImageFile = ref(null)
+const imageInput = ref(null)
+const subjectImageInputs = ref([])
 
 // Available grades 1-12
 const availableGrades = Array.from({ length: 12 }, (_, i) => i + 1)
@@ -541,10 +664,14 @@ const newCourse = ref({
   grade: '',
   name: '',
   category: '',
-  courseName: '',
   courseCode: '',
   subjects: [
-    { name: '', code: '' }
+    { 
+      name: '', 
+      code: '',
+      imageFile: null,
+      isDragOver: false
+    }
   ],
   capacity: 30,
   status: 'active',
@@ -554,7 +681,6 @@ const newCourse = ref({
 // Handle search from navbar
 const handleSearch = (searchQuery) => {
   console.log('Search query:', searchQuery)
-  // You can implement search functionality here
 }
 
 // Computed properties
@@ -597,12 +723,10 @@ const fetchActiveTeachersCount = async () => {
       activeTeachersCount.value = teachers.length
     } else {
       console.error('Failed to fetch teachers count:', response.data.message)
-      // Fallback to calculated value from classes
       activeTeachersCount.value = classes.value.reduce((total, course) => total + (course.teachers?.length || 0), 0)
     }
   } catch (err) {
     console.error('Error fetching active teachers count:', err)
-    // Fallback to calculated value from classes
     activeTeachersCount.value = classes.value.reduce((total, course) => total + (course.teachers?.length || 0), 0)
   }
 }
@@ -690,58 +814,90 @@ const createNewCourse = async () => {
       return
     }
   } else {
-    if (!newCourse.value.category || !newCourse.value.courseName || !newCourse.value.courseCode) {
+    if (!newCourse.value.category || !newCourse.value.name) {
       error.value = 'Please fill in all required fields for the course'
       return
     }
-    newCourse.value.name = newCourse.value.courseName
   }
 
   creating.value = true
   error.value = ''
 
   try {
-    const courseData = {
-      type: newCourse.value.type,
-      name: newCourse.value.name,
-      capacity: newCourse.value.capacity,
-      status: newCourse.value.status,
-      description: newCourse.value.description
-    }
+    const formData = new FormData()
+    formData.append('type', newCourse.value.type)
+    formData.append('name', newCourse.value.name)
+    formData.append('capacity', newCourse.value.capacity)
+    formData.append('status', newCourse.value.status)
+    formData.append('description', newCourse.value.description || '')
 
     if (newCourse.value.type === 'regular') {
-      courseData.grade = newCourse.value.grade
-      courseData.subjects = newCourse.value.subjects
+      formData.append('grade', newCourse.value.grade)
+      
+      // Add subjects as array
+      newCourse.value.subjects.forEach((subject, index) => {
+        formData.append(`subjects[${index}][name]`, subject.name)
+        formData.append(`subjects[${index}][code]`, subject.code)
+        
+        // Append subject image with simple key format
+        if (subject.imageFile) {
+          console.log(`📸 Adding subject ${index} image:`, subject.imageFile.name)
+          formData.append(`subject_image_${index}`, subject.imageFile)
+        }
+      })
     } else {
-      courseData.category = newCourse.value.category
-      courseData.courseName = newCourse.value.courseName
-      courseData.courseCode = newCourse.value.courseCode
+      formData.append('category', newCourse.value.category)
+      formData.append('courseCode', newCourse.value.courseCode || '')
+      
+      if (selectedImageFile.value) {
+        formData.append('image', selectedImageFile.value)
+      }
     }
 
-    const response = await apiClient.post('/courses/classes', courseData)
-
-    if (response.data.success) {
-      classes.value.push(response.data.data)
-      successMessage.value = response.data.message || `${newCourse.value.type === 'regular' ? 'Class' : 'Course'} created successfully!`
-      closeModal()
-      
-      // Refresh the data
-      await fetchClasses()
-      
-      setTimeout(() => {
-        successMessage.value = ''
-      }, 5000)
-    } else {
-      error.value = response.data.message || 'Failed to create course'
+    console.log('📦 FormData contents:')
+    for (let [key, value] of formData.entries()) {
+      console.log(`  ${key}:`, value instanceof File ? `${value.name} (${value.size} bytes)` : value)
     }
-    
+
+    // FIRST: Test with debug endpoint
+    console.log('🔍 Testing with debug endpoint...')
+    const debugResponse = await apiClient.post('/courses/debug-upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+
+    if (debugResponse.data.success) {
+      console.log('✅ Debug test successful:', debugResponse.data.data)
+      
+      // NOW: Try the actual creation
+      console.log('🚀 Now attempting actual course creation...')
+      const response = await apiClient.post('/courses/classes', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+
+      if (response.data.success) {
+        successMessage.value = 'Course created successfully!'
+        console.log('✅ Course created successfully:', response.data.data)
+        closeModal()
+        await fetchClasses()
+      } else {
+        error.value = response.data.message || 'Failed to create course'
+      }
+    } else {
+      error.value = 'Debug test failed: ' + debugResponse.data.message
+    }
+
   } catch (err) {
-    console.error('Error creating course:', err)
+    console.error('❌ Error creating course:', err)
     if (err.response?.status === 422) {
-      const errors = err.response.data.errors
-      error.value = 'Validation errors: ' + Object.values(errors).flat().join(', ')
+      error.value = 'Validation error: ' + JSON.stringify(err.response.data.errors)
+    } else if (err.response?.data?.message) {
+      error.value = 'Failed to create course: ' + err.response.data.message
     } else {
-      error.value = 'Failed to create course. Please try again.'
+      error.value = 'Failed to create course: ' + (err.message || 'Unknown error')
     }
   } finally {
     creating.value = false
@@ -753,20 +909,147 @@ const onCourseTypeChange = () => {
     newCourse.value.category = ''
     newCourse.value.courseName = ''
     newCourse.value.courseCode = ''
+    newCourse.value.subjects.forEach(subject => {
+      subject.imageFile = null
+    })
   } else {
     newCourse.value.grade = ''
     newCourse.value.subjects = [{ name: '', code: '' }]
+    selectedImageFile.value = null
   }
 }
 
 const addSubject = () => {
-  newCourse.value.subjects.push({ name: '', code: '' })
+  newCourse.value.subjects.push({ 
+    name: '', 
+    code: '',
+    imageFile: null,
+    isDragOver: false
+  })
 }
 
 const removeSubject = (index) => {
   if (newCourse.value.subjects.length > 1) {
     newCourse.value.subjects.splice(index, 1)
   }
+}
+
+// Image handling functions
+const triggerImageInput = () => {
+  imageInput.value?.click()
+}
+
+const triggerSubjectImageInput = (index) => {
+  const inputElement = subjectImageInputs.value[index]
+  if (inputElement) {
+    inputElement.click()
+  }
+}
+
+const handleImageSelect = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    if (file.size > 5 * 1024 * 1024) {
+      error.value = 'Image size should be less than 5MB'
+      return
+    }
+    if (!file.type.startsWith('image/')) {
+      error.value = 'Please select a valid image file'
+      return
+    }
+    selectedImageFile.value = file
+  }
+}
+
+const handleSubjectImageSelect = (event, index) => {
+  const file = event.target.files[0]
+  if (file) {
+    if (file.size > 5 * 1024 * 1024) {
+      error.value = 'Image size should be less than 5MB'
+      return
+    }
+    if (!file.type.startsWith('image/')) {
+      error.value = 'Please select a valid image file'
+      return
+    }
+    newCourse.value.subjects[index].imageFile = file
+  }
+}
+
+const handleImageDrop = (event) => {
+  event.preventDefault()
+  isDragOver.value = false
+  const files = event.dataTransfer.files
+  if (files.length > 0) {
+    const file = files[0]
+    if (file.type.startsWith('image/')) {
+      selectedImageFile.value = file
+    } else {
+      error.value = 'Please drop a valid image file'
+    }
+  }
+}
+
+const handleSubjectImageDrop = (event, index) => {
+  event.preventDefault()
+  newCourse.value.subjects[index].isDragOver = false
+  const files = event.dataTransfer.files
+  if (files.length > 0) {
+    const file = files[0]
+    if (file.type.startsWith('image/')) {
+      newCourse.value.subjects[index].imageFile = file
+    } else {
+      error.value = 'Please drop a valid image file'
+    }
+  }
+}
+
+const handleDragOver = (event) => {
+  event.preventDefault()
+  isDragOver.value = true
+}
+
+const handleDragLeave = (event) => {
+  event.preventDefault()
+  isDragOver.value = false
+}
+
+const getImagePreview = () => {
+  if (selectedImageFile.value) {
+    return URL.createObjectURL(selectedImageFile.value)
+  }
+  return ''
+}
+
+const getSubjectImagePreview = (index) => {
+  const subject = newCourse.value.subjects[index]
+  if (subject.imageFile) {
+    return URL.createObjectURL(subject.imageFile)
+  }
+  return ''
+}
+
+const removeImage = () => {
+  selectedImageFile.value = null
+  if (imageInput.value) {
+    imageInput.value.value = ''
+  }
+}
+
+const removeSubjectImage = (index) => {
+  newCourse.value.subjects[index].imageFile = null
+  const inputElement = subjectImageInputs.value[index]
+  if (inputElement) {
+    inputElement.value = ''
+  }
+}
+
+const formatFileSize = (bytes) => {
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
 const closeModal = () => {
@@ -783,12 +1066,19 @@ const resetForm = () => {
     courseName: '',
     courseCode: '',
     subjects: [
-      { name: '', code: '' }
+      { 
+        name: '', 
+        code: '',
+        imageFile: null,
+        isDragOver: false
+      }
     ],
     capacity: 30,
     status: 'active',
     description: ''
   }
+  selectedImageFile.value = null
+  subjectImageInputs.value = []
   error.value = ''
 }
 
