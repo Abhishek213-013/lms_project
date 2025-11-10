@@ -70,13 +70,6 @@
                     <a href="#" @click="resendOTP" class="ms-2">Resend OTP</a>
                   </div>
                   
-                  <!-- OTP Hint for Demo -->
-                  <div class="alert alert-warning mt-2" role="alert">
-                    <small>
-                      <i class="fas fa-lightbulb me-1"></i>
-                      <strong>Demo Tip:</strong> Use <code>123456</code> as OTP
-                    </small>
-                  </div>
                 </div>
 
                 <button type="submit" class="btn btn-primary w-100" :disabled="otpForm.processing">

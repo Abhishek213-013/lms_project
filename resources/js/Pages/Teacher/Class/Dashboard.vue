@@ -535,7 +535,7 @@ const userInitials = computed(() => {
 const goBackToTeacherPortal = () => {
   const teacherId = props.classData?.teacher_id || props.teacher?.id
   if (teacherId) {
-    router.visit(`/admin/teacher-portal/${teacherId}`)
+    router.visit(`/teacher/portal`)
   } else {
     router.visit('/teacher/portal')
   }

@@ -78,7 +78,6 @@
                   <!-- Course Meta -->
                   <div class="course-meta d-flex flex-wrap gap-4 align-items-center">
                     <div class="instructor-info d-flex align-items-center">
-                      <img :src="getInstructorAvatar(course.teacher)" :alt="getInstructorName(course.teacher)" class="instructor-avatar me-2">
                       <span>{{ t('By') }} <strong>{{ getInstructorName(course.teacher) }}</strong></span>
                     </div>
                     <div class="student-count">
@@ -382,7 +381,6 @@
                       <h6 class="card-title mb-3">{{ t('About the Instructor') }}</h6>
                       <div class="instructor-quick-info">
                         <div class="d-flex align-items-center mb-3">
-                          <img :src="getInstructorAvatar(course.teacher)" :alt="getInstructorName(course.teacher)" class="instructor-quick-avatar rounded-circle me-3">
                           <div>
                             <h6 class="mb-1">{{ getInstructorName(course.teacher) }}</h6>
                             <small class="text-muted">{{ getInstructorQualification(course.teacher) }}</small>

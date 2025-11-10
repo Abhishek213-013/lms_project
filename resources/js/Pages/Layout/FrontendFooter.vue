@@ -346,7 +346,7 @@ watch(currentTheme, () => {
 }
 
 .frontend-footer.light-theme .footer-link:hover {
-  color: #e74c3c;
+  color: var(--primary-color);
 }
 
 .frontend-footer.light-theme .contact-item {
@@ -354,7 +354,7 @@ watch(currentTheme, () => {
 }
 
 .frontend-footer.light-theme .contact-icon {
-  color: #e74c3c;
+  color: var(--primary-color);
 }
 
 .frontend-footer.light-theme .footer-divider {

@@ -274,6 +274,15 @@ const submit = () => {
 </script>
 
 <style scoped>
+
+:deep(*) {
+    font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+    font-weight: 400;
+}
+
+.custom-heading {
+    font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+}
 /* Logo Container */
 .logo-container {
   display: flex;

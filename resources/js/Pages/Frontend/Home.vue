@@ -96,7 +96,7 @@
                   </div>
                 </div>
                 <div class="card-footer">
-                  <Link :href="`/course/${course.id}`" class="btn btn-primary w-100">
+                  <Link :href="`/course/${course.id}`" class="btn btn-primary w-100" style="background-color: var(--primary-color); border-color: var(--primary-color);">
                     {{ t('View Course') }}
                   </Link>
                 </div>
@@ -700,6 +700,19 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+
+/* Ensure View Course button uses primary color */
+.course-card .btn-primary {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  color: white !important;
+}
+
+.course-card .btn-primary:hover {
+  background-color: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
+  color: white !important;
+}
 /* ==================== */
 /* HERO IMAGE STYLES */
 /* ==================== */
@@ -991,7 +1004,9 @@ onUnmounted(() => {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px color-mix(in srgb, var(--primary-color) 30%, transparent);
 }
-
+btn btn-primary {
+  color: --var(--primary-color);
+}
 /* ==================== */
 /* LINE-CLAMP UTILITIES */
 /* ==================== */

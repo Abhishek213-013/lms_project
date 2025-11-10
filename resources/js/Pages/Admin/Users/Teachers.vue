@@ -10,30 +10,6 @@
       
       <!-- Page Content -->
       <div class="p-6 max-w-full overflow-x-hidden">
-        <!-- Debug Section - Temporary -->
-        <!-- <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-          <h3 class="text-lg font-semibold text-yellow-800 mb-2">Debug Information</h3>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div>
-              <strong>Teachers Count:</strong> {{ teachersCount }}<br>
-              <strong>Students Count:</strong> {{ studentsCount }}<br>
-              <strong>Filtered Users:</strong> {{ filteredUsers.length }}
-            </div>
-            <div>
-              <strong>Status:</strong> {{ status }}<br>
-              <strong>Form Errors:</strong> {{ form.errors }}
-            </div>
-            <div>
-              <button @click="refreshData" class="bg-yellow-500 text-white px-3 py-1 rounded text-sm">
-                Refresh Data
-              </button>
-              <button @click="debugForm" class="bg-blue-500 text-white px-3 py-1 rounded text-sm ml-2">
-                Debug Form
-              </button>
-            </div>
-          </div>
-        </div> -->
-
         <!-- Header -->
         <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
           <div class="min-w-0">
@@ -90,12 +66,12 @@
           <div class="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
             <div class="flex justify-between items-start">
               <div class="min-w-0">
-                <p class="text-sm font-medium text-gray-600 mb-2">Total Students</p>
-                <h3 class="text-2xl sm:text-3xl font-bold text-green-600">{{ studentsCount }}</h3>
+                <p class="text-sm font-medium text-gray-600 mb-2">Active Teachers</p>
+                <h3 class="text-2xl sm:text-3xl font-bold text-green-600">{{ activeTeachersCount }}</h3>
               </div>
               <div class="p-2 sm:p-3 bg-green-100 rounded-lg flex-shrink-0">
                 <svg class="w-5 h-5 sm:w-6 sm:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                 </svg>
               </div>
             </div>
@@ -105,7 +81,7 @@
             <div class="flex justify-between items-start">
               <div class="min-w-0">
                 <p class="text-sm font-medium text-gray-600 mb-2">Pending Approvals</p>
-                <h3 class="text-2xl sm:text-3xl font-bold text-yellow-600">12</h3>
+                <h3 class="text-2xl sm:text-3xl font-bold text-yellow-600">{{ pendingApprovalsCount }}</h3>
               </div>
               <div class="p-2 sm:p-3 bg-yellow-100 rounded-lg flex-shrink-0">
                 <svg class="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -119,18 +95,18 @@
             <div class="flex justify-between items-start">
               <div class="min-w-0">
                 <p class="text-sm font-medium text-gray-600 mb-2">Active Today</p>
-                <h3 class="text-2xl sm:text-3xl font-bold text-purple-600">45</h3>
+                <h3 class="text-2xl sm:text-3xl font-bold text-purple-600">{{ activeTodayCount }}</h3>
               </div>
               <div class="p-2 sm:p-3 bg-purple-100 rounded-lg flex-shrink-0">
                 <svg class="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
                 </svg>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Users Table -->
+        <!-- Teachers Table -->
         <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <div class="px-4 sm:px-6 py-4 border-b border-gray-200">
             <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
@@ -139,7 +115,7 @@
                 <input 
                   type="text" 
                   v-model="searchQuery"
-                  placeholder="Search users..." 
+                  placeholder="Search teachers..." 
                   class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full"
                 >
                 <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,7 +129,7 @@
             <table class="w-full min-w-[800px]">
               <thead class="bg-gray-50">
                 <tr>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">User</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Teacher</th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Contact</th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Education</th>
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Status</th>
@@ -161,27 +137,27 @@
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
-                <tr v-for="user in filteredUsers" :key="user.id" class="hover:bg-gray-50">
+                <tr v-for="teacher in filteredTeachers" :key="teacher.id" class="hover:bg-gray-50">
                   <td class="px-4 py-4">
                     <div class="flex items-center min-w-0">
-                      <div :class="`w-10 h-10 rounded-full flex items-center justify-center ${getRoleColor(user.role)} flex-shrink-0`">
+                      <div class="w-10 h-10 rounded-full flex items-center justify-center bg-purple-600 flex-shrink-0">
                         <span class="text-white text-sm font-semibold">
-                          {{ getUserInitials(user.name) }}
+                          {{ getUserInitials(teacher.name) }}
                         </span>
                       </div>
                       <div class="ml-3 min-w-0 flex-1">
-                        <div class="text-sm font-medium text-gray-900 truncate">{{ user.name }}</div>
-                        <div class="text-sm text-gray-500 truncate">@{{ user.username }}</div>
+                        <div class="text-sm font-medium text-gray-900 truncate">{{ teacher.name }}</div>
+                        <div class="text-sm text-gray-500 truncate">@{{ teacher.username }}</div>
                       </div>
                     </div>
                   </td>
                   <td class="px-4 py-4">
-                    <div class="text-sm text-gray-900 truncate">{{ user.email }}</div>
-                    <div class="text-sm text-gray-500 truncate">DOB: {{ formatDate(user.dob) }}</div>
+                    <div class="text-sm text-gray-900 truncate">{{ teacher.email }}</div>
+                    <div class="text-sm text-gray-500 truncate">DOB: {{ formatDate(teacher.dob) }}</div>
                   </td>
                   <td class="px-4 py-4">
-                    <div class="text-sm text-gray-900 truncate">{{ user.education_qualification }}</div>
-                    <div class="text-sm text-gray-500 truncate">{{ user.institute }}</div>
+                    <div class="text-sm text-gray-900 truncate">{{ teacher.education_qualification }}</div>
+                    <div class="text-sm text-gray-500 truncate">{{ teacher.institute }}</div>
                   </td>
                   <td class="px-4 py-4">
                     <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
@@ -190,21 +166,20 @@
                   </td>
                   <td class="px-4 py-4">
                     <div class="flex items-center space-x-2">
-                      <a 
-                        v-if="user.role === 'teacher'"
-                        :href="`/admin/teacher-portal/${user.id}`"
+                      <!-- <a 
+                        :href="`/admin/teacher/portal/${teacher.id}`"
                         class="text-blue-600 hover:text-blue-900 text-sm"
                       >
                         View Portal
-                      </a>
+                      </a> -->
                       <button 
-                        @click="editUser(user)"
+                        @click="editTeacher(teacher)"
                         class="text-blue-600 hover:text-blue-900 text-sm"
                       >
                         Edit
                       </button>
                       <button 
-                        @click="deleteUser(user.id)"
+                        @click="deleteTeacher(teacher.id)"
                         class="text-red-600 hover:text-red-900 text-sm"
                       >
                         Delete
@@ -217,12 +192,18 @@
           </div>
 
           <!-- Empty State -->
-          <div v-if="filteredUsers.length === 0" class="text-center py-12">
+          <div v-if="filteredTeachers.length === 0" class="text-center py-12">
             <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
             </svg>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">No users found</h3>
-            <p class="text-gray-500 mb-4">There are no other users in the system.</p>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No teachers found</h3>
+            <p class="text-gray-500 mb-4">There are no teachers in the system.</p>
+            <button 
+              @click="showCreateModal = true"
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Create Teacher
+            </button>
           </div>
         </div>
 
@@ -572,23 +553,18 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
-  students: {
-    type: Array,
-    default: () => []
-  },
   status: String
 })
 
 // Log props for debugging
 console.log('Teachers Props:', props.teachers)
-console.log('Students Props:', props.students)
 console.log('Status Props:', props.status)
 
 // Reactive data
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const searchQuery = ref('')
-const editingUser = ref(null)
+const editingTeacher = ref(null)
 
 // Forms
 const form = useForm({
@@ -619,31 +595,26 @@ const editForm = useForm({
 
 // Computed properties
 const teachersCount = computed(() => props.teachers.length)
-const studentsCount = computed(() => props.students.length)
+const activeTeachersCount = computed(() => props.teachers.filter(t => t.status === 'active').length)
+const pendingApprovalsCount = computed(() => props.teachers.filter(t => t.status === 'pending').length)
+const activeTodayCount = computed(() => props.teachers.filter(t => t.last_login && new Date(t.last_login).toDateString() === new Date().toDateString()).length)
 
-const filteredUsers = computed(() => {
-  if (!searchQuery.value) return [...props.teachers, ...props.students]
+const filteredTeachers = computed(() => {
+  if (!searchQuery.value) return props.teachers
   
   const query = searchQuery.value.toLowerCase()
-  return [...props.teachers, ...props.students].filter(user => 
-    user.name?.toLowerCase().includes(query) ||
-    user.username?.toLowerCase().includes(query) ||
-    user.email?.toLowerCase().includes(query) ||
-    user.role?.toLowerCase().includes(query)
+  return props.teachers.filter(teacher => 
+    teacher.name?.toLowerCase().includes(query) ||
+    teacher.username?.toLowerCase().includes(query) ||
+    teacher.email?.toLowerCase().includes(query) ||
+    teacher.education_qualification?.toLowerCase().includes(query) ||
+    teacher.institute?.toLowerCase().includes(query)
   )
 })
 
 // Methods
 const handleSearch = (query) => {
   searchQuery.value = query
-}
-
-const debugForm = () => {
-  console.log('Form data:', form.data())
-  console.log('Form processing:', form.processing)
-  console.log('Form has errors:', form.hasErrors)
-  console.log('Form errors:', form.errors)
-  console.log('Teachers from props:', props.teachers)
 }
 
 const createTeacher = () => {
@@ -664,7 +635,7 @@ const createTeacher = () => {
       // Force reload to get updated data
       setTimeout(() => {
         router.reload({ 
-          only: ['teachers', 'students', 'status'],
+          only: ['teachers', 'status'],
           preserveScroll: true 
         })
       }, 500)
@@ -678,25 +649,25 @@ const createTeacher = () => {
   })
 }
 
-const editUser = (user) => {
-  editingUser.value = user
-  editForm.id = user.id
-  editForm.name = user.name
-  editForm.username = user.username
-  editForm.email = user.email
-  editForm.dob = user.dob ? user.dob.split('T')[0] : ''
-  editForm.education_qualification = user.education_qualification
-  editForm.institute = user.institute
-  editForm.experience = user.experience
+const editTeacher = (teacher) => {
+  editingTeacher.value = teacher
+  editForm.id = teacher.id
+  editForm.name = teacher.name
+  editForm.username = teacher.username
+  editForm.email = teacher.email
+  editForm.dob = teacher.dob ? teacher.dob.split('T')[0] : ''
+  editForm.education_qualification = teacher.education_qualification
+  editForm.institute = teacher.institute
+  editForm.experience = teacher.experience
   editForm.password = ''
   editForm.password_confirmation = ''
   showEditModal.value = true
 }
 
 const updateTeacher = () => {
-  if (!editingUser.value) return
+  if (!editingTeacher.value) return
   
-  editForm.put(`/admin/users/teachers/${editingUser.value.id}`, {
+  editForm.put(`/admin/users/teachers/${editingTeacher.value.id}`, {
     preserveScroll: true,
     onSuccess: () => {
       closeEditModal()
@@ -707,9 +678,9 @@ const updateTeacher = () => {
   })
 }
 
-const deleteUser = (userId) => {
-  if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-    router.delete(`/admin/users/teachers/${userId}`, {
+const deleteTeacher = (teacherId) => {
+  if (confirm('Are you sure you want to delete this teacher? This action cannot be undone.')) {
+    router.delete(`/admin/users/teachers/${teacherId}`, {
       preserveScroll: true,
       onSuccess: () => {
         // Refresh teachers list after deletion
@@ -727,17 +698,9 @@ const closeModal = () => {
 
 const closeEditModal = () => {
   showEditModal.value = false
-  editingUser.value = null
+  editingTeacher.value = null
   editForm.reset()
   editForm.clearErrors()
-}
-
-const refreshData = () => {
-  console.log('Refreshing data...')
-  router.reload({ 
-    only: ['teachers', 'students', 'status'],
-    preserveScroll: true 
-  })
 }
 
 // Helper functions
@@ -755,12 +718,15 @@ const formatDate = (dateString) => {
   if (!dateString) return 'N/A'
   return new Date(dateString).toLocaleDateString()
 }
-
-const getRoleColor = (role) => {
-  const colors = {
-    teacher: 'bg-purple-600',
-    student: 'bg-indigo-600'
-  }
-  return colors[role] || 'bg-gray-600'
-}
 </script>
+
+<style scoped>
+:deep(*) {
+    font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+    font-weight: 400;
+}
+
+.custom-heading {
+    font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+}
+</style>

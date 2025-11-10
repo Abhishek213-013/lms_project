@@ -39,7 +39,7 @@
                 <form @submit.prevent="searchInstructors" class="search-form">
                   <div class="search-input-group">
                     <input 
-                      v-model="filters.search" 
+                      v-model="localFilters.search" 
                       type="text" 
                       :placeholder="t('Search instructors by name, qualification, or institute...')" 
                       class="search-input"
@@ -53,7 +53,7 @@
             </div>
             <div class="col-lg-3">
               <div class="filter-box">
-                <select v-model="filters.specialization" @change="filterInstructors" class="filter-select">
+                <select v-model="localFilters.specialization" @change="filterInstructors" class="filter-select">
                   <option value="">{{ t('All Specializations') }}</option>
                   <option v-for="specialization in specializations" :key="specialization" :value="specialization">
                     {{ specialization }}
@@ -446,7 +446,7 @@
 
 <script setup>
 import { Link } from '@inertiajs/vue3';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import FrontendLayout from '../Layout/FrontendLayout.vue';
 import { useTranslation } from '@/composables/useTranslation';
@@ -508,8 +508,19 @@ const props = defineProps({
   }
 });
 
-// Local filters state
-const localFilters = ref({ ...props.filters });
+// Local filters state - FIXED: Initialize from props
+const localFilters = ref({ 
+  search: props.filters?.search || '',
+  specialization: props.filters?.specialization || '',
+});
+
+// FIXED: Watch for prop changes and update local filters
+watch(() => props.filters, (newFilters) => {
+  localFilters.value = {
+    search: newFilters?.search || '',
+    specialization: newFilters?.specialization || '',
+  };
+}, { immediate: true, deep: true });
 
 // Compute max date for date of birth (18 years ago)
 const maxDate = computed(() => {
@@ -522,6 +533,7 @@ const maxDate = computed(() => {
 const displayedInstructors = computed(() => {
   let filtered = props.instructors || [];
 
+  // FIXED: Use localFilters for search and filtering
   if (localFilters.value.search) {
     const query = localFilters.value.search.toLowerCase();
     filtered = filtered.filter(instructor => {
@@ -561,6 +573,7 @@ const showLoadMore = computed(() => {
 
 // Methods
 const searchInstructors = () => {
+  // FIXED: Use localFilters directly in the router call
   router.get('/instructors', localFilters.value, {
     preserveState: true,
     replace: true,
@@ -571,6 +584,7 @@ const searchInstructors = () => {
 };
 
 const filterInstructors = () => {
+  // FIXED: Use localFilters directly in the router call
   router.get('/instructors', localFilters.value, {
     preserveState: true,
     replace: true,

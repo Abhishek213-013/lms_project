@@ -25,8 +25,8 @@
                 </svg>
               </div>
               <div>
-                <h3 class="font-semibold text-gray-800">Manage Users</h3>
-                <p class="text-sm text-gray-600">View and manage all users</p>
+                <h3 class="font-semibold text-gray-800 text-sm">Manage Users</h3>
+                <p class="text-xs text-gray-600">View and manage all users</p>
               </div>
             </div>
           </Link>
@@ -39,8 +39,8 @@
                 </svg>
               </div>
               <div>
-                <h3 class="font-semibold text-gray-800">Courses</h3>
-                <p class="text-sm text-gray-600">Manage courses & content</p>
+                <h3 class="font-semibold text-gray-800 text-sm">Courses</h3>
+                <p class="text-xs text-gray-600">Manage courses & content</p>
               </div>
             </div>
           </Link>
@@ -53,8 +53,8 @@
                 </svg>
               </div>
               <div>
-                <h3 class="font-semibold text-gray-800">Admissions</h3>
-                <p class="text-sm text-gray-600">Process applications</p>
+                <h3 class="font-semibold text-gray-800 text-sm">Admissions</h3>
+                <p class="text-xs text-gray-600">Process applications</p>
               </div>
             </div>
           </Link>
@@ -68,8 +68,8 @@
                 </svg>
               </div>
               <div>
-                <h3 class="font-semibold text-gray-800">Update Text</h3>
-                <p class="text-sm text-gray-600">Manage frontend content</p>
+                <h3 class="font-semibold text-gray-800 text-sm">Update Text</h3>
+                <p class="text-xs text-gray-600">Manage frontend content</p>
               </div>
             </div>
           </Link>
@@ -80,8 +80,8 @@
           <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-sm font-medium text-gray-600 mb-1">Total Students</p>
-                <h3 class="text-3xl font-bold text-blue-600">{{ stats.totalStudents || '2,847' }}</h3>
+                <p class="text-xs font-medium text-gray-600 mb-1">Total Students</p>
+                <h3 class="text-2xl font-bold text-blue-600">{{ stats.totalStudents || '2,847' }}</h3>
                 <p class="text-xs text-green-600 mt-1">
                   <span class="inline-flex items-center">
                     <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -102,8 +102,8 @@
           <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-sm font-medium text-gray-600 mb-1">Active Teachers</p>
-                <h3 class="text-3xl font-bold text-green-600">{{ stats.totalTeachers || '156' }}</h3>
+                <p class="text-xs font-medium text-gray-600 mb-1">Active Teachers</p>
+                <h3 class="text-2xl font-bold text-green-600">{{ stats.totalTeachers || '156' }}</h3>
                 <p class="text-xs text-green-600 mt-1">
                   <span class="inline-flex items-center">
                     <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -126,8 +126,8 @@
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:border-yellow-400 transition-colors cursor-pointer">
               <div class="flex justify-between items-start">
                 <div>
-                  <p class="text-sm font-medium text-gray-600 mb-1">Pending Instructor Approvals</p>
-                  <h3 class="text-3xl font-bold text-yellow-600">{{ stats.pendingApprovals || '0' }}</h3>
+                  <p class="text-xs font-medium text-gray-600 mb-1">Pending Instructor Approvals</p>
+                  <h3 class="text-2xl font-bold text-yellow-600">{{ stats.pendingApprovals || '0' }}</h3>
                   <p class="text-xs text-yellow-600 mt-1">
                     Click to review requests
                   </p>
@@ -144,8 +144,8 @@
           <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-sm font-medium text-gray-600 mb-1">Active Courses</p>
-                <h3 class="text-3xl font-bold text-purple-600">{{ stats.activeCourses || '89' }}</h3>
+                <p class="text-xs font-medium text-gray-600 mb-1">Active Courses</p>
+                <h3 class="text-2xl font-bold text-purple-600">{{ stats.activeCourses || '89' }}</h3>
                 <p class="text-xs text-green-600 mt-1">
                   <span class="inline-flex items-center">
                     <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -178,8 +178,8 @@
                     </svg>
                   </div>
                   <div>
-                    <p class="font-medium text-gray-800">{{ activity.title }}</p>
-                    <p class="text-sm text-gray-600">{{ activity.description }}</p>
+                    <p class="font-medium text-gray-800 text-sm">{{ activity.title }}</p>
+                    <p class="text-xs text-gray-600">{{ activity.description }}</p>
                   </div>
                 </div>
                 <div class="text-right">
@@ -195,20 +195,20 @@
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Stats</h3>
             <div class="space-y-4">
               <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                <span class="text-sm font-medium text-blue-800">New Students This Week</span>
-                <span class="font-bold text-blue-600">{{ stats.newStudentsThisWeek || '42' }}</span>
+                <span class="text-xs font-medium text-blue-800">New Students This Week</span>
+                <span class="font-bold text-blue-600 text-sm">{{ stats.newStudentsThisWeek || '42' }}</span>
               </div>
               <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                <span class="text-sm font-medium text-green-800">Course Completions</span>
-                <span class="font-bold text-green-600">{{ stats.courseCompletions || '127' }}</span>
+                <span class="text-xs font-medium text-green-800">Course Completions</span>
+                <span class="font-bold text-green-600 text-sm">{{ stats.courseCompletions || '127' }}</span>
               </div>
               <div class="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
-                <span class="text-sm font-medium text-yellow-800">Pending Teacher Approvals</span>
-                <span class="font-bold text-yellow-600">{{ stats.pendingTeacherApprovals || '8' }}</span>
+                <span class="text-xs font-medium text-yellow-800">Pending Teacher Approvals</span>
+                <span class="font-bold text-yellow-600 text-sm">{{ stats.pendingTeacherApprovals || '8' }}</span>
               </div>
               <div class="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
-                <span class="text-sm font-medium text-purple-800">Active Classes</span>
-                <span class="font-bold text-purple-600">{{ stats.activeClasses || '34' }}</span>
+                <span class="text-xs font-medium text-purple-800">Active Classes</span>
+                <span class="font-bold text-purple-600 text-sm">{{ stats.activeClasses || '34' }}</span>
               </div>
             </div>
           </div>
@@ -299,7 +299,7 @@ onMounted(() => {
 /* Use deep selector to override */
 :deep(*) {
     font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
-    font-weight: 400;
+    font-weight: 300;
 }
 
 .custom-heading {
