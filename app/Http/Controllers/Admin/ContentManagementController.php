@@ -16,7 +16,7 @@ class ContentManagementController extends Controller
     {
         try {
             // FIX: Use public method or direct query instead of protected method
-            $content = $this->getAllContentWithDefaults('en');
+            $content = $this->getAllContentWithDefaults('bn');
             
             return Inertia::render('Admin/ContentManagement/Index', [
                 'content' => $content,
@@ -70,7 +70,7 @@ class ContentManagementController extends Controller
     /**
      * Helper method to get all content with defaults
      */
-    private function getAllContentWithDefaults($language = 'en')
+    private function getAllContentWithDefaults($language = 'bn')
     {
         try {
             // Get all content from database
@@ -100,7 +100,7 @@ class ContentManagementController extends Controller
     /**
      * Get default content structure with Bengali translations
      */
-    private function getDefaultContent($language = 'en')
+    private function getDefaultContent($language = 'bn')
     {
         $defaults = [
             // About Page Content
@@ -209,7 +209,7 @@ class ContentManagementController extends Controller
         return $result;
     }
 
-    public function getContent(Request $request, $language = 'en')
+    public function getContent(Request $request, $language = 'bn')
     {
         try {
             $validLanguages = ['en', 'bn'];

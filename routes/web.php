@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\TeacherController;
@@ -20,8 +21,9 @@ use App\Http\Controllers\StudentProfileController;
 use App\Http\Controllers\MyCoursesController;
 use App\Http\Controllers\LearningProgressController;
 use App\Http\Controllers\SettingsController;
-use App\Http\Controllers\InstructorController; // Add this line
+use App\Http\Controllers\InstructorController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CertificateController;
 
 // ============ PUBLIC ROUTES ============
 
@@ -103,10 +105,6 @@ Route::prefix('api')->middleware('web')->group(function () {
     Route::post('/public/users/check-username', [UserController::class, 'checkUsernameAvailability']);
     Route::post('/public/users/check-email', [UserController::class, 'checkEmailAvailability']);
     
-    // 🔥 PROFILE PICTURE UPLOAD ROUTE - MOVE TO AUTHENTICATED SECTION
-    // Route::post('/profile-picture/teacher/{id}/upload', [TeacherController::class, 'uploadProfilePicture'])
-    //     ->name('api.profile-picture.upload');
-    
     // Health check
     Route::get('/health', function () {
         return response()->json(['status' => 'OK', 'timestamp' => now()]);
@@ -141,6 +139,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/my-courses', [MyCoursesController::class, 'index'])->name('my-courses.new');
         Route::get('/learning-progress', [LearningProgressController::class, 'index'])->name('learning-progress.new');
         Route::get('/settings', [SettingsController::class, 'index'])->name('settings.new');
+        Route::get('/certificates', [CertificateController::class, 'index'])->name('certificates.new');
     });
 
     // ============ STUDENT DASHBOARD ROUTES (under /student prefix) ============
@@ -416,7 +415,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{id}/public-courses', [TeacherController::class, 'getTeacherPublicCourses']);
             Route::get('/{id}/portal-data', [TeacherController::class, 'getTeacherPortalData']);
             
-            // 🔥 PROFILE PICTURE ROUTES - CORRECTLY PLACED IN AUTHENTICATED SECTION
+            // PROFILE PICTURE ROUTES
             Route::post('/{id}/profile-picture/upload', [TeacherController::class, 'uploadProfilePicture'])->name('api.teacher.profile-picture.upload');
             Route::delete('/{id}/profile-picture', [TeacherController::class, 'deleteProfilePicture'])->name('api.teacher.profile-picture.delete');
             Route::get('/{id}/profile-picture', [TeacherController::class, 'getProfilePicture'])->name('api.teacher.profile-picture.get');
@@ -532,14 +531,39 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/{id}/reject', [InstructorRequestController::class, 'rejectRequest']);
         });
 
-
-        // Student Profile API Routes
+        // ============ STUDENT PROFILE API ROUTES ============
         Route::prefix('student-profile')->group(function () {
             Route::get('/data', [StudentProfileController::class, 'getProfileData'])->name('api.student-profile.data');
             Route::put('/update', [StudentProfileController::class, 'updateProfile'])->name('api.student-profile.update');
-            Route::get('/progress', [LearningProgressController::class, 'getProgressData'])->name('api.student-profile.progress');
-            Route::get('/courses', [MyCoursesController::class, 'getCoursesData'])->name('api.student-profile.courses');
-            Route::put('/preferences', [SettingsController::class, 'updatePreferences'])->name('api.student-profile.preferences');
+            Route::post('/upload-avatar', [StudentProfileController::class, 'uploadAvatar'])->name('api.student-profile.upload-avatar');
+        });
+
+        // ============ MY COURSES API ROUTES ============
+        Route::prefix('my-courses')->group(function () {
+            Route::get('/data', [MyCoursesController::class, 'getCoursesData'])->name('api.my-courses.data');
+            Route::post('/{courseId}/continue', [MyCoursesController::class, 'continueCourse'])->name('api.my-courses.continue');
+            Route::post('/{courseId}/enroll', [MyCoursesController::class, 'enrollCourse'])->name('api.my-courses.enroll');
+            Route::delete('/{courseId}/remove-wishlist', [MyCoursesController::class, 'removeFromWishlist'])->name('api.my-courses.remove-wishlist');
+        });
+
+        // ============ LEARNING PROGRESS API ROUTES ============
+        Route::prefix('learning-progress')->group(function () {
+            Route::get('/data', [LearningProgressController::class, 'getProgressData'])->name('api.learning-progress.data');
+        });
+
+        Route::prefix('certificates')->group(function () {
+            Route::get('/data', [CertificateController::class, 'getCertificatesData'])->name('api.certificates.data');
+            Route::post('/{certificateId}/download', [CertificateController::class, 'downloadCertificate'])->name('api.certificates.download');
+            Route::post('/{certificateId}/share', [CertificateController::class, 'shareCertificate'])->name('api.certificates.share');
+            Route::get('/verify/{certificateId}', [CertificateController::class, 'verifyCertificate'])->name('api.certificates.verify');
+        });
+
+        // ============ SETTINGS API ROUTES ============
+        Route::prefix('settings')->group(function () {
+            Route::put('/profile', [SettingsController::class, 'updateProfile'])->name('api.settings.profile');
+            Route::put('/preferences', [SettingsController::class, 'updatePreferences'])->name('api.settings.preferences');
+            Route::put('/security', [SettingsController::class, 'updateSecurity'])->name('api.settings.security');
+            Route::put('/change-password', [SettingsController::class, 'changePassword'])->name('api.settings.change-password');
         });
 
         // Video Proxy Protected API Routes
@@ -567,11 +591,14 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/student-stats', [StudentController::class, 'getStudentStats']);
         });
 
-        // 🔥 PROFILE PICTURE API ROUTES (Alternative location - also authenticated)
+        // PROFILE PICTURE API ROUTES
         Route::prefix('profile-picture')->group(function () {
             Route::post('/teacher/{id}/upload', [TeacherController::class, 'uploadProfilePicture'])->name('api.profile-picture.teacher.upload');
             Route::delete('/teacher/{id}', [TeacherController::class, 'deleteProfilePicture'])->name('api.profile-picture.teacher.delete');
             Route::get('/teacher/{id}', [TeacherController::class, 'getProfilePicture'])->name('api.profile-picture.teacher.get');
+            
+            // Student profile picture routes
+            Route::post('/student/upload', [StudentProfileController::class, 'uploadAvatar'])->name('api.profile-picture.student.upload');
         });
     });
 });
@@ -608,7 +635,7 @@ Route::get('/storage/content-images/{filename}', function ($filename) {
     return response()->file($path);
 })->name('storage.content-images');
 
-// 🔥 PROFILE PICTURES PUBLIC ACCESS ROUTE
+// PROFILE PICTURES PUBLIC ACCESS ROUTE
 Route::get('/storage/profile-pictures/{filename}', function ($filename) {
     $path = storage_path('app/public/profile-pictures/' . $filename);
     

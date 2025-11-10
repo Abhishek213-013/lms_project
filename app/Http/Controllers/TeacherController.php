@@ -500,7 +500,7 @@ class TeacherController extends Controller
         }
 
         // LOG for debugging
-        \Log::info('Schedule Page - Teacher Data:', $teacherData);
+        Log::info('Schedule Page - Teacher Data:', $teacherData);
 
         return Inertia::render('Teacher/Class/Schedule', [
             'user' => $user,

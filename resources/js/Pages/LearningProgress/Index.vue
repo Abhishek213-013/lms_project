@@ -1,241 +1,312 @@
 <template>
-  <div class="learning-progress-page">
-    <Head title="Learning Progress" />
-    
-    <!-- Header -->
-    <div class="progress-header">
+  <FrontendLayout>
+    <div class="learning-progress-page">
+      <Head title="Learning Progress" />
+      
+      <!-- Header -->
+      <div class="progress-header">
+        <div class="container">
+          <div class="header-content">
+            <h1 class="page-title">{{ t('Learning Progress') }}</h1>
+            <p class="page-subtitle">{{ t('Track your learning journey and achievements') }}</p>
+          </div>
+        </div>
+      </div>
+
       <div class="container">
-        <div class="header-content">
-          <h1 class="page-title">{{ t('Learning Progress') }}</h1>
-          <p class="page-subtitle">{{ t('Track your learning journey and achievements') }}</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="container">
-      <div class="progress-layout">
-        <!-- Sidebar -->
-        <div class="progress-sidebar">
-          <div class="sidebar-header">
-            <div class="student-info">
-              <div class="student-avatar">
-                <i class="fas fa-user-circle"></i>
-              </div>
-              <div class="student-details">
-                <div class="student-name">{{ $page.props.auth.user.name }}</div>
-                <div class="student-email">{{ $page.props.auth.user.email }}</div>
-              </div>
-            </div>
-          </div>
-
-          <nav class="sidebar-nav">
-            <Link href="/student-profile" class="nav-item">
-              <i class="fas fa-user"></i>
-              <span class="nav-text">{{ t('My Profile') }}</span>
-            </Link>
-            
-            <Link href="/my-courses" class="nav-item">
-              <i class="fas fa-book"></i>
-              <span class="nav-text">{{ t('My Courses') }}</span>
-            </Link>
-            
-            <Link href="/learning-progress" class="nav-item active">
-              <i class="fas fa-chart-line"></i>
-              <span class="nav-text">{{ t('Learning Progress') }}</span>
-            </Link>
-            
-            <Link href="/certificates" class="nav-item">
-              <i class="fas fa-certificate"></i>
-              <span class="nav-text">{{ t('Certificates') }}</span>
-            </Link>
-            
-            <Link href="/settings" class="nav-item">
-              <i class="fas fa-cog"></i>
-              <span class="nav-text">{{ t('Settings') }}</span>
-            </Link>
-            
-            <div class="nav-divider"></div>
-            
-            <button class="nav-item logout" @click="logout">
-              <i class="fas fa-sign-out-alt"></i>
-              <span class="nav-text">{{ t('Logout') }}</span>
-            </button>
-          </nav>
-        </div>
-
-        <!-- Main Content -->
-        <div class="progress-main-content">
-          <!-- Overview Stats -->
-          <div class="overview-section">
-            <div class="stats-grid">
-              <div class="stat-card main">
-                <div class="stat-content">
-                  <div class="stat-icon">
-                    <i class="fas fa-chart-line"></i>
-                  </div>
-                  <div class="stat-info">
-                    <div class="stat-number">{{ progress.overview.average_progress }}%</div>
-                    <div class="stat-label">{{ t('Average Progress') }}</div>
-                  </div>
+        <div class="progress-layout">
+          <!-- Sidebar -->
+          <div class="progress-sidebar">
+            <div class="sidebar-header">
+              <div class="student-info">
+                <div class="student-avatar" @click="triggerAvatarUpload">
+                  <img v-if="profile.user.avatar" 
+                       :src="profile.user.avatar" 
+                       :alt="profile.user.name + ' Avatar'" 
+                       class="avatar-image">
+                  <i v-else class="fas fa-user-circle"></i>
+                  <input 
+                    type="file" 
+                    ref="avatarInput" 
+                    @change="handleAvatarUpload" 
+                    accept="image/*" 
+                    style="display: none;"
+                  >
                 </div>
-                <div class="stat-trend up">
-                  <i class="fas fa-arrow-up"></i>
-                  12%
-                </div>
-              </div>
-              
-              <div class="stat-card">
-                <div class="stat-content">
-                  <div class="stat-icon">
-                    <i class="fas fa-clock"></i>
-                  </div>
-                  <div class="stat-info">
-                    <div class="stat-number">{{ progress.overview.total_learning_hours }}</div>
-                    <div class="stat-label">{{ t('Learning Hours') }}</div>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="stat-card">
-                <div class="stat-content">
-                  <div class="stat-icon">
-                    <i class="fas fa-check-circle"></i>
-                  </div>
-                  <div class="stat-info">
-                    <div class="stat-number">{{ progress.overview.completed_courses }}</div>
-                    <div class="stat-label">{{ t('Courses Completed') }}</div>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="stat-card">
-                <div class="stat-content">
-                  <div class="stat-icon">
-                    <i class="fas fa-fire"></i>
-                  </div>
-                  <div class="stat-info">
-                    <div class="stat-number">{{ progress.overview.current_streak }}</div>
-                    <div class="stat-label">{{ t('Day Streak') }}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Weekly Progress Chart -->
-          <div class="chart-section">
-            <div class="section-header">
-              <h3>{{ t('Weekly Learning Activity') }}</h3>
-              <div class="chart-legend">
-                <div class="legend-item">
-                  <div class="legend-color hours"></div>
-                  <span>{{ t('Learning Hours') }}</span>
-                </div>
-                <div class="legend-item">
-                  <div class="legend-color courses"></div>
-                  <span>{{ t('Courses Accessed') }}</span>
-                </div>
-              </div>
-            </div>
-            
-            <div class="chart-container">
-              <div class="chart-bars">
-                <div v-for="(day, index) in progress.weekly_progress.labels" 
-                     :key="index" 
-                     class="chart-bar-group">
-                  <div class="bar-label">{{ day }}</div>
-                  <div class="bars">
-                    <div class="bar hours" :style="{ height: progress.weekly_progress.hours[index] * 20 + 'px' }">
-                      <span class="bar-value">{{ progress.weekly_progress.hours[index] }}h</span>
-                    </div>
-                    <div class="bar courses" :style="{ height: progress.weekly_progress.courses[index] * 10 + 'px' }">
-                      <span class="bar-value">{{ progress.weekly_progress.courses[index] }}</span>
+                <div class="student-details">
+                  <div class="student-name">{{ $page.props.auth.user.name }}</div>
+                  <div class="student-email">{{ $page.props.auth.user.email }}</div>
+                  <div class="student-stats">
+                    <div class="stat-mini">
+                      <i class="fas fa-book"></i>
+                      {{ progress.overview.total_courses }} {{ t('Courses') }}
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Course Progress -->
-          <div class="courses-progress-section">
-            <div class="section-header">
-              <h3>{{ t('Course Progress') }}</h3>
-              <Link href="/my-courses" class="view-all-link">
-                {{ t('View All Courses') }} <i class="fas fa-arrow-right"></i>
+            <nav class="sidebar-nav">
+              <Link href="/student-profile" class="nav-item">
+                <i class="fas fa-user"></i>
+                <span class="nav-text">{{ t('My Profile') }}</span>
               </Link>
-            </div>
-            
-            <div class="progress-list">
-              <div v-for="course in progress.course_progress" :key="course.id" class="progress-item">
-                <div class="course-info">
-                  <div class="course-category">{{ course.category }}</div>
-                  <h4 class="course-title">{{ course.title }}</h4>
-                  <div class="course-meta">
-                    <span class="meta-item">
-                      <i class="fas fa-clock"></i>
-                      {{ course.time_spent }}
-                    </span>
-                    <span class="meta-item">
-                      <i class="fas fa-history"></i>
-                      {{ course.last_activity }}
-                    </span>
-                  </div>
-                </div>
-                
-                <div class="progress-info">
-                  <div class="progress-stats">
-                    <div class="progress-percentage">{{ course.progress }}%</div>
-                    <div class="progress-trend" :class="course.weekly_trend">
-                      <i class="fas" :class="getTrendIcon(course.weekly_trend)"></i>
-                    </div>
-                  </div>
-                  <div class="progress-bar">
-                    <div class="progress-fill" :style="{ width: course.progress + '%' }"></div>
-                  </div>
-                </div>
-                
-                <button class="btn-continue" @click="continueCourse(course)">
-                  <i class="fas fa-play"></i>
-                </button>
-              </div>
-            </div>
+              
+              <Link href="/my-courses" class="nav-item">
+                <i class="fas fa-book"></i>
+                <span class="nav-text">{{ t('My Courses') }}</span>
+              </Link>
+              
+              <Link href="/learning-progress" class="nav-item active">
+                <i class="fas fa-chart-line"></i>
+                <span class="nav-text">{{ t('Learning Progress') }}</span>
+              </Link>
+              
+              <Link href="/certificates" class="nav-item">
+                <i class="fas fa-certificate"></i>
+                <span class="nav-text">{{ t('Certificates') }}</span>
+              </Link>
+              
+              <Link href="/settings" class="nav-item">
+                <i class="fas fa-cog"></i>
+                <span class="nav-text">{{ t('Settings') }}</span>
+              </Link>
+              
+              <div class="nav-divider"></div>
+              
+              <button class="nav-item logout" @click="logout">
+                <i class="fas fa-sign-out-alt"></i>
+                <span class="nav-text">{{ t('Logout') }}</span>
+              </button>
+            </nav>
           </div>
 
-          <!-- Achievements -->
-          <div class="achievements-section">
-            <div class="section-header">
-              <h3>{{ t('Achievements') }}</h3>
-              <div class="achievements-summary">
-                {{ getCompletedAchievements() }}/{{ progress.achievements.length }} {{ t('Completed') }}
-              </div>
-            </div>
-            
-            <div class="achievements-grid">
-              <div v-for="(achievement, index) in progress.achievements" 
-                   :key="index" 
-                   :class="['achievement-card', { 'completed': achievement.completed }]">
-                <div class="achievement-icon">
-                  <i :class="achievement.icon"></i>
-                  <div v-if="achievement.completed" class="completion-badge">
-                    <i class="fas fa-check"></i>
+          <!-- Main Content -->
+          <div class="progress-main-content">
+            <!-- Overview Stats -->
+            <div class="overview-section">
+              <div class="stats-grid">
+                <div class="stat-card main">
+                  <div class="stat-content">
+                    <div class="stat-icon">
+                      <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="stat-info">
+                      <div class="stat-number">{{ progress.overview.average_progress }}%</div>
+                      <div class="stat-label">{{ t('Average Progress') }}</div>
+                      <div class="stat-subtext">
+                        {{ progress.overview.completed_courses }}/{{ progress.overview.total_courses }} {{ t('courses completed') }}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="stat-trend" :class="getProgressTrend()">
+                    <i class="fas" :class="getProgressTrendIcon()"></i>
+                    {{ getProgressTrendText() }}
                   </div>
                 </div>
                 
-                <div class="achievement-content">
-                  <h4>{{ achievement.title }}</h4>
-                  <p>{{ achievement.description }}</p>
-                  
-                  <div v-if="!achievement.completed" class="progress-container">
-                    <div class="progress-bar">
-                      <div class="progress-fill" :style="{ width: achievement.progress + '%' }"></div>
+                <div class="stat-card">
+                  <div class="stat-content">
+                    <div class="stat-icon">
+                      <i class="fas fa-clock"></i>
                     </div>
-                    <span class="progress-text">{{ achievement.progress }}%</span>
+                    <div class="stat-info">
+                      <div class="stat-number">{{ progress.overview.total_learning_hours }}</div>
+                      <div class="stat-label">{{ t('Learning Hours') }}</div>
+                      <div class="stat-subtext">
+                        {{ progress.overview.in_progress_courses }} {{ t('in progress') }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="stat-card">
+                  <div class="stat-content">
+                    <div class="stat-icon">
+                      <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                      <div class="stat-number">{{ progress.overview.completed_courses }}</div>
+                      <div class="stat-label">{{ t('Courses Completed') }}</div>
+                      <div class="stat-subtext">
+                        {{ Math.round((progress.overview.completed_courses / progress.overview.total_courses) * 100) || 0 }}% {{ t('completion rate') }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="stat-card">
+                  <div class="stat-content">
+                    <div class="stat-icon">
+                      <i class="fas fa-fire"></i>
+                    </div>
+                    <div class="stat-info">
+                      <div class="stat-number">{{ progress.overview.current_streak }}</div>
+                      <div class="stat-label">{{ t('Day Streak') }}</div>
+                      <div class="stat-subtext">
+                        {{ t('Longest') }}: {{ progress.overview.longest_streak }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Weekly Progress Chart -->
+            <div class="chart-section">
+              <div class="section-header">
+                <h3>{{ t('Weekly Learning Activity') }}</h3>
+                <div class="chart-legend">
+                  <div class="legend-item">
+                    <div class="legend-color hours"></div>
+                    <span>{{ t('Learning Hours') }}</span>
+                  </div>
+                  <div class="legend-item">
+                    <div class="legend-color courses"></div>
+                    <span>{{ t('Courses Accessed') }}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="chart-container">
+                <div class="chart-bars">
+                  <div v-for="(day, index) in progress.weekly_progress.labels" 
+                      :key="index" 
+                      class="chart-bar-group">
+                    <div class="bar-label">{{ day }}</div>
+                    <div class="bars">
+                      <div class="bar hours" :style="{ height: Math.max(progress.weekly_progress.hours[index] * 15, 10) + 'px' }">
+                        <span class="bar-value">{{ progress.weekly_progress.hours[index] }}h</span>
+                      </div>
+                      <div class="bar courses" :style="{ height: Math.max(progress.weekly_progress.courses[index] * 8, 10) + 'px' }">
+                        <span class="bar-value">{{ progress.weekly_progress.courses[index] }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="chart-summary">
+                <div class="summary-item">
+                  <strong>{{ getWeeklyTotalHours() }}</strong> {{ t('total hours this week') }}
+                </div>
+                <div class="summary-item">
+                  <strong>{{ getWeeklyTotalCourses() }}</strong> {{ t('courses accessed') }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Course Progress -->
+            <div class="courses-progress-section">
+              <div class="section-header">
+                <h3>{{ t('Course Progress') }}</h3>
+                <div class="progress-filters">
+                  <button class="filter-btn" :class="{ active: activeFilter === 'all' }" @click="activeFilter = 'all'">
+                    {{ t('All') }} ({{ progress.course_progress.length }})
+                  </button>
+                  <button class="filter-btn" :class="{ active: activeFilter === 'in-progress' }" @click="activeFilter = 'in-progress'">
+                    {{ t('In Progress') }} ({{ getInProgressCount() }})
+                  </button>
+                  <button class="filter-btn" :class="{ active: activeFilter === 'completed' }" @click="activeFilter = 'completed'">
+                    {{ t('Completed') }} ({{ progress.overview.completed_courses }})
+                  </button>
+                </div>
+              </div>
+              
+              <div class="progress-list">
+                <div v-for="course in filteredCourses" :key="course.id" class="progress-item">
+                  <div class="course-info">
+                    <div class="course-category">{{ course.category }}</div>
+                    <h4 class="course-title">{{ course.title }}</h4>
+                    <div class="course-meta">
+                      <span class="meta-item">
+                        <i class="fas fa-clock"></i>
+                        {{ course.time_spent }}
+                      </span>
+                      <span class="meta-item">
+                        <i class="fas fa-history"></i>
+                        {{ course.last_activity }}
+                      </span>
+                    </div>
                   </div>
                   
-                  <div v-else class="completion-date">
-                    <i class="fas fa-trophy"></i>
-                    {{ t('Earned on') }} {{ formatDate(achievement.date_earned) }}
+                  <div class="progress-info">
+                    <div class="progress-stats">
+                      <div class="progress-percentage">{{ course.progress }}%</div>
+                      <div class="progress-trend" :class="course.weekly_trend">
+                        <i class="fas" :class="getTrendIcon(course.weekly_trend)"></i>
+                      </div>
+                    </div>
+                    <div class="progress-bar">
+                      <div class="progress-fill" :style="{ width: course.progress + '%' }"></div>
+                    </div>
+                    <div class="progress-status">
+                      <span v-if="course.progress === 100" class="status-completed">
+                        <i class="fas fa-check"></i> {{ t('Completed') }}
+                      </span>
+                      <span v-else class="status-in-progress">
+                        {{ t('In Progress') }}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <button class="btn-continue" @click="continueCourse(course)" :disabled="course.progress === 100">
+                    <i class="fas" :class="course.progress === 100 ? 'fa-check' : 'fa-play'"></i>
+                  </button>
+                </div>
+                
+                <div v-if="filteredCourses.length === 0" class="no-courses">
+                  <i class="fas fa-book-open"></i>
+                  <h4>{{ t('No courses found') }}</h4>
+                  <p>{{ t('Start learning to see your progress here!') }}</p>
+                  <Link href="/my-courses" class="btn-primary">
+                    <i class="fas fa-book"></i>
+                    {{ t('Browse Courses') }}
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            <!-- Achievements -->
+            <div class="achievements-section">
+              <div class="section-header">
+                <h3>{{ t('Achievements') }}</h3>
+                <div class="achievements-summary">
+                  {{ getCompletedAchievements() }}/{{ progress.achievements.length }} {{ t('Completed') }}
+                </div>
+              </div>
+              
+              <div class="achievements-grid">
+                <div v-for="(achievement, index) in progress.achievements" 
+                    :key="index" 
+                    :class="['achievement-card', { 'completed': achievement.completed }]">
+                  <div class="achievement-icon">
+                    <i :class="achievement.icon"></i>
+                    <div v-if="achievement.completed" class="completion-badge">
+                      <i class="fas fa-check"></i>
+                    </div>
+                  </div>
+                  
+                  <div class="achievement-content">
+                    <h4>{{ achievement.title }}</h4>
+                    <p>{{ achievement.description }}</p>
+                    
+                    <div v-if="!achievement.completed" class="progress-container">
+                      <div class="progress-bar">
+                        <div class="progress-fill" :style="{ width: achievement.progress + '%' }"></div>
+                      </div>
+                      <span class="progress-text">{{ achievement.progress }}%</span>
+                    </div>
+                    
+                    <div v-else class="completion-date">
+                      <i class="fas fa-trophy"></i>
+                      <span v-if="achievement.date_earned">
+                        {{ t('Earned on') }} {{ formatDate(achievement.date_earned) }}
+                      </span>
+                      <span v-else>
+                        {{ t('Achievement earned!') }}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -243,13 +314,20 @@
           </div>
         </div>
       </div>
+
+      <!-- Loading Overlay -->
+      <div v-if="loading" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p>{{ t('Updating profile...') }}</p>
+      </div>
     </div>
-  </div>
+  </FrontendLayout>
 </template>
 
 <script setup>
 import { Head, Link, router } from '@inertiajs/vue3'
-import { getCurrentInstance } from 'vue'
+import { ref, computed, getCurrentInstance } from 'vue'
+import FrontendLayout from '../Layout/FrontendLayout.vue'
 
 // Get the current Vue instance to access global properties
 const { proxy } = getCurrentInstance()
@@ -264,7 +342,10 @@ const props = defineProps({
         average_progress: 0,
         total_learning_hours: 0,
         completed_courses: 0,
-        current_streak: 0
+        current_streak: 0,
+        total_courses: 0,
+        in_progress_courses: 0,
+        longest_streak: 0
       },
       weekly_progress: {
         labels: [],
@@ -274,8 +355,45 @@ const props = defineProps({
       course_progress: [],
       achievements: []
     })
+  },
+  profile: {
+    type: Object,
+    required: true,
+    default: () => ({
+      user: {
+        name: '',
+        email: '',
+        avatar: null,
+        phone: '',
+        bio: '',
+        location: '',
+        joined_date: ''
+      },
+      stats: {
+        courses_enrolled: 0,
+        courses_completed: 0,
+        learning_hours: 0,
+        current_streak: 0
+      },
+      recent_activity: [],
+      student_info: {
+        roll_number: '',
+        class: '',
+        admission_date: '',
+        father_name: '',
+        mother_name: '',
+        parent_contact: '',
+        address: '',
+        profile_picture: '',
+        profile_picture_url: ''
+      }
+    })
   }
 })
+
+const activeFilter = ref('all')
+const loading = ref(false)
+const avatarInput = ref(null)
 
 // Use the global t function
 const t = (key, replacements = {}) => {
@@ -293,6 +411,19 @@ const t = (key, replacements = {}) => {
   return key
 }
 
+// Computed properties
+const filteredCourses = computed(() => {
+  if (activeFilter.value === 'all') {
+    return props.progress.course_progress
+  } else if (activeFilter.value === 'in-progress') {
+    return props.progress.course_progress.filter(course => course.progress > 0 && course.progress < 100)
+  } else if (activeFilter.value === 'completed') {
+    return props.progress.course_progress.filter(course => course.progress === 100)
+  }
+  return props.progress.course_progress
+})
+
+// Methods
 const getTrendIcon = (trend) => {
   const icons = {
     up: 'fa-arrow-up',
@@ -302,8 +433,45 @@ const getTrendIcon = (trend) => {
   return icons[trend] || 'fa-minus'
 }
 
+const getProgressTrend = () => {
+  // Simple trend calculation based on weekly progress
+  const totalHours = props.progress.weekly_progress.hours.reduce((a, b) => a + b, 0)
+  return totalHours > 10 ? 'up' : totalHours > 5 ? 'stable' : 'down'
+}
+
+const getProgressTrendIcon = () => {
+  const trend = getProgressTrend()
+  return getTrendIcon(trend)
+}
+
+const getProgressTrendText = () => {
+  const trend = getProgressTrend()
+  const totalHours = props.progress.weekly_progress.hours.reduce((a, b) => a + b, 0)
+  
+  if (trend === 'up') return t('Great week!')
+  if (trend === 'stable') return t('Good progress')
+  return t('Keep going!')
+}
+
+const getWeeklyTotalHours = () => {
+  return props.progress.weekly_progress.hours.reduce((a, b) => a + b, 0).toFixed(1)
+}
+
+const getWeeklyTotalCourses = () => {
+  return props.progress.weekly_progress.courses.reduce((a, b) => a + b, 0)
+}
+
+const getInProgressCount = () => {
+  return props.progress.course_progress.filter(course => course.progress > 0 && course.progress < 100).length
+}
+
 const continueCourse = (course) => {
-  alert(`Continuing course: ${course.title}`)
+  if (course.progress === 100) {
+    alert(t('Course already completed!'))
+    return
+  }
+  // Navigate to course or show course content
+  router.visit(`/course/${course.id}`)
 }
 
 const getCompletedAchievements = () => {
@@ -311,6 +479,7 @@ const getCompletedAchievements = () => {
 }
 
 const formatDate = (dateString) => {
+  if (!dateString) return ''
   return new Date(dateString).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
@@ -318,20 +487,279 @@ const formatDate = (dateString) => {
   })
 }
 
+const triggerAvatarUpload = () => {
+  avatarInput.value.click()
+}
+
+const handleAvatarUpload = async (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  // Validate file type and size
+  if (!file.type.startsWith('image/')) {
+    alert(t('Please select an image file'))
+    return
+  }
+
+  if (file.size > 2 * 1024 * 1024) {
+    alert(t('Image size should be less than 2MB'))
+    return
+  }
+
+  loading.value = true
+  const formData = new FormData()
+  formData.append('avatar', file)
+
+  console.log('Starting avatar upload from Learning Progress page...')
+
+  try {
+    const response = await fetch(route('api.student-profile.upload-avatar'), {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+        'Accept': 'application/json',
+      },
+      body: formData
+    })
+
+    console.log('Upload response status:', response.status)
+
+    if (!response.ok) {
+      const text = await response.text()
+      let errorMessage = t('Upload failed')
+      
+      try {
+        const errorData = JSON.parse(text)
+        errorMessage = errorData.error || errorData.message || t('Upload failed')
+      } catch {
+        errorMessage = text || t('Upload failed with status: ') + response.status
+      }
+      
+      throw new Error(errorMessage)
+    }
+
+    const result = await response.json()
+    
+    console.log('Upload successful:', result)
+    
+    // Show success message
+    alert(t('Avatar uploaded successfully! The page will now reload.'))
+    
+    // Force a complete page reload to get fresh data from server
+    setTimeout(() => {
+      window.location.href = route('learning-progress.new')
+    }, 1000)
+    
+  } catch (error) {
+    console.error('Avatar upload error:', error)
+    alert(t('Error uploading avatar: ') + error.message)
+  } finally {
+    loading.value = false
+    // Reset the input
+    event.target.value = ''
+  }
+}
+
 const logout = () => {
-  router.post('/logout')
+  if (confirm(t('Are you sure you want to logout?'))) {
+    router.post('/logout')
+  }
 }
 </script>
 
 <style scoped>
+/* Add these new styles to your existing CSS */
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.student-avatar {
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.student-avatar:hover {
+  opacity: 0.8;
+}
+
+.student-stats {
+  margin-top: 10px;
+}
+
+.stat-mini {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+
+.stat-subtext {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  margin-top: 5px;
+}
+
+.chart-summary {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.summary-item {
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.summary-item strong {
+  color: var(--text-primary);
+  font-size: 1.1rem;
+}
+
+.progress-filters {
+  display: flex;
+  gap: 10px;
+}
+
+.filter-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.filter-btn.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.filter-btn:hover:not(.active) {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.progress-status {
+  margin-top: 5px;
+  font-size: 0.8rem;
+}
+
+.status-completed {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.status-in-progress {
+  color: var(--text-muted);
+}
+
+.no-courses {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+}
+
+.no-courses i {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  opacity: 0.3;
+}
+
+.no-courses h4 {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+}
+
+.no-courses p {
+  margin-bottom: 20px;
+}
+
+.btn-primary {
+  background: var(--primary-color);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+}
+
+.btn-continue:disabled {
+  background: var(--text-muted);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-continue:disabled:hover {
+  background: var(--text-muted);
+  transform: none;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  color: white;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(255,255,255,0.3);
+  border-left: 4px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-overlay p {
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+/* Rest of your existing CSS remains the same */
 .learning-progress-page {
   min-height: 100vh;
   background: var(--bg-primary);
 }
 
 .progress-header {
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-  color: white;
+  color: var(--primary-color);
   padding: 60px 0 40px;
 }
 
@@ -377,7 +805,306 @@ const logout = () => {
 
 .sidebar-header {
   padding: 30px 20px;
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
+  color: white;
+  text-align: center;
+}
+
+.student-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.student-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  color: white;
+  border: 3px solid rgba(255,255,255,0.3);
+}
+
+.student-details {
+  text-align: center;
+}
+
+.student-name {
+  color: black;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.student-email {
+  color: black;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.sidebar-nav {
+  padding: 20px 0;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 25px;
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  border-left: 3px solid transparent;
+}
+
+.nav-item:hover {
+  background: var(--bg-tertiary);
+  color: var(--primary-color);
+  border-left-color: var(--primary-light);
+}
+
+.nav-item.active {
+  background: var(--primary-light);
+  color: var(--primary-color);
+  border-left-color: var(--primary-color);
+}
+
+.nav-item i {
+  width: 20px;
+  text-align: center;
+  font-size: 16px;
+}
+
+.nav-text {
+  font-weight: 500;
+}
+
+.nav-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 15px 25px;
+}
+
+.nav-item.logout {
+  color: #ef4444;
+}
+
+.nav-item.logout:hover {
+  background: #fef2f2;
+  color: #dc2626;
+  border-left-color: #ef4444;
+}
+
+.dark-theme .nav-item.logout:hover {
+  background: #7f1d1d;
+  color: #fca5a5;
+}
+
+/* Main Content */
+.progress-main-content {
+  display: grid;
+  gap: 30px;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.student-stats {
+  margin-top: 10px;
+}
+
+.stat-mini {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+
+.stat-subtext {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  margin-top: 5px;
+}
+
+.chart-summary {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.summary-item {
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.summary-item strong {
+  color: var(--text-primary);
+  font-size: 1.1rem;
+}
+
+.progress-filters {
+  display: flex;
+  gap: 10px;
+}
+
+.filter-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.filter-btn.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.filter-btn:hover:not(.active) {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.progress-status {
+  margin-top: 5px;
+  font-size: 0.8rem;
+}
+
+.status-completed {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.status-in-progress {
+  color: var(--text-muted);
+}
+
+.no-courses {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+}
+
+.no-courses i {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  opacity: 0.3;
+}
+
+.no-courses h4 {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+}
+
+.no-courses p {
+  margin-bottom: 20px;
+}
+
+.btn-primary {
+  background: var(--primary-color);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+}
+
+.btn-continue:disabled {
+  background: var(--text-muted);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-continue:disabled:hover {
+  background: var(--text-muted);
+  transform: none;
+}
+
+.learning-progress-page {
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+.progress-header {
+  color: var(--primary-color);
+  padding: 60px 0 40px;
+}
+
+.header-content {
+  text-align: center;
+}
+
+.page-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.page-subtitle {
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Progress Layout */
+.progress-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 30px;
+  padding: 40px 0;
+  align-items: start;
+}
+
+/* Sidebar Styles */
+.progress-sidebar {
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  position: sticky;
+  top: 100px;
+}
+
+.sidebar-header {
+  padding: 30px 20px;
+  background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
   color: white;
   text-align: center;
 }

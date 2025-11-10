@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 10, 2025 at 08:02 AM
+-- Generation Time: Nov 10, 2025 at 09:03 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -235,6 +235,44 @@ INSERT INTO `content_management` (`id`, `key`, `value`, `value_bn`, `created_at`
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `course_progress`
+--
+
+CREATE TABLE `course_progress` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `class_id` bigint(20) UNSIGNED NOT NULL,
+  `lesson_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `time_spent_minutes` int(11) NOT NULL DEFAULT 0,
+  `completed` tinyint(1) NOT NULL DEFAULT 0,
+  `progress_percentage` int(11) NOT NULL DEFAULT 0,
+  `accessed_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `enrollments`
+--
+
+CREATE TABLE `enrollments` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `user_id` bigint(20) UNSIGNED NOT NULL,
+  `class_id` bigint(20) UNSIGNED NOT NULL,
+  `progress` int(11) NOT NULL DEFAULT 0,
+  `last_activity_type` varchar(255) DEFAULT NULL,
+  `last_accessed` timestamp NULL DEFAULT NULL,
+  `status` varchar(255) NOT NULL DEFAULT 'active',
+  `enrolled_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `failed_jobs`
 --
 
@@ -331,7 +369,10 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (29, '2025_11_03_102333_create_content_management_table', 7),
 (30, '2025_11_05_093337_add_image_fields_to_classes_table', 8),
 (31, '2025_11_09_075042_add_profile_picture_to_users_table', 9),
-(32, '2025_11_09_181651_add_order_column_to_users_table', 10);
+(32, '2025_11_09_181651_add_order_column_to_users_table', 10),
+(33, '2025_11_10_080018_create_enrollments_table', 11),
+(34, '2025_11_10_080200_create_course_progress_table', 11),
+(35, '2025_11_10_080521_add_profile_fields_to_students_table', 11);
 
 -- --------------------------------------------------------
 
@@ -461,7 +502,11 @@ CREATE TABLE `students` (
   `roll_number` varchar(255) NOT NULL,
   `father_name` varchar(255) NOT NULL,
   `mother_name` varchar(255) NOT NULL,
-  `parent_contact` varchar(255) NOT NULL,
+  `parent_contact` varchar(255) DEFAULT NULL,
+  `phone` varchar(255) DEFAULT NULL,
+  `bio` text DEFAULT NULL,
+  `location` varchar(255) DEFAULT NULL,
+  `profile_picture` varchar(255) DEFAULT NULL,
   `country_code` varchar(255) NOT NULL DEFAULT '+880',
   `address` text DEFAULT NULL,
   `admission_date` date DEFAULT NULL,
@@ -474,13 +519,13 @@ CREATE TABLE `students` (
 -- Dumping data for table `students`
 --
 
-INSERT INTO `students` (`id`, `user_id`, `class_id`, `roll_number`, `father_name`, `mother_name`, `parent_contact`, `country_code`, `address`, `admission_date`, `status`, `created_at`, `updated_at`) VALUES
-(1, 7, 4, 'ST202504001', 'Father', 'Mother', '+8801842376477', '+880', NULL, '2025-11-01', 'active', '2025-11-01 11:08:35', '2025-11-01 11:08:35'),
-(2, 11, 7, 'ST202507001', 'Student\'s Father', 'Student\'s Mother', '+8801842376477', '+880', NULL, '2025-11-03', 'active', '2025-11-02 21:36:17', '2025-11-02 21:36:17'),
-(3, 12, 5, 'ST202505001', 'Student\'s Father', 'Student\'s Mother', '+8801842376477', '+880', NULL, '2025-11-05', 'active', '2025-11-05 03:03:42', '2025-11-05 03:03:42'),
-(4, 13, 5, 'ST202505002', 'Father', 'Mother', '+8801842376477', '+880', NULL, '2025-11-09', 'active', '2025-11-09 09:12:05', '2025-11-09 09:12:05'),
-(5, 14, 7, 'ST202507002', 'Father', 'Mother', '+8801312150423', '+880', NULL, '2025-11-10', 'active', '2025-11-09 22:28:58', '2025-11-09 22:28:58'),
-(6, 15, 4, 'ST202504002', 'Father', 'Mother', '+8801312140452', '+880', NULL, '2025-11-10', 'active', '2025-11-09 22:40:11', '2025-11-09 22:40:11');
+INSERT INTO `students` (`id`, `user_id`, `class_id`, `roll_number`, `father_name`, `mother_name`, `parent_contact`, `phone`, `bio`, `location`, `profile_picture`, `country_code`, `address`, `admission_date`, `status`, `created_at`, `updated_at`) VALUES
+(1, 7, 4, 'ST202504001', 'Father', 'Mother', '+8801842376477', NULL, NULL, NULL, NULL, '+880', NULL, '2025-11-01', 'active', '2025-11-01 11:08:35', '2025-11-01 11:08:35'),
+(2, 11, 7, 'ST202507001', 'Student\'s Father', 'Student\'s Mother', '+8801842376477', NULL, NULL, NULL, NULL, '+880', NULL, '2025-11-03', 'active', '2025-11-02 21:36:17', '2025-11-02 21:36:17'),
+(3, 12, 5, 'ST202505001', 'Student\'s Father', 'Student\'s Mother', '+8801842376477', NULL, NULL, NULL, NULL, '+880', NULL, '2025-11-05', 'active', '2025-11-05 03:03:42', '2025-11-05 03:03:42'),
+(4, 13, 5, 'ST202505002', 'Father', 'Mother', '+8801842376477', NULL, NULL, NULL, NULL, '+880', NULL, '2025-11-09', 'active', '2025-11-09 09:12:05', '2025-11-09 09:12:05'),
+(5, 14, 7, 'ST202507002', 'Father', 'Mother', '+8801312150423', NULL, NULL, NULL, 'avatar_14_1762795188.jpg', '+880', NULL, '2025-11-10', 'active', '2025-11-09 22:28:58', '2025-11-10 11:19:49'),
+(6, 15, 4, 'ST202504002', 'Father', 'Mother', '+8801312140452', NULL, NULL, NULL, 'avatar_15_1762767634.jpg', '+880', NULL, '2025-11-10', 'active', '2025-11-09 22:40:11', '2025-11-10 03:40:34');
 
 -- --------------------------------------------------------
 
@@ -515,7 +560,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `name`, `username`, `email`, `email_verified_at`, `dob`, `education_qualification`, `institute`, `experience`, `bio`, `profile_picture`, `order_column`, `password`, `role`, `status`, `rejection_reason`, `remember_token`, `created_at`, `updated_at`) VALUES
-(1, 'Super Admin', 'superadmin', 'superadmin@skillgro.com', '2025-11-01 10:48:54', '1990-01-01', 'MSC', 'SkillGro', '5 years', NULL, NULL, 0, '$2y$12$OU9b1Pk5v8x5NDI0rauuI.lPj4ibZ6YQp5eJUSoUNOs6S1q.qzQBm', 'super_admin', 'active', NULL, 'cKM5rglWEJLwmwb9befIq1RVzii9oC6WexiAyBLthWD0rncA4kPkf6bQH8cj', '2025-11-01 10:48:54', '2025-11-01 10:48:54'),
+(1, 'Super Admin', 'superadmin', 'superadmin@skillgro.com', '2025-11-01 10:48:54', '1990-01-01', 'MSC', 'SkillGro', '5 years', NULL, NULL, 0, '$2y$12$OU9b1Pk5v8x5NDI0rauuI.lPj4ibZ6YQp5eJUSoUNOs6S1q.qzQBm', 'super_admin', 'active', NULL, 'ecNJPcd0dl2tIv1GnGPG0ROFQt3y4kQ4ycHNpxfuwiDf5vlNKkpTESWehQZ3', '2025-11-01 10:48:54', '2025-11-01 10:48:54'),
 (2, 'Administrator', 'admin', 'admin@skillgro.com', '2025-11-01 10:48:54', '1990-01-01', 'BSC', 'SkillGro', '3 years', NULL, NULL, 0, '$2y$12$/RxYrygp95CFlK8Oy7UzJ.ptYj43O5iB61NvN5wR790JW7BuQXWcu', 'admin', 'active', NULL, NULL, '2025-11-01 10:48:54', '2025-11-01 10:48:54'),
 (3, 'John Teacher', 'teacher', 'teacher@skillgro.com', '2025-11-01 10:48:55', '1985-05-15', 'MSC', 'University of Education', '8 years', NULL, 'profile-pictures/profile_1762676115_69104d930f1c6.jpg', 5, '$2y$12$Sqbyb1ohghs9O.rQp3xA4ey/dcVQpUtSoXS0OzPSUC2tsx2WPBbjq', 'teacher', 'active', NULL, 'i1lF4xlbGq0OYtmav5QWYUUnJKUC4VFoZOm8d1RbSktse6GMczDM7q2UL6rc', '2025-11-01 10:48:55', '2025-11-10 00:48:27'),
 (4, 'Abhishek Chowdhury', 'teacherAbhishek', 'teacherabhishek@gmail.com', NULL, '2000-05-30', 'MSC', 'Metropolitan University', '3-5 years', NULL, 'profile-pictures/profile_1762676654_69104fae863d9.jpg', 1, '$2y$12$/pgUZN.YBA8.76WaoRRm.eKPWWppB1QJpZAiKTyLmDE3lrNeE9gKe', 'teacher', 'active', NULL, 'erC1TBkVrzPCkz0BscqiJ1SBGJPnklvN82KhDbREm3mCEJiL4WwrXvmEuqyl', '2025-11-01 10:58:51', '2025-11-10 00:48:27'),
@@ -580,6 +625,23 @@ ALTER TABLE `content_management`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `content_management_key_unique` (`key`),
   ADD KEY `content_management_key_index` (`key`);
+
+--
+-- Indexes for table `course_progress`
+--
+ALTER TABLE `course_progress`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `course_progress_class_id_foreign` (`class_id`),
+  ADD KEY `course_progress_user_id_class_id_index` (`user_id`,`class_id`),
+  ADD KEY `course_progress_accessed_at_index` (`accessed_at`);
+
+--
+-- Indexes for table `enrollments`
+--
+ALTER TABLE `enrollments`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `enrollments_user_id_class_id_unique` (`user_id`,`class_id`),
+  ADD KEY `enrollments_class_id_foreign` (`class_id`);
 
 --
 -- Indexes for table `failed_jobs`
@@ -691,6 +753,18 @@ ALTER TABLE `content_management`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
+-- AUTO_INCREMENT for table `course_progress`
+--
+ALTER TABLE `course_progress`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `enrollments`
+--
+ALTER TABLE `enrollments`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `failed_jobs`
 --
 ALTER TABLE `failed_jobs`
@@ -706,7 +780,7 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
 
 --
 -- AUTO_INCREMENT for table `personal_access_tokens`
@@ -761,6 +835,20 @@ ALTER TABLE `classes`
 ALTER TABLE `class_student`
   ADD CONSTRAINT `class_student_class_id_foreign` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `class_student_student_id_foreign` FOREIGN KEY (`student_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `course_progress`
+--
+ALTER TABLE `course_progress`
+  ADD CONSTRAINT `course_progress_class_id_foreign` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `course_progress_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `enrollments`
+--
+ALTER TABLE `enrollments`
+  ADD CONSTRAINT `enrollments_class_id_foreign` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `enrollments_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `resources`

@@ -19,15 +19,21 @@ class Student extends Model
         'parent_contact',
         'country_code',
         'address',
-        'admission_date', // Add this
+        'admission_date',
+        'phone',
+        'bio',
+        'location',
+        'profile_picture',
         'status'
     ];
 
-    protected $dates = [
-        'admission_date', // Add this
-        'created_at',
-        'updated_at'
+    protected $casts = [
+        'admission_date' => 'date',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
     ];
+
+    protected $appends = ['profile_picture_url', 'full_parent_contact'];
 
     /**
      * Get the user that owns the student.
@@ -51,6 +57,19 @@ class Student extends Model
     public function getFullParentContactAttribute(): string
     {
         return $this->country_code . $this->parent_contact;
+    }
+
+    /**
+     * Get profile picture URL
+     */
+    public function getProfilePictureUrlAttribute()
+    {
+        if (!$this->profile_picture) {
+            return null;
+        }
+        
+        // Return storage URL
+        return asset('storage/profile-pictures/' . $this->profile_picture);
     }
 
     /**

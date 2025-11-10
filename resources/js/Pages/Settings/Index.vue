@@ -1,441 +1,474 @@
 <template>
-  <div class="settings-page">
-    <Head title="Settings" />
-    
-    <!-- Header -->
-    <div class="settings-header">
-      <div class="container">
-        <div class="header-content">
-          <h1 class="page-title">{{ t('Settings') }}</h1>
-          <p class="page-subtitle">{{ t('Manage your account preferences and settings') }}</p>
+  <FrontendLayout>
+    <div class="settings-page">
+      <Head title="Settings" />
+      
+      <!-- Header -->
+      <div class="settings-header">
+        <div class="container">
+          <div class="header-content">
+            <h1 class="page-title">{{ t('Settings') }}</h1>
+            <p class="page-subtitle">{{ t('Manage your account preferences and settings') }}</p>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="container">
-      <div class="settings-layout">
-        <!-- Main Sidebar -->
-        <div class="main-sidebar">
-          <div class="sidebar-header">
-            <div class="student-info">
-              <div class="student-avatar">
-                <i class="fas fa-user-circle"></i>
-              </div>
-              <div class="student-details">
-                <div class="student-name">{{ $page.props.auth.user.name }}</div>
-                <div class="student-email">{{ $page.props.auth.user.email }}</div>
+      <div class="container">
+        <div class="settings-layout">
+          <!-- Main Sidebar -->
+          <div class="main-sidebar">
+            <div class="sidebar-header">
+              <div class="student-info">
+                <div class="student-avatar">
+                  <img v-if="settings.user.avatar" 
+                       :src="settings.user.avatar" 
+                       :alt="settings.user.name + ' Avatar'" 
+                       class="avatar-image">
+                  <i v-else class="fas fa-user-circle"></i>
+                </div>
+                <div class="student-details">
+                  <div class="student-name">{{ settings.user.name }}</div>
+                  <div class="student-email">{{ settings.user.email }}</div>
+                  <div class="student-roll" v-if="settings.user.student_info">
+                    Roll: {{ settings.user.student_info.roll_number }}
+                  </div>
+                </div>
               </div>
             </div>
+
+            <nav class="sidebar-nav">
+              <Link href="/student-profile" class="nav-item">
+                <i class="fas fa-user"></i>
+                <span class="nav-text">{{ t('My Profile') }}</span>
+              </Link>
+              
+              <Link href="/my-courses" class="nav-item">
+                <i class="fas fa-book"></i>
+                <span class="nav-text">{{ t('My Courses') }}</span>
+              </Link>
+              
+              <Link href="/learning-progress" class="nav-item">
+                <i class="fas fa-chart-line"></i>
+                <span class="nav-text">{{ t('Learning Progress') }}</span>
+              </Link>
+              
+              <Link href="/certificates" class="nav-item">
+                <i class="fas fa-certificate"></i>
+                <span class="nav-text">{{ t('Certificates') }}</span>
+              </Link>
+              
+              <Link href="/settings" class="nav-item active">
+                <i class="fas fa-cog"></i>
+                <span class="nav-text">{{ t('Settings') }}</span>
+              </Link>
+              
+              <div class="nav-divider"></div>
+              
+              <button class="nav-item logout" @click="logout">
+                <i class="fas fa-sign-out-alt"></i>
+                <span class="nav-text">{{ t('Logout') }}</span>
+              </button>
+            </nav>
           </div>
 
-          <nav class="sidebar-nav">
-            <Link href="/student-profile" class="nav-item">
-              <i class="fas fa-user"></i>
-              <span class="nav-text">{{ t('My Profile') }}</span>
-            </Link>
-            
-            <Link href="/my-courses" class="nav-item">
-              <i class="fas fa-book"></i>
-              <span class="nav-text">{{ t('My Courses') }}</span>
-            </Link>
-            
-            <Link href="/learning-progress" class="nav-item">
-              <i class="fas fa-chart-line"></i>
-              <span class="nav-text">{{ t('Learning Progress') }}</span>
-            </Link>
-            
-            <Link href="/certificates" class="nav-item">
-              <i class="fas fa-certificate"></i>
-              <span class="nav-text">{{ t('Certificates') }}</span>
-            </Link>
-            
-            <Link href="/settings" class="nav-item active">
-              <i class="fas fa-cog"></i>
-              <span class="nav-text">{{ t('Settings') }}</span>
-            </Link>
-            
-            <div class="nav-divider"></div>
-            
-            <button class="nav-item logout" @click="logout">
-              <i class="fas fa-sign-out-alt"></i>
-              <span class="nav-text">{{ t('Logout') }}</span>
-            </button>
-          </nav>
-        </div>
-
-        <!-- Settings Content -->
-        <div class="settings-content">
-          <div class="settings-container">
-            <!-- Settings Sidebar Navigation -->
-            <div class="settings-sidebar">
-              <nav class="sidebar-nav">
-                <button 
-                  v-for="section in sections" 
-                  :key="section.id"
-                  :class="['nav-item', { 'active': activeSection === section.id }]"
-                  @click="activeSection = section.id"
-                >
-                  <i :class="section.icon"></i>
-                  <span>{{ section.label }}</span>
-                </button>
-              </nav>
-            </div>
-
-            <!-- Main Settings Content -->
-            <div class="settings-main">
-              <!-- Profile Settings -->
-              <div v-if="activeSection === 'profile'" class="settings-section">
-                <div class="section-header">
-                  <h2>{{ t('Profile Settings') }}</h2>
-                  <p>{{ t('Manage your personal information and profile details') }}</p>
-                </div>
-
-                <form @submit.prevent="updateProfile" class="settings-form">
-                  <div class="form-grid">
-                    <div class="form-group">
-                      <label for="name">{{ t('Full Name') }}</label>
-                      <input 
-                        id="name"
-                        v-model="profileForm.name"
-                        type="text" 
-                        :placeholder="t('Enter your full name')"
-                      >
-                    </div>
-
-                    <div class="form-group">
-                      <label for="email">{{ t('Email Address') }}</label>
-                      <input 
-                        id="email"
-                        v-model="profileForm.email"
-                        type="email" 
-                        :placeholder="t('Enter your email address')"
-                      >
-                    </div>
-
-                    <div class="form-group">
-                      <label for="phone">{{ t('Phone Number') }}</label>
-                      <input 
-                        id="phone"
-                        v-model="profileForm.phone"
-                        type="tel" 
-                        :placeholder="t('Enter your phone number')"
-                      >
-                    </div>
-
-                    <div class="form-group">
-                      <label for="location">{{ t('Location') }}</label>
-                      <input 
-                        id="location"
-                        v-model="profileForm.location"
-                        type="text" 
-                        :placeholder="t('Enter your location')"
-                      >
-                    </div>
-
-                    <div class="form-group full-width">
-                      <label for="bio">{{ t('Bio') }}</label>
-                      <textarea 
-                        id="bio"
-                        v-model="profileForm.bio"
-                        :placeholder="t('Tell us about yourself')"
-                        rows="4"
-                      ></textarea>
-                    </div>
-
-                    <div class="form-group">
-                      <label for="website">{{ t('Website') }}</label>
-                      <input 
-                        id="website"
-                        v-model="profileForm.website"
-                        type="url" 
-                        :placeholder="t('https://example.com')"
-                      >
-                    </div>
-
-                    <div class="form-group">
-                      <label for="language">{{ t('Preferred Language') }}</label>
-                      <select id="language" v-model="profileForm.language">
-                        <option value="en">English</option>
-                        <option value="bn">Bengali</option>
-                      </select>
-                    </div>
-
-                    <div class="form-group">
-                      <label for="timezone">{{ t('Timezone') }}</label>
-                      <select id="timezone" v-model="profileForm.timezone">
-                        <option value="Asia/Dhaka">Asia/Dhaka (UTC+6)</option>
-                        <option value="UTC">UTC</option>
-                        <option value="America/New_York">America/New_York (UTC-5)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div class="form-actions">
-                    <button type="button" class="btn-cancel" @click="resetProfileForm">
-                      {{ t('Cancel') }}
-                    </button>
-                    <button type="submit" class="btn-save" :disabled="!isProfileChanged">
-                      {{ t('Save Changes') }}
-                    </button>
-                  </div>
-                </form>
+          <!-- Settings Content -->
+          <div class="settings-content">
+            <div class="settings-container">
+              <!-- Settings Sidebar Navigation -->
+              <div class="settings-sidebar">
+                <nav class="sidebar-nav">
+                  <button 
+                    v-for="section in sections" 
+                    :key="section.id"
+                    :class="['nav-item', { 'active': activeSection === section.id }]"
+                    @click="activeSection = section.id"
+                  >
+                    <i :class="section.icon"></i>
+                    <span>{{ section.label }}</span>
+                  </button>
+                </nav>
               </div>
 
-              <!-- Preferences -->
-              <div v-if="activeSection === 'preferences'" class="settings-section">
-                <div class="section-header">
-                  <h2>{{ t('Preferences') }}</h2>
-                  <p>{{ t('Customize your learning experience and notifications') }}</p>
-                </div>
+              <!-- Main Settings Content -->
+              <div class="settings-main">
+                <!-- Profile Settings -->
+                <div v-if="activeSection === 'profile'" class="settings-section">
+                  <div class="section-header">
+                    <h2>{{ t('Profile Settings') }}</h2>
+                    <p>{{ t('Manage your personal information and profile details') }}</p>
+                  </div>
 
-                <div class="preferences-list">
-                  <div class="preference-item">
-                    <div class="preference-info">
-                      <h4>{{ t('Email Notifications') }}</h4>
-                      <p>{{ t('Receive updates and announcements via email') }}</p>
-                    </div>
-                    <div class="preference-toggle">
-                      <label class="toggle-switch">
+                  <form @submit.prevent="updateProfile" class="settings-form">
+                    <div class="form-grid">
+                      <div class="form-group">
+                        <label for="name">{{ t('Full Name') }} *</label>
                         <input 
-                          type="checkbox" 
-                          v-model="preferencesForm.email_notifications"
-                          @change="updatePreferences"
+                          id="name"
+                          v-model="profileForm.name"
+                          type="text" 
+                          :placeholder="t('Enter your full name')"
+                          required
                         >
-                        <span class="slider"></span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div class="preference-item">
-                    <div class="preference-info">
-                      <h4>{{ t('Push Notifications') }}</h4>
-                      <p>{{ t('Get instant notifications in your browser') }}</p>
-                    </div>
-                    <div class="preference-toggle">
-                      <label class="toggle-switch">
-                        <input 
-                          type="checkbox" 
-                          v-model="preferencesForm.push_notifications"
-                          @change="updatePreferences"
-                        >
-                        <span class="slider"></span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div class="preference-item">
-                    <div class="preference-info">
-                      <h4>{{ t('SMS Notifications') }}</h4>
-                      <p>{{ t('Receive important updates via SMS') }}</p>
-                    </div>
-                    <div class="preference-toggle">
-                      <label class="toggle-switch">
-                        <input 
-                          type="checkbox" 
-                          v-model="preferencesForm.sms_notifications"
-                          @change="updatePreferences"
-                        >
-                        <span class="slider"></span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div class="preference-item">
-                    <div class="preference-info">
-                      <h4>{{ t('Course Updates') }}</h4>
-                      <p>{{ t('Get notified about new content in your enrolled courses') }}</p>
-                    </div>
-                    <div class="preference-toggle">
-                      <label class="toggle-switch">
-                        <input 
-                          type="checkbox" 
-                          v-model="preferencesForm.course_updates"
-                          @change="updatePreferences"
-                        >
-                        <span class="slider"></span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div class="preference-item">
-                    <div class="preference-info">
-                      <h4>{{ t('Newsletter') }}</h4>
-                      <p>{{ t('Receive weekly learning tips and course recommendations') }}</p>
-                    </div>
-                    <div class="preference-toggle">
-                      <label class="toggle-switch">
-                        <input 
-                          type="checkbox" 
-                          v-model="preferencesForm.newsletter"
-                          @change="updatePreferences"
-                        >
-                        <span class="slider"></span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div class="preference-item">
-                    <div class="preference-info">
-                      <h4>{{ t('Learning Reminders') }}</h4>
-                      <p>{{ t('Get reminders to continue your learning journey') }}</p>
-                    </div>
-                    <div class="preference-toggle">
-                      <label class="toggle-switch">
-                        <input 
-                          type="checkbox" 
-                          v-model="preferencesForm.learning_reminders"
-                          @change="updatePreferences"
-                        >
-                        <span class="slider"></span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div class="preference-item">
-                    <div class="preference-info">
-                      <h4>{{ t('Dark Mode') }}</h4>
-                      <p>{{ t('Switch between light and dark theme') }}</p>
-                    </div>
-                    <div class="preference-toggle">
-                      <label class="toggle-switch">
-                        <input 
-                          type="checkbox" 
-                          v-model="preferencesForm.dark_mode"
-                          @change="toggleDarkMode"
-                        >
-                        <span class="slider"></span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Security -->
-              <div v-if="activeSection === 'security'" class="settings-section">
-                <div class="section-header">
-                  <h2>{{ t('Security') }}</h2>
-                  <p>{{ t('Manage your account security and privacy settings') }}</p>
-                </div>
-
-                <div class="security-settings">
-                  <div class="security-item">
-                    <div class="security-info">
-                      <h4>{{ t('Two-Factor Authentication') }}</h4>
-                      <p>{{ t('Add an extra layer of security to your account') }}</p>
-                    </div>
-                    <div class="security-action">
-                      <button 
-                        class="btn-security" 
-                        :class="{ 'enabled': securityForm.two_factor_auth }"
-                        @click="toggleTwoFactorAuth"
-                      >
-                        {{ securityForm.two_factor_auth ? t('Disable') : t('Enable') }}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div class="security-item">
-                    <div class="security-info">
-                      <h4>{{ t('Login Alerts') }}</h4>
-                      <p>{{ t('Get notified when someone logs into your account') }}</p>
-                    </div>
-                    <div class="security-action">
-                      <label class="toggle-switch">
-                        <input 
-                          type="checkbox" 
-                          v-model="securityForm.login_alerts"
-                          @change="updateSecurity"
-                        >
-                        <span class="slider"></span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div class="security-item">
-                    <div class="security-info">
-                      <h4>{{ t('Device Management') }}</h4>
-                      <p>{{ t('View and manage devices that have access to your account') }}</p>
-                    </div>
-                    <div class="security-action">
-                      <label class="toggle-switch">
-                        <input 
-                          type="checkbox" 
-                          v-model="securityForm.device_management"
-                          @change="updateSecurity"
-                        >
-                        <span class="slider"></span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div class="security-item">
-                    <div class="security-info">
-                      <h4>{{ t('Change Password') }}</h4>
-                      <p>{{ t('Update your password regularly to keep your account secure') }}</p>
-                    </div>
-                    <div class="security-action">
-                      <button class="btn-security" @click="changePassword">
-                        {{ t('Change Password') }}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Billing -->
-              <div v-if="activeSection === 'billing'" class="settings-section">
-                <div class="section-header">
-                  <h2>{{ t('Billing & Plan') }}</h2>
-                  <p>{{ t('Manage your subscription and billing information') }}</p>
-                </div>
-
-                <div class="billing-content">
-                  <div class="current-plan">
-                    <div class="plan-card">
-                      <div class="plan-header">
-                        <h3>{{ billingForm.plan }} Plan</h3>
-                        <span class="plan-badge" :class="billingForm.status">
-                          {{ billingForm.status }}
-                        </span>
-                      </div>
-                      
-                      <div class="plan-features">
-                        <div class="feature-item">
-                          <i class="fas fa-check"></i>
-                          <span>Access to all free courses</span>
-                        </div>
-                        <div class="feature-item">
-                          <i class="fas fa-check"></i>
-                          <span>Community support</span>
-                        </div>
-                        <div class="feature-item">
-                          <i class="fas fa-times"></i>
-                          <span>Premium courses</span>
-                        </div>
-                        <div class="feature-item">
-                          <i class="fas fa-times"></i>
-                          <span>Certificate download</span>
-                        </div>
                       </div>
 
-                      <div class="plan-actions">
-                        <button class="btn-upgrade" @click="upgradePlan">
-                          {{ t('Upgrade to Premium') }}
+                      <div class="form-group">
+                        <label for="email">{{ t('Email Address') }} *</label>
+                        <input 
+                          id="email"
+                          v-model="profileForm.email"
+                          type="email" 
+                          :placeholder="t('Enter your email address')"
+                          required
+                        >
+                      </div>
+
+                      <div class="form-group">
+                        <label for="phone">{{ t('Phone Number') }}</label>
+                        <input 
+                          id="phone"
+                          v-model="profileForm.phone"
+                          type="tel" 
+                          :placeholder="t('Enter your phone number')"
+                        >
+                      </div>
+
+                      <div class="form-group">
+                        <label for="location">{{ t('Location') }}</label>
+                        <input 
+                          id="location"
+                          v-model="profileForm.location"
+                          type="text" 
+                          :placeholder="t('Enter your location')"
+                        >
+                      </div>
+
+                      <div class="form-group full-width">
+                        <label for="bio">{{ t('Bio') }}</label>
+                        <textarea 
+                          id="bio"
+                          v-model="profileForm.bio"
+                          :placeholder="t('Tell us about yourself')"
+                          rows="4"
+                          maxlength="500"
+                        ></textarea>
+                        <div class="char-count">{{ profileForm.bio.length }}/500</div>
+                      </div>
+
+                      <div class="form-group">
+                        <label for="website">{{ t('Website') }}</label>
+                        <input 
+                          id="website"
+                          v-model="profileForm.website"
+                          type="url" 
+                          :placeholder="t('https://example.com')"
+                        >
+                      </div>
+
+                      <div class="form-group">
+                        <label for="language">{{ t('Preferred Language') }}</label>
+                        <select id="language" v-model="profileForm.language">
+                          <option value="en">English</option>
+                          <option value="bn">Bengali</option>
+                        </select>
+                      </div>
+
+                      <div class="form-group">
+                        <label for="timezone">{{ t('Timezone') }}</label>
+                        <select id="timezone" v-model="profileForm.timezone">
+                          <option value="Asia/Dhaka">Asia/Dhaka (UTC+6)</option>
+                          <option value="UTC">UTC</option>
+                          <option value="America/New_York">America/New_York (UTC-5)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="form-actions">
+                      <button type="button" class="btn-cancel" @click="resetProfileForm" :disabled="updatingProfile">
+                        {{ t('Cancel') }}
+                      </button>
+                      <button type="submit" class="btn-save" :disabled="!isProfileChanged || updatingProfile">
+                        <span v-if="updatingProfile" class="loading-spinner-small"></span>
+                        {{ updatingProfile ? t('Updating...') : t('Save Changes') }}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                <!-- Preferences -->
+                <div v-if="activeSection === 'preferences'" class="settings-section">
+                  <div class="section-header">
+                    <h2>{{ t('Preferences') }}</h2>
+                    <p>{{ t('Customize your learning experience and notifications') }}</p>
+                  </div>
+
+                  <div class="preferences-list">
+                    <div class="preference-item">
+                      <div class="preference-info">
+                        <h4>{{ t('Email Notifications') }}</h4>
+                        <p>{{ t('Receive updates and announcements via email') }}</p>
+                      </div>
+                      <div class="preference-toggle">
+                        <label class="toggle-switch">
+                          <input 
+                            type="checkbox" 
+                            v-model="preferencesForm.email_notifications"
+                            @change="updatePreferences"
+                            :disabled="updatingPreferences"
+                          >
+                          <span class="slider"></span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div class="preference-item">
+                      <div class="preference-info">
+                        <h4>{{ t('Push Notifications') }}</h4>
+                        <p>{{ t('Get instant notifications in your browser') }}</p>
+                      </div>
+                      <div class="preference-toggle">
+                        <label class="toggle-switch">
+                          <input 
+                            type="checkbox" 
+                            v-model="preferencesForm.push_notifications"
+                            @change="updatePreferences"
+                            :disabled="updatingPreferences"
+                          >
+                          <span class="slider"></span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div class="preference-item">
+                      <div class="preference-info">
+                        <h4>{{ t('SMS Notifications') }}</h4>
+                        <p>{{ t('Receive important updates via SMS') }}</p>
+                      </div>
+                      <div class="preference-toggle">
+                        <label class="toggle-switch">
+                          <input 
+                            type="checkbox" 
+                            v-model="preferencesForm.sms_notifications"
+                            @change="updatePreferences"
+                            :disabled="updatingPreferences"
+                          >
+                          <span class="slider"></span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div class="preference-item">
+                      <div class="preference-info">
+                        <h4>{{ t('Course Updates') }}</h4>
+                        <p>{{ t('Get notified about new content in your enrolled courses') }}</p>
+                      </div>
+                      <div class="preference-toggle">
+                        <label class="toggle-switch">
+                          <input 
+                            type="checkbox" 
+                            v-model="preferencesForm.course_updates"
+                            @change="updatePreferences"
+                            :disabled="updatingPreferences"
+                          >
+                          <span class="slider"></span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div class="preference-item">
+                      <div class="preference-info">
+                        <h4>{{ t('Newsletter') }}</h4>
+                        <p>{{ t('Receive weekly learning tips and course recommendations') }}</p>
+                      </div>
+                      <div class="preference-toggle">
+                        <label class="toggle-switch">
+                          <input 
+                            type="checkbox" 
+                            v-model="preferencesForm.newsletter"
+                            @change="updatePreferences"
+                            :disabled="updatingPreferences"
+                          >
+                          <span class="slider"></span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div class="preference-item">
+                      <div class="preference-info">
+                        <h4>{{ t('Learning Reminders') }}</h4>
+                        <p>{{ t('Get reminders to continue your learning journey') }}</p>
+                      </div>
+                      <div class="preference-toggle">
+                        <label class="toggle-switch">
+                          <input 
+                            type="checkbox" 
+                            v-model="preferencesForm.learning_reminders"
+                            @change="updatePreferences"
+                            :disabled="updatingPreferences"
+                          >
+                          <span class="slider"></span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div class="preference-item">
+                      <div class="preference-info">
+                        <h4>{{ t('Dark Mode') }}</h4>
+                        <p>{{ t('Switch between light and dark theme') }}</p>
+                      </div>
+                      <div class="preference-toggle">
+                        <label class="toggle-switch">
+                          <input 
+                            type="checkbox" 
+                            v-model="preferencesForm.dark_mode"
+                            @change="toggleDarkMode"
+                            :disabled="updatingPreferences"
+                          >
+                          <span class="slider"></span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-if="preferencesMessage" class="message" :class="preferencesMessageType">
+                    {{ preferencesMessage }}
+                  </div>
+                </div>
+
+                <!-- Security -->
+                <div v-if="activeSection === 'security'" class="settings-section">
+                  <div class="section-header">
+                    <h2>{{ t('Security') }}</h2>
+                    <p>{{ t('Manage your account security and privacy settings') }}</p>
+                  </div>
+
+                  <div class="security-settings">
+                    <div class="security-item">
+                      <div class="security-info">
+                        <h4>{{ t('Two-Factor Authentication') }}</h4>
+                        <p>{{ t('Add an extra layer of security to your account') }}</p>
+                      </div>
+                      <div class="security-action">
+                        <button 
+                          class="btn-security" 
+                          :class="{ 'enabled': securityForm.two_factor_auth }"
+                          @click="toggleTwoFactorAuth"
+                          :disabled="updatingSecurity"
+                        >
+                          <span v-if="updatingSecurity" class="loading-spinner-small"></span>
+                          {{ securityForm.two_factor_auth ? t('Disable') : t('Enable') }}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="security-item">
+                      <div class="security-info">
+                        <h4>{{ t('Login Alerts') }}</h4>
+                        <p>{{ t('Get notified when someone logs into your account') }}</p>
+                      </div>
+                      <div class="security-action">
+                        <label class="toggle-switch">
+                          <input 
+                            type="checkbox" 
+                            v-model="securityForm.login_alerts"
+                            @change="updateSecurity"
+                            :disabled="updatingSecurity"
+                          >
+                          <span class="slider"></span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div class="security-item">
+                      <div class="security-info">
+                        <h4>{{ t('Device Management') }}</h4>
+                        <p>{{ t('View and manage devices that have access to your account') }}</p>
+                      </div>
+                      <div class="security-action">
+                        <label class="toggle-switch">
+                          <input 
+                            type="checkbox" 
+                            v-model="securityForm.device_management"
+                            @change="updateSecurity"
+                            :disabled="updatingSecurity"
+                          >
+                          <span class="slider"></span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div class="security-item">
+                      <div class="security-info">
+                        <h4>{{ t('Change Password') }}</h4>
+                        <p>{{ t('Update your password regularly to keep your account secure') }}</p>
+                      </div>
+                      <div class="security-action">
+                        <button class="btn-security" @click="changePassword">
+                          {{ t('Change Password') }}
                         </button>
                       </div>
                     </div>
                   </div>
 
-                  <div class="billing-history" v-if="billingForm.next_billing_date">
-                    <h4>{{ t('Billing Information') }}</h4>
-                    <div class="billing-details">
-                      <div class="billing-item">
-                        <span class="label">{{ t('Next Billing Date') }}:</span>
-                        <span class="value">{{ billingForm.next_billing_date }}</span>
+                  <div v-if="securityMessage" class="message" :class="securityMessageType">
+                    {{ securityMessage }}
+                  </div>
+                </div>
+
+                <!-- Billing -->
+                <div v-if="activeSection === 'billing'" class="settings-section">
+                  <div class="section-header">
+                    <h2>{{ t('Billing & Plan') }}</h2>
+                    <p>{{ t('Manage your subscription and billing information') }}</p>
+                  </div>
+
+                  <div class="billing-content">
+                    <div class="current-plan">
+                      <div class="plan-card">
+                        <div class="plan-header">
+                          <h3>{{ billingForm.plan }} Plan</h3>
+                          <span class="plan-badge" :class="billingForm.status">
+                            {{ billingForm.status }}
+                          </span>
+                        </div>
+                        
+                        <div class="plan-features">
+                          <div class="feature-item">
+                            <i class="fas fa-check"></i>
+                            <span>Access to all free courses</span>
+                          </div>
+                          <div class="feature-item">
+                            <i class="fas fa-check"></i>
+                            <span>Community support</span>
+                          </div>
+                          <div class="feature-item">
+                            <i class="fas fa-times"></i>
+                            <span>Premium courses</span>
+                          </div>
+                          <div class="feature-item">
+                            <i class="fas fa-times"></i>
+                            <span>Certificate download</span>
+                          </div>
+                        </div>
+
+                        <div class="plan-actions">
+                          <button class="btn-upgrade" @click="upgradePlan">
+                            {{ t('Upgrade to Premium') }}
+                          </button>
+                        </div>
                       </div>
-                      <div class="billing-item">
-                        <span class="label">{{ t('Payment Method') }}:</span>
-                        <span class="value">{{ billingForm.payment_method || t('Not set') }}</span>
+                    </div>
+
+                    <div class="billing-history" v-if="billingForm.next_billing_date">
+                      <h4>{{ t('Billing Information') }}</h4>
+                      <div class="billing-details">
+                        <div class="billing-item">
+                          <span class="label">{{ t('Next Billing Date') }}:</span>
+                          <span class="value">{{ billingForm.next_billing_date }}</span>
+                        </div>
+                        <div class="billing-item">
+                          <span class="label">{{ t('Payment Method') }}:</span>
+                          <span class="value">{{ billingForm.payment_method || t('Not set') }}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -446,12 +479,13 @@
         </div>
       </div>
     </div>
-  </div>
+  </FrontendLayout>
 </template>
 
 <script setup>
 import { Head, Link, router } from '@inertiajs/vue3'
 import { ref, reactive, computed, watch, getCurrentInstance } from 'vue'
+import FrontendLayout from '../Layout/FrontendLayout.vue'
 
 // Get the current Vue instance to access global properties
 const { proxy } = getCurrentInstance()
@@ -491,6 +525,12 @@ const props = defineProps({
         status: 'active',
         next_billing_date: null,
         payment_method: null
+      },
+      user: {
+        name: '',
+        email: '',
+        avatar: null,
+        student_info: null
       }
     })
   }
@@ -513,6 +553,17 @@ const t = (key, replacements = {}) => {
 }
 
 const activeSection = ref('profile')
+
+// Loading states
+const updatingProfile = ref(false)
+const updatingPreferences = ref(false)
+const updatingSecurity = ref(false)
+
+// Messages
+const preferencesMessage = ref('')
+const preferencesMessageType = ref('')
+const securityMessage = ref('')
+const securityMessageType = ref('')
 
 const sections = [
   { id: 'profile', label: t('Profile'), icon: 'fas fa-user' },
@@ -539,9 +590,32 @@ const isProfileChanged = computed(() => {
   return JSON.stringify(profileForm) !== JSON.stringify(initialProfile)
 })
 
-const updateProfile = () => {
-  alert('Profile updated successfully!')
-  Object.assign(initialProfile, { ...profileForm })
+const updateProfile = async () => {
+  updatingProfile.value = true
+  
+  try {
+    const response = await fetch('/api/settings/profile', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      },
+      body: JSON.stringify(profileForm)
+    })
+
+    const result = await response.json()
+    
+    if (response.ok) {
+      alert('Profile updated successfully!')
+      Object.assign(initialProfile, { ...profileForm })
+    } else {
+      alert('Failed to update profile: ' + (result.message || 'Unknown error'))
+    }
+  } catch (error) {
+    alert('Error updating profile: ' + error.message)
+  } finally {
+    updatingProfile.value = false
+  }
 }
 
 const resetProfileForm = () => {
@@ -551,8 +625,40 @@ const resetProfileForm = () => {
 // Preferences Form
 const preferencesForm = reactive({ ...props.settings.preferences })
 
-const updatePreferences = () => {
-  alert('Preferences updated successfully!')
+const updatePreferences = async () => {
+  updatingPreferences.value = true
+  preferencesMessage.value = ''
+  
+  try {
+    const response = await fetch('/api/settings/preferences', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      },
+      body: JSON.stringify(preferencesForm)
+    })
+
+    const result = await response.json()
+    
+    if (response.ok) {
+      preferencesMessage.value = 'Preferences updated successfully!'
+      preferencesMessageType.value = 'success'
+    } else {
+      preferencesMessage.value = 'Failed to update preferences: ' + (result.message || 'Unknown error')
+      preferencesMessageType.value = 'error'
+    }
+  } catch (error) {
+    preferencesMessage.value = 'Error updating preferences: ' + error.message
+    preferencesMessageType.value = 'error'
+  } finally {
+    updatingPreferences.value = false
+    
+    // Clear message after 3 seconds
+    setTimeout(() => {
+      preferencesMessage.value = ''
+    }, 3000)
+  }
 }
 
 const toggleDarkMode = () => {
@@ -564,17 +670,86 @@ const toggleDarkMode = () => {
 // Security Form
 const securityForm = reactive({ ...props.settings.security })
 
-const toggleTwoFactorAuth = () => {
-  securityForm.two_factor_auth = !securityForm.two_factor_auth
-  alert(`Two-factor authentication ${securityForm.two_factor_auth ? 'enabled' : 'disabled'}`)
+const toggleTwoFactorAuth = async () => {
+  updatingSecurity.value = true
+  securityMessage.value = ''
+  
+  try {
+    const response = await fetch('/api/settings/security', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      },
+      body: JSON.stringify({
+        two_factor_auth: !securityForm.two_factor_auth
+      })
+    })
+
+    const result = await response.json()
+    
+    if (response.ok) {
+      securityForm.two_factor_auth = !securityForm.two_factor_auth
+      securityMessage.value = `Two-factor authentication ${securityForm.two_factor_auth ? 'enabled' : 'disabled'}`
+      securityMessageType.value = 'success'
+    } else {
+      securityMessage.value = 'Failed to update security settings: ' + (result.message || 'Unknown error')
+      securityMessageType.value = 'error'
+    }
+  } catch (error) {
+    securityMessage.value = 'Error updating security settings: ' + error.message
+    securityMessageType.value = 'error'
+  } finally {
+    updatingSecurity.value = false
+    
+    // Clear message after 3 seconds
+    setTimeout(() => {
+      securityMessage.value = ''
+    }, 3000)
+  }
 }
 
-const updateSecurity = () => {
-  alert('Security settings updated!')
+const updateSecurity = async () => {
+  updatingSecurity.value = true
+  securityMessage.value = ''
+  
+  try {
+    const response = await fetch('/api/settings/security', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      },
+      body: JSON.stringify(securityForm)
+    })
+
+    const result = await response.json()
+    
+    if (response.ok) {
+      securityMessage.value = 'Security settings updated successfully!'
+      securityMessageType.value = 'success'
+    } else {
+      securityMessage.value = 'Failed to update security settings: ' + (result.message || 'Unknown error')
+      securityMessageType.value = 'error'
+    }
+  } catch (error) {
+    securityMessage.value = 'Error updating security settings: ' + error.message
+    securityMessageType.value = 'error'
+  } finally {
+    updatingSecurity.value = false
+    
+    // Clear message after 3 seconds
+    setTimeout(() => {
+      securityMessage.value = ''
+    }, 3000)
+  }
 }
 
 const changePassword = () => {
-  alert('Password change dialog would open here')
+  const newPassword = prompt('Enter new password:')
+  if (newPassword) {
+    alert('Password change functionality would be implemented here')
+  }
 }
 
 // Billing Form
@@ -597,14 +772,83 @@ watch(() => profileForm.language, (newLang) => {
 </script>
 
 <style scoped>
+/* Add these new styles to your existing CSS */
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.student-roll {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  background: rgba(255,255,255,0.2);
+  padding: 2px 8px;
+  border-radius: 12px;
+  display: inline-block;
+  margin-top: 5px;
+}
+
+.loading-spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.char-count {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: right;
+  margin-top: 5px;
+}
+
+.message {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-top: 20px;
+  font-weight: 500;
+}
+
+.message.success {
+  background: #e8f5e8;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+}
+
+.message.error {
+  background: #ffebee;
+  color: #d32f2f;
+  border: 1px solid #ffcdd2;
+}
+
+.btn-save:disabled,
+.btn-cancel:disabled,
+.btn-security:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.toggle-switch input:disabled + .slider {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Rest of your existing CSS remains the same */
 .settings-page {
   min-height: 100vh;
   background: var(--bg-primary);
 }
 
 .settings-header {
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-  color: white;
+  color: var(--primary-color);
   padding: 60px 0 40px;
 }
 
@@ -650,7 +894,7 @@ watch(() => profileForm.language, (newLang) => {
 
 .sidebar-header {
   padding: 30px 20px;
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+  background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
   color: white;
   text-align: center;
 }
@@ -663,8 +907,18 @@ watch(() => profileForm.language, (newLang) => {
 }
 
 .student-avatar {
-  font-size: 60px;
-  color: rgba(255, 255, 255, 0.9);
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  color: white;
+  border: 3px solid rgba(255,255,255,0.3);
+  position: relative;
+  overflow: hidden;
 }
 
 .student-details {
@@ -679,7 +933,8 @@ watch(() => profileForm.language, (newLang) => {
 
 .student-email {
   font-size: 0.9rem;
-  opacity: 0.8;
+  opacity: 0.9;
+  margin-bottom: 5px;
 }
 
 .sidebar-nav {
