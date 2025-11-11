@@ -72,7 +72,6 @@
           <div class="row">
             <div class="col-md-4 mb-4" v-for="course in featuredCourses" :key="course.id">
               <div class="card course-card h-100">
-                <!-- Updated Image Handling -->
                 <img 
                   :src="getCourseThumbnail(course)" 
                   :alt="getCourseTitle(course)" 
@@ -97,7 +96,7 @@
                 </div>
                 <div class="card-footer">
                   <Link :href="`/course/${course.id}`" class="btn btn-primary w-100" style="background-color: var(--primary-color); border-color: var(--primary-color);">
-                    {{ t('View Course') }}
+                    {{ displayContent.home_courses_button || t('View Course') }}
                   </Link>
                 </div>
               </div>
@@ -106,7 +105,7 @@
           <div class="row mt-4">
             <div class="col-12 text-center">
               <Link href="/courses" class="btn btn-outline-primary btn-lg">
-                {{ displayContent.home_courses_button }}
+                {{ displayContent.home_courses_button || t('View All Courses') }}
               </Link>
             </div>
           </div>
@@ -126,7 +125,6 @@
           <div class="row">
             <div class="col-xl-3 col-lg-4 col-md-6" v-for="instructor in instructors.slice(0, 8)" :key="instructor.id">
               <div class="instructor-card-new">
-                <!-- Profile Picture - Rectangular Shape -->
                 <div class="profile-image-container">
                   <img 
                     :src="getInstructorAvatar(instructor)" 
@@ -138,12 +136,10 @@
                   >
                 </div>
 
-                <!-- Teacher Name Section -->
                 <div class="teacher-name-section">
                   <h3 class="teacher-name">{{ instructor.name }}</h3>
                 </div>
 
-                <!-- Education Section -->
                 <div class="education-section">
                   <div class="section-header">
                     <i class="fas fa-graduation-cap icon-fixed"></i>
@@ -152,7 +148,6 @@
                   <p class="education-text line-clamp-2">{{ getEducation(instructor) }}</p>
                 </div>
 
-                <!-- Stats Section -->
                 <div class="stats-section-new">
                   <div class="stats-grid-new">
                     <div class="stat-item-new">
@@ -185,7 +180,6 @@
                   </div>
                 </div>
 
-                <!-- View Profile Button -->
                 <div class="view-profile-section">
                   <Link :href="`/instructor/${instructor.id}`" class="btn-view-profile">
                     <i class="fas fa-user-circle icon-fixed"></i>
@@ -199,7 +193,7 @@
           <div class="row mt-4">
             <div class="col-12 text-center">
               <Link href="/instructors" class="btn btn-outline-primary btn-lg">
-                {{ displayContent.home_instructors_button }}
+                {{ displayContent.home_instructors_button || t('View All Instructors') }}
               </Link>
             </div>
           </div>
@@ -235,15 +229,46 @@
         <div class="container">
           <div class="row text-center">
             <div class="col-12">
-              <h2 class="cta-title">{{ displayContent.home_cta_title }}</h2>
-              <p class="cta-subtitle">{{ displayContent.home_cta_subtitle }}</p>
+              <h2 class="cta-title">{{ displayContent.home_cta_title || t('Ready to Start Learning?') }}</h2>
+              <p class="cta-subtitle">{{ displayContent.home_cta_subtitle || t('Join thousands of students already learning with Pathshala') }}</p>
               <Link href="/registration" class="btn btn-primary btn-lg">
-                {{ displayContent.home_cta_button }}
+                {{ displayContent.home_cta_button || t('Get Started Today') }}
               </Link>
             </div>
           </div>
         </div>
       </section>
+
+      <!-- Debug Section - Enhanced -->
+      <!-- <div v-if="isDevelopment" class="debug-section p-3 bg-gray-100 mt-5">
+        <div class="container">
+          <h3>Content Debug Info:</h3>
+          <p><strong>Current Language:</strong> {{ currentLanguage }}</p>
+          <p><strong>Content Refresh Key:</strong> {{ contentRefreshKey }}</p>
+          <p><strong>Translation Version:</strong> {{ translationVersion }}</p>
+          
+          <h4>Language Detection:</h4>
+          <p><strong>URL Parameter:</strong> {{ $page.url }}</p>
+          <p><strong>Has Bengali Content:</strong> {{ hasBengaliContent }}</p>
+          
+          <h4>Raw Content from Props:</h4>
+          <pre>{{ JSON.stringify(props.content, null, 2) }}</pre>
+          
+          <h4>Content Keys Analysis:</h4>
+          <div class="row">
+            <div class="col-md-6">
+              <h5>English Content Found:</h5>
+              <ul>
+                <li v-for="key in Object.keys(displayContent)" :key="key">
+                  <strong>{{ key }}:</strong> "{{ displayContent[key] }}"
+                  <span v-if="isEnglishText(displayContent[key])" class="badge bg-warning">EN</span>
+                  <span v-else class="badge bg-success">BN</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div> -->
     </div>
   </FrontendLayout>
 </template>
@@ -251,11 +276,10 @@
 <script setup>
 import { Link } from '@inertiajs/vue3'
 import FrontendLayout from '../Layout/FrontendLayout.vue'
-import { ref, onMounted, computed, onUnmounted, watch } from 'vue'
+import { ref, onMounted, computed, onUnmounted, watch, nextTick } from 'vue'
 import { useTranslation } from '@/composables/useTranslation'
 
-// Use translation composable - call it once at the top level
-const { t, currentLanguage } = useTranslation()
+const { t, currentLanguage, translationVersion, switchLanguage } = useTranslation()
 
 // Define props
 const props = defineProps({
@@ -274,11 +298,38 @@ const currentTheme = ref('light')
 const heroImageLoaded = ref(false)
 const heroImageError = ref(false)
 const fallbackImage = ref(null)
+const contentRefreshKey = ref(0)
 
+// Check if we're in development mode safely
+const isDevelopment = ref(false)
+// Add these computed properties
+const hasBengaliContent = computed(() => {
+  const content = displayContent.value;
+  const bengaliRegex = /[অ-ঔক-হ০-৯]/;
+  return Object.values(content).some(value => 
+    typeof value === 'string' && bengaliRegex.test(value)
+  );
+});
+
+const isEnglishText = (text) => {
+  if (typeof text !== 'string') return true;
+  const bengaliRegex = /[অ-ঔক-হ০-৯]/;
+  return !bengaliRegex.test(text);
+};
 // Computed properties
 const displayContent = computed(() => {
+  contentRefreshKey.value; // This makes the computed property reactive to language changes
+  
   // Use props.content if available, otherwise use default content
-  return Object.keys(props.content).length > 0 ? props.content : getDefaultContent()
+  const content = Object.keys(props.content).length > 0 ? props.content : getDefaultContent()
+  
+  console.log('🔄 Display Content:', {
+    hasPropsContent: Object.keys(props.content).length > 0,
+    propsContentKeys: Object.keys(props.content),
+    finalContentKeys: Object.keys(content)
+  })
+  
+  return content
 })
 
 const heroImageUrl = computed(() => {
@@ -307,20 +358,20 @@ const heroSectionStyle = computed(() => {
 // Methods
 const getDefaultContent = () => {
   return {
-    home_hero_title: t('Learning is What You Make of it. Make it Yours at SkillGro.'),
-    home_hero_subtitle: t('Unlock your potential with our expert-led courses and transform your career.'),
-    home_hero_primary_button: t('Start Free Trial'),
-    home_hero_secondary_button: t('Watch Our Class Demo'),
-    home_courses_title: t('Popular Courses'),
-    home_courses_subtitle: t('Discover our most enrolled courses'),
-    home_courses_button: t('View All Courses'),
-    home_instructors_title: t('Meet Our Expert Instructors'),
-    home_instructors_subtitle: t('Learn from experienced professionals'),
-    home_instructors_button: t('View All Instructors'),
-    home_stats_title: t('Our Impact'),
-    home_cta_title: t('Ready to Start Learning?'),
-    home_cta_subtitle: t('Join thousands of students already learning with SkillGro'),
-    home_cta_button: t('Get Started Today'),
+    home_hero_title: 'Learning is What You Make of it. Make it Yours at Pathshala LMS.',
+    home_hero_subtitle: 'Unlock your potential with our expert-led courses and transform your career.',
+    home_hero_primary_button: 'Browse Courses',
+    home_hero_secondary_button: 'Watch Demo',
+    home_courses_title: 'Popular Courses',
+    home_courses_subtitle: 'Discover our most enrolled courses',
+    home_courses_button: 'View All Courses',
+    home_instructors_title: 'Featured Instructors',
+    home_instructors_subtitle: 'Learn from experienced professionals',
+    home_instructors_button: 'View All Instructors',
+    home_stats_title: 'Our Impact',
+    home_cta_title: 'Ready to Start Learning?',
+    home_cta_subtitle: 'Join thousands of students already learning with Pathshala',
+    home_cta_button: 'Get Started Today',
   }
 }
 
@@ -331,6 +382,15 @@ const handleThemeChange = (event) => {
 const handleLanguageChange = (event) => {
   console.log('Language change received in home page:', event.detail.language)
   refreshIcons()
+  // Force content refresh
+  contentRefreshKey.value++
+  
+  // Force a re-render of all dynamic content
+  nextTick(() => {
+    if (window.FontAwesome && window.FontAwesome.dom && window.FontAwesome.dom.i2svg) {
+      window.FontAwesome.dom.i2svg()
+    }
+  })
 }
 
 const refreshIcons = () => {
@@ -342,28 +402,18 @@ const refreshIcons = () => {
 }
 
 const getInstructorAvatar = (instructor) => {
-  console.log('🖼️ Instructor image data for home page:', {
-    id: instructor.id,
-    name: instructor.name,
-    profile_picture: instructor.profile_picture,
-    avatar: instructor.avatar
-  });
-
   // First priority: Use profile_picture from database if available
   if (instructor.profile_picture && instructor.profile_picture !== 'null' && instructor.profile_picture !== 'NULL') {
     const profilePicUrl = formatInstructorImageUrl(instructor.profile_picture);
-    console.log('✅ Using profile_picture from database:', profilePicUrl);
     return profilePicUrl;
   }
 
   // Second priority: Use avatar field if available
   if (instructor.avatar && instructor.avatar !== '/assets/img/instructors/default.jpg') {
-    console.log('✅ Using avatar field:', instructor.avatar);
     return instructor.avatar;
   }
 
   // Fallback to default avatars only if no database image exists
-  console.log('📸 No database image found, using fallback for instructor:', instructor.id);
   const avatars = [
     '/assets/img/instructor/instructor01.png',
     '/assets/img/instructor/instructor02.png',
@@ -377,8 +427,6 @@ const getInstructorAvatar = (instructor) => {
 
 const formatInstructorImageUrl = (imagePath) => {
   if (!imagePath) return null;
-  
-  console.log('🔄 Formatting instructor image path:', imagePath);
   
   // If it's already a full URL, return as is
   if (imagePath.startsWith('http')) {
@@ -462,40 +510,26 @@ const preloadHeroImage = () => {
 }
 
 const getCourseThumbnail = (course) => {
-  console.log('🖼️ Course image data for home page:', {
-    id: course.id,
-    name: course.name,
-    image: course.image,
-    image_url: course.image_url,
-    thumbnail: course.thumbnail,
-    thumbnail_url: course.thumbnail_url
-  });
-
   // Use the image data from backend
   if (course.image_url && course.image_url !== 'null' && course.image_url !== 'NULL') {
-    console.log('✅ Using image_url from backend:', course.image_url);
     return course.image_url;
   }
 
   if (course.thumbnail_url && course.thumbnail_url !== 'null' && course.thumbnail_url !== 'NULL') {
-    console.log('✅ Using thumbnail_url from backend:', course.thumbnail_url);
     return course.thumbnail_url;
   }
 
   if (course.image && course.image !== 'null' && course.image !== 'NULL') {
     const imageUrl = formatImageUrl(course.image);
-    console.log('✅ Using raw image path from backend:', imageUrl);
     return imageUrl;
   }
 
   if (course.thumbnail && course.thumbnail !== 'null' && course.thumbnail !== 'NULL') {
     const thumbnailUrl = formatImageUrl(course.thumbnail);
-    console.log('✅ Using raw thumbnail path from backend:', thumbnailUrl);
     return thumbnailUrl;
   }
 
   // Fallback to demo thumbnails only if no database image exists
-  console.log('📸 No database image found, using fallback for course:', course.id);
   const courseType = course.type || 'regular';
   
   if (courseType === 'regular') {
@@ -520,8 +554,6 @@ const getCourseThumbnail = (course) => {
 
 const formatImageUrl = (imagePath) => {
   if (!imagePath) return null;
-  
-  console.log('🔄 Formatting image path:', imagePath);
   
   // If it's already a full URL, return as is
   if (imagePath.startsWith('http')) {
@@ -625,16 +657,6 @@ const getCourseCategory = (course) => {
   }
 };
 
-const getExpertise = (instructor) => {
-  const qual = instructor.education_qualification || '';
-  if (qual.includes('Science')) return t('Science Expert');
-  if (qual.includes('English')) return t('English Specialist');
-  if (qual.includes('Mathematics')) return t('Mathematics Teacher');
-  if (qual.includes('Bangla')) return t('Bangla Instructor');
-  if (qual.includes('Sports')) return t('Sports Coach');
-  return t('Teaching Specialist');
-}
-
 const getEducation = (instructor) => {
   if (instructor.education_qualification && instructor.education_qualification !== 'Not specified') {
     return instructor.education_qualification;
@@ -655,7 +677,9 @@ watch(() => props.content?.home_hero_image, (newImageUrl, oldImageUrl) => {
 // Watch for language changes
 watch(currentLanguage, (newLang, oldLang) => {
   console.log('Language changed from', oldLang, 'to', newLang);
+  console.log('Current content props:', props.content);
   refreshIcons();
+  contentRefreshKey.value++; // Force content refresh
   
   setTimeout(() => {
     if (window.FontAwesome && window.FontAwesome.dom && window.FontAwesome.dom.i2svg) {
@@ -664,8 +688,25 @@ watch(currentLanguage, (newLang, oldLang) => {
   }, 200);
 });
 
+// Watch translation version for reactivity
+watch(translationVersion, () => {
+  console.log('Translation version changed, refreshing content');
+  contentRefreshKey.value++; // Force content refresh
+});
+
+// Watch for props.content changes
+watch(() => props.content, (newContent, oldContent) => {
+  if (newContent !== oldContent) {
+    console.log('Content props updated:', newContent);
+    contentRefreshKey.value++;
+  }
+}, { deep: true });
+
 // Lifecycle hooks
 onMounted(() => {
+  // Check if we're in development mode
+  isDevelopment.value = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  
   // Get initial theme
   const savedTheme = localStorage.getItem('preferredTheme')
   const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -674,6 +715,11 @@ onMounted(() => {
   
   // Preload hero image
   preloadHeroImage();
+  
+  // Log the received content for debugging
+  console.log('🏠 Home Page Mounted - Content Received:', props.content);
+  console.log('🏠 Home Page Mounted - Language:', currentLanguage.value);
+  console.log('🏠 Home Page Mounted - Display Content:', displayContent.value);
   
   // Listen for theme changes
   window.addEventListener('themeChanged', handleThemeChange)
@@ -686,20 +732,18 @@ onMounted(() => {
   
   // Initialize icons
   refreshIcons()
-  
-  console.log('Home page mounted with language:', currentLanguage.value)
-  console.log('Home page content received:', props.content)
-  console.log('Hero image URL:', heroImageUrl.value)
 })
 
 onUnmounted(() => {
   window.removeEventListener('themeChanged', handleThemeChange)
   window.removeEventListener('languageChanged', handleLanguageChange)
-  window.removemountedEventListener('contentRefresh', refreshIcons)
+  window.removeEventListener('contentRefresh', refreshIcons)
 })
 </script>
 
 <style scoped>
+/* Your existing CSS styles remain exactly the same */
+/* ... all the CSS from your original file ... */
 
 /* Ensure View Course button uses primary color */
 .course-card .btn-primary {
@@ -713,6 +757,7 @@ onUnmounted(() => {
   border-color: var(--primary-hover) !important;
   color: white !important;
 }
+
 /* ==================== */
 /* HERO IMAGE STYLES */
 /* ==================== */
@@ -1004,9 +1049,7 @@ onUnmounted(() => {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px color-mix(in srgb, var(--primary-color) 30%, transparent);
 }
-btn btn-primary {
-  color: --var(--primary-color);
-}
+
 /* ==================== */
 /* LINE-CLAMP UTILITIES */
 /* ==================== */
@@ -1405,5 +1448,20 @@ btn btn-primary {
     flex-direction: column;
     gap: 1rem;
   }
+}
+
+/* Debug Section Styles */
+.debug-section {
+  border: 2px solid #e53e3e;
+  border-radius: 8px;
+  font-family: monospace;
+}
+
+.debug-section pre {
+  background: #f7fafc;
+  padding: 10px;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 12px;
 }
 </style>

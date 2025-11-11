@@ -115,13 +115,13 @@
                   <div class="language-utility">
                     <div class="language-switcher-nav">
                       <button 
-                        @click="switchLanguageWithIcons('bn')"
+                        @click="switchLanguage('bn')"
                         :class="['lang-btn-nav', { 'active': currentLanguage === 'bn' }]"
                       >
                         Bn
                       </button>
                       <button 
-                        @click="switchLanguageWithIcons('en')"
+                        @click="switchLanguage('en')"
                         :class="['lang-btn-nav', { 'active': currentLanguage === 'en' }]"
                       >
                         En
@@ -133,14 +133,30 @@
                   <div class="profile-utility" v-if="$page.props.auth.user">
                     <div class="profile-wrapper">
                       <button class="profile-trigger" @click="toggleProfileDropdown">
-                        <i class="fas fa-user-circle"></i>
+                        <!-- Dynamic Avatar Image -->
+                        <img 
+                          v-if="studentAvatar && !avatarError" 
+                          :src="studentAvatar" 
+                          alt="Profile" 
+                          class="avatar-image"
+                          @error="handleAvatarError"
+                        >
+                        <i v-else class="fas fa-user-circle fallback-avatar"></i>
                         <i class="fas fa-chevron-down" :class="{ 'rotate': profileOpen }"></i>
                       </button>
                       
                       <div class="profile-dropdown" v-show="profileOpen" v-click-outside="closeProfileDropdown">
                         <div class="dropdown-header">
                           <div class="student-info">
-                            <i class="fas fa-user-circle student-avatar"></i>
+                            <!-- Dynamic Avatar Image -->
+                            <img 
+                              v-if="studentAvatar && !avatarError" 
+                              :src="studentAvatar" 
+                              alt="Profile" 
+                              class="student-avatar-image"
+                              @error="handleAvatarError"
+                            >
+                            <i v-else class="fas fa-user-circle student-avatar fallback-avatar"></i>
                             <div class="student-details">
                               <div class="student-name">{{ $page.props.auth.user.name }}</div>
                               <div class="student-email">{{ $page.props.auth.user.email }}</div>
@@ -323,7 +339,15 @@
                       <li class="mobile-profile-section">
                         <div class="mobile-profile-header">
                           <div class="mobile-student-info">
-                            <i class="fas fa-user-circle"></i>
+                            <!-- Dynamic Avatar Image for Mobile -->
+                            <img 
+                              v-if="studentAvatar && !avatarError" 
+                              :src="studentAvatar" 
+                              alt="Profile" 
+                              class="mobile-avatar-image"
+                              @error="handleAvatarError"
+                            >
+                            <i v-else class="fas fa-user-circle fallback-avatar"></i>
                             <div class="mobile-student-details">
                               <div class="mobile-student-name">{{ $page.props.auth.user.name }}</div>
                               <div class="mobile-student-email">{{ $page.props.auth.user.email }}</div>
@@ -364,7 +388,7 @@ import { ref, onMounted, watch, nextTick, computed } from 'vue'
 import { useTranslation } from '@/composables/useTranslation'
 
 // Use the global translation composable
-const { currentLanguage, t, switchLanguage } = useTranslation()
+const { currentLanguage, t } = useTranslation()
 
 // Reactive data
 const mobileOpen = ref(false)
@@ -376,6 +400,58 @@ const showMobileSuggestions = ref(false)
 const courseSuggestions = ref([])
 const isLoadingSuggestions = ref(false)
 const iconErrors = ref(0)
+const studentAvatar = ref(null) // Add this for student avatar
+const avatarError = ref(false) // Add this to track avatar loading errors
+
+// Add method to fetch student avatar
+const fetchStudentAvatar = async () => {
+  try {
+    if (!$page.props.auth.user) {
+      studentAvatar.value = null
+      avatarError.value = false
+      return
+    }
+
+    console.log('👤 Fetching student avatar for user:', $page.props.auth.user.id)
+
+    // Fetch student data including profile picture
+    const response = await fetch('/api/student-profile')
+    
+    if (response.ok) {
+      const data = await response.json()
+      
+      if (data.student && data.student.profile_picture_url) {
+        studentAvatar.value = data.student.profile_picture_url
+        avatarError.value = false
+        console.log('✅ Student avatar loaded:', data.student.profile_picture_url)
+      } else {
+        studentAvatar.value = null
+        avatarError.value = false
+        console.log('ℹ️ No avatar found for student, using fallback')
+      }
+    } else {
+      console.error('❌ Failed to fetch student profile')
+      studentAvatar.value = null
+      avatarError.value = false
+    }
+  } catch (error) {
+    console.error('❌ Error fetching student avatar:', error)
+    studentAvatar.value = null
+    avatarError.value = false
+  }
+}
+
+// Add method to handle avatar loading errors
+const handleAvatarError = (event) => {
+  console.warn('⚠️ Avatar image failed to load, using fallback')
+  avatarError.value = true
+  studentAvatar.value = null
+  
+  // Remove the broken image to prevent showing broken image icon
+  if (event.target) {
+    event.target.style.display = 'none'
+  }
+}
 
 // Enhanced refresh icons function
 const refreshIcons = () => {
@@ -444,39 +520,50 @@ const handleIconError = (event) => {
 
 // Global language state management
 const initializeLanguage = () => {
-  // Check multiple sources for language preference in order of priority
-  const urlParams = new URLSearchParams(window.location.search)
-  const urlLang = urlParams.get('lang')
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlLang = urlParams.get('lang');
+  const savedLang = localStorage.getItem('preferredLanguage');
   
-  // Priority: URL param > localStorage > browser default
-  let preferredLang = urlLang || localStorage.getItem('preferredLanguage')
+  let preferredLang = urlLang || savedLang || 'bn';
   
   if (!preferredLang || !['en', 'bn'].includes(preferredLang)) {
-    // Detect browser language
-    const browserLang = navigator.language || navigator.userLanguage
-    preferredLang = browserLang.startsWith('bn') ? 'bn' : 'en'
+    const browserLang = navigator.language || navigator.userLanguage;
+    preferredLang = browserLang.startsWith('bn') ? 'bn' : 'en';
   }
   
-  // Apply the language if different from current
+  // Ensure URL has the language parameter
+  if (!urlLang) {
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('lang', preferredLang);
+    window.history.replaceState({}, '', currentUrl.toString());
+    console.log('🔗 Added language parameter to URL:', preferredLang);
+  }
+  
+  // Update the translation system
   if (preferredLang !== currentLanguage.value) {
-    console.log('🌐 Initializing language to:', preferredLang)
-    switchLanguage(preferredLang)
-    localStorage.setItem('preferredLanguage', preferredLang)
+    console.log('🌐 Initializing language to:', preferredLang);
+    switchLanguage(preferredLang);
+    localStorage.setItem('preferredLanguage', preferredLang);
+    
+    // Force translation update
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('forceTranslationRefresh'));
+    }, 100);
   }
   
-  // Ensure language parameter is always present in URL
-  ensureLanguageParameter()
+  ensureLanguageParameter();
 }
 
 // Function to ensure language parameter is always present in URL
 const ensureLanguageParameter = () => {
-  const currentUrl = new URL(window.location.href)
-  const currentLang = currentLanguage.value
+  const currentUrl = new URL(window.location.href);
+  const currentLang = currentLanguage.value;
   
-  // If no lang parameter, add it based on current language
-  if (!currentUrl.searchParams.has('lang')) {
-    currentUrl.searchParams.set('lang', currentLang)
-    window.history.replaceState(null, '', currentUrl.toString())
+  // Always ensure lang parameter is present and correct
+  if (!currentUrl.searchParams.has('lang') || currentUrl.searchParams.get('lang') !== currentLang) {
+    currentUrl.searchParams.set('lang', currentLang);
+    window.history.replaceState({}, '', currentUrl.toString());
+    console.log('🔗 Ensured language parameter:', currentLang);
   }
 }
 
@@ -497,82 +584,75 @@ const navigateWithLanguage = (url, options = {}) => {
     ...options
   })
 }
-
+// Simple but effective language switch
+const switchLanguage = (lang) => {
+  if (lang === currentLanguage.value) return;
+  
+  console.log('🌐 Switching language to:', lang);
+  
+  // Update URL with language parameter
+  const url = new URL(window.location.href);
+  url.searchParams.set('lang', lang);
+  
+  // Simple page reload with new language
+  window.location.href = url.toString();
+};
 // Enhanced language switching with complete persistence and URL preservation
 const switchLanguageWithIcons = async (lang) => {
-  if (lang === currentLanguage.value) return // No change needed
-  
+  if (lang === currentLanguage.value) return;
+
   try {
-    console.log('🌐 Switching language to:', lang)
+    console.log('🌐 Switching language to:', lang);
     
     // Close all dropdowns first
-    closeAll()
+    closeAll();
     
     // Show loading state for icons
-    document.body.classList.add('language-switching')
+    document.body.classList.add('language-switching');
     
     // Update the translation composable
-    switchLanguage(lang)
+    switchLanguage(lang);
     
     // Persist to localStorage
-    localStorage.setItem('preferredLanguage', lang)
+    localStorage.setItem('preferredLanguage', lang);
+    
+    // Update URL
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('lang', lang);
+    window.history.replaceState({}, '', currentUrl.toString());
+    
+    // Force translation refresh for all components
+    window.dispatchEvent(new CustomEvent('forceTranslationRefresh', {
+      detail: { language: lang }
+    }));
     
     // Update document class for RTL/LTR support
-    document.documentElement.classList.remove('bn-lang', 'en-lang')
-    document.documentElement.classList.add(`${lang}-lang`)
-    
-    // Get current URL and update lang parameter
-    const currentUrl = new URL(window.location.href)
-    currentUrl.searchParams.set('lang', lang)
+    document.documentElement.classList.remove('bn-lang', 'en-lang');
+    document.documentElement.classList.add(`${lang}-lang`);
     
     // Force icon refresh before navigation
-    await nextTick()
-    refreshIcons()
+    await nextTick();
+    refreshIcons();
     
     // Dispatch global event for all components
     window.dispatchEvent(new CustomEvent('languageChanged', { 
       detail: { 
         language: lang,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        source: 'header'
       } 
-    }))
+    }));
     
-    // Use Inertia to visit current page with new language
-    router.visit(currentUrl.toString(), {
-      preserveState: true,
-      preserveScroll: true,
-      replace: true,
-      onSuccess: () => {
-        console.log('✅ Language switched successfully to:', lang)
-        
-        // Multiple icon refresh attempts
-        setTimeout(() => refreshIcons(), 100)
-        setTimeout(() => refreshIcons(), 500)
-        setTimeout(() => refreshIcons(), 1000)
-        
-        document.body.classList.remove('language-switching')
-      },
-      onError: (errors) => {
-        console.error('❌ Error switching language:', errors)
-        // Fallback: update URL without reloading entire page
-        window.history.replaceState(null, '', currentUrl.toString())
-        
-        // Multiple icon refresh attempts on error too
-        setTimeout(() => refreshIcons(), 100)
-        setTimeout(() => refreshIcons(), 500)
-        
-        document.body.classList.remove('language-switching')
-      }
-    })
+    // For same-page language switch, we don't need to reload
+    // Just force update all reactive translations
+    setTimeout(() => {
+      refreshIcons();
+      document.body.classList.remove('language-switching');
+    }, 300);
     
   } catch (error) {
-    console.error('❌ Error switching language:', error)
-    document.body.classList.remove('language-switching')
-    
-    // Final fallback
-    const currentUrl = new URL(window.location.href)
-    currentUrl.searchParams.set('lang', lang)
-    window.location.href = currentUrl.toString()
+    console.error('❌ Error switching language:', error);
+    document.body.classList.remove('language-switching');
   }
 }
 
@@ -777,10 +857,21 @@ const logoutMobile = () => {
 
 // Lifecycle hooks
 onMounted(() => {
-  console.log('🚀 FrontendHeader mounted - initializing language, theme, and icons')
+  console.log('🚀 FrontendHeader mounted - initializing language, theme, and icons');
   
-  // Initialize language first
-  initializeLanguage()
+  // Force URL synchronization first
+  const currentUrl = new URL(window.location.href);
+  const urlLang = currentUrl.searchParams.get('lang');
+  const savedLang = localStorage.getItem('preferredLanguage');
+  
+  if (!urlLang && savedLang) {
+    currentUrl.searchParams.set('lang', savedLang);
+    window.history.replaceState({}, '', currentUrl.toString());
+    console.log('🔗 Mounted: Synchronized URL with saved language:', savedLang);
+  }
+  
+  // Then initialize language system
+  initializeLanguage();
   
   // Ensure Font Awesome is loaded
   loadFontAwesome()
@@ -789,6 +880,11 @@ onMounted(() => {
   setTimeout(() => {
     refreshIcons()
   }, 500)
+  
+  // Fetch student avatar if user is logged in
+  if ($page.props.auth.user) {
+    fetchStudentAvatar()
+  }
   
   // Then load other resources
   fetchCourseSuggestions()
@@ -862,6 +958,20 @@ watch(currentLanguage, (newLang, oldLang) => {
   }
 })
 
+// Watch for auth changes to fetch avatar when user logs in
+watch(() => $page.props.auth.user, (newUser, oldUser) => {
+  if (newUser && newUser.id !== (oldUser?.id)) {
+    // User changed or logged in, fetch their avatar
+    console.log('👤 User changed, fetching avatar...')
+    fetchStudentAvatar()
+  } else if (!newUser) {
+    // User logged out, clear avatar
+    console.log('👤 User logged out, clearing avatar...')
+    studentAvatar.value = null
+    avatarError.value = false
+  }
+})
+
 // Click outside directive
 const vClickOutside = {
   mounted(el, binding) {
@@ -924,6 +1034,35 @@ const vClickOutside = {
 .en-lang :deep(i[class*="fa-"]) {
   visibility: visible !important;
   opacity: 1 !important;
+}
+
+/* Avatar image styles */
+.avatar-image {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border-color);
+}
+
+.student-avatar-image {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--primary-color);
+}
+
+.mobile-avatar-image {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border-color);
+}
+
+.fallback-avatar {
+  color: var(--primary-color);
 }
 
 /* Base header styles using CSS variables */
@@ -1293,7 +1432,7 @@ const vClickOutside = {
   align-items: center;
   gap: 6px;
   background: var(--bg-secondary);
-  padding: 8px 12px;
+  padding: 6px 12px;
   border-radius: 16px;
   border: none;
   color: var(--text-primary);
@@ -1307,11 +1446,6 @@ const vClickOutside = {
 
 .profile-trigger:hover {
   background: var(--bg-tertiary);
-}
-
-.profile-trigger i.fa-user-circle {
-  font-size: 18px;
-  color: var(--primary-color);
 }
 
 .profile-trigger .fa-chevron-down {

@@ -1,5 +1,5 @@
 // resources/js/composables/useTranslation.js
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 
 export const translations = {
   en: {
@@ -430,7 +430,38 @@ export const translations = {
     'Error sharing certificate: {error}': 'Error sharing certificate: {error}',
     'This will export all your certificates as a ZIP file. Continue?': 'This will export all your certificates as a ZIP file. Continue?',
     'Export feature coming soon!': 'Export feature coming soon!',
-    'Error exporting certificates: {error}': 'Error exporting certificates: {error}'
+    'Error exporting certificates: {error}': 'Error exporting certificates: {error}',
+    'View All Courses': 'View All Courses',
+    'View All Instructors': 'View All Instructors',
+    'Ready to Start Learning?': 'Ready to Start Learning?',
+    'Join thousands of students already learning with Pathshala': 'Join thousands of students already learning with Pathshala',
+    'Get Started Today': 'Get Started Today',
+    'Who We Are': 'Who We Are',
+  'Empowering Students to Reach Their Potential': 'Empowering Students to Reach Their Potential',
+  'about_story_content': 'Pathshala LMS was founded with a simple yet powerful vision: to make quality education accessible to everyone, everywhere...',
+  'Our Mission': 'Our Mission',
+  'about_mission_content': 'To democratize education by providing high-quality, accessible, and affordable learning opportunities...',
+  'Our Vision': 'Our Vision',
+  'about_vision_content': 'To create a world where anyone, anywhere can transform their life through access to the world\'s best learning experiences...',
+  'World Class Instructors': 'World Class Instructors',
+  'Access Anywhere': 'Access Anywhere',
+  'Flexible Course Plan': 'Flexible Course Plan',
+  'Provide accessible education': 'Provide accessible education',
+  'Foster lifelong learning': 'Foster lifelong learning',
+  'Bridge skills gap': 'Bridge skills gap',
+  'Promote innovation': 'Promote innovation',
+  'Global learning community': 'Global learning community',
+  'Personalized learning paths': 'Personalized learning paths',
+  'Industry-relevant curriculum': 'Industry-relevant curriculum',
+  'Continuous innovation': 'Continuous innovation',
+  'About Pathshala' : 'About Pathshala',
+  'Transforming Education Through Innovation' : 'Transforming Education Through Innovation',
+  'Pathshala LMS was founded with a simple yet powerful vision: to make quality education accessible to everyone, everywhere. We believe that learning should be engaging, personalized, and available to all regardless of geographical or financial barriers.' : 'Pathshala LMS was founded with a simple yet powerful vision: to make quality education accessible to everyone, everywhere. We believe that learning should be engaging, personalized, and available to all regardless of geographical or financial barriers.',
+  'To democratize education by providing high-quality, accessible, and affordable learning opportunities that empower individuals to achieve their personal and professional goals.' : 'To democratize education by providing high-quality, accessible, and affordable learning opportunities that empower individuals to achieve their personal and professional goals.',
+  'To create a world where anyone, anywhere can transform their life through access to the world\'s best learning experiences and educational resources.' : 'To create a world where anyone, anywhere can transform their life through access to the world\'s best learning experiences and educational resources.',
+  'Learning is What You Make of it. Make it Yours at PathShala LMS.' : 'Learning is What You Make of it. Make it Yours at PathShala LMS.',
+  'Unlock your potential with our expert-led courses and transform your life.' : 'Unlock your potential with our expert-led courses and transform your life.',
+  'Learn from experienced professionals' : 'অভিজ্ঞ পেশাদারদের কাছ থেকে শিখুন'
   },
   bn: {
     // Header & Navigation
@@ -859,39 +890,121 @@ export const translations = {
     'Error sharing certificate: {error}': 'সার্টিফিকেট শেয়ার করতে ত্রুটি: {error}',
     'This will export all your certificates as a ZIP file. Continue?': 'এটি আপনার সমস্ত সার্টিফিকেট একটি জিপ ফাইল হিসাবে এক্সপোর্ট করবে। চালিয়ে যাবেন?',
     'Export feature coming soon!': 'এক্সপোর্ট ফিচার শীঘ্রই আসছে!',
-    'Error exporting certificates: {error}': 'সার্টিফিকেট এক্সপোর্ট করতে ত্রুটি: {error}'
+    'Error exporting certificates: {error}': 'সার্টিফিকেট এক্সপোর্ট করতে ত্রুটি: {error}',
+    'View All Courses': 'সমস্ত কোর্স দেখুন',
+    'View All Instructors': 'সমস্ত ইন্সট্রাক্টর দেখুন',
+    'Ready to Start Learning?': 'শেখা শুরু করতে প্রস্তুত?',
+    'Join thousands of students already learning with Pathshala': 'হাজার হাজার শিক্ষার্থীর সাথে যোগ দিন যারা ইতিমধ্যেই পাঠশালায় শিখছে',
+    'Get Started Today': 'আজই শুরু করুন',
+    'Who We Are': 'আমরা কারা',
+  'Empowering Students to Reach Their Potential': 'শিক্ষার্থীদের তাদের সম্ভাবনা পূরণে সক্ষম করা',
+  'about_story_content': 'পাঠশালা একটি সহজ কিন্তু শক্তিশালী ভিশন নিয়ে প্রতিষ্ঠিত হয়েছিল: মানসম্মত শিক্ষা সবার জন্য, সর্বত্র সহজলভ্য করা...',
+  'Our Mission': 'আমাদের মিশন',
+  'about_mission_content': 'উচ্চ-গুণমান, সহজলভ্য এবং সাশ্রয়ী মূল্যের শিক্ষার সুযোগ প্রদানের মাধ্যমে শিক্ষাকে গণতান্ত্রিক করা...',
+  'Our Vision': 'আমাদের ভিশন',
+  'about_vision_content': 'এমন একটি বিশ্ব তৈরি করা যেখানে anyone, anywhere বিশ্বের সেরা লার্নিং অভিজ্ঞতা এবং শিক্ষাগত সম্পদের অ্যাক্সেসের মাধ্যমে তাদের জীবন পরিবর্তন করতে পারে...',
+  'World Class Instructors': 'বিশ্বমানের ইন্সট্রাক্টর',
+  'Access Anywhere': 'যেকোনো জায়গা থেকে অ্যাক্সেস করুন',
+  'Flexible Course Plan': 'নমনীয় কোর্স পরিকল্পনা',
+  'Provide accessible education': 'সবার জন্য সহজলভ্য শিক্ষা প্রদান',
+  'Foster lifelong learning': 'আজীবন শিক্ষার অভ্যাস গড়ে তোলা',
+  'Bridge skills gap': 'কর্মশক্তিতে দক্ষতার ফাঁক পূরণ করা',
+  'Promote innovation': 'শিক্ষায় উদ্ভাবন প্রচার করা',
+  'Global learning community': 'বৈশ্বিক শিক্ষা সম্প্রদায়',
+  'Personalized learning paths': 'ব্যক্তিগতকৃত শিক্ষার পথ',
+  'Industry-relevant curriculum': 'শিল্প-প্রাসঙ্গিক পাঠ্যক্রম',
+  'Continuous innovation': 'এডুটেকে ধারাবাহিক উদ্ভাবন',
+  'About Pathshala' : 'পাঠশালার ব্যাপারে',
+  'Transforming Education Through Innovation' : 'উদ্ভাবনের মাধ্যমে শিক্ষার রূপান্তর',
+  'Pathshala LMS was founded with a simple yet powerful vision: to make quality education accessible to everyone, everywhere. We believe that learning should be engaging, personalized, and available to all regardless of geographical or financial barriers.' : 'পাঠশালা LMS একটি সহজ কিন্তু শক্তিশালী দৃষ্টিভঙ্গি নিয়ে প্রতিষ্ঠিত হয়েছিল: সর্বত্র, সকলের জন্য মানসম্মত শিক্ষা সহজলভ্য করা। আমরা বিশ্বাস করি যে শিক্ষাগ্রহণ আকর্ষণীয়, ব্যক্তিগতকৃত এবং ভৌগোলিক বা আর্থিক বাধা নির্বিশেষে সকলের জন্য উপলব্ধ হওয়া উচিত।',
+  'To democratize education by providing high-quality, accessible, and affordable learning opportunities that empower individuals to achieve their personal and professional goals.' : 'উচ্চমানের, সহজলভ্য এবং সাশ্রয়ী মূল্যের শিক্ষার সুযোগ প্রদানের মাধ্যমে শিক্ষাকে গণতন্ত্রীকরণ করা যা ব্যক্তিদের তাদের ব্যক্তিগত এবং পেশাগত লক্ষ্য অর্জনে সক্ষম করে।',
+  'To create a world where anyone, anywhere can transform their life through access to the world\'s best learning experiences and educational resources.' : 'এমন একটি পৃথিবী তৈরি করা যেখানে যে কেউ, যে কোনও জায়গা থেকে বিশ্বের সেরা শেখার অভিজ্ঞতা এবং শিক্ষামূলক সম্পদের অ্যাক্সেসের মাধ্যমে তাদের জীবনকে বদলে দিতে পারে।',
+  'Learning is What You Make of it. Make it Yours at PathShala LMS.' : 'শেখাই হলো তোমার জন্য উপকারী। পাঠশালা LMS এর সাহায্যে এটিকে সহজ করে নাও।',
+  'Unlock your potential with our expert-led courses and transform your life.' : 'আমাদের বিশেষজ্ঞ-নেতৃত্বাধীন কোর্সগুলির মাধ্যমে আপনার সম্ভাবনাকে উন্মোচন করুন এবং আপনার জীবনকে রূপান্তরিত করুন।'
   }
 }
 
-// Create a reactive current language with proper initialization
-const currentLanguage = ref('en')
+const currentLanguage = ref('bn')
 
-// Initialize language from localStorage or default
+// Track translation updates for reactivity
+const translationVersion = ref(0)
+
+// Enhanced initializeLanguage function - REMOVED URL PARAMETER HANDLING
 const initializeLanguage = () => {
   if (typeof window !== 'undefined') {
-    // Check URL parameter first
-    const urlParams = new URLSearchParams(window.location.search)
-    const urlLang = urlParams.get('lang')
-    
-    // Check localStorage next
-    const savedLang = localStorage.getItem('preferredLanguage')
-    
-    // Priority: URL param > localStorage > default
-    let lang = urlLang || savedLang || 'en'
+    // Get language from localStorage or default to 'bn'
+    const savedLang = localStorage.getItem('preferredLanguage') || 'bn';
     
     // Validate language
-    if (!['en', 'bn'].includes(lang)) {
-      lang = 'en'
-    }
+    let lang = ['en', 'bn'].includes(savedLang) ? savedLang : 'bn';
     
-    currentLanguage.value = lang
-    applyLanguageSettings(lang)
+    // Clean up any existing lang parameters from URL
+    cleanUrlLanguageParameter();
+    
+    currentLanguage.value = lang;
+    applyLanguageSettings(lang);
     
     console.log('🌐 Language initialized to:', lang, {
-      fromURL: urlLang,
       fromStorage: savedLang,
       final: lang
-    })
+    });
+    
+    // Force a re-render of translations
+    window.dispatchEvent(new CustomEvent('languageInitialized', { 
+      detail: { language: lang } 
+    }));
+    
+    // Increment translation version for reactivity
+    translationVersion.value++;
+  }
+}
+
+// Function to clean URL language parameters
+const cleanUrlLanguageParameter = () => {
+  if (typeof window !== 'undefined') {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('lang')) {
+      urlParams.delete('lang');
+      const newUrl = window.location.pathname + (urlParams.toString() ? `?${urlParams.toString()}` : '');
+      window.history.replaceState({}, '', newUrl);
+      console.log('🧹 Cleaned lang parameter from URL');
+    }
+  }
+}
+
+// Enhanced translation function with reactivity
+export const t = (key, replacements = {}) => {
+  if (!key) return ''
+  
+  // Access translation version for reactivity (even if not used directly)
+  const version = translationVersion.value;
+  
+  let translated = translations[currentLanguage.value]?.[key] || 
+                  translations['en']?.[key] || 
+                  key
+  
+  // Debug logging for missing translations in development
+  if (process.env.NODE_ENV !== 'production') {
+    if (!translations[currentLanguage.value]?.[key] && !translations['en']?.[key]) {
+      console.warn(`🚨 Translation missing: "${key}" in ${currentLanguage.value}`);
+    }
+  }
+  
+  // Handle replacements
+  Object.keys(replacements).forEach(replacementKey => {
+    const regex = new RegExp(`\\{${replacementKey}\\}`, 'g')
+    translated = translated.replace(regex, replacements[replacementKey])
+  })
+  
+  return translated
+}
+
+// Force translation update function
+export const forceTranslationUpdate = () => {
+  if (typeof window !== 'undefined') {
+    translationVersion.value++;
+    window.dispatchEvent(new CustomEvent('forceTranslationRefresh'));
+    console.log('🔄 Force translation update triggered');
   }
 }
 
@@ -922,64 +1035,54 @@ const applyLanguageSettings = (lang) => {
   }
 }
 
-// Translation function with enhanced capabilities
-export const t = (key, replacements = {}) => {
-  if (!key) return ''
-  
-  let translated = translations[currentLanguage.value]?.[key] || 
-                  translations['en']?.[key] || 
-                  key
-  
-  // Handle replacements
-  Object.keys(replacements).forEach(replacementKey => {
-    const regex = new RegExp(`\\{${replacementKey}\\}`, 'g')
-    translated = translated.replace(regex, replacements[replacementKey])
-  })
-  
-  return translated
-}
-
-// Enhanced switch language function
+// Enhanced switch language function - NO URL UPDATES
 export const switchLanguage = (lang) => {
   if (!lang || !['en', 'bn'].includes(lang)) {
-    console.warn('Invalid language:', lang)
-    return
+    console.warn('Invalid language:', lang);
+    return;
   }
   
   if (lang === currentLanguage.value) {
-    console.log('Language already set to:', lang)
-    return
+    console.log('Language already set to:', lang);
+    return;
   }
   
-  console.log('🔄 Switching language from', currentLanguage.value, 'to', lang)
+  console.log('🔄 Switching language from', currentLanguage.value, 'to', lang);
   
   // Update reactive value
-  currentLanguage.value = lang
+  currentLanguage.value = lang;
   
-  // Persist to localStorage
+  // Persist to localStorage ONLY - no URL changes
   if (typeof window !== 'undefined') {
-    localStorage.setItem('preferredLanguage', lang)
+    localStorage.setItem('preferredLanguage', lang);
     
-    // Update URL without page reload
-    const url = new URL(window.location)
-    url.searchParams.set('lang', lang)
-    window.history.replaceState({}, '', url)
+    // Clean any existing URL parameters
+    cleanUrlLanguageParameter();
   }
   
   // Apply language settings
-  applyLanguageSettings(lang)
+  applyLanguageSettings(lang);
+  
+  // Increment translation version for reactivity
+  translationVersion.value++;
   
   // Dispatch global event for all components
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('languageChanged', { 
       detail: { 
         language: lang,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        source: 'composable'
       } 
-    }))
+    }));
+    
+    // Force translation refresh
+    window.dispatchEvent(new CustomEvent('forceTranslationRefresh', {
+      detail: { language: lang }
+    }));
   }
   
-  console.log('✅ Language switched to:', lang)
+  console.log('✅ Language switched to:', lang);
 }
 
 // Handle global language changes
@@ -989,6 +1092,31 @@ const handleLanguageChange = (event) => {
     console.log('🔄 Language updated from global event:', newLang)
     currentLanguage.value = newLang
     applyLanguageSettings(newLang)
+    translationVersion.value++
+  }
+}
+
+// Setup URL watcher to clean parameters (instead of reading them)
+const setupUrlWatcher = () => {
+  if (typeof window !== 'undefined') {
+    // Override history methods to detect URL changes and clean lang parameters
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+
+    history.pushState = function (...args) {
+      originalPushState.apply(this, args);
+      setTimeout(cleanUrlLanguageParameter, 10);
+    };
+
+    history.replaceState = function (...args) {
+      originalReplaceState.apply(this, args);
+      setTimeout(cleanUrlLanguageParameter, 10);
+    };
+
+    // Listen for back/forward navigation and clean parameters
+    window.addEventListener('popstate', cleanUrlLanguageParameter);
+    
+    console.log('🔗 URL watcher setup - will clean lang parameters');
   }
 }
 
@@ -998,9 +1126,16 @@ export function useTranslation() {
   onMounted(() => {
     console.log('🚀 useTranslation composable mounted')
     initializeLanguage()
+    setupUrlWatcher()
     
     // Listen for global language changes
     window.addEventListener('languageChanged', handleLanguageChange)
+    
+    // Listen for force refresh events
+    window.addEventListener('forceTranslationRefresh', () => {
+      translationVersion.value++
+      console.log('🔄 Translation refresh triggered in composable')
+    })
     
     // Listen for storage changes (in case language is changed in another tab)
     window.addEventListener('storage', (event) => {
@@ -1018,18 +1153,31 @@ export function useTranslation() {
   onUnmounted(() => {
     console.log('🧹 useTranslation composable unmounted')
     window.removeEventListener('languageChanged', handleLanguageChange)
+    window.removeEventListener('forceTranslationRefresh', () => {})
+    window.removeEventListener('storage', () => {})
+  })
+
+  // Watch for language changes to provide reactive updates
+  watch(currentLanguage, (newLang, oldLang) => {
+    if (newLang !== oldLang) {
+      console.log('👀 Language changed in composable watch:', newLang)
+      translationVersion.value++
+    }
   })
 
   return {
     currentLanguage: computed(() => currentLanguage.value),
     t,
     switchLanguage,
+    forceTranslationUpdate,
+    translationVersion: computed(() => translationVersion.value),
     // Add helper methods
     isEnglish: computed(() => currentLanguage.value === 'en'),
     isBengali: computed(() => currentLanguage.value === 'bn'),
     // Add translation stats for debugging
     translationStats: computed(() => ({
       currentLanguage: currentLanguage.value,
+      translationVersion: translationVersion.value,
       totalTranslations: Object.keys(translations[currentLanguage.value] || {}).length,
       availableLanguages: Object.keys(translations)
     }))

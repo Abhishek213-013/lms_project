@@ -77,7 +77,7 @@ class CertificateController extends Controller
                 'course_title' => $class->name,
                 'course_category' => $class->category ?? 'General',
                 'student_name' => User::find($userId)->name,
-                'instructor_name' => $class->teacher->name ?? 'SkillGro Instructors',
+                'instructor_name' => $class->teacher->name ?? 'Pathshala Instructors',
                 'completion_date' => $completionDate->format('M d, Y'),
                 'issue_date' => $completionDate->format('M d, Y'),
                 'certificate_number' => 'SG' . str_pad($class->id, 6, '0', STR_PAD_LEFT) . str_pad($userId, 6, '0', STR_PAD_LEFT),
@@ -296,7 +296,7 @@ class CertificateController extends Controller
             'certificate_id' => $certificateId,
             'student_name' => $enrollment->user->name,
             'course_title' => $enrollment->class->name,
-            'instructor_name' => $enrollment->class->teacher->name ?? 'SkillGro Instructors',
+            'instructor_name' => $enrollment->class->teacher->name ?? 'Pathshala Instructors',
             'completion_date' => $enrollment->updated_at->format('M d, Y'),
             'issue_date' => $enrollment->updated_at->format('M d, Y'),
             'status' => 'verified'

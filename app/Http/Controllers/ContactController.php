@@ -16,8 +16,8 @@ class ContactController extends Controller
     {
         return Inertia::render('Frontend/Contact', [
             'meta' => [
-                'title' => 'Contact Us - SkillGro',
-                'description' => 'Get in touch with SkillGro. We\'re here to help with any questions about our courses and learning platform.'
+                'title' => 'Contact Us - Pathshala',
+                'description' => 'Get in touch with Pathshala. We\'re here to help with any questions about our courses and learning platform.'
             ],
             'contactInfo' => $this->getContactInfo(),
             'supportHours' => $this->getSupportHours()
@@ -112,7 +112,7 @@ class ContactController extends Controller
     private function getContactInfo()
     {
         return [
-            'email' => 'support@skillgro.com',
+            'email' => 'itlslhelpdesk@gmail.com',
             'phone' => '+1 (555) 123-4567',
             'address' => [
                 'street' => '123 Education Street',
@@ -195,7 +195,7 @@ class ContactController extends Controller
     {
         try {
             Mail::send('emails.contact-notification', $contactData, function($message) use ($contactData) {
-                $message->to('support@skillgro.com')
+                $message->to('itlslhelpdesk@gmail.com')
                         ->subject('New Contact Form Submission: ' . $contactData['subject'])
                         ->replyTo($contactData['email'], $contactData['name']);
             });
@@ -203,8 +203,8 @@ class ContactController extends Controller
             // Optional: Send confirmation email to user
             Mail::send('emails.contact-confirmation', $contactData, function($message) use ($contactData) {
                 $message->to($contactData['email'])
-                        ->subject('We\'ve received your message - SkillGro')
-                        ->from('noreply@skillgro.com', 'SkillGro Support');
+                        ->subject('We\'ve received your message - Pathshala')
+                        ->from('noreply@pathshala.com', 'Pathshala Support');
             });
 
         } catch (\Exception $e) {

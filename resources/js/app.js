@@ -1,12 +1,19 @@
+// resources/js/app.js
+
 import { createApp, h } from 'vue';
 import { createInertiaApp } from '@inertiajs/vue3';
 import { ZiggyVue } from 'ziggy-js';
+import { initializeGlobalLanguage } from './language-init';
+import { setupLanguageWatcher } from './language-watcher';
 
 // CSS import
 import '../css/app.css';
 import './bootstrap';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Pathshala LMS';
+
+// Initialize global language system FIRST
+initializeGlobalLanguage();
 
 // Complete translation system
 const translations = {
@@ -234,13 +241,33 @@ const translations = {
     }
 };
 
-// Global translation function
+// Enhanced global translation function with reactivity
 const globalT = (key, replacements = {}) => {
-    const currentLang = localStorage.getItem('preferredLanguage') || 'bn';
-    let translated = translations[currentLang]?.[key] || key;
+    // Get current language with fallback
+    let currentLang = 'bn';
+    try {
+        currentLang = localStorage.getItem('preferredLanguage') || 'bn';
+        // Ensure valid language
+        if (!['en', 'bn'].includes(currentLang)) {
+            currentLang = 'bn';
+            localStorage.setItem('preferredLanguage', 'bn');
+        }
+    } catch (error) {
+        console.warn('Error accessing localStorage, using default language:', error);
+        currentLang = 'bn';
+    }
     
+    let translated = translations[currentLang]?.[key] || translations['en']?.[key] || key;
+    
+    // Debug logging for missing translations
+    if (!translations[currentLang]?.[key] && !translations['en']?.[key]) {
+        console.warn(`🚨 Translation missing: "${key}" in ${currentLang}`);
+    }
+    
+    // Handle replacements
     Object.keys(replacements).forEach(replacementKey => {
-        translated = translated.replace(`{${replacementKey}}`, replacements[replacementKey]);
+        const regex = new RegExp(`\\{${replacementKey}\\}`, 'g');
+        translated = translated.replace(regex, replacements[replacementKey]);
     });
     
     return translated;
@@ -253,18 +280,15 @@ const isAdminPage = () => {
     return adminPaths.some(path => currentPath.startsWith(path));
 };
 
-// Initialize Bengali Fonts - UPDATED to exclude admin pages
+// Initialize Bengali Fonts
 const initializeBengaliFonts = () => {
-    // Method 1: Google Fonts (Kalpurush)
     const kalpurushLink = document.createElement('link');
     kalpurushLink.href = 'https://fonts.googleapis.com/css2?family=Kalpurush&display=swap';
     kalpurushLink.rel = 'stylesheet';
     document.head.appendChild(kalpurushLink);
 
-    // Method 2: Local Bengali font stack - UPDATED with admin page exclusion
     const style = document.createElement('style');
     style.textContent = `
-        /* Bengali font inheritance - EXCLUDES admin pages */
         .bn-lang:not(.admin-page) * {
             font-family: inherit !important;
         }
@@ -276,7 +300,6 @@ const initializeBengaliFonts = () => {
             line-height: 1.6;
         }
         
-        /* Admin pages always use Nunito Sans */
         .admin-page,
         .admin-page *,
         .admin-page.bn-lang,
@@ -284,14 +307,12 @@ const initializeBengaliFonts = () => {
             font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
         }
         
-        /* Improve readability for Bengali */
         .bn-lang:not(.admin-page) {
             text-rendering: optimizeLegibility;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
         
-        /* Specific adjustments for Bengali typography */
         .bn-lang:not(.admin-page) p {
             line-height: 1.8;
         }
@@ -308,30 +329,24 @@ const initializeBengaliFonts = () => {
     `;
     document.head.appendChild(style);
 
-    console.log('✅ Bengali fonts initialized with admin page exclusion');
+    console.log('✅ Bengali fonts initialized');
 };
 
-// Initialize language system - UPDATED with admin detection
+// Initialize language system
 const initializeLanguageSystem = () => {
-    // Set default language to Bengali if not set
-    if (!localStorage.getItem('preferredLanguage')) {
-        localStorage.setItem('preferredLanguage', 'bn');
-        console.log('🌐 Default language set to Bengali');
-    }
-    
     const currentLanguage = localStorage.getItem('preferredLanguage') || 'bn';
     
-    // Apply language class to body
     if (currentLanguage === 'bn') {
         document.body.classList.add('bn-lang');
+        document.body.classList.remove('en-lang');
     } else {
+        document.body.classList.add('en-lang');
         document.body.classList.remove('bn-lang');
     }
     
-    // Add admin-page class if current page is admin
     if (isAdminPage()) {
         document.body.classList.add('admin-page');
-        console.log('🚫 Admin page detected - Bengali font inheritance disabled');
+        console.log('🚫 Admin page detected');
     }
     
     console.log(`🌐 Language system initialized: ${currentLanguage}`);
@@ -340,7 +355,6 @@ const initializeLanguageSystem = () => {
 
 // Theme system functions
 const initializeThemeSystem = () => {
-    // Set default theme to light if not set
     const savedTheme = localStorage.getItem('preferredTheme');
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
@@ -369,7 +383,7 @@ const applyGlobalTheme = (theme) => {
         document.documentElement.classList.add('light-theme');
         document.documentElement.classList.remove('dark-theme');
         document.body.classList.add('light-theme');
-        document.body.classList.remove('light-theme');
+        document.body.classList.remove('dark-theme');
     }
 };
 
@@ -391,20 +405,28 @@ const provideTranslation = (vueApp) => {
     vueApp.config.globalProperties.currentLanguage = localStorage.getItem('preferredLanguage') || 'bn';
     vueApp.config.globalProperties.currentTheme = localStorage.getItem('preferredTheme') || 'light';
     
-    // Add language switching method - UPDATED with admin detection
+    // Enhanced language switching method
     vueApp.config.globalProperties.switchLanguage = (lang) => {
         if (lang === 'en' || lang === 'bn') {
+            console.log('🌐 Switching language to:', lang);
+            
             localStorage.setItem('preferredLanguage', lang);
             vueApp.config.globalProperties.currentLanguage = lang;
+            
+            // Update URL
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set('lang', lang);
+            window.history.replaceState({}, '', currentUrl.toString());
             
             // Update body class
             if (lang === 'bn') {
                 document.body.classList.add('bn-lang');
+                document.body.classList.remove('en-lang');
             } else {
+                document.body.classList.add('en-lang');
                 document.body.classList.remove('bn-lang');
             }
             
-            // Remove admin-page class if not admin page (to allow Bengali fonts)
             if (!isAdminPage()) {
                 document.body.classList.remove('admin-page');
             }
@@ -414,10 +436,21 @@ const provideTranslation = (vueApp) => {
                 ? 'পাঠশালা LMS - জ্ঞানকে শক্তিতে রূপান্তর'
                 : 'Pathshala LMS - Empower Minds';
             
-            // Dispatch event for all components to update
-            window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: lang } }));
+            // Dispatch comprehensive language change event
+            window.dispatchEvent(new CustomEvent('languageChanged', { 
+                detail: { 
+                    language: lang,
+                    source: 'global_switch',
+                    timestamp: Date.now()
+                } 
+            }));
             
-            console.log(`🌐 Language switched to: ${lang}`);
+            // Force translation refresh
+            window.dispatchEvent(new CustomEvent('forceTranslationRefresh', {
+                detail: { language: lang }
+            }));
+            
+            console.log(`✅ Language switched to: ${lang}`);
         }
     };
     
@@ -446,7 +479,6 @@ createInertiaApp({
         
         console.log(`🔍 Looking for page: ${name}`);
         
-        // Try multiple path patterns to find the component
         const paths = [
             `./Pages/${name}.vue`,
             `./Pages/${name}/Index.vue`,
@@ -472,16 +504,13 @@ createInertiaApp({
         }
         
         console.error(`❌ Page not found: ${name}`);
-        console.log('Available pages:', Object.keys(pages));
         
-        // Return the 404 page instead of a simple error component
         const errorPage = pages['./Pages/Frontend/Errors/404.vue'] || pages['./Pages/Errors/404.vue'];
         if (errorPage) {
             console.log('🔄 Falling back to 404 page');
             return errorPage.default ? errorPage.default : errorPage;
         }
         
-        // Final fallback
         return {
             render: () => h('div', `Page "${name}" not found.`)
         };
@@ -490,10 +519,11 @@ createInertiaApp({
     setup({ el, App, props, plugin }) {
         console.log('🚀 Starting Inertia app setup...');
         
-        // Safe props access with fallback
+        // Setup language watcher before creating Vue app
+        setupLanguageWatcher();
+        
         const safeProps = props || { initialPage: { props: { auth: { user: null }, ziggy: {} } } };
         
-        // Initialize all app systems with error handling
         let currentLang = 'bn';
         let currentTheme = 'light';
         
@@ -504,12 +534,11 @@ createInertiaApp({
             console.log('✅ App systems initialized');
         } catch (error) {
             console.error('❌ Error initializing app systems:', error);
-            // Set defaults
             currentLang = localStorage.getItem('preferredLanguage') || 'bn';
             currentTheme = localStorage.getItem('preferredTheme') || 'light';
         }
         
-        // Create Vue app with error boundary
+        // Create Vue app with enhanced language reactivity
         const vueApp = createApp({ 
             render: () => {
                 try {
@@ -523,10 +552,8 @@ createInertiaApp({
             }
         });
         
-        // Use Inertia plugin
         vueApp.use(plugin);
         
-        // Provide translation globally to all components with error handling
         try {
             provideTranslation(vueApp);
             console.log('✅ Translation system provided');
@@ -534,31 +561,57 @@ createInertiaApp({
             console.error('❌ Error providing translation:', error);
         }
         
-        // Add global mixin for translation with fallback
+        // Enhanced global mixin with better language reactivity
         vueApp.mixin({
+            data() {
+                return {
+                    // Reactive language state for components
+                    reactiveLanguage: localStorage.getItem('preferredLanguage') || 'bn',
+                    translationRefreshKey: 0
+                };
+            },
             methods: {
                 t(key, replacements = {}) {
                     try {
                         return globalT(key, replacements);
                     } catch (error) {
                         console.warn(`Translation error for key "${key}":`, error);
-                        return key; // Return the key as fallback
+                        return key;
                     }
+                },
+                // Force translation refresh in component
+                refreshTranslations() {
+                    this.translationRefreshKey += 1;
+                    this.$forceUpdate?.();
                 }
             },
-            mounted() {
-                // Listen for language changes from other components
-                window.addEventListener('languageChanged', (event) => {
-                    try {
-                        this.$forceUpdate?.();
-                    } catch (error) {
-                        console.warn('Error in language change handler:', error);
-                    }
-                });
+            created() {
+                // Listen for language changes and force updates
+                this.$languageChangeHandler = (event) => {
+                    this.reactiveLanguage = event.detail.language;
+                    this.translationRefreshKey += 1;
+                    this.$forceUpdate?.();
+                    console.log('🔄 Component language updated:', event.detail.language);
+                };
+                
+                this.$translationRefreshHandler = () => {
+                    this.translationRefreshKey += 1;
+                    this.$forceUpdate?.();
+                    console.log('🔄 Translations force-refreshed in component');
+                };
+                
+                window.addEventListener('languageChanged', this.$languageChangeHandler);
+                window.addEventListener('forceTranslationRefresh', this.$translationRefreshHandler);
+                window.addEventListener('languageChangedFromURL', this.$languageChangeHandler);
+            },
+            beforeUnmount() {
+                window.removeEventListener('languageChanged', this.$languageChangeHandler);
+                window.removeEventListener('forceTranslationRefresh', this.$translationRefreshHandler);
+                window.removeEventListener('languageChangedFromURL', this.$languageChangeHandler);
             }
         });
         
-        // Use Ziggy for route() function with robust error handling
+        // Use Ziggy for route() function
         try {
             const ziggyData = safeProps.initialPage?.props?.ziggy;
             if (ziggyData && ziggyData.url) {
@@ -570,18 +623,13 @@ createInertiaApp({
             } else {
                 console.warn('⚠️ Ziggy routes not available, creating fallback route function');
                 
-                // Enhanced fallback route function
                 vueApp.config.globalProperties.route = (name, params = {}, absolute = true) => {
                     try {
-                        // Enhanced route mapping with more routes
                         const routeMap = {
-                            // Core routes
                             'home': '/',
                             'login': '/login',
                             'registration': '/registration',
                             'logout': '/logout',
-                            
-                            // Student routes
                             'student.login': '/student-login',
                             'student.registration': '/student-registration',
                             'student.dashboard': '/student',
@@ -596,8 +644,6 @@ createInertiaApp({
                             'my-courses.new': '/my-courses',
                             'learning-progress.new': '/learning-progress',
                             'settings.new': '/settings',
-                            
-                            // Teacher routes
                             'teacher.dashboard': '/teacher',
                             'teacher.portal': '/teacher/portal',
                             'teacher.classes': '/teacher/classes',
@@ -605,19 +651,13 @@ createInertiaApp({
                             'teacher.assignments': '/teacher/assignments',
                             'teacher.analytics': '/teacher/analytics',
                             'teacher.settings': '/teacher/settings',
-                            
-                            // Admin routes
                             'admin': '/admin',
                             'super.admin': '/super-admin',
-                            
-                            // Frontend routes
                             'courses': '/courses',
                             'instructors': '/instructors',
                             'about': '/about',
                             'contact': '/contact',
                             'blog': '/blog',
-                            
-                            // Auth routes
                             'phone.verification': '/phone-verification',
                             'send.otp': '/send-otp',
                             'verify.otp': '/verify-otp'
@@ -630,7 +670,6 @@ createInertiaApp({
                             return absolute ? window.location.origin + '/' : '/';
                         }
                         
-                        // Handle parameters - enhanced replacement
                         if (params && typeof params === 'object') {
                             Object.keys(params).forEach(key => {
                                 const placeholder = `{${key}}`;
@@ -639,7 +678,6 @@ createInertiaApp({
                                 }
                             });
                             
-                            // Add query parameters for remaining params
                             const remainingParams = { ...params };
                             Object.keys(params).forEach(key => {
                                 if (url.includes(`{${key}}`)) {
@@ -663,21 +701,18 @@ createInertiaApp({
         } catch (error) {
             console.error('❌ Error setting up Ziggy:', error);
             
-            // Emergency fallback
             vueApp.config.globalProperties.route = (name) => {
                 console.warn(`Using emergency fallback for route: ${name}`);
                 return window.location.origin + '/';
             };
         }
         
-        // Add global error handler
         vueApp.config.errorHandler = (err, vm, info) => {
             console.error('Vue error caught:', err);
             console.error('Component:', vm);
             console.error('Info:', info);
         };
         
-        // Mount the app with error handling
         try {
             vueApp.mount(el);
             console.log('✅ Inertia.js app mounted successfully!');
@@ -685,10 +720,15 @@ createInertiaApp({
             console.log('🎨 Current theme:', currentTheme);
             console.log('👤 User auth:', safeProps.initialPage?.props?.auth);
             console.log('🏢 Is admin page:', isAdminPage());
+            
+            // Force initial translation refresh
+            setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('forceTranslationRefresh'));
+            }, 500);
+            
         } catch (mountError) {
             console.error('❌ Failed to mount Vue app:', mountError);
             
-            // Emergency rendering
             const emergencyApp = createApp({
                 render() {
                     return h('div', { 
@@ -707,7 +747,6 @@ createInertiaApp({
             emergencyApp.mount(el);
         }
         
-        // Global error listener
         window.addEventListener('error', (event) => {
             console.error('Global error:', event.error);
         });
@@ -723,7 +762,6 @@ import axios from 'axios';
 window.axios = axios;
 window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
-// Add CSRF token to all axios requests
 const csrfToken = document.querySelector('meta[name="csrf-token"]');
 if (csrfToken) {
     window.axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken.getAttribute('content');
@@ -731,11 +769,10 @@ if (csrfToken) {
     console.warn('⚠️ CSRF token meta tag not found');
 }
 
-// Language change event listener for global updates
+// Enhanced language change event listener
 window.addEventListener('languageChanged', (event) => {
-    console.log(`🌐 Language changed to: ${event.detail.language}`);
+    console.log(`🌐 Language changed to: ${event.detail.language} from ${event.detail.source}`);
     
-    // Update any global elements that need language-specific content
     const siteTitle = document.querySelector('title');
     if (siteTitle && event.detail.language === 'bn') {
         siteTitle.textContent = 'পাঠশালা LMS - জ্ঞানকে শক্তিতে রূপান্তর';
@@ -749,22 +786,38 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeAppSystems();
 });
 
-// Export language functions for global use
+// Export enhanced global functions
 window.PathshalaLMS = {
     switchLanguage: (lang) => {
-        localStorage.setItem('preferredLanguage', lang);
-        window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: lang } }));
-        
-        // Update body class
-        if (lang === 'bn') {
-            document.body.classList.add('bn-lang');
-        } else {
-            document.body.classList.remove('bn-lang');
-        }
-        
-        // Remove admin-page class if not admin page (to allow Bengali fonts)
-        if (!isAdminPage()) {
-            document.body.classList.remove('admin-page');
+        if (['en', 'bn'].includes(lang)) {
+            localStorage.setItem('preferredLanguage', lang);
+            
+            // Update URL
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set('lang', lang);
+            window.history.replaceState({}, '', currentUrl.toString());
+            
+            // Update body class
+            if (lang === 'bn') {
+                document.body.classList.add('bn-lang');
+                document.body.classList.remove('en-lang');
+            } else {
+                document.body.classList.add('en-lang');
+                document.body.classList.remove('bn-lang');
+            }
+            
+            // Dispatch comprehensive event
+            window.dispatchEvent(new CustomEvent('languageChanged', { 
+                detail: { 
+                    language: lang,
+                    source: 'global_api',
+                    timestamp: Date.now()
+                } 
+            }));
+            
+            window.dispatchEvent(new CustomEvent('forceTranslationRefresh'));
+            
+            console.log('🌐 Language switched via global API:', lang);
         }
     },
     getCurrentLanguage: () => {
@@ -779,7 +832,12 @@ window.PathshalaLMS = {
         return localStorage.getItem('preferredTheme') || 'light';
     },
     t: globalT,
-    isAdminPage: isAdminPage
+    isAdminPage: isAdminPage,
+    // New function to force translation refresh
+    refreshTranslations: () => {
+        window.dispatchEvent(new CustomEvent('forceTranslationRefresh'));
+        console.log('🔄 Manual translation refresh triggered');
+    }
 };
 
-console.log('🚀 Pathshala LMS app initialized with Bengali support and admin page detection');
+console.log('🚀 Pathshala LMS app initialized with enhanced translation system');

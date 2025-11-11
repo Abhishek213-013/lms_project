@@ -105,6 +105,9 @@ Route::prefix('api')->middleware('web')->group(function () {
     Route::post('/public/users/check-username', [UserController::class, 'checkUsernameAvailability']);
     Route::post('/public/users/check-email', [UserController::class, 'checkEmailAvailability']);
     
+    // Student Profile Public Route (for header avatar)
+    Route::get('/student-profile', [StudentProfileController::class, 'getStudentProfileForHeader'])->name('api.student-profile.header');
+    
     // Health check
     Route::get('/health', function () {
         return response()->json(['status' => 'OK', 'timestamp' => now()]);
@@ -536,6 +539,9 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/data', [StudentProfileController::class, 'getProfileData'])->name('api.student-profile.data');
             Route::put('/update', [StudentProfileController::class, 'updateProfile'])->name('api.student-profile.update');
             Route::post('/upload-avatar', [StudentProfileController::class, 'uploadAvatar'])->name('api.student-profile.upload-avatar');
+            
+            // Student profile for header (authenticated version)
+            Route::get('/header', [StudentProfileController::class, 'getStudentProfileForHeader'])->name('api.student-profile.header');
         });
 
         // ============ MY COURSES API ROUTES ============
@@ -663,3 +669,17 @@ Route::get('/debug-session', function() {
         'all_cookies' => request()->cookies->all()
     ]);
 });
+
+// Add to routes/web.php
+Route::get('/clear-lang', function() {
+    session()->forget('lang');
+    session()->save();
+    
+    return response()->json([
+        'message' => 'Language session cleared',
+        'new_session' => session()->all()
+    ]);
+});
+
+// In your routes/web.php
+Route::post('/switch-language', [FrontendController::class, 'switchLanguage']);

@@ -62,43 +62,49 @@ class Content extends Model
             return strpos($key, 'home_') === 0;
         }, ARRAY_FILTER_USE_KEY);
 
-        Log::info('Home content filtered for language ' . $language . ':', $homeContent);
+        Log::info('🏠 Home content filtered for language ' . $language . ':', $homeContent);
         
         return $homeContent;
     }
 
-    /**
-     * Get all content as key-value pairs with language support
-     */
     public static function getAllContent($language = 'en')
     {
         try {
-            Log::info('Fetching all content from database for language: ' . $language);
+            Log::info('🔍 Fetching all content from database for language: ' . $language);
             
             // Get all content from database
             $contentItems = static::all();
             
             $content = [];
             foreach ($contentItems as $item) {
-                // Use Bengali value if language is 'bn' and value_bn exists and is not empty
-                if ($language === 'bn' && !empty($item->value_bn)) {
-                    $content[$item->key] = $item->value_bn;
+                // If language is Bengali, use value_bn, otherwise use value
+                if ($language === 'bn') {
+                    // Use Bengali content if available, otherwise fallback to English
+                    if (!empty($item->value_bn) && trim($item->value_bn) !== '' && $item->value_bn !== 'null') {
+                        $content[$item->key] = $item->value_bn;
+                        Log::info("✅ Using Bengali content for key: {$item->key} = {$item->value_bn}");
+                    } else {
+                        $content[$item->key] = $item->value;
+                        Log::info("⚠️ No Bengali content, using English for key: {$item->key}");
+                    }
                 } else {
+                    // For English, always use value
                     $content[$item->key] = $item->value;
+                    Log::info("🌐 Using English content for key: {$item->key}");
                 }
             }
             
-            Log::info('Database content found for language ' . $language . ':', $content);
+            Log::info('📦 Database content found for language ' . $language . ':', $content);
             
             // Merge with defaults for any missing keys
             $defaults = self::getDefaultContent($language);
             $mergedContent = array_merge($defaults, $content);
             
-            Log::info('Final merged content for language ' . $language . ':', $mergedContent);
+            Log::info('🎯 Final merged content for language ' . $language . ':', $mergedContent);
             
             return $mergedContent;
         } catch (\Exception $e) {
-            Log::error('Error getting all content for language ' . $language . ': ' . $e->getMessage());
+            Log::error('💥 Error getting all content for language ' . $language . ': ' . $e->getMessage());
             return self::getDefaultContent($language);
         }
     }

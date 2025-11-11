@@ -36,7 +36,7 @@
               <div class="about__content-three text-center">
                 <div class="section__title mb-10">
                   <h2 class="title">
-                    {{ displayContent.about_our_story_title || t('Empowering Students to Reach Their Potential') }}
+                    {{ displayContent.about_our_story_title  }}
                   </h2>
                 </div>
                 <p class="desc">{{ displayContent.about_our_story_content || t('about_story_content') }}</p>
@@ -69,9 +69,9 @@
                 <div class="card-icon">
                   <i class="flaticon-target icon-fixed"></i>
                 </div>
-                <h3>{{ displayContent.about_mission_title || t('Our Mission') }}</h3>
+                <h3>{{ displayContent.about_mission_title}}</h3>
                 <p>
-                  {{ displayContent.about_mission_content || t('about_mission_content') }}
+                  {{ displayContent.about_mission_content}}
                 </p>
                 <ul class="mission-list">
                   <li><i class="fas fa-check icon-fixed"></i> {{ t('Provide accessible education') }}</li>
@@ -101,117 +101,193 @@
           </div>
         </div>
       </section>
+
+      <!-- Debug Section -->
+      <!-- <div v-if="isDevelopment" class="debug-section p-3 bg-gray-100 mt-5">
+        <div class="container">
+          <h3>Translation Debug Info:</h3>
+          <p><strong>Current Language:</strong> {{ currentLanguage }}</p>
+          <p><strong>Content Refresh Key:</strong> {{ contentRefreshKey }}</p>
+          <h4>Raw Content from Props:</h4>
+          <pre>{{ JSON.stringify(content, null, 2) }}</pre>
+          <h4>Translated Display Content:</h4>
+          <pre>{{ JSON.stringify(displayContent, null, 2) }}</pre>
+        </div>
+      </div> -->
     </div>
   </FrontendLayout>
 </template>
 
-<script>
+<script setup>
 import FrontendLayout from '../Layout/FrontendLayout.vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useTranslation } from '@/composables/useTranslation';
 
-export default {
-  name: 'AboutPage',
-  components: {
-    FrontendLayout
-  },
-  props: {
-    content: {
-      type: Object,
-      default: () => ({})
-    }
-  },
-  setup() {
-    const { currentLanguage, t, switchLanguage } = useTranslation();
-    return { currentLanguage, t, switchLanguage };
-  },
-  data() {
-    return {
-      loading: false,
-      currentTheme: 'light'
-    }
-  },
-  computed: {
-    displayContent() {
-      return Object.keys(this.content).length > 0 ? this.content : this.getDefaultContent();
-    },
-    themeImagePath() {
-      return (imageName = 'breadcrumb_bg.jpg') => {
-        const theme = this.currentTheme === 'dark' ? 'dark' : 'light';
-        return `/assets/img/bg/${theme}/${imageName}`;
-      };
-    },
-    themeShapePath() {
-      return (shapeName) => {
-        const theme = this.currentTheme === 'dark' ? 'dark' : 'light';
-        return `/assets/img/banner/${theme}/${shapeName}`;
-      };
-    },
-    themeIconPath() {
-      return (iconName) => {
-        const theme = this.currentTheme === 'dark' ? 'dark' : 'light';
-        return `/assets/img/icons/${theme}/${iconName}`;
-      };
-    }
-  },
-  watch: {
-    currentLanguage(newLang, oldLang) {
-      console.log('About page: Language changed from', oldLang, 'to', newLang);
-      this.refreshIcons();
-      
-      // Add a small delay to ensure DOM updates
-      setTimeout(() => {
-        this.refreshIcons();
-      }, 200);
-    }
-  },
-  mounted() {
-    this.loadThemePreference();
-    this.setupThemeListener();
-    console.log('About page content received:', this.content);
-    
-    // Initialize icons
-    this.refreshIcons();
-  },
-  methods: {
-    getDefaultContent() {
-      return {
-        about_banner_title: this.t('Who We Are'),
-        about_our_story_title: this.t('Empowering Students to Reach Their Potential'),
-        about_our_story_content: this.t('about_story_content'),
-        about_mission_title: this.t('Our Mission'),
-        about_mission_content: this.t('about_mission_content'),
-        about_vision_title: this.t('Our Vision'),
-        about_vision_content: this.t('about_vision_content')
-      };
-    },
-    loadThemePreference() {
-      const savedTheme = localStorage.getItem('preferredTheme');
-      if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
-        this.currentTheme = savedTheme;
-      } else {
-        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        this.currentTheme = systemPrefersDark ? 'dark' : 'light';
-      }
-    },
-    setupThemeListener() {
-      window.addEventListener('themeChanged', (event) => {
-        this.currentTheme = event.detail.theme;
-      });
-    },
-    refreshIcons() {
-      // Force Font Awesome to re-render icons
-      if (window.FontAwesome && window.FontAwesome.dom && window.FontAwesome.dom.i2svg) {
-        setTimeout(() => {
-          window.FontAwesome.dom.i2svg();
-        }, 100);
-      }
-    }
+// Define props
+const props = defineProps({
+  content: {
+    type: Object,
+    default: () => ({})
   }
-}
+});
+
+// Use translation composable
+const { t, currentLanguage, translationVersion, switchLanguage } = useTranslation()
+
+// Define props
+
+// Reactive data
+const loading = ref(false);
+const currentTheme = ref('light');
+const contentRefreshKey = ref(0);
+const isDevelopment = ref(false);
+
+// Computed properties
+const displayContent = computed(() => {
+  contentRefreshKey.value; // This makes the computed property reactive to language changes
+  
+  // Use props.content if available, otherwise use default content
+  const content = Object.keys(props.content).length > 0 ? props.content : getDefaultContent();
+  
+  // Translate the content based on current language
+  return translateContent(content);
+});
+
+const themeImagePath = computed(() => {
+  const theme = currentTheme.value === 'dark' ? 'dark' : 'light';
+  return `/assets/img/bg/${theme}/breadcrumb_bg.jpg`;
+});
+
+// Methods
+const getDefaultContent = () => {
+  return {
+    about_banner_title: 'Who We Are',
+    about_our_story_title: 'Empowering Students to Reach Their Potential',
+    about_our_story_content: 'Pathshala LMS was founded with a simple yet powerful vision: to make quality education accessible to everyone, everywhere. We believe that learning should be engaging, personalized, and available to all regardless of geographical or financial barriers.',
+    about_mission_title: 'Our Mission',
+    about_mission_content: 'To democratize education by providing high-quality, accessible, and affordable learning opportunities that empower individuals to achieve their personal and professional goals.',
+    about_vision_title: 'Our Vision',
+    about_vision_content: 'To create a world where anyone, anywhere can transform their life through access to the world\'s best learning experiences and educational resources.'
+  };
+};
+
+const translateContent = (content) => {
+  const translated = {};
+  
+  // Direct translation mapping - translate the actual content values
+  Object.keys(content).forEach(key => {
+    const contentValue = content[key];
+    
+    if (typeof contentValue === 'string' && contentValue.trim()) {
+      // Try to translate the actual string value
+      const translatedValue = t(contentValue);
+      
+      // If translation returned something different, use it
+      if (translatedValue !== contentValue) {
+        translated[key] = translatedValue;
+      } else {
+        // If no translation found, use the original
+        translated[key] = contentValue;
+      }
+    } else {
+      translated[key] = contentValue;
+    }
+  });
+  
+  console.log('🔄 About page translated content:', {
+    original: content,
+    translated: translated,
+    language: currentLanguage.value
+  });
+  
+  return translated;
+};
+
+const loadThemePreference = () => {
+  const savedTheme = localStorage.getItem('preferredTheme');
+  if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
+    currentTheme.value = savedTheme;
+  } else {
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    currentTheme.value = systemPrefersDark ? 'dark' : 'light';
+  }
+};
+
+const setupThemeListener = () => {
+  window.addEventListener('themeChanged', (event) => {
+    currentTheme.value = event.detail.theme;
+  });
+};
+
+const refreshIcons = () => {
+  // Force Font Awesome to re-render icons
+  if (window.FontAwesome && window.FontAwesome.dom && window.FontAwesome.dom.i2svg) {
+    setTimeout(() => {
+      window.FontAwesome.dom.i2svg();
+    }, 100);
+  }
+};
+
+// const handleLanguageChange = (event) => {
+//   console.log('About page: Language changed to:', event.detail.language);
+//   refreshIcons();
+//   contentRefreshKey.value++; // Force content refresh
+  
+//   // Add a small delay to ensure DOM updates
+//   setTimeout(() => {
+//     refreshIcons();
+//   }, 200);
+// };
+
+// Lifecycle hooks
+onMounted(() => {
+  // Check if we're in development mode
+  isDevelopment.value = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  
+  loadThemePreference();
+  setupThemeListener();
+  console.log('About page content received:', props.content);
+  
+  // Listen for language changes
+  window.addEventListener('languageChanged', handleLanguageChange);
+  
+  // Initialize icons
+  refreshIcons();
+});
+
+onUnmounted(() => {
+  window.removeEventListener('themeChanged', () => {});
+  window.removeEventListener('languageChanged', handleLanguageChange);
+});
+
+// Watch for language changes
+watch(currentLanguage, (newLang, oldLang) => {
+  console.log('About page: Language changed from', oldLang, 'to', newLang);
+  refreshIcons();
+  contentRefreshKey.value++; // Force content refresh
+  
+  setTimeout(() => {
+    refreshIcons();
+  }, 200);
+});
+
+// Watch translation version for reactivity
+watch(translationVersion, () => {
+  console.log('Translation version changed, refreshing about page content');
+  contentRefreshKey.value++; // Force content refresh
+});
+
+// Watch for props.content changes to retranslate when content updates
+watch(() => props.content, (newContent, oldContent) => {
+  if (newContent !== oldContent) {
+    console.log('About page content props updated, retranslating');
+    contentRefreshKey.value++;
+  }
+}, { deep: true });
 </script>
 
 <style scoped>
-
+/* Your existing CSS styles remain exactly the same */
 .icon-fixed {
   font-family: 'Font Awesome 6 Free' !important;
   font-weight: 900 !important;
@@ -591,6 +667,21 @@ export default {
   font-size: 14px;
 }
 
+/* Debug Section Styles */
+.debug-section {
+  border: 2px solid #e53e3e;
+  border-radius: 8px;
+  font-family: monospace;
+}
+
+.debug-section pre {
+  background: #f7fafc;
+  padding: 10px;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 12px;
+}
+
 /* Responsive Styles */
 @media (max-width: 1199px) {
   .breadcrumb__content .title {
@@ -615,7 +706,6 @@ export default {
   .vision-card h3 {
     min-height: 55px;
   }
-
 }
 
 @media (max-width: 991px) {
