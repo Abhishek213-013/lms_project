@@ -1262,12 +1262,34 @@ const resetResourceForm = () => {
 
 const saveProfile = async () => {
   savingProfile.value = true
-  // Simulate save
-  setTimeout(() => {
+  
+  try {
+    const response = await fetch(`/api/teacher/${props.teacher.id}/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(profileForm.value)
+    })
+
+    const result = await response.json()
+
+    if (result.success) {
+      // Update the teacher object with new data
+      Object.assign(props.teacher, profileForm.value)
+      showEditProfileModal.value = false
+      alert('Profile updated successfully!')
+    } else {
+      alert(result.message || 'Failed to update profile')
+    }
+  } catch (error) {
+    console.error('Error updating profile:', error)
+    alert('An error occurred while updating the profile')
+  } finally {
     savingProfile.value = false
-    showEditProfileModal.value = false
-    alert('Profile updated successfully!')
-  }, 1500)
+  }
 }
 
 const sendMessageToAdmin = async () => {

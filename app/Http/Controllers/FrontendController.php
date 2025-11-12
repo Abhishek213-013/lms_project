@@ -616,7 +616,7 @@ class FrontendController extends Controller
                 'institute' => $instructor->institute,
                 'experience' => $this->getTranslatedExperience($instructor->experience, $language),
                 'profile_picture' => $instructor->profile_picture,
-                'bio' => $this->generateBio($instructor),
+                'bio' => $instructor->bio, // ✅ Use actual bio from database
                 'teaching_philosophy' => $this->generateTeachingPhilosophy($instructor),
                 'expertise' => $this->getExpertiseFromClasses($classes),
                 'languages' => 'English, Spanish',
@@ -627,8 +627,8 @@ class FrontendController extends Controller
                 'total_students' => $totalStudents,
                 'courses_count' => $coursesCount,
                 'students_count' => $totalStudents,
-                'created_at' => $instructor->created_at->format('M d, Y'),
-            ];
+                'created_at' => $instructor->created_at->format('M d, Y'),    
+            ];    
 
             Log::info("📤 Sending instructor data to frontend:", [
                 'has_profile_picture' => !empty($instructorData['profile_picture']),

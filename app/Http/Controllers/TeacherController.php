@@ -829,7 +829,7 @@ class TeacherController extends Controller
         }
     }
 
-    /**
+        /**
      * Update teacher profile
      */
     public function updateTeacherProfile(Request $request, $id)
@@ -842,6 +842,14 @@ class TeacherController extends Controller
                     'success' => false,
                     'message' => 'Teacher not found'
                 ], 404);
+            }
+
+            // Ensure the authenticated user can update this profile
+            if (Auth::id() != $id && !in_array(Auth::user()->role, ['admin', 'super_admin'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to update this profile.'
+                ], 403);
             }
 
             $validator = Validator::make($request->all(), [
@@ -863,7 +871,13 @@ class TeacherController extends Controller
                 ], 422);
             }
 
-            $teacher->update($request->all());
+            // Update only the fields that are present in the request
+            $updateData = $request->only([
+                'name', 'username', 'email', 'dob', 
+                'education_qualification', 'institute', 'experience', 'bio'
+            ]);
+
+            $teacher->update($updateData);
 
             return response()->json([
                 'success' => true,

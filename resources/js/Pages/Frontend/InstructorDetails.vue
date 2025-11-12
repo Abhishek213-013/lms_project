@@ -19,14 +19,14 @@
                         class="profile-picture"
                       >
                       <!-- Upload overlay for teacher's own profile -->
-                      <div 
+                      <!-- <div 
                         v-if="canEditProfile" 
                         class="profile-upload-overlay"
                         @click="triggerProfilePictureUpload"
                       >
                         <i class="fas fa-camera"></i>
                         <span>{{ t('Change Photo') }}</span>
-                      </div>
+                      </div> -->
                     </div>
                     <div class="profile-info">
                       <h2 class="title">{{ instructor.name }}</h2>
@@ -311,10 +311,10 @@
                   <p class="text-gray-500">{{ t('This instructor hasn\'t uploaded any content yet.') }}</p>
                 </div>
 
-                <!-- Teaching Philosophy -->
-                <div class="instructor__details-biography" v-if="instructor.teaching_philosophy">
+                <!-- Teaching Philosophy - Always show the section -->
+                <div class="instructor__details-biography">
                   <h4 class="title">{{ t('Teaching Philosophy') }}</h4>
-                  <p>{{ instructor.teaching_philosophy }}</p>
+                  <p>{{ instructor.bio || instructor.teaching_philosophy || t('This instructor is passionate about education and dedicated to student success.') }}</p>
                 </div>
               </div>
             </div>

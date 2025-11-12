@@ -404,8 +404,8 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/search-classes', [CourseController::class, 'searchClasses'])->name('api.courses.search-classes');
         });
 
-        // Teacher API Routes
-        Route::prefix('teachers')->group(function () {
+        // Teacher API Routes - FIXED: Changed from 'teachers' to 'teacher' prefix
+        Route::prefix('teacher')->group(function () {
             Route::get('/', [TeacherController::class, 'getAllTeachers']);
             Route::get('/public', [TeacherController::class, 'getPublicTeachers']);
             Route::get('/active', [TeacherController::class, 'getActiveTeachers']);
@@ -413,8 +413,11 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{id}', [TeacherController::class, 'getTeacher']);
             Route::get('/{id}/classes', [TeacherController::class, 'getTeacherClasses']);
             Route::get('/{id}/resources', [TeacherController::class, 'getTeacherResources']);
-            Route::post('/{id}/resources', [TeacherController::class, 'uploadResource'])->name('teachers.upload.resource');
-            Route::put('/{id}/profile', [TeacherController::class, 'updateTeacherProfile']);
+            Route::post('/{id}/resources', [TeacherController::class, 'uploadResource'])->name('teacher.upload.resource');
+            
+            // ADDED: Teacher profile update route
+            Route::put('/{id}/profile', [TeacherController::class, 'updateTeacherProfile'])->name('api.teacher.profile.update');
+            
             Route::get('/{id}/public-profile', [TeacherController::class, 'getTeacherPublicProfile']);
             Route::get('/{id}/public-courses', [TeacherController::class, 'getTeacherPublicCourses']);
             Route::get('/{id}/portal-data', [TeacherController::class, 'getTeacherPortalData']);
