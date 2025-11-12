@@ -756,6 +756,21 @@ createInertiaApp({
         });
     }
 });
+// Simple URL cleanup - remove ?lang parameter without page reload
+function cleanLangParameter() {
+    const url = new URL(window.location);
+    if (url.searchParams.has('lang')) {
+        url.searchParams.delete('lang');
+        window.history.replaceState({}, '', url.toString());
+        console.log('🧹 Cleaned lang parameter from URL');
+    }
+}
+
+// Run on page load
+document.addEventListener('DOMContentLoaded', cleanLangParameter);
+
+// Also run when URL changes (back/forward navigation)
+window.addEventListener('popstate', cleanLangParameter);
 
 // Axios setup
 import axios from 'axios';

@@ -36,10 +36,10 @@
               <div class="about__content-three text-center">
                 <div class="section__title mb-10">
                   <h2 class="title">
-                    {{ displayContent.about_our_story_title  }}
+                    {{ displayContent.about_our_story_title }}
                   </h2>
                 </div>
-                <p class="desc">{{ displayContent.about_our_story_content || t('about_story_content') }}</p>
+                <p class="desc">{{ displayContent.about_our_story_content }}</p>
                 <ul class="about__info-list list-wrap justify-content-center">
                   <li class="about__info-list-item">
                     <i class="flaticon-angle-right icon-fixed"></i>
@@ -69,9 +69,9 @@
                 <div class="card-icon">
                   <i class="flaticon-target icon-fixed"></i>
                 </div>
-                <h3>{{ displayContent.about_mission_title}}</h3>
+                <h3>{{ displayContent.about_mission_title }}</h3>
                 <p>
-                  {{ displayContent.about_mission_content}}
+                  {{ displayContent.about_mission_content }}
                 </p>
                 <ul class="mission-list">
                   <li><i class="fas fa-check icon-fixed"></i> {{ t('Provide accessible education') }}</li>
@@ -86,9 +86,9 @@
                 <div class="card-icon">
                   <i class="flaticon-vision icon-fixed"></i>
                 </div>
-                <h3>{{ displayContent.about_vision_title || t('Our Vision') }}</h3>
+                <h3>{{ displayContent.about_vision_title }}</h3>
                 <p>
-                  {{ displayContent.about_vision_content || t('about_vision_content') }}
+                  {{ displayContent.about_vision_content }}
                 </p>
                 <ul class="vision-list">
                   <li><i class="fas fa-check icon-fixed"></i> {{ t('Global learning community') }}</li>
@@ -101,19 +101,6 @@
           </div>
         </div>
       </section>
-
-      <!-- Debug Section -->
-      <!-- <div v-if="isDevelopment" class="debug-section p-3 bg-gray-100 mt-5">
-        <div class="container">
-          <h3>Translation Debug Info:</h3>
-          <p><strong>Current Language:</strong> {{ currentLanguage }}</p>
-          <p><strong>Content Refresh Key:</strong> {{ contentRefreshKey }}</p>
-          <h4>Raw Content from Props:</h4>
-          <pre>{{ JSON.stringify(content, null, 2) }}</pre>
-          <h4>Translated Display Content:</h4>
-          <pre>{{ JSON.stringify(displayContent, null, 2) }}</pre>
-        </div>
-      </div> -->
     </div>
   </FrontendLayout>
 </template>
@@ -132,9 +119,7 @@ const props = defineProps({
 });
 
 // Use translation composable
-const { t, currentLanguage, translationVersion, switchLanguage } = useTranslation()
-
-// Define props
+const { t, currentLanguage, translationVersion } = useTranslation()
 
 // Reactive data
 const loading = ref(false);
@@ -142,15 +127,18 @@ const currentTheme = ref('light');
 const contentRefreshKey = ref(0);
 const isDevelopment = ref(false);
 
+// Local content state for smooth updates
+const localContent = ref({})
+
+// Initialize local content with props
+onMounted(() => {
+  localContent.value = { ...props.content }
+})
+
 // Computed properties
 const displayContent = computed(() => {
-  contentRefreshKey.value; // This makes the computed property reactive to language changes
-  
-  // Use props.content if available, otherwise use default content
-  const content = Object.keys(props.content).length > 0 ? props.content : getDefaultContent();
-  
-  // Translate the content based on current language
-  return translateContent(content);
+  // Use local content if available, otherwise fallback to props
+  return Object.keys(localContent.value).length > 0 ? localContent.value : props.content;
 });
 
 const themeImagePath = computed(() => {
@@ -158,51 +146,46 @@ const themeImagePath = computed(() => {
   return `/assets/img/bg/${theme}/breadcrumb_bg.jpg`;
 });
 
-// Methods
-const getDefaultContent = () => {
-  return {
-    about_banner_title: 'Who We Are',
-    about_our_story_title: 'Empowering Students to Reach Their Potential',
-    about_our_story_content: 'Pathshala LMS was founded with a simple yet powerful vision: to make quality education accessible to everyone, everywhere. We believe that learning should be engaging, personalized, and available to all regardless of geographical or financial barriers.',
-    about_mission_title: 'Our Mission',
-    about_mission_content: 'To democratize education by providing high-quality, accessible, and affordable learning opportunities that empower individuals to achieve their personal and professional goals.',
-    about_vision_title: 'Our Vision',
-    about_vision_content: 'To create a world where anyone, anywhere can transform their life through access to the world\'s best learning experiences and educational resources.'
-  };
-};
-
-const translateContent = (content) => {
-  const translated = {};
+// UPDATED: Language change handler that fetches fresh content from database
+const handleLanguageChange = async (event) => {
+  const newLanguage = event.detail.language;
+  console.log('🌐 About page: Language change received:', newLanguage);
   
-  // Direct translation mapping - translate the actual content values
-  Object.keys(content).forEach(key => {
-    const contentValue = content[key];
+  try {
+    // Call the API to switch language AND get fresh about content
+    const response = await fetch('/switch-language-about', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      },
+      body: JSON.stringify({
+        language: newLanguage
+      })
+    });
+
+    const result = await response.json();
     
-    if (typeof contentValue === 'string' && contentValue.trim()) {
-      // Try to translate the actual string value
-      const translatedValue = t(contentValue);
+    if (result.success && result.content) {
+      console.log('✅ About page: Language switch successful with fresh content');
       
-      // If translation returned something different, use it
-      if (translatedValue !== contentValue) {
-        translated[key] = translatedValue;
-      } else {
-        // If no translation found, use the original
-        translated[key] = contentValue;
-      }
+      // Update local content with fresh database content
+      localContent.value = result.content;
+      
+      // Force content refresh
+      contentRefreshKey.value++;
+      
+      refreshIcons();
+      
     } else {
-      translated[key] = contentValue;
+      console.error('❌ About page: Language switch failed:', result);
     }
-  });
-  
-  console.log('🔄 About page translated content:', {
-    original: content,
-    translated: translated,
-    language: currentLanguage.value
-  });
-  
-  return translated;
+  } catch (error) {
+    console.error('❌ Error switching language in about page:', error);
+  }
 };
 
+// Methods - KEEP EXISTING LOGIC
 const loadThemePreference = () => {
   const savedTheme = localStorage.getItem('preferredTheme');
   if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
@@ -228,18 +211,7 @@ const refreshIcons = () => {
   }
 };
 
-// const handleLanguageChange = (event) => {
-//   console.log('About page: Language changed to:', event.detail.language);
-//   refreshIcons();
-//   contentRefreshKey.value++; // Force content refresh
-  
-//   // Add a small delay to ensure DOM updates
-//   setTimeout(() => {
-//     refreshIcons();
-//   }, 200);
-// };
-
-// Lifecycle hooks
+// Lifecycle hooks - KEEP EXISTING LOGIC
 onMounted(() => {
   // Check if we're in development mode
   isDevelopment.value = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -260,27 +232,23 @@ onUnmounted(() => {
   window.removeEventListener('languageChanged', handleLanguageChange);
 });
 
-// Watch for language changes
+// Watch for language changes - KEEP EXISTING LOGIC
 watch(currentLanguage, (newLang, oldLang) => {
   console.log('About page: Language changed from', oldLang, 'to', newLang);
-  refreshIcons();
   contentRefreshKey.value++; // Force content refresh
-  
-  setTimeout(() => {
-    refreshIcons();
-  }, 200);
 });
 
-// Watch translation version for reactivity
+// Watch translation version for reactivity - KEEP EXISTING LOGIC
 watch(translationVersion, () => {
   console.log('Translation version changed, refreshing about page content');
   contentRefreshKey.value++; // Force content refresh
 });
 
-// Watch for props.content changes to retranslate when content updates
+// Watch for props.content changes - KEEP EXISTING LOGIC
 watch(() => props.content, (newContent, oldContent) => {
   if (newContent !== oldContent) {
-    console.log('About page content props updated, retranslating');
+    console.log('About page content props updated');
+    localContent.value = { ...newContent };
     contentRefreshKey.value++;
   }
 }, { deep: true });

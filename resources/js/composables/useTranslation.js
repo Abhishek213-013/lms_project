@@ -925,72 +925,61 @@ export const translations = {
 }
 
 const currentLanguage = ref('bn')
-
-// Track translation updates for reactivity
 const translationVersion = ref(0)
 
-// Enhanced initializeLanguage function - REMOVED URL PARAMETER HANDLING
+// Enhanced initializeLanguage function - COMPLETELY REMOVED URL PARAMETER HANDLING
+// Enhanced initializeLanguage function
 const initializeLanguage = () => {
   if (typeof window !== 'undefined') {
-    // Get language from localStorage or default to 'bn'
-    const savedLang = localStorage.getItem('preferredLanguage') || 'bn';
-    
-    // Validate language
-    let lang = ['en', 'bn'].includes(savedLang) ? savedLang : 'bn';
-    
-    // Clean up any existing lang parameters from URL
-    cleanUrlLanguageParameter();
+    const savedLang = localStorage.getItem('preferredLanguage');
+    const lang = savedLang && ['en', 'bn'].includes(savedLang) ? savedLang : 'bn';
     
     currentLanguage.value = lang;
     applyLanguageSettings(lang);
-    
-    console.log('🌐 Language initialized to:', lang, {
-      fromStorage: savedLang,
-      final: lang
+  }
+}
+
+// Add session verification function
+const verifySessionLanguage = async (expectedLang) => {
+  try {
+    const response = await fetch('/api/verify-language', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      },
+      body: JSON.stringify({ expectedLanguage: expectedLang })
     });
     
-    // Force a re-render of translations
-    window.dispatchEvent(new CustomEvent('languageInitialized', { 
-      detail: { language: lang } 
-    }));
-    
-    // Increment translation version for reactivity
-    translationVersion.value++;
+    const result = await response.json();
+    if (!result.matches) {
+      console.warn('⚠️ Session language mismatch detected:', result);
+    }
+  } catch (error) {
+    console.error('❌ Error verifying session language:', error);
   }
 }
 
 // Function to clean URL language parameters
 const cleanUrlLanguageParameter = () => {
   if (typeof window !== 'undefined') {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('lang')) {
-      urlParams.delete('lang');
-      const newUrl = window.location.pathname + (urlParams.toString() ? `?${urlParams.toString()}` : '');
-      window.history.replaceState({}, '', newUrl);
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('lang')) {
+      url.searchParams.delete('lang');
+      window.history.replaceState({}, '', url.toString());
       console.log('🧹 Cleaned lang parameter from URL');
     }
   }
 }
 
-// Enhanced translation function with reactivity
+// Enhanced translation function
 export const t = (key, replacements = {}) => {
   if (!key) return ''
-  
-  // Access translation version for reactivity (even if not used directly)
-  const version = translationVersion.value;
   
   let translated = translations[currentLanguage.value]?.[key] || 
                   translations['en']?.[key] || 
                   key
   
-  // Debug logging for missing translations in development
-  if (process.env.NODE_ENV !== 'production') {
-    if (!translations[currentLanguage.value]?.[key] && !translations['en']?.[key]) {
-      console.warn(`🚨 Translation missing: "${key}" in ${currentLanguage.value}`);
-    }
-  }
-  
-  // Handle replacements
   Object.keys(replacements).forEach(replacementKey => {
     const regex = new RegExp(`\\{${replacementKey}\\}`, 'g')
     translated = translated.replace(regex, replacements[replacementKey])
@@ -999,90 +988,50 @@ export const t = (key, replacements = {}) => {
   return translated
 }
 
-// Force translation update function
-export const forceTranslationUpdate = () => {
-  if (typeof window !== 'undefined') {
-    translationVersion.value++;
-    window.dispatchEvent(new CustomEvent('forceTranslationRefresh'));
-    console.log('🔄 Force translation update triggered');
-  }
-}
 
-// Apply language-specific settings
 const applyLanguageSettings = (lang) => {
   if (typeof document !== 'undefined') {
-    // Update body classes
     document.body.classList.remove('en-lang', 'bn-lang')
     document.body.classList.add(`${lang}-lang`)
-    
-    // Update HTML lang attribute
     document.documentElement.lang = lang
-    
-    // Update page title
-    document.title = lang === 'bn' 
-      ? 'পাঠশালা - অনলাইন লার্নিং প্ল্যাটফর্ম'
-      : 'Pathshala - Online Learning Platform'
-    
-    // Update meta description if needed
-    const metaDescription = document.querySelector('meta[name="description"]')
-    if (metaDescription) {
-      metaDescription.setAttribute('content', 
-        lang === 'bn' 
-          ? 'পাঠশালা - বাংলাদেশের সেরা অনলাইন লার্নিং প্ল্যাটফর্ম'
-          : 'Pathshala - The Best Online Learning Platform in Bangladesh'
-      )
-    }
   }
 }
 
 // Enhanced switch language function - NO URL UPDATES
-export const switchLanguage = (lang) => {
-  if (!lang || !['en', 'bn'].includes(lang)) {
-    console.warn('Invalid language:', lang);
-    return;
+export const switchLanguage = async (lang) => {
+  if (!lang || !['en', 'bn'].includes(lang) || lang === currentLanguage.value) {
+    return false;
   }
   
-  if (lang === currentLanguage.value) {
-    console.log('Language already set to:', lang);
-    return;
-  }
-  
-  console.log('🔄 Switching language from', currentLanguage.value, 'to', lang);
-  
-  // Update reactive value
-  currentLanguage.value = lang;
-  
-  // Persist to localStorage ONLY - no URL changes
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('preferredLanguage', lang);
+  try {
+    const response = await fetch('/switch-language', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      },
+      body: JSON.stringify({ language: lang })
+    });
+
+    const result = await response.json();
     
-    // Clean any existing URL parameters
-    cleanUrlLanguageParameter();
+    if (result.success) {
+      currentLanguage.value = lang;
+      localStorage.setItem('preferredLanguage', lang);
+      applyLanguageSettings(lang);
+      translationVersion.value++;
+      
+      window.dispatchEvent(new CustomEvent('languageChanged', { 
+        detail: { language: lang }
+      }));
+      
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Error switching language:', error);
+    return false;
   }
-  
-  // Apply language settings
-  applyLanguageSettings(lang);
-  
-  // Increment translation version for reactivity
-  translationVersion.value++;
-  
-  // Dispatch global event for all components
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('languageChanged', { 
-      detail: { 
-        language: lang,
-        timestamp: Date.now(),
-        source: 'composable'
-      } 
-    }));
-    
-    // Force translation refresh
-    window.dispatchEvent(new CustomEvent('forceTranslationRefresh', {
-      detail: { language: lang }
-    }));
-  }
-  
-  console.log('✅ Language switched to:', lang);
 }
 
 // Handle global language changes
@@ -1091,98 +1040,47 @@ const handleLanguageChange = (event) => {
   if (newLang && newLang !== currentLanguage.value) {
     console.log('🔄 Language updated from global event:', newLang)
     currentLanguage.value = newLang
+    localStorage.setItem('preferredLanguage', newLang)
     applyLanguageSettings(newLang)
     translationVersion.value++
+    
+    // Clean URL parameters on any language change
+    cleanUrlLanguageParameter();
   }
 }
 
-// Setup URL watcher to clean parameters (instead of reading them)
+// Setup URL watcher to clean parameters
 const setupUrlWatcher = () => {
   if (typeof window !== 'undefined') {
-    // Override history methods to detect URL changes and clean lang parameters
-    const originalPushState = history.pushState;
-    const originalReplaceState = history.replaceState;
-
-    history.pushState = function (...args) {
-      originalPushState.apply(this, args);
-      setTimeout(cleanUrlLanguageParameter, 10);
-    };
-
-    history.replaceState = function (...args) {
-      originalReplaceState.apply(this, args);
-      setTimeout(cleanUrlLanguageParameter, 10);
-    };
-
-    // Listen for back/forward navigation and clean parameters
-    window.addEventListener('popstate', cleanUrlLanguageParameter);
+    // Clean parameters on initial load
+    setTimeout(cleanUrlLanguageParameter, 100);
     
-    console.log('🔗 URL watcher setup - will clean lang parameters');
+    // Also clean on any navigation
+    window.addEventListener('popstate', cleanUrlLanguageParameter);
+    window.addEventListener('hashchange', cleanUrlLanguageParameter);
   }
 }
 
-// Composable function with enhanced lifecycle management
+// Composable function
 export function useTranslation() {
-  // Initialize language on mount
   onMounted(() => {
-    console.log('🚀 useTranslation composable mounted')
     initializeLanguage()
-    setupUrlWatcher()
-    
-    // Listen for global language changes
-    window.addEventListener('languageChanged', handleLanguageChange)
-    
-    // Listen for force refresh events
-    window.addEventListener('forceTranslationRefresh', () => {
+    window.addEventListener('languageChanged', (event) => {
+      currentLanguage.value = event.detail.language
       translationVersion.value++
-      console.log('🔄 Translation refresh triggered in composable')
-    })
-    
-    // Listen for storage changes (in case language is changed in another tab)
-    window.addEventListener('storage', (event) => {
-      if (event.key === 'preferredLanguage' && event.newValue) {
-        const newLang = event.newValue
-        if (['en', 'bn'].includes(newLang) && newLang !== currentLanguage.value) {
-          console.log('🔄 Language updated from storage event:', newLang)
-          switchLanguage(newLang)
-        }
-      }
     })
   })
 
-  // Clean up on unmount
   onUnmounted(() => {
-    console.log('🧹 useTranslation composable unmounted')
-    window.removeEventListener('languageChanged', handleLanguageChange)
-    window.removeEventListener('forceTranslationRefresh', () => {})
-    window.removeEventListener('storage', () => {})
-  })
-
-  // Watch for language changes to provide reactive updates
-  watch(currentLanguage, (newLang, oldLang) => {
-    if (newLang !== oldLang) {
-      console.log('👀 Language changed in composable watch:', newLang)
-      translationVersion.value++
-    }
+    window.removeEventListener('languageChanged')
   })
 
   return {
     currentLanguage: computed(() => currentLanguage.value),
     t,
     switchLanguage,
-    forceTranslationUpdate,
-    translationVersion: computed(() => translationVersion.value),
-    // Add helper methods
-    isEnglish: computed(() => currentLanguage.value === 'en'),
-    isBengali: computed(() => currentLanguage.value === 'bn'),
-    // Add translation stats for debugging
-    translationStats: computed(() => ({
-      currentLanguage: currentLanguage.value,
-      translationVersion: translationVersion.value,
-      totalTranslations: Object.keys(translations[currentLanguage.value] || {}).length,
-      availableLanguages: Object.keys(translations)
-    }))
+    translationVersion: computed(() => translationVersion.value)
   }
 }
 
-// Export for direct use
 export default useTranslation

@@ -26,7 +26,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CertificateController;
 
 // ============ PUBLIC ROUTES ============
-
+Route::post('/switch-language-about', [FrontendController::class, 'switchLanguageAbout']);
+Route::post('/switch-language', [FrontendController::class, 'switchLanguageApi'])->name('switch.language');
 // Frontend Routes
 Route::get('/', [FrontendController::class, 'home'])->name('home');
 Route::get('/courses', [FrontendController::class, 'courses'])->name('courses');
@@ -77,11 +78,11 @@ Route::prefix('api')->middleware('web')->group(function () {
     Route::get('/content/home/{language?}', [ContentController::class, 'getHomeContent'])->name('api.content.home');
     Route::get('/content/{language?}', [ContentController::class, 'getAllContent'])->name('api.content.all');
     
-    // Language API Routes
-    Route::post('/switch-language/{lang}', [FrontendController::class, 'switchLanguage'])->name('api.switch.language');
+    // Language API Routes - FIXED: Added the correct API endpoint
+    Route::post('/switch-language', [FrontendController::class, 'switchLanguageApi'])->name('api.switch.language');
     Route::get('/current-language', function() {
         return response()->json([
-            'language' => session('lang', 'en'),
+            'language' => session('lang', 'bn'),
             'available_languages' => ['en', 'bn']
         ]);
     })->name('api.current.language');
@@ -680,6 +681,3 @@ Route::get('/clear-lang', function() {
         'new_session' => session()->all()
     ]);
 });
-
-// In your routes/web.php
-Route::post('/switch-language', [FrontendController::class, 'switchLanguage']);

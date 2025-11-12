@@ -514,7 +514,7 @@ const clearFilters = () => {
 
 // Image handling methods
 const getCourseThumbnail = (course) => {
-  console.log('🖼️ Course image data for frontend:', {
+  console.log('🖼️ Course image data:', {
     id: course.id,
     name: course.name,
     image: course.image,
@@ -523,31 +523,31 @@ const getCourseThumbnail = (course) => {
     thumbnail_url: course.thumbnail_url
   });
 
-  // 🔥 FIX: Use the image data from backend
-  if (course.image_url && course.image_url !== 'null' && course.image_url !== 'NULL') {
-    console.log('✅ Using image_url from backend:', course.image_url);
+  // DIRECT APPROACH: Use the image_url from backend directly
+  if (course.image_url && isValidUrl(course.image_url)) {
+    console.log('✅ Using direct image_url:', course.image_url);
     return course.image_url;
   }
 
-  if (course.thumbnail_url && course.thumbnail_url !== 'null' && course.thumbnail_url !== 'NULL') {
-    console.log('✅ Using thumbnail_url from backend:', course.thumbnail_url);
-    return course.thumbnail_url;
-  }
-
+  // FALLBACK: Construct URL from raw image path
   if (course.image && course.image !== 'null' && course.image !== 'NULL') {
-    const imageUrl = formatImageUrl(course.image);
-    console.log('✅ Using raw image path from backend:', imageUrl);
-    return imageUrl;
+    const directUrl = `/storage/${course.image}`;
+    console.log('✅ Constructed URL from image path:', directUrl);
+    return directUrl;
   }
 
-  if (course.thumbnail && course.thumbnail !== 'null' && course.thumbnail !== 'NULL') {
-    const thumbnailUrl = formatImageUrl(course.thumbnail);
-    console.log('✅ Using raw thumbnail path from backend:', thumbnailUrl);
-    return thumbnailUrl;
-  }
+  // ULTIMATE FALLBACK: Demo images
+  console.log('📸 Using fallback image for course:', course.id);
+  return getFallbackImage(course);
+};
 
-  // Fallback to demo thumbnails only if no database image exists
-  console.log('📸 No database image found, using fallback for course:', course.id);
+const isValidUrl = (url) => {
+  if (!url) return false;
+  if (url === 'null' || url === 'NULL' || url === '/storage/null') return false;
+  return url.startsWith('http') || url.startsWith('/storage/');
+};
+
+const getFallbackImage = (course) => {
   const courseType = course.type || 'regular';
   
   if (courseType === 'regular') {
@@ -598,36 +598,57 @@ const formatImageUrl = (imagePath) => {
 const handleImageError = (event) => {
   const img = event.target;
   const courseId = img.dataset.courseId;
+  const originalSrc = img.src;
   
-  console.warn('❌ Image failed to load:', img.src, 'for course:', courseId);
+  console.warn('❌ Image failed to load:', originalSrc, 'for course:', courseId);
   
   // Mark image as failed to load
   if (courseId) {
     imageLoading.value[courseId] = false;
   }
   
-  // Try different fallback strategies
-  const fallbacks = [
+  // Try alternative URL formats
+  const alternativeUrls = [];
+  
+  // If it's a full URL, try relative path
+  if (originalSrc.startsWith('http')) {
+    const url = new URL(originalSrc);
+    alternativeUrls.push(url.pathname); // /storage/path/to/image.jpg
+  }
+  
+  // If it's a relative storage path, try different variations
+  if (originalSrc.includes('/storage/')) {
+    alternativeUrls.push(
+      originalSrc.replace('/storage/storage/', '/storage/'), // Fix duplicates
+      originalSrc.replace('/storage/', '/'), // Try without storage prefix
+      `/storage/${originalSrc.split('/storage/').pop()}` // Ensure exactly one storage prefix
+    );
+  }
+  
+  // Add fallback images
+  alternativeUrls.push(
     '/assets/img/courses/h5_course_thumb01.jpg',
-    '/assets/img/courses/default-course.jpg',
-    '/assets/img/placeholder-course.jpg'
-  ];
+    '/assets/img/courses/default-course.jpg'
+  );
   
-  let currentFallbackIndex = 0;
+  let currentAttempt = 0;
   
-  const tryNextFallback = () => {
-    if (currentFallbackIndex < fallbacks.length) {
-      img.src = fallbacks[currentFallbackIndex];
-      currentFallbackIndex++;
+  const tryNextUrl = () => {
+    if (currentAttempt < alternativeUrls.length) {
+      const newUrl = alternativeUrls[currentAttempt];
+      console.log(`🔄 Attempt ${currentAttempt + 1}:`, newUrl);
+      img.src = newUrl;
+      currentAttempt++;
     } else {
-      // All fallbacks failed, use a data URL placeholder
+      // Final fallback - data URL
       img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIyMCIgZmlsbD0iI2YzZjRmNiIvPjx0ZXh0IHg9IjIwMCIgeT0iMTEwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5OTk5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkNvdXJzZSBJbWFnZTwvdGV4dD48L3N2Zz4=';
-      img.onerror = null; // Prevent infinite loop
+      img.onerror = null;
+      console.log('📸 Using data URL placeholder');
     }
   };
   
-  img.onerror = tryNextFallback;
-  tryNextFallback();
+  img.onerror = tryNextUrl;
+  tryNextUrl();
 };
 
 const handleImageLoad = (courseId) => {

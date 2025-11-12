@@ -67,10 +67,10 @@ class ContentManagementController extends Controller
         }
     }
 
-    /**
+        /**
      * Helper method to get all content with defaults
      */
-    private function getAllContentWithDefaults($language = 'bn')
+    private function getAllContentWithDefaults($language = 'bn') // Default to Bengali
     {
         try {
             // Get all content from database
@@ -78,11 +78,17 @@ class ContentManagementController extends Controller
             
             $content = [];
             foreach ($contentItems as $item) {
-                // Use Bengali value if language is 'bn' and value_bn exists and is not empty
-                if ($language === 'bn' && !empty($item->value_bn)) {
-                    $content[$item->key] = $item->value_bn;
-                } else {
+                // DEFAULT: Bengali is default, English is secondary
+                if ($language === 'en') {
+                    // For English: Use value (English content)
                     $content[$item->key] = $item->value;
+                } else {
+                    // For Bengali (default): Use value_bn if available, otherwise fallback to English value
+                    if (!empty($item->value_bn) && trim($item->value_bn) !== '') {
+                        $content[$item->key] = $item->value_bn;
+                    } else {
+                        $content[$item->key] = $item->value; // Fallback to English
+                    }
                 }
             }
             

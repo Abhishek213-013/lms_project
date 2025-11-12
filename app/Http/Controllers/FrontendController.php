@@ -17,178 +17,803 @@ use App\Models\Content;
 
 class FrontendController extends Controller
 {
-    // Home page
-    public function home(): Response
+   
+        /**
+     * Home page - simple language handling
+     */
+    public function home(Request $request): Response
+    {
+        // SIMPLE: Get language from session, default to Bengali
+        $language = session('lang', 'bn');
+        
+        // FORCE: Ensure session and app locale match
+        session(['lang' => $language]);
+        app()->setLocale($language);
+        session()->save(); // Force save
+
+        Log::info("🏠 Home page - Language: {$language}, Session: " . session('lang'));
+
+        // Get content - this will now return Bengali content if language is 'bn'
+        $content = Content::getHomeContent($language);
+
+        // Debug log to see what content we're getting
+        Log::info("📦 Content sample for {$language}:", [
+            'hero_title' => $content['home_hero_title'] ?? 'Not found',
+            'hero_subtitle' => $content['home_hero_subtitle'] ?? 'Not found'
+        ]);
+
+        // Rest of your method...
+        $featuredCourses = ClassModel::where('status', 'active')
+            ->with(['teacher:id,name', 'students'])
+            ->select([
+                'id', 'name', 'subject', 'type', 'category', 'description', 
+                'grade', 'created_at', 'image', 'thumbnail'
+            ])
+            ->inRandomOrder()
+            ->limit(6)
+            ->get()
+            ->map(function($course) use ($language) {
+                return [
+                    'id' => $course->id,
+                    'name' => $this->getTranslatedCourseName($course, $language),
+                    'subject' => $this->getTranslatedSubject($course->subject, $language),
+                    'type' => $course->type,
+                    'category' => $this->getTranslatedCategory($course->category, $language),
+                    'description' => $this->getTranslatedDescription($course, $language),
+                    'thumbnail' => $this->getCourseThumbnail($course),
+                    'image' => $course->image,
+                    'thumbnail_url' => $this->getCourseThumbnail($course),
+                    'fee' => 0,
+                    'student_count' => $course->students->count(),
+                    'teacher' => $course->teacher,
+                    'slug' => $this->generateSlug($course->name),
+                    'grade' => $course->grade,
+                    'original_name' => $course->name,
+                    'original_subject' => $course->subject,
+                    'original_description' => $course->description,
+                ];
+            });
+
+        $instructors = User::where('role', 'teacher')
+            ->select([
+                'id', 'name', 'username', 'education_qualification', 
+                'institute', 'experience', 'profile_picture'
+            ])
+            ->limit(8)
+            ->get()
+            ->map(function($instructor) use ($language) {
+                $coursesCount = ClassModel::where('teacher_id', $instructor->id)->count();
+                
+                $totalStudents = DB::table('class_student')
+                    ->join('classes', 'class_student.class_id', '=', 'classes.id')
+                    ->where('classes.teacher_id', $instructor->id)
+                    ->distinct('class_student.student_id')
+                    ->count();
+
+                return [
+                    'id' => $instructor->id,
+                    'name' => $instructor->name,
+                    'username' => $instructor->username,
+                    'education_qualification' => $this->getTranslatedQualification($instructor->education_qualification, $language),
+                    'institute' => $instructor->institute,
+                    'experience' => $this->getTranslatedExperience($instructor->experience, $language),
+                    'profile_picture' => $instructor->profile_picture,
+                    'avatar' => $this->getInstructorAvatar($instructor),
+                    'courses_count' => $coursesCount,
+                    'students_count' => $totalStudents,
+                    'rating' => 4.8,
+                    'original_qualification' => $instructor->education_qualification,
+                    'original_experience' => $instructor->experience,
+                ];
+            });
+
+        $stats = [
+            'total_students' => Student::count() ?: 1200,
+            'total_instructors' => User::where('role', 'teacher')->count() ?: 45,
+            'total_courses' => ClassModel::where('status', 'active')->count() ?: 85,
+            'total_enrollments' => DB::table('class_student')->count() ?: 2500,
+        ];
+
+        return Inertia::render('Frontend/Home', [
+            'content' => $content,
+            'featuredCourses' => $featuredCourses,
+            'instructors' => $instructors,
+            'stats' => $stats,
+            'testimonials' => $this->getTestimonials($language),
+            'pageTitle' => $content['home_hero_title'] ?? 'Pathshala',
+            'metaDescription' => $content['home_hero_subtitle'] ?? 'Learn with Expert Teachers',
+            'auth' => [
+                'user' => Auth::check() ? [
+                    'id' => Auth::user()->id,
+                    'name' => Auth::user()->name,
+                    'role' => Auth::user()->role,
+                ] : null
+            ],
+            'currentLanguage' => $language, // This should now be 'bn'
+            'availableLanguages' => ['en', 'bn']
+        ]);
+    }
+
+
+    private function isBengaliText($text)
+    {
+        if (!is_string($text)) return false;
+        
+        $bengaliRegex = '/[অ-ঔক-হ০-৯]/u';
+        return preg_match($bengaliRegex, $text) === 1;
+    }
+
+    /**
+     * About page
+     */
+    public function about(): Response
+    {
+        $language = $this->getCurrentLanguage();
+        
+        Log::info("🌐 Loading about page with language: " . $language);
+        
+        // Get about page content from database with language support
+        $content = Content::getAboutContent($language);
+
+        Log::info("🌐 About content loaded for language {$language}", [
+            'content_keys' => array_keys($content),
+            'sample_content' => [
+                'banner_title' => $content['about_banner_title'] ?? 'Not found',
+                'our_story_title' => $content['about_our_story_title'] ?? 'Not found'
+            ]
+        ]);
+
+        return Inertia::render('Frontend/About', [
+            'content' => $content,
+            'currentLanguage' => $language,
+            'availableLanguages' => ['en', 'bn'],
+            'pageTitle' => $content['about_banner_title'] ?? ($language === 'bn' ? 'আমাদের সম্পর্কে - পাঠশালা' : 'About Us - Pathshala'),
+            'metaDescription' => $content['about_banner_description'] ?? ($language === 'bn' 
+                ? 'পাঠশালা সম্পর্কে জানুন। আমাদের মিশন, ভিশন এবং শিক্ষার দর্শন আবিষ্কার করুন।'
+                : 'Learn about Pathshala. Discover our mission, vision, and educational philosophy.')
+        ]);
+    }
+
+    /**
+     * Courses page
+     */
+    public function courses(Request $request): Response
     {
         try {
-            // Get the language from request or session, default to 'en'
             $language = $this->getCurrentLanguage();
-            
-            Log::info("Loading home page with language: " . $language);
-            
-            // Get home page content from database with language support
-            $content = Content::getHomeContent($language);
-            
-            Log::info("Home content loaded for language {$language}:", $content);
-            
-            // Get featured courses with language support
-            $featuredCourses = ClassModel::where('status', 'active')
-                ->with(['teacher:id,name', 'students'])
-                ->select([
-                    'id', 'name', 'subject', 'type', 'category', 'description', 
-                    'grade', 'created_at', 'image', 'thumbnail'
-                ])
-                ->inRandomOrder()
-                ->limit(6)
-                ->get()
-                ->map(function($course) use ($language) {
-                    return [
-                        'id' => $course->id,
-                        'name' => $this->getTranslatedCourseName($course, $language),
-                        'subject' => $this->getTranslatedSubject($course->subject, $language),
-                        'type' => $course->type,
-                        'category' => $this->getTranslatedCategory($course->category, $language),
-                        'description' => $this->getTranslatedDescription($course, $language),
-                        'thumbnail' => $this->getCourseThumbnail($course),
-                        'image' => $course->image,
-                        'thumbnail_url' => $this->getCourseThumbnail($course),
-                        'fee' => 0,
-                        'student_count' => $course->students->count(),
-                        'teacher' => $course->teacher,
-                        'slug' => $this->generateSlug($course->name),
-                        'grade' => $course->grade,
-                        'original_name' => $course->name,
-                        'original_subject' => $course->subject,
-                        'original_description' => $course->description,
-                    ];
+            Log::info('📚 Loading courses page with language: ' . $language);
+
+            $query = ClassModel::with(['teacher:id,name', 'students'])
+                ->select('id', 'name', 'subject', 'grade', 'type', 'category', 'description', 'capacity', 'status', 'created_at', 'image', 'thumbnail')
+                ->where('status', 'active');
+
+            // Filter by category
+            if ($request->has('category') && $request->category) {
+                $query->where('category', $request->category);
+            }
+
+            // Filter by type
+            if ($request->has('type') && $request->type) {
+                $query->where('type', $request->type);
+            }
+
+            // Filter by grade
+            if ($request->has('grade') && $request->grade) {
+                $query->where('grade', $request->grade);
+            }
+
+            // Search
+            if ($request->has('search') && $request->search) {
+                $query->where(function($q) use ($request) {
+                    $q->where('name', 'like', '%' . $request->search . '%')
+                    ->orWhere('subject', 'like', '%' . $request->search . '%')
+                    ->orWhere('description', 'like', '%' . $request->search . '%')
+                    ->orWhere('category', 'like', '%' . $request->search . '%');
                 });
+            }
 
-            $instructors = User::where('role', 'teacher')
-                ->select([
-                    'id', 'name', 'username', 'education_qualification', 
-                    'institute', 'experience', 'profile_picture'
-                ])
-                ->limit(8)
-                ->get()
-                ->map(function($instructor) use ($language) {
-                    // Calculate courses count for this instructor
-                    $coursesCount = ClassModel::where('teacher_id', $instructor->id)->count();
-                    
-                    // Calculate total students for this instructor
-                    $totalStudents = DB::table('class_student')
-                        ->join('classes', 'class_student.class_id', '=', 'classes.id')
-                        ->where('classes.teacher_id', $instructor->id)
-                        ->distinct('class_student.student_id')
-                        ->count();
+            // Sort
+            $sort = $request->get('sort', 'latest');
+            switch ($sort) {
+                case 'name':
+                    $query->orderBy('name', 'asc');
+                    break;
+                case 'grade':
+                    $query->orderBy('grade', 'asc');
+                    break;
+                case 'popular':
+                    $query->orderBy('created_at', 'desc');
+                    break;
+                case 'latest':
+                default:
+                    $query->orderBy('created_at', 'desc');
+                    break;
+            }
 
-                    return [
-                        'id' => $instructor->id,
-                        'name' => $instructor->name,
-                        'username' => $instructor->username,
-                        'education_qualification' => $this->getTranslatedQualification($instructor->education_qualification, $language),
-                        'institute' => $instructor->institute,
-                        'experience' => $this->getTranslatedExperience($instructor->experience, $language),
-                        'profile_picture' => $instructor->profile_picture,
-                        'avatar' => $this->getInstructorAvatar($instructor),
-                        'courses_count' => $coursesCount,
-                        'students_count' => $totalStudents,
-                        'rating' => 4.8,
-                        'original_qualification' => $instructor->education_qualification,
-                        'original_experience' => $instructor->experience,
-                    ];
-                });
+            // Get paginated results
+            $perPage = $request->get('per_page', 12);
+            $courses = $query->paginate($perPage)->withQueryString();
 
-            $stats = [
-                'total_students' => Student::count() ?: 1200,
-                'total_instructors' => User::where('role', 'teacher')->count() ?: 45,
-                'total_courses' => ClassModel::where('status', 'active')->count() ?: 85,
-                'total_enrollments' => DB::table('class_student')->count() ?: 2500,
-            ];
+            // Transform courses for frontend with language support
+            $courses->getCollection()->transform(function ($course) use ($language) {
+                return [
+                    'id' => $course->id,
+                    'name' => $this->getTranslatedCourseName($course, $language),
+                    'subject' => $this->getTranslatedSubject($course->subject, $language),
+                    'grade' => $course->grade,
+                    'type' => $course->type,
+                    'category' => $this->getTranslatedCategory($course->category, $language),
+                    'description' => $this->getTranslatedDescription($course, $language),
+                    // Image data
+                    'image' => $course->image,
+                    'thumbnail' => $course->thumbnail,
+                    'image_url' => $this->getCourseThumbnail($course),
+                    'thumbnail_url' => $this->getCourseThumbnail($course),
+                    'raw_image' => $course->image,
+                    // Additional data
+                    'fee' => 0,
+                    'capacity' => $course->capacity,
+                    'student_count' => $course->students->count(),
+                    'enrollment_count' => $course->students->count(),
+                    'studentCount' => $course->students->count(),
+                    'teacher' => $course->teacher,
+                    'created_at' => $course->created_at->format('M d, Y'),
+                    'slug' => $this->generateSlug($course->name),
+                    'status' => $course->status,
+                    'original_name' => $course->name,
+                    'original_subject' => $course->subject,
+                    'original_description' => $course->description,
+                ];
+            });
 
-            $testimonials = [
-                [
-                    'id' => 1,
-                    'name' => $language === 'bn' ? 'সারা জনসন' : 'Sarah Johnson',
-                    'role' => $language === 'bn' ? 'শিক্ষার্থী' : 'Student',
-                    'content' => $language === 'bn' 
-                        ? 'পাঠশালা আমার শেখার অভিজ্ঞতা পরিবর্তন করেছে। কোর্সগুলো ভালোভাবে সাজানো এবং ইন্সট্রাক্টররা অসাধারণ!' 
-                        : 'Pathshala transformed my learning experience. The courses are well-structured and the instructors are amazing!',
-                    'avatar' => '/assets/img/testimonials/1.jpg',
-                    'rating' => 5
+            // Handle popular sort after transformation
+            if ($sort === 'popular') {
+                $sortedCollection = $courses->getCollection()->sortByDesc('student_count');
+                $courses->setCollection($sortedCollection);
+            }
+
+            $categories = ClassModel::where('status', 'active')
+                ->whereNotNull('category')
+                ->distinct()
+                ->pluck('category')
+                ->filter()
+                ->values();
+
+            $types = ClassModel::where('status', 'active')
+                ->distinct()
+                ->pluck('type')
+                ->filter()
+                ->values();
+
+            $grades = ClassModel::where('status', 'active')
+                ->whereNotNull('grade')
+                ->distinct()
+                ->pluck('grade')
+                ->filter()
+                ->values()
+                ->sort();
+
+            Log::info("✅ Successfully loaded {$courses->count()} courses with image data");
+
+            return Inertia::render('Frontend/Courses', [
+                'courses' => $courses,
+                'filters' => [
+                    'search' => $request->search,
+                    'category' => $request->category,
+                    'type' => $request->type,
+                    'grade' => $request->grade,
+                    'sort' => $sort,
+                    'per_page' => $perPage,
                 ],
-                [
-                    'id' => 2,
-                    'name' => $language === 'bn' ? 'মাইক চেন' : 'Mike Chen',
-                    'role' => $language === 'bn' ? 'পেশাদার' : 'Professional',
-                    'content' => $language === 'bn'
-                        ? 'অনলাইন লার্নিংয়ের নমনীয়তা বিশেষজ্ঞ নির্দেশনার সাথে মিলে আমার ক্যারিয়ার এগিয়ে নিতে সাহায্য করেছে।'
-                        : 'The flexibility of online learning combined with expert instruction helped me advance my career.',
-                    'avatar' => '/assets/img/testimonials/2.jpg',
-                    'rating' => 5
-                ],
-                [
-                    'id' => 3,
-                    'name' => $language === 'bn' ? 'এমিলি ডেভিস' : 'Emily Davis',
-                    'role' => $language === 'bn' ? 'অভিভাবক' : 'Parent',
-                    'content' => $language === 'bn'
-                        ? 'আমার সন্তানরা ইন্টারেক্টিভ ক্লাসগুলো পছন্দ করে। শিক্ষকরা ধৈর্যশীল এবং জ্ঞানী।'
-                        : 'My children love the interactive classes. The teachers are patient and knowledgeable.',
-                    'avatar' => '/assets/img/testimonials/3.jpg',
-                    'rating' => 4
-                ]
-            ];
-
-            // Use dynamic content for page title and meta description
-            $pageTitle = $content['home_hero_title'] ?? ($language === 'bn' ? 'পাঠশালা - বিশেষজ্ঞ শিক্ষকদের সাথে শিখুন' : 'Pathshala - Learn with Expert Teachers');
-            $metaDescription = $content['home_hero_subtitle'] ?? ($language === 'bn' 
-                ? 'পাঠশালা সাথে মানসম্মত শিক্ষা আবিষ্কার করুন। বিশেষজ্ঞ শিক্ষকদের থেকে শিখুন, বিভিন্ন কোর্স এক্সপ্লোর করুন এবং আপনার শেখার যাত্রা রূপান্তর করুন।'
-                : 'Discover quality education with Pathshala. Learn from expert teachers, explore diverse courses, and transform your learning journey.');
-
-            return Inertia::render('Frontend/Home', [
-                'content' => $content,
-                'featuredCourses' => $featuredCourses,
-                'instructors' => $instructors,
-                'stats' => $stats,
-                'testimonials' => $testimonials,
-                'pageTitle' => $pageTitle,
-                'metaDescription' => $metaDescription,
-                'auth' => [
-                    'user' => Auth::check() ? [
-                        'id' => Auth::user()->id,
-                        'name' => Auth::user()->name,
-                        'role' => Auth::user()->role,
-                    ] : null
-                ],
+                'categories' => $categories->map(function($category) use ($language) {
+                    return $this->getTranslatedCategory($category, $language);
+                })->toArray(),
+                'types' => $types,
+                'grades' => $grades,
+                'pageTitle' => $language === 'bn' ? 'আমাদের কোর্সসমূহ - পাঠশালা' : 'Our Courses - Pathshala',
+                'metaDescription' => $language === 'bn' 
+                    ? 'আমাদের ব্যাপক কোর্স এবং ক্লাস ক্যাটালগ ব্রাউজ করুন। আপনার শিক্ষাগত যাত্রার জন্য নিখুঁত লার্নিং পথ খুঁজুন।'
+                    : 'Browse our comprehensive catalog of courses and classes. Find the perfect learning path for your educational journey.',
                 'currentLanguage' => $language,
                 'availableLanguages' => ['en', 'bn']
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Home page error: ' . $e->getMessage());
+            Log::error('❌ Courses page error: ' . $e->getMessage());
+            Log::error('📝 Stack trace: ' . $e->getTraceAsString());
             
-            // Get default content as fallback with language support
+            return $this->renderCoursesWithFallback($request);
+        }
+    }
+
+    /**
+     * Single course page
+     */
+    public function courseSingle($id): Response
+    {
+        try {
+            $course = ClassModel::where('status', 'active')
+                ->with(['teacher:id,name,email,experience,education_qualification,institute', 'students'])
+                ->find($id);
+
+            if (!$course) {
+                return $this->renderNotFound('Course not found');
+            }
+
             $language = $this->getCurrentLanguage();
-            $defaultContent = Content::getDefaultContent($language);
-            $homeContent = array_filter($defaultContent, function($key) {
-                return strpos($key, 'home_') === 0;
-            }, ARRAY_FILTER_USE_KEY);
-            
-            return Inertia::render('Frontend/Home', [
-                'content' => $homeContent,
-                'featuredCourses' => [],
-                'instructors' => [],
-                'stats' => [
-                    'total_students' => 1200,
-                    'total_instructors' => 45,
-                    'total_courses' => 85,
-                    'total_enrollments' => 2500
-                ],
-                'testimonials' => [],
-                'pageTitle' => $language === 'bn' ? 'পাঠশালা - বিশেষজ্ঞ শিক্ষকদের সাথে শিখুন' : 'Pathshala - Learn with Expert Teachers',
+
+            $courseData = [
+                'id' => $course->id,
+                'name' => $this->getTranslatedCourseName($course, $language),
+                'subject' => $this->getTranslatedSubject($course->subject, $language),
+                'grade' => $course->grade,
+                'type' => $course->type,
+                'category' => $this->getTranslatedCategory($course->category, $language),
+                'description' => $this->getTranslatedDescription($course, $language),
+                'full_description' => $this->getTranslatedDescription($course, $language),
+                'thumbnail' => $this->getCourseThumbnail($course),
+                'fee' => 0,
+                'capacity' => $course->capacity,
+                'duration' => '12 weeks',
+                'level' => 'Beginner',
+                'student_count' => $course->students->count(),
+                'teacher' => $course->teacher,
+                'schedule' => $course->schedule,
+                'requirements' => 'No specific requirements',
+                'learning_outcomes' => 'Comprehensive understanding of the subject matter',
+                'slug' => $this->generateSlug($course->name),
+                'created_at' => $course->created_at->format('M d, Y'),
+                'updated_at' => $course->updated_at->format('M d, Y')
+            ];
+
+            // Check if user is enrolled (if authenticated)
+            $isEnrolled = false;
+            if (Auth::check()) {
+                $isEnrolled = $course->students()->where('student_id', Auth::id())->exists();
+            }
+
+            // Get related courses
+            $relatedCourses = ClassModel::where('status', 'active')
+                ->where(function($query) use ($course) {
+                    $query->where('category', $course->category)
+                          ->orWhere('type', $course->type)
+                          ->orWhere('teacher_id', $course->teacher_id);
+                })
+                ->where('id', '!=', $course->id)
+                ->with(['teacher:id,name', 'students'])
+                ->limit(4)
+                ->get()
+                ->map(function($relatedCourse) use ($language) {
+                    return [
+                        'id' => $relatedCourse->id,
+                        'name' => $this->getTranslatedCourseName($relatedCourse, $language),
+                        'subject' => $this->getTranslatedSubject($relatedCourse->subject, $language),
+                        'description' => $this->getTranslatedDescription($relatedCourse, $language),
+                        'thumbnail' => $this->getCourseThumbnail($relatedCourse),
+                        'fee' => 0,
+                        'student_count' => $relatedCourse->students->count(),
+                        'teacher' => $relatedCourse->teacher,
+                        'slug' => $this->generateSlug($relatedCourse->name),
+                        'type' => $relatedCourse->type
+                    ];
+                });
+
+            return Inertia::render('Frontend/CourseSingle', [
+                'course' => $courseData,
+                'relatedCourses' => $relatedCourses,
+                'isEnrolled' => $isEnrolled,
+                'pageTitle' => $courseData['name'] . ' - Pathshala',
+                'metaDescription' => $courseData['description'],
                 'currentLanguage' => $language,
                 'availableLanguages' => ['en', 'bn']
             ]);
+
+        } catch (\Exception $e) {
+            Log::error('Course single page error: ' . $e->getMessage());
+            
+            return $this->renderNotFound('Course not found');
         }
+    }
+
+    /**
+     * Instructors page
+     */
+    public function instructors(): Response
+    {
+        $language = $this->getCurrentLanguage();
+
+        $teachers = User::where('role', 'teacher')
+        ->where('status', 'active')
+        ->select([
+            'id', 
+            'name', 
+            'username', 
+            'email', 
+            'dob',
+            'education_qualification', 
+            'institute', 
+            'experience', 
+            'bio',
+            'profile_picture',
+            'order_column',
+            'created_at'
+        ])
+        ->withCount(['classes as courses_count'])
+        ->orderBy('order_column')
+        ->get()
+        ->map(function ($teacher) use ($language) {
+            return [
+                'id' => $teacher->id,
+                'name' => $teacher->name,
+                'email' => $teacher->email,
+                'education_qualification' => $this->getTranslatedQualification($teacher->education_qualification, $language),
+                'institute' => $teacher->institute,
+                'experience' => $this->getTranslatedExperience($teacher->experience, $language),
+                'profile_picture' => $teacher->profile_picture,
+                'order_column' => $teacher->order_column,
+                'courses_count' => $teacher->courses_count,
+                'students_count' => $this->getTeacherStudentsCount($teacher->id),
+                'rating' => $this->getTeacherRating($teacher->id),
+                'created_at' => $teacher->created_at,
+            ];
+        });
+
+        $specializations = User::where('role', 'teacher')
+            ->whereNotNull('education_qualification')
+            ->where('education_qualification', '!=', '')
+            ->distinct()
+            ->pluck('education_qualification')
+            ->toArray();
+
+        return Inertia::render('Frontend/Instructors', [
+            'instructors' => $teachers,
+            'specializations' => $specializations,
+            'filters' => request()->only(['search', 'specialization']),
+            'currentLanguage' => $language,
+            'availableLanguages' => ['en', 'bn'],
+            'pageTitle' => $language === 'bn' ? 'ইন্সট্রাক্টর - পাঠশালা' : 'Instructors - Pathshala',
+            'metaDescription' => $language === 'bn' 
+                ? 'আমাদের বিশেষজ্ঞ ইন্সট্রাক্টরদের সাথে পরিচিত হোন' 
+                : 'Meet our expert instructors'
+        ]);
+    }
+
+    /**
+     * Instructor details page
+     */
+    public function instructorDetails($id): Response
+    {
+        try {
+            $language = $this->getCurrentLanguage();
+            Log::info("🎯 Loading instructor details for ID: {$id} with language: {$language}");
+
+            // Get instructor with profile_picture
+            $instructor = User::where('role', 'teacher')
+                ->where('id', $id)
+                ->select([
+                    'id', 'name', 'username', 'email',
+                    'education_qualification', 'institute', 'experience',
+                    'profile_picture',
+                    'created_at'
+                ])
+                ->first();
+
+            if (!$instructor) {
+                return $this->renderNotFound('Instructor not found');
+            }
+
+            Log::info("✅ Found instructor: {$instructor->name}");
+            Log::info("🖼️ Instructor profile picture: {$instructor->profile_picture}");
+
+            // Get instructor's classes
+            $classes = ClassModel::where('teacher_id', $id)
+                ->where('status', 'active')
+                ->with(['students'])
+                ->select(['id', 'name', 'description', 'category', 'created_at', 'type', 'grade', 'subject', 'code', 'capacity'])
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function($course) use ($language) {
+                    return [
+                        'id' => $course->id,
+                        'name' => $this->getTranslatedCourseName($course, $language),
+                        'description' => $this->getTranslatedDescription($course, $language),
+                        'category' => $this->getTranslatedCategory($course->category, $language),
+                        'thumbnail' => $this->getCourseThumbnail($course),
+                        'student_count' => $course->students->count(),
+                        'created_at' => $course->created_at->format('M d, Y'),
+                        'type' => $course->type,
+                        'grade' => $course->grade,
+                        'subject' => $this->getTranslatedSubject($course->subject, $language),
+                        'code' => $course->code,
+                        'capacity' => $course->capacity,
+                        'status' => 'active'
+                    ];
+                });
+
+            // Get instructor's demo videos from resources table
+            Log::info("📹 Fetching videos for teacher_id: {$id}");
+            
+            $videos = Resource::where('teacher_id', $id)
+                ->where('type', 'video')
+                ->where('status', 'active')
+                ->with(['teacher:id,name', 'class:id,name'])
+                ->select([
+                    'id', 
+                    'teacher_id', 
+                    'class_id',
+                    'title', 
+                    'description', 
+                    'content', 
+                    'thumbnail_path', 
+                    'file_path', 
+                    'created_at'
+                ])
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function($video) {
+                    Log::info("🎥 Processing video: {$video->title} (ID: {$video->id})");
+                    
+                    // Create a Resource model instance to access the accessors
+                    $resource = new Resource();
+                    $resource->forceFill([
+                        'id' => $video->id,
+                        'title' => $video->title,
+                        'description' => $video->description,
+                        'content' => $video->content,
+                        'thumbnail_path' => $video->thumbnail_path,
+                        'file_path' => $video->file_path,
+                        'created_at' => $video->created_at,
+                    ]);
+
+                    // Determine video type and category
+                    $isYoutube = $this->isYouTubeVideo($video->content);
+                    $youtubeVideoId = $isYoutube ? $this->extractYouTubeId($video->content) : null;
+                    $category = $this->determineVideoCategory($video->title, $video->description);
+
+                    return [
+                        'id' => $video->id,
+                        'title' => $video->title,
+                        'description' => $video->description ?? 'Demo class video showcasing teaching methodology',
+                        'thumbnail' => $this->getVideoThumbnail($resource),
+                        'videoUrl' => $video->content,
+                        'duration' => $this->generateVideoDuration($video->id),
+                        'class_id' => $video->class_id,
+                        'class_name' => $video->class ? $video->class->name : 'General Education',
+                        'created_at' => $video->created_at->format('Y-m-d\TH:i:s\Z'),
+                        'views' => $this->generateVideoViews($video->id),
+                        'likes' => $this->generateVideoLikes($video->id),
+                        'category' => $category,
+                        'is_youtube' => $isYoutube,
+                        'youtube_video_id' => $youtubeVideoId,
+                        'youtube_embed_url' => $isYoutube ? "https://www.youtube.com/embed/{$youtubeVideoId}" : null,
+                        'file_url' => $video->file_path ? asset('storage/' . $video->file_path) : null,
+                        'access_level' => 'demo'
+                    ];
+                });
+
+            Log::info("✅ Found {$videos->count()} videos for instructor {$instructor->name}");
+
+            // Calculate stats
+            $coursesCount = $classes->count();
+            $totalStudents = DB::table('class_student')
+                ->join('classes', 'class_student.class_id', '=', 'classes.id')
+                ->where('classes.teacher_id', $instructor->id)
+                ->distinct('class_student.student_id')
+                ->count();
+
+            $totalVideos = Resource::where('teacher_id', $id)
+                ->where('type', 'video')
+                ->where('status', 'active')
+                ->count();
+
+            // Format instructor data
+            $instructorData = [
+                'id' => $instructor->id,
+                'name' => $instructor->name,
+                'username' => $instructor->username,
+                'email' => $instructor->email,
+                'education_qualification' => $this->getTranslatedQualification($instructor->education_qualification, $language),
+                'institute' => $instructor->institute,
+                'experience' => $this->getTranslatedExperience($instructor->experience, $language),
+                'profile_picture' => $instructor->profile_picture,
+                'bio' => $this->generateBio($instructor),
+                'teaching_philosophy' => $this->generateTeachingPhilosophy($instructor),
+                'expertise' => $this->getExpertiseFromClasses($classes),
+                'languages' => 'English, Spanish',
+                'response_time' => 'Within 24 hours',
+                'rating' => '4.8',
+                'reviews' => '128',
+                'total_classes' => $coursesCount,
+                'total_students' => $totalStudents,
+                'courses_count' => $coursesCount,
+                'students_count' => $totalStudents,
+                'created_at' => $instructor->created_at->format('M d, Y'),
+            ];
+
+            Log::info("📤 Sending instructor data to frontend:", [
+                'has_profile_picture' => !empty($instructorData['profile_picture']),
+                'profile_picture_path' => $instructorData['profile_picture']
+            ]);
+
+            return Inertia::render('Frontend/InstructorDetails', [
+                'instructor' => $instructorData,
+                'classes' => $classes->toArray(),
+                'videos' => $videos->toArray(),
+                'stats' => [
+                    'totalClasses' => $coursesCount,
+                    'totalStudents' => $totalStudents,
+                    'totalVideos' => $totalVideos,
+                    'rating' => 4.8,
+                    'experience_years' => $this->extractExperienceYears($instructor->experience)
+                ],
+                'pageTitle' => $instructor->name . ' - Instructor - Pathshala',
+                'metaDescription' => $this->generateBio($instructor),
+                'currentLanguage' => $language,
+                'availableLanguages' => ['en', 'bn']
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('❌ Instructor details page error: ' . $e->getMessage());
+            return $this->renderNotFound('Error loading instructor details: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Contact page
+     */
+    public function contact(): Response
+    {
+        $language = $this->getCurrentLanguage();
+
+        $contactInfo = [
+            'address' => '123 Education Street, Learning City, 12345',
+            'phone' => '+1 (555) 123-4567',
+            'email' => 'info@pathshala.com',
+            'working_hours' => 'Monday - Friday: 9:00 AM - 6:00 PM'
+        ];
+
+        return Inertia::render('Frontend/Contact', [
+            'contactInfo' => $contactInfo,
+            'pageTitle' => $language === 'bn' ? 'যোগাযোগ - পাঠশালা' : 'Contact Us - Pathshala',
+            'metaDescription' => $language === 'bn' 
+                ? 'পাঠশালার সাথে যোগাযোগ করুন। আমরা আপনার প্রশ্নের উত্তর দিতে এবং আপনার শেখার যাত্রা শুরু করতে এখানে আছি।'
+                : 'Get in touch with Pathshala. We\'re here to answer your questions and help you start your learning journey.',
+            'currentLanguage' => $language,
+            'availableLanguages' => ['en', 'bn']
+        ]);
+    }
+
+        /**
+     * Simple language switch API
+     */
+    public function switchLanguageApi(Request $request)
+    {
+        $request->validate([
+            'language' => 'required|in:en,bn'
+        ]);
+        
+        $language = $request->language;
+        
+        // Update session
+        session(['lang' => $language]);
+        app()->setLocale($language);
+        session()->save();
+        
+        Log::info("🔄 Language switched to: {$language}");
+
+        // Return updated content for the new language
+        $content = Content::getHomeContent($language);
+        
+        return response()->json([
+            'success' => true,
+            'language' => $language,
+            'message' => "Language switched to " . ($language === 'en' ? 'English' : 'Bengali'),
+            'content' => $content, // Make sure this returns the correct language content
+            'session_verified' => session('lang') === $language
+        ]);
+    }
+
+        /**
+     * Switch language for about page - returns about content
+     */
+    public function switchLanguageAbout(Request $request)
+    {
+        $request->validate([
+            'language' => 'required|in:en,bn'
+        ]);
+        
+        $language = $request->language;
+        
+        // Update session
+        session(['lang' => $language]);
+        app()->setLocale($language);
+        session()->save();
+        
+        Log::info("🔄 About page: Language switched to: {$language}");
+
+        // Return updated ABOUT content for the new language
+        $content = Content::getAboutContent($language);
+        
+        return response()->json([
+            'success' => true,
+            'language' => $language,
+            'message' => "Language switched to " . ($language === 'en' ? 'English' : 'Bengali'),
+            'content' => $content, // Returns about content in correct language
+            'session_verified' => session('lang') === $language
+        ]);
+    }
+
+    /**
+     * Reorder instructors
+     */
+    public function reorder(Request $request)
+    {
+        $request->validate([
+            'order' => 'required|array',
+            'order.*' => 'required|integer|exists:users,id'
+        ]);
+
+        try {
+            DB::transaction(function () use ($request) {
+                foreach ($request->order as $position => $instructorId) {
+                    User::where('id', $instructorId)
+                        ->where('role', 'teacher')
+                        ->update(['order_column' => $position + 1]);
+                }
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Instructor order updated successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update order: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // ==================== HELPER METHODS ====================
+
+    /**
+     * Get testimonials based on language
+     */
+    private function getTestimonials($language)
+    {
+        return [
+            [
+                'id' => 1,
+                'name' => $language === 'bn' ? 'সারা জনসন' : 'Sarah Johnson',
+                'role' => $language === 'bn' ? 'শিক্ষার্থী' : 'Student',
+                'content' => $language === 'bn' 
+                    ? 'পাঠশালা আমার শেখার অভিজ্ঞতা পরিবর্তন করেছে। কোর্সগুলো ভালোভাবে সাজানো এবং ইন্সট্রাক্টররা অসাধারণ!' 
+                    : 'Pathshala transformed my learning experience. The courses are well-structured and the instructors are amazing!',
+                'avatar' => '/assets/img/testimonials/1.jpg',
+                'rating' => 5
+            ],
+            [
+                'id' => 2,
+                'name' => $language === 'bn' ? 'মাইক চেন' : 'Mike Chen',
+                'role' => $language === 'bn' ? 'পেশাদার' : 'Professional',
+                'content' => $language === 'bn'
+                    ? 'অনলাইন লার্নিংয়ের নমনীয়তা বিশেষজ্ঞ নির্দেশনার সাথে মিলে আমার ক্যারিয়ার এগিয়ে নিতে সাহায্য করেছে।'
+                    : 'The flexibility of online learning combined with expert instruction helped me advance my career.',
+                'avatar' => '/assets/img/testimonials/2.jpg',
+                'rating' => 5
+            ],
+            [
+                'id' => 3,
+                'name' => $language === 'bn' ? 'এমিলি ডেভিস' : 'Emily Davis',
+                'role' => $language === 'bn' ? 'অভিভাবক' : 'Parent',
+                'content' => $language === 'bn'
+                    ? 'আমার সন্তানরা ইন্টারেক্টিভ ক্লাসগুলো পছন্দ করে। শিক্ষকরা ধৈর্যশীল এবং জ্ঞানী।'
+                    : 'My children love the interactive classes. The teachers are patient and knowledgeable.',
+                'avatar' => '/assets/img/testimonials/3.jpg',
+                'rating' => 4
+            ]
+        ];
     }
 
     /**
@@ -381,249 +1006,17 @@ class FrontendController extends Controller
         return $experience;
     }
 
-    /**
-     * Switch language
+        /**
+     * Get current language from session only - NO URL PARAMETERS
      */
-    public function switchLanguage(Request $request)
-    {
-        $request->validate([
-            'language' => 'required|in:en,bn'
-        ]);
-        
-        $language = $request->language;
-        session(['lang' => $language]);
-        app()->setLocale($language);
-        
-        // Return updated content
-        return response()->json([
-            'success' => true,
-            'language' => $language,
-            'content' => Content::getHomeContent($language),
-            'message' => "Language switched to " . ($language === 'en' ? 'English' : 'Bengali')
-        ]);
-    }
-
-    // About page
-    public function about()
-    {
-        $language = $this->getCurrentLanguage();
-        
-        Log::info("Loading about page with language: " . $language);
-        
-        // Get about page content from database with language support
-        $content = Content::getAboutContent($language);
-
-        Log::info("About content loaded for language {$language}:", $content);
-
-        return Inertia::render('Frontend/About', [
-            'content' => $content,
-            'currentLanguage' => $language,
-            'availableLanguages' => ['en', 'bn']
-        ]);
-    }
-
-    /**
-     * Get current language from request or session
-     */
-    // In FrontendController - Update getCurrentLanguage method
-    // In FrontendController - Update getCurrentLanguage method
-    // In FrontendController - Force Bengali
     private function getCurrentLanguage()
     {
-        // Priority 1: URL parameter (always respect URL)
-        $language = request()->get('lang');
-        
-        // Priority 2: Session (only if no URL parameter)
-        if (!$language) {
-            $language = session('lang');
-        }
-        
-        // Priority 3: Default to Bengali
-        if (!$language) {
-            $language = 'bn';
-        }
-        
-        // Validate
-        if (!in_array($language, ['en', 'bn'])) {
-            $language = 'bn';
-        }
-        
-        // Always update session with current language
-        session(['lang' => $language]);
+        $language = session('lang', 'bn');
         app()->setLocale($language);
-        
-        Log::info("🌍 Language set to: {$language} (from URL: " . (request()->has('lang') ? 'yes' : 'no') . ")");
-        
         return $language;
     }
 
-    /**
-     * Courses page
-     */
 
-    public function courses(Request $request): Response
-    {
-        try {
-            $language = $this->getCurrentLanguage();
-            Log::info('📚 Loading courses page with language: ' . $language);
-
-            // Include image and thumbnail fields in the select
-            $query = ClassModel::with(['teacher:id,name', 'students'])
-                ->select('id', 'name', 'subject', 'grade', 'type', 'category', 'description', 'capacity', 'status', 'created_at', 'image', 'thumbnail')
-                ->where('status', 'active');
-
-            // Filter by category
-            if ($request->has('category') && $request->category) {
-                $query->where('category', $request->category);
-            }
-
-            // Filter by type
-            if ($request->has('type') && $request->type) {
-                $query->where('type', $request->type);
-            }
-
-            // Filter by grade
-            if ($request->has('grade') && $request->grade) {
-                $query->where('grade', $request->grade);
-            }
-
-            // Search
-            if ($request->has('search') && $request->search) {
-                $query->where(function($q) use ($request) {
-                    $q->where('name', 'like', '%' . $request->search . '%')
-                    ->orWhere('subject', 'like', '%' . $request->search . '%')
-                    ->orWhere('description', 'like', '%' . $request->search . '%')
-                    ->orWhere('category', 'like', '%' . $request->search . '%');
-                });
-            }
-
-            // Sort
-            $sort = $request->get('sort', 'latest');
-            switch ($sort) {
-                case 'name':
-                    $query->orderBy('name', 'asc');
-                    break;
-                case 'grade':
-                    $query->orderBy('grade', 'asc');
-                    break;
-                case 'popular':
-                    // We'll handle this after transformation
-                    $query->orderBy('created_at', 'desc');
-                    break;
-                case 'latest':
-                default:
-                    $query->orderBy('created_at', 'desc');
-                    break;
-            }
-
-            // Get paginated results
-            $perPage = $request->get('per_page', 12);
-            $courses = $query->paginate($perPage)->withQueryString();
-
-            // Transform courses for frontend with language support
-            $courses->getCollection()->transform(function ($course) use ($language) {
-                return [
-                    'id' => $course->id,
-                    'name' => $this->getTranslatedCourseName($course, $language),
-                    'subject' => $this->getTranslatedSubject($course->subject, $language),
-                    'grade' => $course->grade,
-                    'type' => $course->type,
-                    'category' => $this->getTranslatedCategory($course->category, $language),
-                    'description' => $this->getTranslatedDescription($course, $language),
-                    // Image data
-                    'image' => $course->image,
-                    'thumbnail' => $course->thumbnail,
-                    'image_url' => $this->getCourseThumbnail($course),
-                    'thumbnail_url' => $this->getCourseThumbnail($course),
-                    'raw_image' => $course->image,
-                    // Additional data
-                    'fee' => 0,
-                    'capacity' => $course->capacity,
-                    'student_count' => $course->students->count(),
-                    'enrollment_count' => $course->students->count(), // Alias for frontend
-                    'studentCount' => $course->students->count(), // Alias for frontend
-                    'teacher' => $course->teacher,
-                    'created_at' => $course->created_at->format('M d, Y'),
-                    'slug' => $this->generateSlug($course->name),
-                    'status' => $course->status,
-                    'original_name' => $course->name,
-                    'original_subject' => $course->subject,
-                    'original_description' => $course->description,
-                ];
-            });
-
-            // Handle popular sort after transformation
-            if ($sort === 'popular') {
-                $sortedCollection = $courses->getCollection()->sortByDesc('student_count');
-                $courses->setCollection($sortedCollection);
-            }
-
-            $categories = ClassModel::where('status', 'active')
-                ->whereNotNull('category')
-                ->distinct()
-                ->pluck('category')
-                ->filter()
-                ->values();
-
-            $types = ClassModel::where('status', 'active')
-                ->distinct()
-                ->pluck('type')
-                ->filter()
-                ->values();
-
-            $grades = ClassModel::where('status', 'active')
-                ->whereNotNull('grade')
-                ->distinct()
-                ->pluck('grade')
-                ->filter()
-                ->values()
-                ->sort();
-
-            // Debug logging to see what image data is being sent
-            if ($courses->count() > 0) {
-                $firstCourse = $courses->first();
-                Log::info('🖼️ First course image data:', [
-                    'id' => $firstCourse['id'],
-                    'name' => $firstCourse['name'],
-                    'image' => $firstCourse['image'],
-                    'image_url' => $firstCourse['image_url'],
-                    'thumbnail' => $firstCourse['thumbnail'],
-                    'thumbnail_url' => $firstCourse['thumbnail_url']
-                ]);
-            }
-
-            Log::info("✅ Successfully loaded {$courses->count()} courses with image data");
-
-            return Inertia::render('Frontend/Courses', [
-                'courses' => $courses, // Return the full paginator object
-                'filters' => [
-                    'search' => $request->search,
-                    'category' => $request->category,
-                    'type' => $request->type,
-                    'grade' => $request->grade,
-                    'sort' => $sort,
-                    'per_page' => $perPage,
-                ],
-                'categories' => $categories->map(function($category) use ($language) {
-                    return $this->getTranslatedCategory($category, $language);
-                })->toArray(),
-                'types' => $types,
-                'grades' => $grades,
-                'pageTitle' => $language === 'bn' ? 'আমাদের কোর্সসমূহ - পাঠশালা' : 'Our Courses - Pathshala',
-                'metaDescription' => $language === 'bn' 
-                    ? 'আমাদের ব্যাপক কোর্স এবং ক্লাস ক্যাটালগ ব্রাউজ করুন। আপনার শিক্ষাগত যাত্রার জন্য নিখুঁত লার্নিং পথ খুঁজুন।'
-                    : 'Browse our comprehensive catalog of courses and classes. Find the perfect learning path for your educational journey.',
-                'currentLanguage' => $language,
-                'availableLanguages' => ['en', 'bn']
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('❌ Courses page error: ' . $e->getMessage());
-            Log::error('📝 Stack trace: ' . $e->getTraceAsString());
-            
-            return $this->renderCoursesWithFallback($request);
-        }
-    }
 
     /**
      * Render courses with fallback data
@@ -652,25 +1045,6 @@ class FrontendController extends Controller
                 'created_at' => 'Jan 01, 2024',
                 'slug' => 'mathematics-grade-1',
                 'status' => 'active'
-            ],
-            [
-                'id' => 2,
-                'name' => $language === 'bn' ? 'ইংরেজি ভাষা' : 'English Language',
-                'subject' => $language === 'bn' ? 'ইংরেজি' : 'English',
-                'grade' => null,
-                'type' => 'other',
-                'category' => $language === 'bn' ? 'ভাষা' : 'Language',
-                'description' => $language === 'bn'
-                    ? 'ব্যবহারিক কথোপকথন অনুশীলনের সাথে আপনার ইংরেজি ভাষার দক্ষতা উন্নত করুন।'
-                    : 'Improve your English language skills with practical conversation practice.',
-                'thumbnail' => '/assets/img/courses/course_thumb02.png',
-                'fee' => 0,
-                'capacity' => 25,
-                'student_count' => 18,
-                'teacher' => null,
-                'created_at' => 'Jan 01, 2024',
-                'slug' => 'english-language',
-                'status' => 'active'
             ]
         ];
 
@@ -692,182 +1066,6 @@ class FrontendController extends Controller
     }
 
     /**
-     * Single course page
-     */
-    public function courseSingle($id): Response
-    {
-        try {
-            $course = ClassModel::where('status', 'active')
-                ->with(['teacher:id,name,email,experience,education_qualification,institute', 'students'])
-                ->find($id);
-
-            if (!$course) {
-                return $this->renderNotFound('Course not found');
-            }
-
-            $courseData = [
-                'id' => $course->id,
-                'name' => $course->name,
-                'subject' => $course->subject,
-                'grade' => $course->grade,
-                'type' => $course->type,
-                'category' => $course->category,
-                'description' => $course->description,
-                'full_description' => $course->description,
-                'thumbnail' => $this->getCourseThumbnail($course),
-                'fee' => 0,
-                'capacity' => $course->capacity,
-                'duration' => '12 weeks',
-                'level' => 'Beginner',
-                'student_count' => $course->students->count(),
-                'teacher' => $course->teacher,
-                'schedule' => $course->schedule,
-                'requirements' => 'No specific requirements',
-                'learning_outcomes' => 'Comprehensive understanding of the subject matter',
-                'slug' => $this->generateSlug($course->name),
-                'created_at' => $course->created_at->format('M d, Y'),
-                'updated_at' => $course->updated_at->format('M d, Y')
-            ];
-
-            // Check if user is enrolled (if authenticated)
-            $isEnrolled = false;
-            if (Auth::check()) {
-                $isEnrolled = $course->students()->where('student_id', Auth::id())->exists();
-            }
-
-            // Get related courses
-            $relatedCourses = ClassModel::where('status', 'active')
-                ->where(function($query) use ($course) {
-                    $query->where('category', $course->category)
-                          ->orWhere('type', $course->type)
-                          ->orWhere('teacher_id', $course->teacher_id);
-                })
-                ->where('id', '!=', $course->id)
-                ->with(['teacher:id,name', 'students'])
-                ->limit(4)
-                ->get()
-                ->map(function($relatedCourse) {
-                    return [
-                        'id' => $relatedCourse->id,
-                        'name' => $relatedCourse->name,
-                        'subject' => $relatedCourse->subject,
-                        'description' => $relatedCourse->description,
-                        'thumbnail' => $this->getCourseThumbnail($relatedCourse),
-                        'fee' => 0,
-                        'student_count' => $relatedCourse->students->count(),
-                        'teacher' => $relatedCourse->teacher,
-                        'slug' => $this->generateSlug($relatedCourse->name),
-                        'type' => $relatedCourse->type
-                    ];
-                });
-
-            return Inertia::render('Frontend/CourseSingle', [
-                'course' => $courseData,
-                'relatedCourses' => $relatedCourses,
-                'isEnrolled' => $isEnrolled,
-                'pageTitle' => $course->name . ' - Pathshala',
-                'metaDescription' => $course->description
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Course single page error: ' . $e->getMessage());
-            
-            return $this->renderNotFound('Course not found');
-        }
-    }
-
-    /**
-     * Instructors page
-     */
-    public function instructors(): Response
-    {
-        $teachers = User::where('role', 'teacher')
-        ->where('status', 'active')
-        ->select([
-            'id', 
-            'name', 
-            'username', 
-            'email', 
-            'dob',
-            'education_qualification', 
-            'institute', 
-            'experience', 
-            'bio',
-            'profile_picture',
-            'order_column',
-            'created_at'
-        ])
-        ->withCount(['classes as courses_count'])
-        ->orderBy('order_column')
-        ->get()
-        ->map(function ($teacher) {
-            return [
-                'id' => $teacher->id,
-                'name' => $teacher->name,
-                'email' => $teacher->email,
-                'education_qualification' => $teacher->education_qualification,
-                'institute' => $teacher->institute,
-                'experience' => $teacher->experience,
-                'profile_picture' => $teacher->profile_picture,
-                'order_column' => $teacher->order_column,
-                'courses_count' => $teacher->courses_count,
-                'students_count' => $this->getTeacherStudentsCount($teacher->id),
-                'rating' => $this->getTeacherRating($teacher->id),
-                'created_at' => $teacher->created_at,
-            ];
-        });
-
-        $specializations = User::where('role', 'teacher')
-            ->whereNotNull('education_qualification')
-            ->where('education_qualification', '!=', '')
-            ->distinct()
-            ->pluck('education_qualification')
-            ->toArray();
-
-        return Inertia::render('Frontend/Instructors', [
-            'instructors' => $teachers,
-            'specializations' => $specializations,
-            'filters' => request()->only(['search', 'specialization']),
-            'meta' => [
-                'title' => 'Our Instructors - Pathshala',
-                'description' => 'Meet our qualified and experienced instructors dedicated to your learning journey.'
-            ]
-        ]);
-    }
-
-    /**
-     * Reorder instructors
-     */
-    public function reorder(Request $request)
-    {
-        $request->validate([
-            'order' => 'required|array',
-            'order.*' => 'required|integer|exists:users,id'
-        ]);
-
-        try {
-            DB::transaction(function () use ($request) {
-                foreach ($request->order as $position => $instructorId) {
-                    User::where('id', $instructorId)
-                        ->where('role', 'teacher')
-                        ->update(['order_column' => $position + 1]);
-                }
-            });
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Instructor order updated successfully'
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update order: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-    
-    /**
      * Get teacher students count
      */
     private function getTeacherStudentsCount($teacherId)
@@ -882,7 +1080,7 @@ class FrontendController extends Controller
      */
     private function getTeacherRating($teacherId)
     {
-        return '4.8'; // Placeholder - implement your rating logic
+        return '4.8';
     }
 
     /**
@@ -973,200 +1171,6 @@ class FrontendController extends Controller
         
         // Default case - prepend /storage/
         return asset("storage/{$imagePath}");
-    }
-
-    /**
-     * Instructor details page
-     */
-    public function instructorDetails($id): Response
-    {
-        try {
-            Log::info("🎯 Loading instructor details for ID: {$id}");
-
-            // Get instructor with profile_picture
-            $instructor = User::where('role', 'teacher')
-                ->where('id', $id)
-                ->select([
-                    'id', 'name', 'username', 'email',
-                    'education_qualification', 'institute', 'experience',
-                    'profile_picture',
-                    'created_at'
-                ])
-                ->first();
-
-            if (!$instructor) {
-                return $this->renderNotFound('Instructor not found');
-            }
-
-            Log::info("✅ Found instructor: {$instructor->name}");
-            Log::info("🖼️ Instructor profile picture: {$instructor->profile_picture}");
-
-            // Get instructor's classes
-            $classes = ClassModel::where('teacher_id', $id)
-                ->where('status', 'active')
-                ->with(['students'])
-                ->select(['id', 'name', 'description', 'category', 'created_at', 'type', 'grade', 'subject', 'code', 'capacity'])
-                ->orderBy('created_at', 'desc')
-                ->get()
-                ->map(function($course) {
-                    return [
-                        'id' => $course->id,
-                        'name' => $course->name,
-                        'description' => $course->description,
-                        'category' => $course->category,
-                        'thumbnail' => $this->getCourseThumbnail($course),
-                        'student_count' => $course->students->count(),
-                        'created_at' => $course->created_at->format('M d, Y'),
-                        'type' => $course->type,
-                        'grade' => $course->grade,
-                        'subject' => $course->subject,
-                        'code' => $course->code,
-                        'capacity' => $course->capacity,
-                        'status' => 'active'
-                    ];
-                });
-
-            // Get instructor's demo videos from resources table
-            Log::info("📹 Fetching videos for teacher_id: {$id}");
-            
-            $videos = Resource::where('teacher_id', $id)
-                ->where('type', 'video')
-                ->where('status', 'active')
-                ->with(['teacher:id,name', 'class:id,name'])
-                ->select([
-                    'id', 
-                    'teacher_id', 
-                    'class_id',
-                    'title', 
-                    'description', 
-                    'content', 
-                    'thumbnail_path', 
-                    'file_path', 
-                    'created_at'
-                ])
-                ->orderBy('created_at', 'desc')
-                ->get()
-                ->map(function($video) {
-                    Log::info("🎥 Processing video: {$video->title} (ID: {$video->id})");
-                    
-                    // Create a Resource model instance to access the accessors
-                    $resource = new Resource();
-                    $resource->forceFill([
-                        'id' => $video->id,
-                        'title' => $video->title,
-                        'description' => $video->description,
-                        'content' => $video->content,
-                        'thumbnail_path' => $video->thumbnail_path,
-                        'file_path' => $video->file_path,
-                        'created_at' => $video->created_at,
-                    ]);
-
-                    // Determine video type and category
-                    $isYoutube = $this->isYouTubeVideo($video->content);
-                    $youtubeVideoId = $isYoutube ? $this->extractYouTubeId($video->content) : null;
-                    $category = $this->determineVideoCategory($video->title, $video->description);
-
-                    return [
-                        'id' => $video->id,
-                        'title' => $video->title,
-                        'description' => $video->description ?? 'Demo class video showcasing teaching methodology',
-                        'thumbnail' => $this->getVideoThumbnail($resource),
-                        'videoUrl' => $video->content,
-                        'duration' => $this->generateVideoDuration($video->id),
-                        'class_id' => $video->class_id,
-                        'class_name' => $video->class ? $video->class->name : 'General Education',
-                        'created_at' => $video->created_at->format('Y-m-d\TH:i:s\Z'),
-                        'views' => $this->generateVideoViews($video->id),
-                        'likes' => $this->generateVideoLikes($video->id),
-                        'category' => $category,
-                        'is_youtube' => $isYoutube,
-                        'youtube_video_id' => $youtubeVideoId,
-                        'youtube_embed_url' => $isYoutube ? "https://www.youtube.com/embed/{$youtubeVideoId}" : null,
-                        'file_url' => $video->file_path ? asset('storage/' . $video->file_path) : null,
-                        'access_level' => 'demo'
-                    ];
-                });
-
-            Log::info("✅ Found {$videos->count()} videos for instructor {$instructor->name}");
-
-            // Calculate stats
-            $coursesCount = $classes->count();
-            $totalStudents = DB::table('class_student')
-                ->join('classes', 'class_student.class_id', '=', 'classes.id')
-                ->where('classes.teacher_id', $instructor->id)
-                ->distinct('class_student.student_id')
-                ->count();
-
-            $totalVideos = Resource::where('teacher_id', $id)
-                ->where('type', 'video')
-                ->where('status', 'active')
-                ->count();
-
-            // Format instructor data
-            $instructorData = [
-                'id' => $instructor->id,
-                'name' => $instructor->name,
-                'username' => $instructor->username,
-                'email' => $instructor->email,
-                'education_qualification' => $instructor->education_qualification,
-                'institute' => $instructor->institute,
-                'experience' => $instructor->experience,
-                'profile_picture' => $instructor->profile_picture,
-                'bio' => $this->generateBio($instructor),
-                'teaching_philosophy' => $this->generateTeachingPhilosophy($instructor),
-                'expertise' => $this->getExpertiseFromClasses($classes),
-                'languages' => 'English, Spanish',
-                'response_time' => 'Within 24 hours',
-                'rating' => '4.8',
-                'reviews' => '128',
-                'total_classes' => $coursesCount,
-                'total_students' => $totalStudents,
-                'courses_count' => $coursesCount,
-                'students_count' => $totalStudents,
-                'created_at' => $instructor->created_at->format('M d, Y'),
-            ];
-
-            Log::info("📤 Sending instructor data to frontend:", [
-                'has_profile_picture' => !empty($instructorData['profile_picture']),
-                'profile_picture_path' => $instructorData['profile_picture']
-            ]);
-
-            return Inertia::render('Frontend/InstructorDetails', [
-                'instructor' => $instructorData,
-                'classes' => $classes->toArray(),
-                'videos' => $videos->toArray(),
-                'stats' => [
-                    'totalClasses' => $coursesCount,
-                    'totalStudents' => $totalStudents,
-                    'totalVideos' => $totalVideos,
-                    'rating' => 4.8,
-                    'experience_years' => $this->extractExperienceYears($instructor->experience)
-                ],
-                'pageTitle' => $instructor->name . ' - Instructor - Pathshala',
-                'metaDescription' => $this->generateBio($instructor)
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('❌ Instructor details page error: ' . $e->getMessage());
-            return $this->renderNotFound('Error loading instructor details: ' . $e->getMessage());
-        }
-    }
-
-    // Contact page
-    public function contact(): Response
-    {
-        $contactInfo = [
-            'address' => '123 Education Street, Learning City, 12345',
-            'phone' => '+1 (555) 123-4567',
-            'email' => 'info@pathshala.com',
-            'working_hours' => 'Monday - Friday: 9:00 AM - 6:00 PM'
-        ];
-
-        return Inertia::render('Frontend/Contact', [
-            'contactInfo' => $contactInfo,
-            'pageTitle' => 'Contact Us - Pathshala',
-            'metaDescription' => 'Get in touch with Pathshala. We\'re here to answer your questions and help you start your learning journey.'
-        ]);
     }
 
     // Helper methods for videos
@@ -1308,9 +1312,13 @@ class FrontendController extends Controller
 
     private function renderNotFound(string $message = ''): Response
     {
+        $language = $this->getCurrentLanguage();
+        
         return Inertia::render('Frontend/Errors/404', [
             'message' => $message,
-            'pageTitle' => 'Page Not Found - Pathshala'
+            'pageTitle' => $language === 'bn' ? 'পৃষ্ঠা পাওয়া যায়নি - পাঠশালা' : 'Page Not Found - Pathshala',
+            'currentLanguage' => $language,
+            'availableLanguages' => ['en', 'bn']
         ]);
     }
 }

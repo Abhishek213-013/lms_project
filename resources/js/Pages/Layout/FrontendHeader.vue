@@ -241,13 +241,13 @@
                     <!-- Language Switcher in Mobile -->
                     <div class="mobile-language-switcher">
                       <button 
-                        @click="switchLanguageWithIcons('bn')"
+                        @click="switchLanguage('bn')"
                         :class="['lang-btn-mobile', { 'active': currentLanguage === 'bn' }]"
                       >
                         Bn
                       </button>
                       <button 
-                        @click="switchLanguageWithIcons('en')"
+                        @click="switchLanguage('en')"
                         :class="['lang-btn-mobile', { 'active': currentLanguage === 'en' }]"
                       >
                         En
@@ -388,7 +388,7 @@ import { ref, onMounted, watch, nextTick, computed } from 'vue'
 import { useTranslation } from '@/composables/useTranslation'
 
 // Use the global translation composable
-const { currentLanguage, t } = useTranslation()
+const { currentLanguage, t, switchLanguage: switchLang } = useTranslation()
 
 // Reactive data
 const mobileOpen = ref(false)
@@ -400,8 +400,8 @@ const showMobileSuggestions = ref(false)
 const courseSuggestions = ref([])
 const isLoadingSuggestions = ref(false)
 const iconErrors = ref(0)
-const studentAvatar = ref(null) // Add this for student avatar
-const avatarError = ref(false) // Add this to track avatar loading errors
+const studentAvatar = ref(null)
+const avatarError = ref(false)
 
 // Add method to fetch student avatar
 const fetchStudentAvatar = async () => {
@@ -414,7 +414,6 @@ const fetchStudentAvatar = async () => {
 
     console.log('👤 Fetching student avatar for user:', $page.props.auth.user.id)
 
-    // Fetch student data including profile picture
     const response = await fetch('/api/student-profile')
     
     if (response.ok) {
@@ -447,7 +446,6 @@ const handleAvatarError = (event) => {
   avatarError.value = true
   studentAvatar.value = null
   
-  // Remove the broken image to prevent showing broken image icon
   if (event.target) {
     event.target.style.display = 'none'
   }
@@ -457,7 +455,6 @@ const handleAvatarError = (event) => {
 const refreshIcons = () => {
   console.log('🔄 Refreshing icons...')
   
-  // Method 1: Use Font Awesome's built-in method
   if (window.FontAwesome && window.FontAwesome.dom && window.FontAwesome.dom.i2svg) {
     try {
       window.FontAwesome.dom.i2svg()
@@ -467,19 +464,16 @@ const refreshIcons = () => {
     }
   }
   
-  // Method 2: Force re-render by toggling display (fallback)
   setTimeout(() => {
     const icons = document.querySelectorAll('i[class*="fa-"]')
     icons.forEach(icon => {
-      // Force reflow
       icon.style.display = 'none'
-      icon.offsetHeight // Trigger reflow
+      icon.offsetHeight
       icon.style.display = 'inline-block'
     })
     console.log(`✅ Forced re-render of ${icons.length} icons`)
   }, 50)
   
-  // Method 3: Check if Font Awesome CSS is loaded
   const faStylesheet = Array.from(document.styleSheets).find(sheet => 
     sheet.href && sheet.href.includes('fontawesome')
   )
@@ -510,149 +504,41 @@ const handleIconError = (event) => {
   iconErrors.value++
   
   if (iconErrors.value < 3) {
-    // Try to refresh icons on error
     setTimeout(refreshIcons, 100)
   } else {
-    // If multiple errors, reload Font Awesome
     loadFontAwesome()
   }
 }
 
-// Global language state management
-const initializeLanguage = () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const urlLang = urlParams.get('lang');
-  const savedLang = localStorage.getItem('preferredLanguage');
-  
-  let preferredLang = urlLang || savedLang || 'bn';
-  
-  if (!preferredLang || !['en', 'bn'].includes(preferredLang)) {
-    const browserLang = navigator.language || navigator.userLanguage;
-    preferredLang = browserLang.startsWith('bn') ? 'bn' : 'en';
-  }
-  
-  // Ensure URL has the language parameter
-  if (!urlLang) {
-    const currentUrl = new URL(window.location.href);
-    currentUrl.searchParams.set('lang', preferredLang);
-    window.history.replaceState({}, '', currentUrl.toString());
-    console.log('🔗 Added language parameter to URL:', preferredLang);
-  }
-  
-  // Update the translation system
-  if (preferredLang !== currentLanguage.value) {
-    console.log('🌐 Initializing language to:', preferredLang);
-    switchLanguage(preferredLang);
-    localStorage.setItem('preferredLanguage', preferredLang);
-    
-    // Force translation update
-    setTimeout(() => {
-      window.dispatchEvent(new CustomEvent('forceTranslationRefresh'));
-    }, 100);
-  }
-  
-  ensureLanguageParameter();
-}
-
-// Function to ensure language parameter is always present in URL
-const ensureLanguageParameter = () => {
-  const currentUrl = new URL(window.location.href);
-  const currentLang = currentLanguage.value;
-  
-  // Always ensure lang parameter is present and correct
-  if (!currentUrl.searchParams.has('lang') || currentUrl.searchParams.get('lang') !== currentLang) {
-    currentUrl.searchParams.set('lang', currentLang);
-    window.history.replaceState({}, '', currentUrl.toString());
-    console.log('🔗 Ensured language parameter:', currentLang);
-  }
-}
-
-// Enhanced navigation function that preserves language
+// Simple navigation without language parameters
 const navigateWithLanguage = (url, options = {}) => {
-  const currentLang = currentLanguage.value
-  let finalUrl = url
-  
-  // Add language parameter if not already present
-  if (currentLang === 'bn' && !url.includes('lang=')) {
-    const separator = url.includes('?') ? '&' : '?'
-    finalUrl = `${url}${separator}lang=bn`
-  }
-  
-  return router.visit(finalUrl, {
+  return router.visit(url, {
     preserveState: true,
     preserveScroll: true,
     ...options
-  })
+  });
 }
-// Simple but effective language switch
-const switchLanguage = (lang) => {
+
+// Simple language switch without page reload
+const switchLanguage = async (lang) => {
   if (lang === currentLanguage.value) return;
   
   console.log('🌐 Switching language to:', lang);
   
-  // Update URL with language parameter
-  const url = new URL(window.location.href);
-  url.searchParams.set('lang', lang);
-  
-  // Simple page reload with new language
-  window.location.href = url.toString();
-};
-// Enhanced language switching with complete persistence and URL preservation
-const switchLanguageWithIcons = async (lang) => {
-  if (lang === currentLanguage.value) return;
-
   try {
-    console.log('🌐 Switching language to:', lang);
+    // Use the composable's switchLanguage function
+    switchLang(lang);
     
-    // Close all dropdowns first
+    // Close all dropdowns
     closeAll();
     
-    // Show loading state for icons
-    document.body.classList.add('language-switching');
-    
-    // Update the translation composable
-    switchLanguage(lang);
-    
-    // Persist to localStorage
-    localStorage.setItem('preferredLanguage', lang);
-    
-    // Update URL
-    const currentUrl = new URL(window.location.href);
-    currentUrl.searchParams.set('lang', lang);
-    window.history.replaceState({}, '', currentUrl.toString());
-    
-    // Force translation refresh for all components
-    window.dispatchEvent(new CustomEvent('forceTranslationRefresh', {
-      detail: { language: lang }
-    }));
-    
-    // Update document class for RTL/LTR support
-    document.documentElement.classList.remove('bn-lang', 'en-lang');
-    document.documentElement.classList.add(`${lang}-lang`);
-    
-    // Force icon refresh before navigation
-    await nextTick();
+    // Refresh icons
     refreshIcons();
     
-    // Dispatch global event for all components
-    window.dispatchEvent(new CustomEvent('languageChanged', { 
-      detail: { 
-        language: lang,
-        timestamp: Date.now(),
-        source: 'header'
-      } 
-    }));
-    
-    // For same-page language switch, we don't need to reload
-    // Just force update all reactive translations
-    setTimeout(() => {
-      refreshIcons();
-      document.body.classList.remove('language-switching');
-    }, 300);
+    console.log('✅ Language switched successfully');
     
   } catch (error) {
     console.error('❌ Error switching language:', error);
-    document.body.classList.remove('language-switching');
   }
 }
 
@@ -741,7 +627,7 @@ const selectSuggestion = (course) => {
   searchCourses()
 }
 
-// Search courses function with language preservation
+// Search courses function
 const searchCourses = () => {
   if (searchQuery.value.trim()) {
     navigateWithLanguage('/courses', { data: { search: searchQuery.value } })
@@ -782,7 +668,7 @@ const toggleTheme = () => {
   closeAll()
 }
 
-// Enhanced Navigation methods with language preservation
+// Enhanced Navigation methods
 const navigateToProfile = () => {
   closeAll()
   navigateWithLanguage('/student-profile')
@@ -803,7 +689,7 @@ const navigateToSettings = () => {
   navigateWithLanguage('/settings')
 }
 
-// Mobile Navigation Methods with language preservation
+// Mobile Navigation Methods
 const navigateToProfileMobile = () => {
   closeAll()
   navigateWithLanguage('/student-profile')
@@ -857,21 +743,7 @@ const logoutMobile = () => {
 
 // Lifecycle hooks
 onMounted(() => {
-  console.log('🚀 FrontendHeader mounted - initializing language, theme, and icons');
-  
-  // Force URL synchronization first
-  const currentUrl = new URL(window.location.href);
-  const urlLang = currentUrl.searchParams.get('lang');
-  const savedLang = localStorage.getItem('preferredLanguage');
-  
-  if (!urlLang && savedLang) {
-    currentUrl.searchParams.set('lang', savedLang);
-    window.history.replaceState({}, '', currentUrl.toString());
-    console.log('🔗 Mounted: Synchronized URL with saved language:', savedLang);
-  }
-  
-  // Then initialize language system
-  initializeLanguage();
+  console.log('🚀 FrontendHeader mounted - initializing theme and icons');
   
   // Ensure Font Awesome is loaded
   loadFontAwesome()
@@ -902,13 +774,12 @@ onMounted(() => {
   
   // Add periodic icon refresh (as a safeguard)
   const iconRefreshInterval = setInterval(() => {
-    // Only refresh if there are hidden icons
     const hiddenIcons = document.querySelectorAll('i[class*="fa-"]:not(:visible)')
     if (hiddenIcons.length > 0) {
       console.log(`⚠️ Found ${hiddenIcons.length} hidden icons, refreshing...`)
       refreshIcons()
     }
-  }, 30000) // Check every 30 seconds
+  }, 30000)
   
   // Cleanup interval on unmount
   onUnmounted(() => {
@@ -930,42 +801,14 @@ onMounted(() => {
     currentTheme.value = event.detail.theme
     applyTheme(event.detail.theme)
   })
-  
-  // Listen for language changes from other components (redundancy)
-  window.addEventListener('languageChanged', (event) => {
-    console.log('🌐 Language change event received in header:', event.detail.language)
-    if (event.detail.language !== currentLanguage.value) {
-      switchLanguage(event.detail.language)
-      localStorage.setItem('preferredLanguage', event.detail.language)
-      ensureLanguageParameter() // Ensure parameter is updated
-    }
-  })
-})
-
-// Watch for language changes to update UI and URL
-watch(currentLanguage, (newLang, oldLang) => {
-  if (newLang !== oldLang) {
-    console.log('🌐 Language changed in header from', oldLang, 'to', newLang)
-    // Update document class
-    document.documentElement.classList.remove('bn-lang', 'en-lang')
-    document.documentElement.classList.add(`${newLang}-lang`)
-    
-    // Ensure URL has the correct language parameter
-    ensureLanguageParameter()
-    
-    // Refresh icons
-    refreshIcons()
-  }
 })
 
 // Watch for auth changes to fetch avatar when user logs in
 watch(() => $page.props.auth.user, (newUser, oldUser) => {
   if (newUser && newUser.id !== (oldUser?.id)) {
-    // User changed or logged in, fetch their avatar
     console.log('👤 User changed, fetching avatar...')
     fetchStudentAvatar()
   } else if (!newUser) {
-    // User logged out, clear avatar
     console.log('👤 User logged out, clearing avatar...')
     studentAvatar.value = null
     avatarError.value = false
