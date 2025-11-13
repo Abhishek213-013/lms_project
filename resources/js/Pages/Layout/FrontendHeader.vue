@@ -384,7 +384,7 @@
 
 <script setup>
 import { Link, router } from '@inertiajs/vue3'
-import { ref, onMounted, watch, nextTick, computed } from 'vue'
+import { ref, onMounted, watch, nextTick, computed, onUnmounted } from 'vue'
 import { useTranslation } from '@/composables/useTranslation'
 
 // Use the global translation composable
@@ -394,7 +394,7 @@ const { currentLanguage, t, switchLanguage: switchLang } = useTranslation()
 const mobileOpen = ref(false)
 const profileOpen = ref(false)
 const searchQuery = ref('')
-const currentTheme = ref('light')
+const currentTheme = ref('light') // Default to light theme
 const showSuggestions = ref(false)
 const showMobileSuggestions = ref(false)
 const courseSuggestions = ref([])
@@ -402,6 +402,67 @@ const isLoadingSuggestions = ref(false)
 const iconErrors = ref(0)
 const studentAvatar = ref(null)
 const avatarError = ref(false)
+
+// Create a global theme state that persists across components
+const getCurrentTheme = () => {
+  // First check localStorage
+  const savedTheme = localStorage.getItem('preferredTheme')
+  if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
+    return savedTheme
+  }
+  
+  // Then check system preference
+  const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+  return systemPrefersDark ? 'dark' : 'light'
+}
+
+// Enhanced theme management with proper synchronization
+const applyTheme = (theme) => {
+  console.log('🎨 Applying theme:', theme)
+  currentTheme.value = theme
+  
+  // Remove all theme classes first
+  document.documentElement.classList.remove('light-theme', 'dark-theme')
+  document.body.classList.remove('light-theme', 'dark-theme')
+  
+  // Add the current theme class
+  if (theme === 'dark') {
+    document.documentElement.classList.add('dark-theme')
+    document.body.classList.add('dark-theme')
+    console.log('🌙 Dark theme applied')
+  } else {
+    document.documentElement.classList.add('light-theme')
+    document.body.classList.add('light-theme')
+    console.log('☀️ Light theme applied')
+  }
+  
+  // Always save to localStorage
+  localStorage.setItem('preferredTheme', theme)
+  
+  // Also set a data attribute on html for global access
+  document.documentElement.setAttribute('data-theme', theme)
+}
+
+// Toggle theme function with better state management
+const toggleTheme = () => {
+  const newTheme = currentTheme.value === 'light' ? 'dark' : 'light'
+  console.log('🔄 Toggling theme from', currentTheme.value, 'to', newTheme)
+  
+  currentTheme.value = newTheme
+  applyTheme(newTheme)
+  
+  // Dispatch event for other components
+  window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: newTheme } }))
+  closeAll()
+}
+
+// Synchronize theme across components
+const syncTheme = () => {
+  const theme = getCurrentTheme()
+  console.log('🔄 Syncing theme to:', theme)
+  currentTheme.value = theme
+  applyTheme(theme)
+}
 
 // Add method to fetch student avatar
 const fetchStudentAvatar = async () => {
@@ -638,36 +699,6 @@ const searchCourses = () => {
   closeAll()
 }
 
-// Enhanced theme management
-const applyTheme = (theme) => {
-  currentTheme.value = theme
-  
-  // Remove all theme classes first
-  document.documentElement.classList.remove('light-theme', 'dark-theme')
-  document.body.classList.remove('light-theme', 'dark-theme')
-  
-  // Add the current theme class
-  if (theme === 'dark') {
-    document.documentElement.classList.add('dark-theme')
-    document.body.classList.add('dark-theme')
-  } else {
-    document.documentElement.classList.add('light-theme')
-    document.body.classList.add('light-theme')
-  }
-  
-  localStorage.setItem('preferredTheme', theme)
-}
-
-// Toggle theme function
-const toggleTheme = () => {
-  const newTheme = currentTheme.value === 'light' ? 'dark' : 'light'
-  currentTheme.value = newTheme
-  applyTheme(newTheme)
-  
-  window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: newTheme } }))
-  closeAll()
-}
-
 // Enhanced Navigation methods
 const navigateToProfile = () => {
   closeAll()
@@ -748,6 +779,9 @@ onMounted(() => {
   // Ensure Font Awesome is loaded
   loadFontAwesome()
   
+  // Sync theme from global state first
+  syncTheme()
+  
   // Initial icon refresh
   setTimeout(() => {
     refreshIcons()
@@ -761,16 +795,12 @@ onMounted(() => {
   // Then load other resources
   fetchCourseSuggestions()
   
-  // Load theme preference
-  const savedTheme = localStorage.getItem('preferredTheme')
-  if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
-    currentTheme.value = savedTheme
-    applyTheme(savedTheme)
-  } else {
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    currentTheme.value = systemPrefersDark ? 'dark' : 'light'
-    applyTheme(currentTheme.value)
-  }
+  // Add debug logging for theme state
+  console.log('🎯 Current theme state:', {
+    currentTheme: currentTheme.value,
+    savedTheme: localStorage.getItem('preferredTheme'),
+    systemPrefersDark: window.matchMedia('(prefers-color-scheme: dark)').matches
+  })
   
   // Add periodic icon refresh (as a safeguard)
   const iconRefreshInterval = setInterval(() => {
@@ -798,8 +828,19 @@ onMounted(() => {
   
   // Listen for theme changes from other components
   window.addEventListener('themeChanged', (event) => {
+    console.log('📢 Received theme change event:', event.detail.theme)
     currentTheme.value = event.detail.theme
     applyTheme(event.detail.theme)
+  })
+  
+  // Listen for page navigation events to ensure theme sync
+  router.on('navigate', (event) => {
+    console.log('🧭 Page navigation detected, ensuring theme sync')
+    // Small delay to ensure DOM is ready
+    setTimeout(() => {
+      syncTheme()
+      refreshIcons()
+    }, 100)
   })
 })
 
@@ -813,6 +854,11 @@ watch(() => $page.props.auth.user, (newUser, oldUser) => {
     studentAvatar.value = null
     avatarError.value = false
   }
+})
+
+// Add a watcher to debug theme changes
+watch(currentTheme, (newTheme, oldTheme) => {
+  console.log('👀 Theme changed:', { from: oldTheme, to: newTheme })
 })
 
 // Click outside directive
@@ -832,17 +878,19 @@ const vClickOutside = {
 </script>
 
 <style scoped>
-/* Add language switching state */
-.language-switching {
-  pointer-events: none;
+/* Enhanced theme toggle icon styles */
+.theme-btn-nav i,
+.theme-btn-mobile i {
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  transition: all 0.3s ease;
 }
 
-.language-switching i {
-  opacity: 0.7;
-  transition: opacity 0.3s ease;
-}
-
-/* Enhanced icon styles */
+/* Force icon visibility and proper rendering */
 :deep(i[class*="fa-"]) {
   display: inline-block !important;
   font-family: 'Font Awesome 6 Free' !important;
@@ -870,13 +918,6 @@ const vClickOutside = {
 :deep(.fab) {
   font-family: 'Font Awesome 6 Brands' !important;
   font-weight: 400 !important;
-}
-
-/* Force icon visibility during language switch */
-.bn-lang :deep(i[class*="fa-"]),
-.en-lang :deep(i[class*="fa-"]) {
-  visibility: visible !important;
-  opacity: 1 !important;
 }
 
 /* Avatar image styles */
