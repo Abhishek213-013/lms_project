@@ -242,7 +242,7 @@
           </section>
 
           <!-- Language Debug Section -->
-          <div v-if="isDevelopment" class="debug-section p-3 bg-gray-100 mt-5">
+          <!-- <div v-if="isDevelopment" class="debug-section p-3 bg-gray-100 mt-5">
             <div class="container">
               <h3>🌐 Language Debug Info</h3>
               <div class="row">
@@ -264,7 +264,7 @@
                 </div>
               </div>
             </div>
-          </div>
+          </div> -->
         </div>
       </transition>
     </div>
