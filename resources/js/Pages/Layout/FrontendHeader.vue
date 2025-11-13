@@ -403,65 +403,76 @@ const iconErrors = ref(0)
 const studentAvatar = ref(null)
 const avatarError = ref(false)
 
-// Create a global theme state that persists across components
+// Create a global theme state that ALWAYS defaults to light
 const getCurrentTheme = () => {
-  // First check localStorage
-  const savedTheme = localStorage.getItem('preferredTheme')
-  if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
-    return savedTheme
-  }
-  
-  // Then check system preference
-  const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-  return systemPrefersDark ? 'dark' : 'light'
+    // Check localStorage - if user explicitly set dark theme, use it
+    const savedTheme = localStorage.getItem('preferredTheme')
+    if (savedTheme === 'dark') {
+        console.log('💾 Using saved dark theme from localStorage')
+        return 'dark'
+    }
+    
+    // Otherwise, ALWAYS default to light theme
+    console.log('☀️ Defaulting to light theme')
+    return 'light'
 }
 
 // Enhanced theme management with proper synchronization
 const applyTheme = (theme) => {
-  console.log('🎨 Applying theme:', theme)
-  currentTheme.value = theme
-  
-  // Remove all theme classes first
-  document.documentElement.classList.remove('light-theme', 'dark-theme')
-  document.body.classList.remove('light-theme', 'dark-theme')
-  
-  // Add the current theme class
-  if (theme === 'dark') {
-    document.documentElement.classList.add('dark-theme')
-    document.body.classList.add('dark-theme')
-    console.log('🌙 Dark theme applied')
-  } else {
-    document.documentElement.classList.add('light-theme')
-    document.body.classList.add('light-theme')
-    console.log('☀️ Light theme applied')
-  }
-  
-  // Always save to localStorage
-  localStorage.setItem('preferredTheme', theme)
-  
-  // Also set a data attribute on html for global access
-  document.documentElement.setAttribute('data-theme', theme)
+    console.log('🎨 Applying theme:', theme)
+    currentTheme.value = theme
+    
+    // Remove all theme classes first
+    document.documentElement.classList.remove('light-theme', 'dark-theme')
+    document.body.classList.remove('light-theme', 'dark-theme')
+    
+    // Add the current theme class
+    if (theme === 'dark') {
+        document.documentElement.classList.add('dark-theme')
+        document.body.classList.add('dark-theme')
+        console.log('🌙 Dark theme applied')
+    } else {
+        document.documentElement.classList.add('light-theme')
+        document.body.classList.add('light-theme')
+        console.log('☀️ Light theme applied')
+    }
+    
+    // Always save to localStorage
+    localStorage.setItem('preferredTheme', theme)
+    
+    // Also set a data attribute on html for global access
+    document.documentElement.setAttribute('data-theme', theme)
 }
 
 // Toggle theme function with better state management
 const toggleTheme = () => {
-  const newTheme = currentTheme.value === 'light' ? 'dark' : 'light'
-  console.log('🔄 Toggling theme from', currentTheme.value, 'to', newTheme)
-  
-  currentTheme.value = newTheme
-  applyTheme(newTheme)
-  
-  // Dispatch event for other components
-  window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: newTheme } }))
-  closeAll()
+    const newTheme = currentTheme.value === 'light' ? 'dark' : 'light'
+    console.log('🔄 Toggling theme from', currentTheme.value, 'to', newTheme)
+    
+    currentTheme.value = newTheme
+    applyTheme(newTheme)
+    
+    // Dispatch event for other components
+    window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: newTheme } }))
+    closeAll()
 }
 
 // Synchronize theme across components
 const syncTheme = () => {
-  const theme = getCurrentTheme()
-  console.log('🔄 Syncing theme to:', theme)
-  currentTheme.value = theme
-  applyTheme(theme)
+    const theme = getCurrentTheme()
+    console.log('🔄 Syncing theme to:', theme)
+    currentTheme.value = theme
+    applyTheme(theme)
+}
+
+// Initialize theme on first load - ALWAYS default to light
+const initializeTheme = () => {
+    console.log('🚀 Initializing theme...')
+    
+    const theme = getCurrentTheme()
+    console.log('⭐ Setting theme to:', theme)
+    currentTheme.value = theme
+    applyTheme(theme)
 }
 
 // Add method to fetch student avatar
@@ -774,74 +785,73 @@ const logoutMobile = () => {
 
 // Lifecycle hooks
 onMounted(() => {
-  console.log('🚀 FrontendHeader mounted - initializing theme and icons');
-  
-  // Ensure Font Awesome is loaded
-  loadFontAwesome()
-  
-  // Sync theme from global state first
-  syncTheme()
-  
-  // Initial icon refresh
-  setTimeout(() => {
-    refreshIcons()
-  }, 500)
-  
-  // Fetch student avatar if user is logged in
-  if ($page.props.auth.user) {
-    fetchStudentAvatar()
-  }
-  
-  // Then load other resources
-  fetchCourseSuggestions()
-  
-  // Add debug logging for theme state
-  console.log('🎯 Current theme state:', {
-    currentTheme: currentTheme.value,
-    savedTheme: localStorage.getItem('preferredTheme'),
-    systemPrefersDark: window.matchMedia('(prefers-color-scheme: dark)').matches
-  })
-  
-  // Add periodic icon refresh (as a safeguard)
-  const iconRefreshInterval = setInterval(() => {
-    const hiddenIcons = document.querySelectorAll('i[class*="fa-"]:not(:visible)')
-    if (hiddenIcons.length > 0) {
-      console.log(`⚠️ Found ${hiddenIcons.length} hidden icons, refreshing...`)
-      refreshIcons()
-    }
-  }, 30000)
-  
-  // Cleanup interval on unmount
-  onUnmounted(() => {
-    clearInterval(iconRefreshInterval)
-  })
-  
-  // Listen for system theme changes
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-    if (!localStorage.getItem('preferredTheme')) {
-      const newTheme = e.matches ? 'dark' : 'light'
-      currentTheme.value = newTheme
-      applyTheme(newTheme)
-      window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: newTheme } }))
-    }
-  })
-  
-  // Listen for theme changes from other components
-  window.addEventListener('themeChanged', (event) => {
-    console.log('📢 Received theme change event:', event.detail.theme)
-    currentTheme.value = event.detail.theme
-    applyTheme(event.detail.theme)
-  })
-  
-  // Listen for page navigation events to ensure theme sync
-  router.on('navigate', (event) => {
-    console.log('🧭 Page navigation detected, ensuring theme sync')
-    // Small delay to ensure DOM is ready
+    console.log('🚀 FrontendHeader mounted - initializing theme and icons');
+    
+    // Ensure Font Awesome is loaded
+    loadFontAwesome()
+    
+    // Initialize theme first - ALWAYS defaults to light
+    initializeTheme()
+    
+    // Initial icon refresh
     setTimeout(() => {
-      syncTheme()
-      refreshIcons()
-    }, 100)
-  })
+        refreshIcons()
+    }, 500)
+    
+    // Fetch student avatar if user is logged in
+    if ($page.props.auth.user) {
+        fetchStudentAvatar()
+    }
+    
+    // Then load other resources
+    fetchCourseSuggestions()
+    
+    // Add debug logging for theme state
+    console.log('🎯 Current theme state:', {
+        currentTheme: currentTheme.value,
+        savedTheme: localStorage.getItem('preferredTheme'),
+        systemPrefersDark: window.matchMedia('(prefers-color-scheme: dark)').matches
+    })
+    
+    // Add periodic icon refresh (as a safeguard)
+    const iconRefreshInterval = setInterval(() => {
+        const hiddenIcons = document.querySelectorAll('i[class*="fa-"]:not(:visible)')
+        if (hiddenIcons.length > 0) {
+            console.log(`⚠️ Found ${hiddenIcons.length} hidden icons, refreshing...`)
+            refreshIcons()
+        }
+    }, 30000)
+    
+    // Cleanup interval on unmount
+    onUnmounted(() => {
+        clearInterval(iconRefreshInterval)
+    })
+    
+    // Listen for system theme changes (but ignore them since we default to light)
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        // Only respect system theme changes if user hasn't explicitly set a preference
+        if (!localStorage.getItem('preferredTheme')) {
+            console.log('🖥️ System theme changed, but we default to light theme')
+            // We ignore system changes and stick with light theme
+        }
+    })
+    
+    // Listen for theme changes from other components
+    window.addEventListener('themeChanged', (event) => {
+        console.log('📢 Received theme change event:', event.detail.theme)
+        currentTheme.value = event.detail.theme
+        applyTheme(event.detail.theme)
+    })
+    
+    // Listen for page navigation events to ensure theme sync
+    router.on('navigate', (event) => {
+        console.log('🧭 Page navigation detected, ensuring theme sync')
+        // Small delay to ensure DOM is ready
+        setTimeout(() => {
+            syncTheme()
+            refreshIcons()
+        }, 100)
+    })
 })
 
 // Watch for auth changes to fetch avatar when user logs in

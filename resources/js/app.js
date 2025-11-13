@@ -353,23 +353,17 @@ const initializeLanguageSystem = () => {
     return currentLanguage;
 };
 
-// Theme system functions
+// Theme system functions - ALWAYS DEFAULT TO LIGHT
 const initializeThemeSystem = () => {
-    const savedTheme = localStorage.getItem('preferredTheme');
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // FORCE LIGHT THEME regardless of what's saved
+    const theme = 'light';
     
-    let theme = 'light';
+    // Always set to light theme in localStorage
+    localStorage.setItem('preferredTheme', 'light');
     
-    if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
-        theme = savedTheme;
-    } else if (systemPrefersDark) {
-        theme = 'dark';
-    }
-    
-    localStorage.setItem('preferredTheme', theme);
     applyGlobalTheme(theme);
     
-    console.log(`🎨 Theme system initialized: ${theme}`);
+    console.log(`🎨 Theme system initialized: ${theme} (FORCED LIGHT)`);
     return theme;
 };
 
@@ -385,6 +379,9 @@ const applyGlobalTheme = (theme) => {
         document.body.classList.add('light-theme');
         document.body.classList.remove('dark-theme');
     }
+    
+    // Always update localStorage to ensure light theme
+    localStorage.setItem('preferredTheme', theme);
 };
 
 // Combined initialization function
@@ -454,7 +451,7 @@ const provideTranslation = (vueApp) => {
         }
     };
     
-    // Add theme switching method
+    // Add theme switching method - with proper default
     vueApp.config.globalProperties.switchTheme = (theme) => {
         if (theme === 'light' || theme === 'dark') {
             localStorage.setItem('preferredTheme', theme);
@@ -839,12 +836,14 @@ window.PathshalaLMS = {
         return localStorage.getItem('preferredLanguage') || 'bn';
     },
     switchTheme: (theme) => {
-        localStorage.setItem('preferredTheme', theme);
-        applyGlobalTheme(theme);
-        window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme } }));
+        if (theme === 'light' || theme === 'dark') {
+            localStorage.setItem('preferredTheme', theme);
+            applyGlobalTheme(theme);
+            window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme } }));
+        }
     },
     getCurrentTheme: () => {
-        return localStorage.getItem('preferredTheme') || 'light';
+        return localStorage.getItem('preferredTheme') || 'light'; // Default to light
     },
     t: globalT,
     isAdminPage: isAdminPage,
