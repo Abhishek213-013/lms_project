@@ -54,8 +54,7 @@ class ClassModel extends Model
      */
     public function students(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'class_student', 'class_id', 'student_id')
-                    ->withTimestamps();
+        return $this->enrolledStudents();
     }
 
     /**
@@ -152,4 +151,15 @@ class ClassModel extends Model
         
         return Storage::disk('public')->exists($this->thumbnail);
     }
+
+        /**
+     * Get the students enrolled in this subject.
+     */
+    public function enrolledStudents(): BelongsToMany
+    {
+        return $this->belongsToMany(Student::class, 'class_student', 'class_id', 'student_id')
+                    ->withTimestamps()
+                    ->withPivot('progress', 'last_accessed', 'last_activity_type');
+    }
+
 }

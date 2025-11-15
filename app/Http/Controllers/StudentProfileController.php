@@ -19,11 +19,7 @@ class StudentProfileController extends Controller
     {
         $user = $request->user();
         
-        Log::info('=== STUDENT PROFILE SHOW METHOD START ===');
-        Log::info('User ID: ' . $user->id);
-
-        // Get student record with fresh data
-        $student = Student::with(['class'])
+        $student = Student::with(['academicClass', 'subjects']) // UPDATED: academicClass instead of class
             ->where('user_id', $user->id)
             ->first();
 
@@ -109,7 +105,8 @@ class StudentProfileController extends Controller
             'recent_activity' => $recentActivity,
             'student_info' => [
                 'roll_number' => $student->roll_number,
-                'class' => $student->class ? $student->class->name : 'Not assigned',
+                'academic_class' => $student->academicClass ? $student->academicClass->name : 'Not assigned', // UPDATED
+                'enrolled_subjects' => $student->subjects->pluck('subject'), // NEW: Show enrolled subjects
                 'admission_date' => $admissionDate,
                 'father_name' => $student->father_name,
                 'mother_name' => $student->mother_name,

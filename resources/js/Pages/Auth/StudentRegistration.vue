@@ -105,22 +105,25 @@
               </div>
 
               <div class="mb-3">
-                <label for="class_id" class="form-label">Class *</label>
-                <select class="form-select" id="class_id" v-model="form.class_id" required :class="{ 'is-invalid': form.errors.class_id }">
-                  <option value="">Select Class</option>
-                  <option value="1">Class 1</option>
-                  <option value="2">Class 2</option>
-                  <option value="3">Class 3</option>
-                  <option value="4">Class 4</option>
-                  <option value="5">Class 5</option>
-                  <option value="6">Class 6</option>
-                  <option value="7">Class 7</option>
-                  <option value="8">Class 8</option>
-                  <option value="9">Class 9</option>
-                  <option value="10">Class 10</option>
+                <label for="academic_class_id" class="form-label">Academic Class *</label>
+                <select 
+                  class="form-select" 
+                  id="academic_class_id" 
+                  v-model="form.academic_class_id" 
+                  required 
+                  :class="{ 'is-invalid': form.errors.academic_class_id }"
+                >
+                  <option value="">Select Academic Class</option>
+                  <option 
+                    v-for="academicClass in academicClasses" 
+                    :key="academicClass.id" 
+                    :value="academicClass.id"
+                  >
+                    {{ academicClass.name }}
+                  </option>
                 </select>
-                <div v-if="form.errors.class_id" class="invalid-feedback">
-                  {{ form.errors.class_id }}
+                <div v-if="form.errors.academic_class_id" class="invalid-feedback">
+                  {{ form.errors.academic_class_id }}
                 </div>
               </div>
 
@@ -228,6 +231,10 @@ const props = defineProps({
   errors: Object,
   status: String,
   phone: String,
+  academicClasses: {
+    type: Array,
+    default: () => []
+  }
 });
 
 const form = useForm({
@@ -236,7 +243,7 @@ const form = useForm({
   email: '',
   father_name: '',
   mother_name: '',
-  class_id: '',
+  academic_class_id: '', // CHANGED: from class_id to academic_class_id
   country_code: '+880',
   parent_contact: props.phone || '',
   password: '',

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Student;
 use App\Models\ClassModel;
+use App\Models\AcademicClass;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -51,11 +52,32 @@ class AuthController extends Controller
     /**
      * Show the student registration page
      */
+    // app/Http\Controllers\AuthController.php
+
     public function showStudentRegistration(): Response
     {
-        return Inertia::render('Auth/StudentRegistration', [
-            'phone' => request('phone')
+        // Get active academic classes for the registration form
+        $academicClasses = AcademicClass::active()->get(['id', 'name', 'grade']);
+        
+        // Debug: Log the data
+        Log::info('Academic Classes in Controller:', [
+            'count' => $academicClasses->count(),
+            'data' => $academicClasses->toArray()
         ]);
+        
+        // Debug: Also check what's being sent to Inertia
+        $props = [
+            'phone' => request('phone'),
+            'academicClasses' => $academicClasses
+        ];
+        
+        Log::info('Props sent to Inertia:', [
+            'academicClasses_count' => count($props['academicClasses']),
+            'academicClasses_type' => gettype($props['academicClasses']),
+            'phone' => $props['phone']
+        ]);
+        
+        return Inertia::render('Auth/StudentRegistration', $props);
     }
 
     /**
@@ -207,7 +229,7 @@ class AuthController extends Controller
         }
     }
 
-        /**
+    /**
      * Handle teacher registration
      */
     public function teacherRegister(Request $request)
@@ -273,11 +295,12 @@ class AuthController extends Controller
     }
 
     /**
-     * Handle student registration
+     * Handle student registration with new database structure
      */
     public function studentRegister(Request $request)
     {
-        Log::info('Student registration attempt', ['email' => $request->email, 'data' => $request->all()]);
+        Log::info('🎯 ============ STUDENT REGISTRATION START ============');
+        Log::info('📦 Request data:', $request->all());
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
@@ -285,7 +308,7 @@ class AuthController extends Controller
             'email' => 'required|email|unique:users|max:255',
             'father_name' => 'required|string|max:255',
             'mother_name' => 'required|string|max:255',
-            'class_id' => 'required|integer|exists:classes,id',
+            'academic_class_id' => 'required|integer|exists:academic_classes,id',
             'country_code' => 'required|string|max:10',
             'parent_contact' => 'required|string|max:20',
             'password' => 'required|string|min:8|confirmed',
@@ -293,34 +316,46 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            Log::warning('Student registration validation failed', ['errors' => $validator->errors()->toArray()]);
+            Log::error('❌ Validation failed:', $validator->errors()->toArray());
             return back()->withErrors($validator->errors())->withInput();
         }
 
+        Log::info('✅ Validation passed');
+
         try {
             DB::beginTransaction();
+            Log::info('💾 Starting database transaction...');
 
-            Log::info('Creating user...');
-            
-            // Create user with student role
-            $user = User::create([
+            // Check if academic class exists
+            $academicClass = AcademicClass::find($request->academic_class_id);
+            if (!$academicClass) {
+                throw new \Exception('Academic class not found');
+            }
+
+            // Create user with all required fields
+            $userData = [
                 'name' => $request->name,
                 'username' => $request->username,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'role' => 'student',
                 'status' => 'active',
-            ]);
+                'bio' => '', // Explicitly set empty bio
+                'phone' => $request->parent_contact, // Use parent contact as phone
+            ];
 
-            Log::info('User created successfully', ['user_id' => $user->id]);
+            Log::info('👤 Creating user with data:', $userData);
+            $user = User::create($userData);
+            Log::info('✅ User created successfully', ['user_id' => $user->id]);
 
-            // Generate a unique roll number
-            $rollNumber = $this->generateStudentRollNumber($request->class_id);
+            // Generate roll number
+            $rollNumber = $this->generateStudentRollNumber($request->academic_class_id);
+            Log::info('🎫 Generated roll number:', ['roll_number' => $rollNumber]);
 
             // Create student record
             $studentData = [
                 'user_id' => $user->id,
-                'class_id' => $request->class_id,
+                'academic_class_id' => $request->academic_class_id,
                 'roll_number' => $rollNumber,
                 'father_name' => $request->father_name,
                 'mother_name' => $request->mother_name,
@@ -330,60 +365,148 @@ class AuthController extends Controller
                 'status' => 'active',
             ];
 
-            Log::info('Creating student record', ['student_data' => $studentData]);
-
+            Log::info('📝 Creating student record:', $studentData);
             $student = Student::create($studentData);
+            Log::info('✅ Student record created successfully', ['student_id' => $student->id]);
 
-            Log::info('Student record created successfully', ['student_id' => $student->id]);
+            // Enroll in subjects
+            Log::info('📚 Enrolling student in subjects...');
+            $this->enrollInClassSubjects($student, $request->academic_class_id);
 
             DB::commit();
+            Log::info('💾 Database transaction committed');
 
-            // Log the user in automatically after registration
+            // Login the user
+            Log::info('🔐 Logging in user...');
             Auth::login($user);
+            $request->session()->regenerate();
 
-            Log::info('Student registration successful', [
-                'user_id' => $user->id,
-                'student_id' => $student->id,
+            Log::info('✅ User logged in', [
                 'authenticated' => Auth::check(),
-                'user_role' => Auth::user()->role ?? 'none'
+                'user_id' => Auth::id(),
+                'user_role' => Auth::user()->role
             ]);
 
-            // FIX: Redirect to home page instead of student dashboard
-            return redirect('/')->with([
+            Log::info('🎉 ============ STUDENT REGISTRATION SUCCESSFUL ============');
+
+            // Redirect to home
+            return redirect()->route('home')->with([
                 'success' => 'Registration successful! Welcome to Pathshala LMS.'
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Student registration failed', [
-                'error' => $e->getMessage(), 
-                'trace' => $e->getTraceAsString(),
-                'email' => $request->email,
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
-            ]);
+            Log::error('💥 ============ STUDENT REGISTRATION FAILED ============');
+            Log::error('❌ Error: ' . $e->getMessage());
+            Log::error('📝 Stack trace: ' . $e->getTraceAsString());
+            
             return back()->withErrors([
                 'message' => 'Registration failed: ' . $e->getMessage(),
             ])->withInput();
         }
     }
 
-    /**
-     * Generate unique roll number for student
+        /**
+     * Generate unique roll number for student based on academic class
      */
-    private function generateStudentRollNumber($classId)
+    private function generateStudentRollNumber($academicClassId)
     {
+        $academicClass = AcademicClass::find($academicClassId);
+        if (!$academicClass) {
+            throw new \Exception('Academic class not found');
+        }
+
         $currentYear = date('Y');
-        $classCode = str_pad($classId, 2, '0', STR_PAD_LEFT);
+        $classCode = str_pad($academicClass->grade, 2, '0', STR_PAD_LEFT);
         
-        $lastStudent = Student::where('class_id', $classId)
-            ->orderBy('id', 'desc')
-            ->first();
+        // Try up to 10 times to generate a unique roll number
+        for ($attempt = 1; $attempt <= 10; $attempt++) {
+            // Get the count of students in this academic class
+            $studentCount = Student::where('academic_class_id', $academicClassId)->count();
+            $sequence = $studentCount + $attempt;
+            $sequenceCode = str_pad($sequence, 3, '0', STR_PAD_LEFT);
             
-        $sequence = $lastStudent ? (int)substr($lastStudent->roll_number, -3) + 1 : 1;
-        $sequenceCode = str_pad($sequence, 3, '0', STR_PAD_LEFT);
+            $rollNumber = "ST{$currentYear}{$classCode}{$sequenceCode}";
+            
+            // Check if this roll number already exists
+            $existingStudent = Student::where('roll_number', $rollNumber)->first();
+            if (!$existingStudent) {
+                Log::info('✅ Unique roll number generated:', [
+                    'roll_number' => $rollNumber,
+                    'attempt' => $attempt
+                ]);
+                return $rollNumber;
+            }
+            
+            Log::warning('⚠️ Roll number already exists, trying again:', [
+                'roll_number' => $rollNumber,
+                'attempt' => $attempt
+            ]);
+        }
         
-        return "ST{$currentYear}{$classCode}{$sequenceCode}";
+        // If we still can't generate a unique roll number, use timestamp
+        $timestamp = time();
+        $fallbackRollNumber = "ST{$currentYear}{$classCode}" . substr($timestamp, -3);
+        
+        Log::warning('🔄 Using fallback roll number:', [
+            'roll_number' => $fallbackRollNumber
+        ]);
+        
+        return $fallbackRollNumber;
+    }
+
+    /**
+     * Automatically enroll student in all subjects for their academic class
+     */
+    private function enrollInClassSubjects(Student $student, $academicClassId)
+    {
+        try {
+            $academicClass = AcademicClass::find($academicClassId);
+            
+            if (!$academicClass) {
+                Log::warning('Academic class not found for subject enrollment', ['academic_class_id' => $academicClassId]);
+                return;
+            }
+
+            // Get all subjects for this grade level
+            $subjects = ClassModel::where('grade', $academicClass->grade)
+                                ->where('type', 'regular')
+                                ->where('status', 'active')
+                                ->get();
+
+            Log::info('Found subjects for enrollment', [
+                'student_id' => $student->id,
+                'grade' => $academicClass->grade,
+                'subjects_count' => $subjects->count()
+            ]);
+
+            $enrollmentData = [];
+            foreach ($subjects as $subject) {
+                $enrollmentData[$subject->id] = [
+                    'progress' => 0,
+                    'last_accessed' => null,
+                    'last_activity_type' => null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+
+            if (!empty($enrollmentData)) {
+                $student->subjects()->attach($enrollmentData);
+                Log::info('Student enrolled in subjects successfully', [
+                    'student_id' => $student->id,
+                    'subjects_enrolled' => count($enrollmentData)
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Failed to enroll student in subjects', [
+                'student_id' => $student->id,
+                'academic_class_id' => $academicClassId,
+                'error' => $e->getMessage()
+            ]);
+            // Don't throw exception - subject enrollment failure shouldn't block registration
+        }
     }
 
     /**
@@ -485,7 +608,6 @@ class AuthController extends Controller
         }
     }
 
-
     public function logout(Request $request)
     {
         Auth::logout();
@@ -532,7 +654,7 @@ class AuthController extends Controller
             'super_admin' => redirect()->intended('/super-admin'),
             'admin' => redirect()->intended('/admin'),
             'teacher' => redirect()->intended('/teacher'),
-            'student' => redirect()->intended('/student/dashboard'),
+            'student' => redirect()->intended('/'),
             default => redirect()->intended('/'),
         };
     }
