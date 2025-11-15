@@ -181,38 +181,102 @@ class FrontendController extends Controller
     {
         try {
             $language = $this->getCurrentLanguage();
+            $user = $request->user();
+            
             Log::info('📚 Loading courses page with language: ' . $language);
+            Log::info('🔐 User authentication:', [
+                'is_logged_in' => !!$user,
+                'user_role' => $user ? $user->role : 'guest',
+                'user_id' => $user ? $user->id : null
+            ]);
 
+            // Base query for courses
             $query = ClassModel::with(['teacher:id,name', 'students'])
                 ->select('id', 'name', 'subject', 'grade', 'type', 'category', 'description', 'capacity', 'status', 'created_at', 'image', 'thumbnail')
                 ->where('status', 'active');
 
-            // Filter by category
-            if ($request->has('category') && $request->category) {
-                $query->where('category', $request->category);
+            $studentInfo = [];
+            
+            // Handle authenticated student - show only their enrolled subjects
+            if ($user && $user->role === 'student') {
+                $student = Student::with(['academicClass', 'subjects'])
+                    ->where('user_id', $user->id)
+                    ->first();
+
+                if ($student) {
+                    Log::info('🎓 Student found:', [
+                        'student_id' => $student->id,
+                        'academic_class_id' => $student->academic_class_id,
+                        'academic_class_name' => $student->academicClass->name ?? 'None',
+                        'enrolled_subjects_count' => $student->subjects->count()
+                    ]);
+
+                    // Get enrolled subject IDs
+                    $enrolledSubjectIds = $student->subjects->pluck('id')->toArray();
+                    
+                    if (!empty($enrolledSubjectIds)) {
+                        // Only show enrolled subjects
+                        $query->whereIn('id', $enrolledSubjectIds);
+                        
+                        // Add progress data to the query
+                        $query->with(['enrolledStudents' => function($q) use ($student) {
+                            $q->where('student_id', $student->id)
+                            ->select('student_id', 'class_id', 'progress');
+                        }]);
+                    } else {
+                        // Student has no enrolled subjects
+                        $query->whereRaw('1 = 0'); // Force empty results
+                    }
+
+                    // Prepare student info for frontend
+                    $studentInfo = [
+                        'name' => $user->name,
+                        'academic_class' => $student->academicClass->name ?? 'Not assigned',
+                        'avatar' => $student->profile_picture_url,
+                        'roll_number' => $student->roll_number,
+                        'admission_date' => $student->admission_date?->format('M d, Y')
+                    ];
+                } else {
+                    Log::warning('❌ Student record not found for user:', ['user_id' => $user->id]);
+                    $studentInfo = [
+                        'name' => $user->name,
+                        'academic_class' => 'Not assigned',
+                        'avatar' => null,
+                        'roll_number' => 'N/A',
+                        'admission_date' => 'N/A'
+                    ];
+                }
+            } else {
+                // Guest or non-student users - show all courses with filters
+                Log::info('👤 Guest user or non-student - showing all courses');
+
+                // Filter by category (only for guests/non-students)
+                if ($request->has('category') && $request->category) {
+                    $query->where('category', $request->category);
+                }
+
+                // Filter by type (only for guests/non-students)
+                if ($request->has('type') && $request->type) {
+                    $query->where('type', $request->type);
+                }
+
+                // Filter by grade (only for guests/non-students)
+                if ($request->has('grade') && $request->grade) {
+                    $query->where('grade', $request->grade);
+                }
+
+                // Search (available for all users)
+                if ($request->has('search') && $request->search) {
+                    $query->where(function($q) use ($request) {
+                        $q->where('name', 'like', '%' . $request->search . '%')
+                        ->orWhere('subject', 'like', '%' . $request->search . '%')
+                        ->orWhere('description', 'like', '%' . $request->search . '%')
+                        ->orWhere('category', 'like', '%' . $request->search . '%');
+                    });
+                }
             }
 
-            // Filter by type
-            if ($request->has('type') && $request->type) {
-                $query->where('type', $request->type);
-            }
-
-            // Filter by grade
-            if ($request->has('grade') && $request->grade) {
-                $query->where('grade', $request->grade);
-            }
-
-            // Search
-            if ($request->has('search') && $request->search) {
-                $query->where(function($q) use ($request) {
-                    $q->where('name', 'like', '%' . $request->search . '%')
-                    ->orWhere('subject', 'like', '%' . $request->search . '%')
-                    ->orWhere('description', 'like', '%' . $request->search . '%')
-                    ->orWhere('category', 'like', '%' . $request->search . '%');
-                });
-            }
-
-            // Sort
+            // Sort (available for all users)
             $sort = $request->get('sort', 'latest');
             switch ($sort) {
                 case 'name':
@@ -222,6 +286,7 @@ class FrontendController extends Controller
                     $query->orderBy('grade', 'asc');
                     break;
                 case 'popular':
+                    // We'll handle this after getting student counts
                     $query->orderBy('created_at', 'desc');
                     break;
                 case 'latest':
@@ -234,9 +299,9 @@ class FrontendController extends Controller
             $perPage = $request->get('per_page', 12);
             $courses = $query->paginate($perPage)->withQueryString();
 
-            // Transform courses for frontend with language support
-            $courses->getCollection()->transform(function ($course) use ($language) {
-                return [
+            // Transform courses for frontend with language support and progress data
+            $courses->getCollection()->transform(function ($course) use ($language, $user) {
+                $courseData = [
                     'id' => $course->id,
                     'name' => $this->getTranslatedCourseName($course, $language),
                     'subject' => $this->getTranslatedSubject($course->subject, $language),
@@ -264,6 +329,21 @@ class FrontendController extends Controller
                     'original_subject' => $course->subject,
                     'original_description' => $course->description,
                 ];
+
+                // Add progress data for enrolled students
+                if ($user && $user->role === 'student' && isset($course->enrolledStudents)) {
+                    $enrollment = $course->enrolledStudents->first();
+                    if ($enrollment) {
+                        $courseData['progress'] = $enrollment->progress;
+                        $courseData['last_accessed'] = $enrollment->last_accessed;
+                        $courseData['is_enrolled'] = true;
+                    }
+                } else {
+                    $courseData['progress'] = 0;
+                    $courseData['is_enrolled'] = false;
+                }
+
+                return $courseData;
             });
 
             // Handle popular sort after transformation
@@ -272,28 +352,70 @@ class FrontendController extends Controller
                 $courses->setCollection($sortedCollection);
             }
 
-            $categories = ClassModel::where('status', 'active')
-                ->whereNotNull('category')
-                ->distinct()
-                ->pluck('category')
-                ->filter()
-                ->values();
+            // Get filter options (only for guests/non-students)
+            $categories = [];
+            $types = [];
+            $grades = [];
 
-            $types = ClassModel::where('status', 'active')
-                ->distinct()
-                ->pluck('type')
-                ->filter()
-                ->values();
+            if (!$user || $user->role !== 'student') {
+                $categories = ClassModel::where('status', 'active')
+                    ->whereNotNull('category')
+                    ->distinct()
+                    ->pluck('category')
+                    ->filter()
+                    ->values()
+                    ->toArray(); // Convert to array
 
-            $grades = ClassModel::where('status', 'active')
-                ->whereNotNull('grade')
-                ->distinct()
-                ->pluck('grade')
-                ->filter()
-                ->values()
-                ->sort();
+                $types = ClassModel::where('status', 'active')
+                    ->distinct()
+                    ->pluck('type')
+                    ->filter()
+                    ->values()
+                    ->toArray(); // Convert to array
 
-            Log::info("✅ Successfully loaded {$courses->count()} courses with image data");
+                $grades = ClassModel::where('status', 'active')
+                    ->whereNotNull('grade')
+                    ->distinct()
+                    ->pluck('grade')
+                    ->filter()
+                    ->values()
+                    ->sort()
+                    ->toArray(); // Convert to array
+            }
+
+            // Translate categories for frontend
+            $translatedCategories = [];
+            foreach ($categories as $category) {
+                $translatedCategories[] = $this->getTranslatedCategory($category, $language);
+            }
+
+            // Determine page title and description based on user type
+            if ($user && $user->role === 'student') {
+                $pageTitle = $language === 'bn' 
+                    ? 'আমার কোর্সসমূহ - পাঠশালা' 
+                    : 'My Courses - Pathshala';
+                
+                $metaDescription = $language === 'bn'
+                    ? 'আপনার নিবন্ধিত বিষয়সমূহ এবং অগ্রগতি দেখুন। আপনার শিক্ষাগত যাত্রা অব্যাহত রাখুন।'
+                    : 'View your enrolled subjects and track your progress. Continue your learning journey.';
+            } else {
+                $pageTitle = $language === 'bn' 
+                    ? 'আমাদের কোর্সসমূহ - পাঠশালা' 
+                    : 'Our Courses - Pathshala';
+                
+                $metaDescription = $language === 'bn' 
+                    ? 'আমাদের ব্যাপক কোর্স এবং ক্লাস ক্যাটালগ ব্রাউজ করুন। আপনার শিক্ষাগত যাত্রার জন্য নিখুঁত লার্নিং পথ খুঁজুন।'
+                    : 'Browse our comprehensive catalog of courses and classes. Find the perfect learning path for your educational journey.';
+            }
+
+            Log::info("✅ Successfully loaded {$courses->count()} courses", [
+                'user_type' => $user ? $user->role : 'guest',
+                'has_student_info' => !empty($studentInfo),
+                'total_courses' => $courses->total(),
+                'categories_count' => count($categories),
+                'types_count' => count($types),
+                'grades_count' => count($grades)
+            ]);
 
             return Inertia::render('Frontend/Courses', [
                 'courses' => $courses,
@@ -305,15 +427,12 @@ class FrontendController extends Controller
                     'sort' => $sort,
                     'per_page' => $perPage,
                 ],
-                'categories' => $categories->map(function($category) use ($language) {
-                    return $this->getTranslatedCategory($category, $language);
-                })->toArray(),
+                'categories' => $translatedCategories, // Use the translated array
                 'types' => $types,
                 'grades' => $grades,
-                'pageTitle' => $language === 'bn' ? 'আমাদের কোর্সসমূহ - পাঠশালা' : 'Our Courses - Pathshala',
-                'metaDescription' => $language === 'bn' 
-                    ? 'আমাদের ব্যাপক কোর্স এবং ক্লাস ক্যাটালগ ব্রাউজ করুন। আপনার শিক্ষাগত যাত্রার জন্য নিখুঁত লার্নিং পথ খুঁজুন।'
-                    : 'Browse our comprehensive catalog of courses and classes. Find the perfect learning path for your educational journey.',
+                'studentInfo' => $studentInfo,
+                'pageTitle' => $pageTitle,
+                'metaDescription' => $metaDescription,
                 'currentLanguage' => $language,
                 'availableLanguages' => ['en', 'bn']
             ]);

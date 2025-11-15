@@ -54,6 +54,8 @@ export const translations = {
     'No courses found. Please check back later.': 'No courses found. Please check back later.',
     'Reload Courses': 'Reload Courses',
     'Loading courses...': 'Loading courses...',
+    'My Enrolled Courses': 'My Enrolled Courses',
+    'Continue your learning journey with your enrolled subjects': 'Continue your learning journey with your enrolled subjects',
     
     // Instructors Page
     'All Instructors': 'All Instructors',
@@ -515,6 +517,8 @@ export const translations = {
     'No courses found. Please check back later.': 'কোন কোর্স পাওয়া যায়নি। দয়া করে পরে আবার চেক করুন।',
     'Reload Courses': 'কোর্স পুনরায় লোড করুন',
     'Loading courses...': 'কোর্স লোড হচ্ছে...',
+    'My Enrolled Courses': 'আমার নথিভুক্ত কোর্সগুলি',
+    'Continue your learning journey with your enrolled subjects': 'আপনার নথিভুক্ত বিষয়গুলির সাথে আপনার শেখার যাত্রা চালিয়ে যান',
     
     // Instructors Page
     'All Instructors': 'সমস্ত ইন্সট্রাক্টর',

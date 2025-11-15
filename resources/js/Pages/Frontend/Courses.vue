@@ -10,15 +10,60 @@
 
         <!-- Show courses when available -->
         <div v-else-if="coursesData.length > 0" class="courses-content">
-          <!-- Header Section - Centered -->
+          <!-- Header Section - Different for logged in vs guest users -->
           <div class="header-section">
-            <h1 class="title">{{ t('Available Courses') }}</h1>
-            <p class="subtitle">
-              {{ t('Explore our wide range of courses and classes') }}
-            </p>
+            <template v-if="$page.props.auth.user">
+              <!-- Logged in user header -->
+              <h1 class="title">
+                <template v-if="$page.props.auth.user.role === 'student'">
+                  {{ t('My Enrolled Courses') }}
+                </template>
+                <template v-else>
+                  {{ t('Available Courses') }}
+                </template>
+              </h1>
+              <p class="subtitle">
+                <template v-if="$page.props.auth.user.role === 'student'">
+                  {{ t('Continue your learning journey with your enrolled subjects') }}
+                </template>
+                <template v-else>
+                  {{ t('Explore our wide range of courses and classes') }}
+                </template>
+              </p>
+            </template>
+            <template v-else>
+              <!-- Guest user header -->
+              <h1 class="title">{{ t('Available Courses') }}</h1>
+              <p class="subtitle">
+                {{ t('Explore our wide range of courses and classes. Sign up to enroll!') }}
+              </p>
+            </template>
           </div>
           
-          <!-- Search and Filter Section -->
+          <!-- Authentication Status Banner -->
+          <div v-if="!$page.props.auth.user" class="auth-banner">
+            <div class="banner-content">
+              <div class="banner-icon">
+                <i class="fas fa-graduation-cap"></i>
+              </div>
+              <div class="banner-text">
+                <h4>{{ t('Want to see personalized courses?') }}</h4>
+                <p>{{ t('Sign in to view courses specific to your academic class and track your progress.') }}</p>
+              </div>
+              <div class="banner-actions">
+                <a href="/student-login" class="btn btn-primary">
+                  <i class="fas fa-sign-in-alt"></i>
+                  {{ t('Sign In') }}
+                </a>
+                <a href="/student-registration" class="btn btn-outline">
+                  <i class="fas fa-user-plus"></i>
+                  {{ t('Sign Up') }}
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Search and Filter Section - Hide some filters for logged in students -->
           <div class="search-filter-section">
             <div class="search-container">
               <form @submit.prevent="searchCourses" class="search-form">
@@ -37,7 +82,13 @@
             </div>
             
             <div class="filter-options">
-              <select v-model="courseType" class="filter-select" @change="filterCourses">
+              <!-- Hide course type filter for logged in students (they only see their subjects) -->
+              <select 
+                v-if="!isLoggedInStudent" 
+                v-model="courseType" 
+                class="filter-select" 
+                @change="filterCourses"
+              >
                 <option value="">{{ t('All Course Types') }}</option>
                 <option value="regular">{{ t('Regular Classes') }}</option>
                 <option value="other">{{ t('Skill Courses') }}</option>
@@ -58,6 +109,33 @@
             </div>
           </div>
 
+          <!-- Student Info Banner (for logged in students) -->
+          <div v-if="isLoggedInStudent && studentInfo" class="student-info-banner">
+            <div class="student-info-content">
+              <div class="student-avatar">
+                <img 
+                  :src="studentInfo.avatar || '/assets/img/default-avatar.png'" 
+                  :alt="studentInfo.name"
+                  class="avatar-img"
+                >
+              </div>
+              <div class="student-details">
+                <h4>{{ t('Welcome back') }}, {{ studentInfo.name }}!</h4>
+                <p>
+                  {{ t('You are enrolled in') }} <strong>{{ studentInfo.academic_class }}</strong>
+                  {{ t('with') }} <strong>{{ coursesData.length }}</strong> 
+                  {{ t('subjects') }}
+                </p>
+              </div>
+              <div class="student-progress">
+                <div class="progress-item">
+                  <span class="progress-label">{{ t('Enrolled Subjects') }}</span>
+                  <span class="progress-value">{{ coursesData.length }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Courses Count and Pagination Info -->
           <div class="pagination-info-section">
             <div class="pagination-info">
@@ -66,7 +144,10 @@
                 <strong>{{ pagination.from }}-{{ pagination.to }}</strong> 
                 {{ t('of') }} 
                 <strong>{{ pagination.total }}</strong> 
-                {{ t('courses') }}
+                {{ isLoggedInStudent ? t('subjects') : t('courses') }}
+              </span>
+              <span v-if="isLoggedInStudent" class="student-class-info">
+                • {{ t('Academic Class') }}: <strong>{{ studentInfo?.academic_class || t('Not assigned') }}</strong>
               </span>
             </div>
           </div>
@@ -79,6 +160,7 @@
                 v-for="course in coursesData" 
                 :key="course.id"
                 @click="viewCourseDetails(course)"
+                :class="{ 'enrolled-course': isLoggedInStudent }"
               >
                 <div class="course-thumb">
                   <img 
@@ -94,6 +176,13 @@
                   <div class="course-type-badge" :class="course.type || 'regular'">
                     {{ (course.type || 'regular') === 'regular' ? t('Class') : t('Course') }}
                   </div>
+                  
+                  <!-- Enrollment badge for logged in students -->
+                  <div v-if="isLoggedInStudent" class="enrollment-badge">
+                    <i class="fas fa-check-circle"></i>
+                    {{ t('Enrolled') }}
+                  </div>
+                  
                   <!-- Image loading indicator -->
                   <div v-if="imageLoading[course.id]" class="image-loading">
                     <div class="loading-spinner"></div>
@@ -125,6 +214,41 @@
                     <div class="course-status" :class="course.status || 'active'">
                       {{ getStatusText(course.status || 'active') }}
                     </div>
+                  </div>
+                  
+                  <!-- Progress bar for enrolled students -->
+                  <div v-if="isLoggedInStudent && course.progress !== undefined" class="course-progress">
+                    <div class="progress-header">
+                      <span class="progress-label">{{ t('Your Progress') }}</span>
+                      <span class="progress-percentage">{{ course.progress }}%</span>
+                    </div>
+                    <div class="progress-bar">
+                      <div 
+                        class="progress-fill" 
+                        :style="{ width: course.progress + '%' }"
+                      ></div>
+                    </div>
+                  </div>
+                  
+                  <!-- Action buttons -->
+                  <div class="course-actions">
+                    <button 
+                      v-if="!isLoggedInStudent" 
+                      @click.stop="enrollCourse(course)"
+                      class="btn-enroll"
+                      :disabled="enrollingCourseId === course.id"
+                    >
+                      <i class="fas fa-plus"></i>
+                      {{ t('Enroll Now') }}
+                    </button>
+                    <button 
+                      v-else 
+                      @click.stop="continueCourse(course)"
+                      class="btn-continue"
+                    >
+                      <i class="fas fa-play"></i>
+                      {{ t('Continue') }}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -240,6 +364,16 @@
                 <i class="fas fa-sync"></i>
                 {{ t('Refresh Courses') }}
               </button>
+              
+              <!-- Additional buttons for students -->
+              <button 
+                v-if="isLoggedInStudent" 
+                @click="viewMyProgress" 
+                class="btn btn-success"
+              >
+                <i class="fas fa-chart-line"></i>
+                {{ t('View My Progress') }}
+              </button>
             </div>
           </div>
         </div>
@@ -249,14 +383,34 @@
           <div class="empty-icon">
             <i class="fas fa-book-open fa-4x"></i>
           </div>
-          <h1 class="title">{{ t('No Courses Available') }}</h1>
+          <h1 class="title">
+            <template v-if="isLoggedInStudent">
+              {{ t('No Subjects Enrolled') }}
+            </template>
+            <template v-else>
+              {{ t('No Courses Available') }}
+            </template>
+          </h1>
           <p class="text">
-            {{ t('No courses found. Please check back later.') }}
+            <template v-if="isLoggedInStudent">
+              {{ t('You are not enrolled in any subjects yet. Please contact your administrator.') }}
+            </template>
+            <template v-else>
+              {{ t('No courses found. Please check back later.') }}
+            </template>
           </p>
           <div class="action-buttons">
             <button @click="refreshCourses" class="btn btn-primary">
               <i class="fas fa-refresh"></i>
               {{ t('Reload Courses') }}
+            </button>
+            <button 
+              v-if="!isLoggedInStudent" 
+              @click="goToRegistration" 
+              class="btn btn-success"
+            >
+              <i class="fas fa-user-plus"></i>
+              {{ t('Sign Up for Courses') }}
             </button>
           </div>
         </div>
@@ -280,26 +434,42 @@ const props = defineProps({
   filters: {
     type: Object,
     default: () => ({})
+  },
+  studentInfo: {
+    type: Object,
+    default: () => ({})
   }
 });
 
 // Use the global translation composable
 const { currentLanguage, t, switchLanguage } = useTranslation()
 
-// Reactive data - NOW we can use props
+// Reactive data
 const loading = ref(false);
 const searchQuery = ref(props.filters.search || '');
 const courseType = ref(props.filters.type || '');
 const sortBy = ref(props.filters.sort || 'name');
 const currentTheme = ref('light');
-const imageLoading = ref({}); // Track image loading states
-const perPage = ref(props.filters.per_page || 12); // Items per page
-const pageJump = ref(''); // For page jump input
-
-// Add icon render key to prevent disappearing icons
+const imageLoading = ref({});
+const perPage = ref(props.filters.per_page || 12);
+const pageJump = ref('');
 const iconRenderKey = ref(0);
+const enrollingCourseId = ref(null);
 
-// Watch for language changes to update icons
+// Computed properties for authentication
+const isLoggedIn = computed(() => {
+  return !!props.$page?.props?.auth?.user;
+});
+
+const isLoggedInStudent = computed(() => {
+  return isLoggedIn.value && props.$page?.props?.auth?.user?.role === 'student';
+});
+
+const user = computed(() => {
+  return props.$page?.props?.auth?.user || null;
+});
+
+// Watch for language changes
 watch(currentLanguage, () => {
   iconRenderKey.value++;
 });
@@ -313,8 +483,12 @@ const handleThemeChange = (event) => {
 const coursesData = computed(() => {
   const data = Array.isArray(props.courses) ? props.courses : (props.courses?.data || []);
   
-  // Log the data structure to debug
   console.log('📦 Courses data received:', data);
+  console.log('🔐 User authentication:', {
+    isLoggedIn: isLoggedIn.value,
+    isStudent: isLoggedInStudent.value,
+    user: user.value
+  });
   
   if (data.length > 0) {
     console.log('🖼️ First course image data:', {
@@ -333,7 +507,6 @@ const coursesData = computed(() => {
 // Enhanced Pagination Computed Properties
 const pagination = computed(() => {
   if (Array.isArray(props.courses)) {
-    // If courses is an array (no pagination), return default values
     return {
       current_page: 1,
       last_page: 1,
@@ -347,7 +520,6 @@ const pagination = computed(() => {
     };
   }
 
-  // Handle paginated response
   const paginationData = props.courses;
   return {
     current_page: paginationData.current_page || 1,
@@ -366,7 +538,7 @@ const pagination = computed(() => {
 const visiblePages = computed(() => {
   const current = pagination.value.current_page;
   const last = pagination.value.last_page;
-  const delta = 2; // Number of pages to show around current page
+  const delta = 2;
   const range = [];
   const rangeWithDots = [];
 
@@ -401,6 +573,56 @@ const showPagination = computed(() => {
   return pagination.value.total > pagination.value.per_page;
 });
 
+// Course enrollment methods
+const enrollCourse = async (course) => {
+  if (!isLoggedIn.value) {
+    // Redirect to login if not authenticated
+    router.visit('/student-login', {
+      data: {
+        redirect: window.location.pathname
+      }
+    });
+    return;
+  }
+
+  enrollingCourseId.value = course.id;
+  
+  try {
+    const response = await fetch(`/api/courses/${course.id}/enroll`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      }
+    });
+
+    if (response.ok) {
+      // Refresh the page to show updated enrollment status
+      router.reload({ only: ['courses'] });
+    } else {
+      alert(t('Failed to enroll in course. Please try again.'));
+    }
+  } catch (error) {
+    console.error('Enrollment error:', error);
+    alert(t('An error occurred while enrolling. Please try again.'));
+  } finally {
+    enrollingCourseId.value = null;
+  }
+};
+
+const continueCourse = (course) => {
+  // Navigate to course content
+  viewCourseDetails(course);
+};
+
+const viewMyProgress = () => {
+  router.visit('/learning-progress');
+};
+
+const goToRegistration = () => {
+  router.visit('/student-registration');
+};
+
 // Pagination Methods
 const goToPage = (page) => {
   if (page < 1 || page > pagination.value.last_page || page === pagination.value.current_page) return;
@@ -410,7 +632,7 @@ const goToPage = (page) => {
   
   // Preserve existing filters
   if (searchQuery.value) currentParams.set('search', searchQuery.value);
-  if (courseType.value) currentParams.set('type', courseType.value);
+  if (courseType.value && !isLoggedInStudent.value) currentParams.set('type', courseType.value);
   if (sortBy.value !== 'name') currentParams.set('sort', sortBy.value);
   if (perPage.value !== 12) currentParams.set('per_page', perPage.value);
   
@@ -420,11 +642,11 @@ const goToPage = (page) => {
 const updatePageSize = () => {
   const currentParams = new URLSearchParams(window.location.search);
   currentParams.set('per_page', perPage.value);
-  currentParams.delete('page'); // Go to first page when changing page size
+  currentParams.delete('page');
   
   // Preserve existing filters
   if (searchQuery.value) currentParams.set('search', searchQuery.value);
-  if (courseType.value) currentParams.set('type', courseType.value);
+  if (courseType.value && !isLoggedInStudent.value) currentParams.set('type', courseType.value);
   if (sortBy.value !== 'name') currentParams.set('sort', sortBy.value);
   
   router.visit(`${window.location.pathname}?${currentParams.toString()}`);
@@ -432,18 +654,16 @@ const updatePageSize = () => {
 
 // Refresh courses
 const refreshCourses = () => {
-  router.reload({ only: ['courses'] });
+  router.reload({ only: ['courses', 'studentInfo'] });
 };
 
 // Get course title in "Class Name - Subject Name" format
 const getCourseTitle = (course) => {
   if (course.type === 'regular') {
-    // For regular classes: "Class 1 - Mathematics"
     const className = course.name || `${t('Class')} ${course.grade || ''}`;
     const subjectName = course.subject || t('General');
     return `${className} - ${subjectName}`;
   } else {
-    // For other courses: Use the course name directly
     return course.name || course.class_name || t('Untitled Course');
   }
 };
@@ -469,7 +689,7 @@ const searchCourses = () => {
     currentParams.delete('search');
   }
   
-  currentParams.delete('page'); // Reset to first page when searching
+  currentParams.delete('page');
   
   router.visit(`${window.location.pathname}?${currentParams.toString()}`);
 };
@@ -483,7 +703,7 @@ const filterCourses = () => {
     currentParams.delete('type');
   }
   
-  currentParams.delete('page'); // Reset to first page when filtering
+  currentParams.delete('page');
   
   router.visit(`${window.location.pathname}?${currentParams.toString()}`);
 };
@@ -497,7 +717,7 @@ const sortCourses = () => {
     currentParams.delete('sort');
   }
   
-  currentParams.delete('page'); // Reset to first page when sorting
+  currentParams.delete('page');
   
   router.visit(`${window.location.pathname}?${currentParams.toString()}`);
 };
@@ -508,7 +728,6 @@ const clearFilters = () => {
   sortBy.value = 'name';
   perPage.value = 12;
   
-  // Clear all filters and go to first page
   router.visit(window.location.pathname);
 };
 
@@ -795,6 +1014,140 @@ onUnmounted(() => {
 }
 
 /* ==================== */
+/* AUTHENTICATION BANNER */
+/* ==================== */
+.auth-banner {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  color: white;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 30px;
+  box-shadow: var(--shadow-lg);
+}
+
+.banner-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.banner-icon {
+  font-size: 2.5rem;
+  opacity: 0.9;
+}
+
+.banner-text {
+  flex: 1;
+}
+
+.banner-text h4 {
+  margin: 0 0 8px 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.banner-text p {
+  margin: 0;
+  opacity: 0.9;
+  font-size: 0.95rem;
+}
+
+.banner-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 2px solid white;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-outline:hover {
+  background: white;
+  color: var(--primary-color);
+}
+
+/* ==================== */
+/* STUDENT INFO BANNER */
+/* ==================== */
+.student-info-banner {
+  background: var(--card-bg);
+  border: 2px solid var(--primary-color);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 30px;
+  box-shadow: var(--shadow);
+}
+
+.student-info-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.student-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid var(--primary-color);
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.student-details {
+  flex: 1;
+}
+
+.student-details h4 {
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.student-details p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.student-progress {
+  display: flex;
+  gap: 20px;
+}
+
+.progress-item {
+  text-align: center;
+}
+
+.progress-label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.progress-value {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+/* ==================== */
 /* SEARCH & FILTER SECTION */
 /* ==================== */
 .search-filter-section {
@@ -915,6 +1268,12 @@ onUnmounted(() => {
   color: var(--text-primary);
 }
 
+.student-class-info {
+  margin-left: 16px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
 /* ==================== */
 /* COURSES GRID SECTION */
 /* ==================== */
@@ -944,6 +1303,14 @@ onUnmounted(() => {
   transform: translateY(-8px);
   box-shadow: var(--shadow-lg);
   border-color: var(--primary-color);
+}
+
+.course-card.enrolled-course {
+  border: 2px solid color-mix(in srgb, var(--success-color) 20%, transparent);
+}
+
+.course-card.enrolled-course:hover {
+  border-color: var(--success-color);
 }
 
 .course-thumb {
@@ -1006,6 +1373,25 @@ onUnmounted(() => {
 
 .course-type-badge.other {
   background: linear-gradient(135deg, var(--success-color), color-mix(in srgb, var(--success-color) 80%, black));
+}
+
+/* Enrollment Badge */
+.enrollment-badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: var(--success-color);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .course-content {
@@ -1129,6 +1515,91 @@ onUnmounted(() => {
 .course-status.upcoming {
   background: linear-gradient(135deg, color-mix(in srgb, var(--warning-color) 20%, var(--bg-primary)), color-mix(in srgb, var(--warning-color) 40%, var(--bg-primary)));
   color: color-mix(in srgb, var(--warning-color) 70%, black);
+}
+
+/* Course Progress */
+.course-progress {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-light);
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.progress-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.progress-percentage {
+  font-size: 0.85rem;
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+.progress-bar {
+  height: 6px;
+  background: var(--border-color);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* Course Actions */
+.course-actions {
+  margin-top: 16px;
+}
+
+.btn-enroll, .btn-continue {
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-enroll {
+  background: var(--primary-color);
+  color: white;
+}
+
+.btn-enroll:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+}
+
+.btn-enroll:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-continue {
+  background: var(--success-color);
+  color: white;
+}
+
+.btn-continue:hover {
+  background: color-mix(in srgb, var(--success-color) 80%, black);
+  transform: translateY(-2px);
 }
 
 /* ==================== */
@@ -1321,6 +1792,18 @@ onUnmounted(() => {
   box-shadow: 0 8px 25px color-mix(in srgb, var(--text-muted) 40%, transparent);
 }
 
+.btn-success {
+  background: linear-gradient(135deg, var(--success-color), color-mix(in srgb, var(--success-color) 80%, black));
+  color: white;
+  box-shadow: 0 4px 15px color-mix(in srgb, var(--success-color) 30%, transparent);
+}
+
+.btn-success:hover {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--success-color) 80%, black), color-mix(in srgb, var(--success-color) 60%, black));
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px color-mix(in srgb, var(--success-color) 40%, transparent);
+}
+
 /* ==================== */
 /* EMPTY STATE */
 /* ==================== */
@@ -1349,6 +1832,13 @@ onUnmounted(() => {
   color: var(--text-secondary);
   margin-bottom: 30px;
   font-size: 1.125rem;
+}
+
+.empty-container .action-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 /* ==================== */
@@ -1409,6 +1899,33 @@ onUnmounted(() => {
   
   .subtitle {
     font-size: 1.125rem;
+  }
+  
+  .auth-banner,
+  .student-info-banner {
+    padding: 20px;
+  }
+  
+  .banner-content,
+  .student-info-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+  
+  .banner-actions {
+    justify-content: center;
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .banner-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .student-progress {
+    justify-content: center;
   }
   
   .search-filter-section {
@@ -1496,6 +2013,11 @@ onUnmounted(() => {
     font-size: 1rem;
   }
   
+  .auth-banner,
+  .student-info-banner {
+    padding: 16px;
+  }
+  
   .search-filter-section {
     padding: 20px 16px;
     margin-bottom: 30px;
@@ -1575,7 +2097,9 @@ onUnmounted(() => {
 .pagination-btn:focus,
 .pagination-number:focus,
 .page-jump-input:focus,
-.page-jump-btn:focus {
+.page-jump-btn:focus,
+.btn-enroll:focus,
+.btn-continue:focus {
   outline: 3px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
   outline-offset: 2px;
 }
@@ -1590,7 +2114,9 @@ onUnmounted(() => {
   .btn,
   .course-thumb img,
   .pagination-btn,
-  .pagination-number {
+  .pagination-number,
+  .btn-enroll,
+  .btn-continue {
     animation: none;
     transition: none;
   }
@@ -1598,7 +2124,9 @@ onUnmounted(() => {
   .course-card:hover,
   .btn:hover,
   .pagination-btn:hover,
-  .pagination-number:hover {
+  .pagination-number:hover,
+  .btn-enroll:hover,
+  .btn-continue:hover {
     transform: none;
   }
   
