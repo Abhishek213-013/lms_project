@@ -233,7 +233,7 @@
                 <div class="col-12">
                   <h2 class="cta-title">{{ displayContent.home_cta_title || t('Ready to Start Learning?') }}</h2>
                   <p class="cta-subtitle">{{ displayContent.home_cta_subtitle || t('Join thousands of students already learning with Pathshala') }}</p>
-                  <Link href="/registration" class="btn btn-primary btn-lg">
+                  <Link href="/phone-verification" class="btn btn-primary btn-lg">
                     {{ displayContent.home_cta_button || t('Get Started Today') }}
                   </Link>
                 </div>

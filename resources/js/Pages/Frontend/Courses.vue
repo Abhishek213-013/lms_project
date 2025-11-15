@@ -55,7 +55,7 @@
                   <i class="fas fa-sign-in-alt"></i>
                   {{ t('Sign In') }}
                 </a>
-                <a href="/student-registration" class="btn btn-outline">
+                <a href="/phone-verification" class="btn btn-outline">
                   <i class="fas fa-user-plus"></i>
                   {{ t('Sign Up') }}
                 </a>
