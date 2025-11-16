@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\Student;
 use App\Models\ClassModel;
@@ -125,6 +126,52 @@ class StudentProfileController extends Controller
         return Inertia::render('StudentProfile/Index', [
             'profile' => $profileData
         ]);
+    }
+ 
+
+    public function getStudentProfileForHeader(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            
+            if (!$user) {
+                return response()->json([
+                    'student' => null
+                ]);
+            }
+
+            // Get student record with user relationship
+            $student = Student::with('user')
+                ->where('user_id', $user->id)
+                ->first();
+
+            if (!$student) {
+                return response()->json([
+                    'student' => null
+                ]);
+            }
+
+            return response()->json([
+                'student' => [
+                    'id' => $student->id,
+                    'user_id' => $student->user_id,
+                    'name' => $student->user->name,
+                    'email' => $student->user->email,
+                    'profile_picture' => $student->profile_picture,
+                    'profile_picture_url' => $student->profile_picture_url,
+                    'roll_number' => $student->roll_number,
+                    'academic_class_id' => $student->academic_class_id,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching student profile for header: ' . $e->getMessage());
+            
+            return response()->json([
+                'student' => null,
+                'error' => 'Failed to fetch student profile'
+            ], 500);
+        }
     }
 
     private function calculateLearningHours($userId)

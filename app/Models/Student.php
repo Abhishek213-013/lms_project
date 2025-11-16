@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\Storage;
 
 class Student extends Model
 {
@@ -87,6 +88,12 @@ class Student extends Model
             return null;
         }
         
+        // Check if it's already a full URL
+        if (str_starts_with($this->profile_picture, 'http')) {
+            return $this->profile_picture;
+        }
+        
+        // Generate the storage URL
         return asset('storage/profile-pictures/' . $this->profile_picture);
     }
 

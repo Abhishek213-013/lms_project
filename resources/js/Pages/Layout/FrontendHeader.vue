@@ -1,5 +1,10 @@
 <template>
   <header>
+    <!-- Remove the debug div for production -->
+    <!-- <div style="position: fixed; top: 0; left: 0; background: red; color: white; padding: 10px; z-index: 9999;">
+      Debug: {{ JSON.stringify($page.props.auth) }}
+    </div> -->
+    
     <div id="header-fixed-height"></div>
     <div id="sticky-header" class="header-area">
       <div class="container">
@@ -130,7 +135,7 @@
                   </div>
 
                   <!-- Profile Section -->
-                  <div class="profile-utility" v-if="$page.props.auth.user">
+                  <div class="profile-utility" v-if="$page.props.auth?.user">
                     <div class="profile-wrapper">
                       <button class="profile-trigger" @click="toggleProfileDropdown">
                         <!-- Dynamic Avatar Image -->
@@ -140,6 +145,7 @@
                           alt="Profile" 
                           class="avatar-image"
                           @error="handleAvatarError"
+                          @load="handleAvatarLoad"
                         >
                         <i v-else class="fas fa-user-circle fallback-avatar"></i>
                         <i class="fas fa-chevron-down" :class="{ 'rotate': profileOpen }"></i>
@@ -155,11 +161,15 @@
                               alt="Profile" 
                               class="student-avatar-image"
                               @error="handleAvatarError"
+                              @load="handleAvatarLoad"
                             >
                             <i v-else class="fas fa-user-circle student-avatar fallback-avatar"></i>
                             <div class="student-details">
-                              <div class="student-name">{{ $page.props.auth.user.name }}</div>
-                              <div class="student-email">{{ $page.props.auth.user.email }}</div>
+                              <div class="student-name">{{ $page.props.auth?.user?.name }}</div>
+                              <div class="student-email">{{ $page.props.auth?.user?.email }}</div>
+                              <div class="student-roll" v-if="$page.props.auth?.user?.student?.roll_number">
+                                Roll: {{ $page.props.auth?.user?.student?.roll_number }}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -337,7 +347,7 @@
                     <li><a href="#" @click.prevent="navigateWithLanguage('/instructors'); closeAll();">{{ t('Instructors') }}</a></li>
                     <li><a href="#" @click.prevent="navigateWithLanguage('/about'); closeAll();">{{ t('About') }}</a></li>
                     
-                    <template v-if="$page.props.auth.user">
+                    <template v-if="$page.props.auth?.user">
                       <li class="mobile-profile-section">
                         <div class="mobile-profile-header">
                           <div class="mobile-student-info">
@@ -348,6 +358,7 @@
                               alt="Profile" 
                               class="mobile-avatar-image"
                               @error="handleAvatarError"
+                              @load="handleAvatarLoad"
                             >
                             <i v-else class="fas fa-user-circle fallback-avatar"></i>
                             <div class="mobile-student-details">
@@ -388,9 +399,12 @@
 </template>
 
 <script setup>
-import { Link, router } from '@inertiajs/vue3'
+import { Link, router, usePage } from '@inertiajs/vue3'
 import { ref, onMounted, watch, nextTick, computed, onUnmounted } from 'vue'
 import { useTranslation } from '@/composables/useTranslation'
+
+// Use Inertia.js page props
+const $page = usePage()
 
 // Use the global translation composable
 const { currentLanguage, t, switchLanguage: switchLang } = useTranslation()
@@ -405,9 +419,20 @@ const showMobileSuggestions = ref(false)
 const courseSuggestions = ref([])
 const isLoadingSuggestions = ref(false)
 const iconErrors = ref(0)
-const studentAvatar = ref(null)
 const avatarError = ref(false)
 const isLoggingOut = ref(false)
+const avatarLoaded = ref(false)
+
+// Computed property for student avatar - uses page props directly
+const studentData = computed(() => {
+  return $page.props.auth?.user?.student || null
+})
+
+const studentAvatar = computed(() => {
+  const url = studentData.value?.profile_picture_url
+  console.log('🖼️ Student Avatar URL:', url)
+  return url
+})
 
 // Create a global theme state that ALWAYS defaults to light
 const getCurrentTheme = () => {
@@ -481,51 +506,25 @@ const initializeTheme = () => {
     applyTheme(theme)
 }
 
-// Add method to fetch student avatar
-const fetchStudentAvatar = async () => {
-  try {
-    if (!$page.props.auth.user) {
-      studentAvatar.value = null
-      avatarError.value = false
-      return
-    }
-
-    console.log('👤 Fetching student avatar for user:', $page.props.auth.user.id)
-
-    const response = await fetch('/api/student-profile')
-    
-    if (response.ok) {
-      const data = await response.json()
-      
-      if (data.student && data.student.profile_picture_url) {
-        studentAvatar.value = data.student.profile_picture_url
-        avatarError.value = false
-        console.log('✅ Student avatar loaded:', data.student.profile_picture_url)
-      } else {
-        studentAvatar.value = null
-        avatarError.value = false
-        console.log('ℹ️ No avatar found for student, using fallback')
-      }
-    } else {
-      console.error('❌ Failed to fetch student profile')
-      studentAvatar.value = null
-      avatarError.value = false
-    }
-  } catch (error) {
-    console.error('❌ Error fetching student avatar:', error)
-    studentAvatar.value = null
-    avatarError.value = false
-  }
-}
-
 // Add method to handle avatar loading errors
 const handleAvatarError = (event) => {
   console.warn('⚠️ Avatar image failed to load, using fallback')
   avatarError.value = true
-  studentAvatar.value = null
+  avatarLoaded.value = false
   
   if (event.target) {
     event.target.style.display = 'none'
+  }
+}
+
+// Add method to handle avatar successful load
+const handleAvatarLoad = (event) => {
+  console.log('✅ Avatar image loaded successfully')
+  avatarError.value = false
+  avatarLoaded.value = true
+  
+  if (event.target) {
+    event.target.style.display = 'block'
   }
 }
 
@@ -814,6 +813,17 @@ const logoutMobile = () => {
 // Lifecycle hooks
 onMounted(() => {
     console.log('🚀 FrontendHeader mounted - initializing theme and icons');
+    console.log('👤 Student data:', studentData.value)
+    console.log('🖼️ Student avatar URL:', studentAvatar.value)
+    console.log('🔐 Auth props:', $page.props.auth)
+    
+    // Test avatar image loading
+    if (studentAvatar.value) {
+      const testImg = new Image()
+      testImg.onload = () => console.log('✅ Avatar image loads successfully in test')
+      testImg.onerror = () => console.log('❌ Avatar image failed to load in test')
+      testImg.src = studentAvatar.value
+    }
     
     // Ensure Font Awesome is loaded
     loadFontAwesome()
@@ -826,11 +836,6 @@ onMounted(() => {
         refreshIcons()
     }, 500)
     
-    // Fetch student avatar if user is logged in
-    if ($page.props.auth.user) {
-        fetchStudentAvatar()
-    }
-    
     // Then load other resources
     fetchCourseSuggestions()
     
@@ -839,6 +844,13 @@ onMounted(() => {
         currentTheme: currentTheme.value,
         savedTheme: localStorage.getItem('preferredTheme'),
         systemPrefersDark: window.matchMedia('(prefers-color-scheme: dark)').matches
+    })
+    
+    // Add debug logging for student data
+    console.log('👤 Student data from page props:', {
+        hasUser: !!$page.props.auth?.user,
+        hasStudentData: !!$page.props.auth?.user?.student,
+        studentAvatar: $page.props.auth?.user?.student?.profile_picture_url
     })
     
     // Add periodic icon refresh (as a safeguard)
@@ -882,15 +894,16 @@ onMounted(() => {
     })
 })
 
-// Watch for auth changes to fetch avatar when user logs in
-watch(() => $page.props.auth.user, (newUser, oldUser) => {
+// Watch for auth changes to reset avatar error state
+watch(() => $page.props.auth?.user, (newUser, oldUser) => {
   if (newUser && newUser.id !== (oldUser?.id)) {
-    console.log('👤 User changed, fetching avatar...')
-    fetchStudentAvatar()
-  } else if (!newUser) {
-    console.log('👤 User logged out, clearing avatar...')
-    studentAvatar.value = null
+    console.log('👤 User changed, resetting avatar state')
     avatarError.value = false
+    avatarLoaded.value = false
+  } else if (!newUser) {
+    console.log('👤 User logged out, clearing avatar state')
+    avatarError.value = false
+    avatarLoaded.value = false
   }
 })
 
@@ -958,13 +971,16 @@ const vClickOutside = {
   font-weight: 400 !important;
 }
 
-/* Avatar image styles */
+/* Avatar image styles - FIXED FOR VISIBILITY */
 .avatar-image {
   width: 24px;
   height: 24px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid var(--border-color);
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .student-avatar-image {
@@ -973,6 +989,9 @@ const vClickOutside = {
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid var(--primary-color);
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .mobile-avatar-image {
@@ -981,10 +1000,21 @@ const vClickOutside = {
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid var(--border-color);
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .fallback-avatar {
   color: var(--primary-color);
+  font-size: 24px;
+}
+
+/* Force all images to be visible */
+img {
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 /* Base header styles using CSS variables */
@@ -1433,6 +1463,12 @@ const vClickOutside = {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.student-roll {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 500;
 }
 
 .dropdown-menu-items {
@@ -1950,6 +1986,12 @@ const vClickOutside = {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.mobile-student-roll {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 500;
 }
 
 /* Mobile Simple Links */

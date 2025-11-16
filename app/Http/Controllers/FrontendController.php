@@ -17,8 +17,7 @@ use App\Models\Content;
 
 class FrontendController extends Controller
 {
-   
-        /**
+    /**
      * Home page - simple language handling
      */
     public function home(Request $request): Response
@@ -114,6 +113,9 @@ class FrontendController extends Controller
             'total_enrollments' => DB::table('class_student')->count() ?: 2500,
         ];
 
+        // Get student data for authenticated users
+        $studentData = $this->getStudentData();
+
         return Inertia::render('Frontend/Home', [
             'content' => $content,
             'featuredCourses' => $featuredCourses,
@@ -126,14 +128,15 @@ class FrontendController extends Controller
                 'user' => Auth::check() ? [
                     'id' => Auth::user()->id,
                     'name' => Auth::user()->name,
+                    'email' => Auth::user()->email,
                     'role' => Auth::user()->role,
+                    'student' => $studentData,
                 ] : null
             ],
-            'currentLanguage' => $language, // This should now be 'bn'
+            'currentLanguage' => $language,
             'availableLanguages' => ['en', 'bn']
         ]);
     }
-
 
     private function isBengaliText($text)
     {
@@ -163,6 +166,9 @@ class FrontendController extends Controller
             ]
         ]);
 
+        // Get student data for authenticated users
+        $studentData = $this->getStudentData();
+
         return Inertia::render('Frontend/About', [
             'content' => $content,
             'currentLanguage' => $language,
@@ -170,7 +176,16 @@ class FrontendController extends Controller
             'pageTitle' => $content['about_banner_title'] ?? ($language === 'bn' ? 'আমাদের সম্পর্কে - পাঠশালা' : 'About Us - Pathshala'),
             'metaDescription' => $content['about_banner_description'] ?? ($language === 'bn' 
                 ? 'পাঠশালা সম্পর্কে জানুন। আমাদের মিশন, ভিশন এবং শিক্ষার দর্শন আবিষ্কার করুন।'
-                : 'Learn about Pathshala. Discover our mission, vision, and educational philosophy.')
+                : 'Learn about Pathshala. Discover our mission, vision, and educational philosophy.'),
+            'auth' => [
+                'user' => Auth::check() ? [
+                    'id' => Auth::user()->id,
+                    'name' => Auth::user()->name,
+                    'email' => Auth::user()->email,
+                    'role' => Auth::user()->role,
+                    'student' => $studentData,
+                ] : null
+            ]
         ]);
     }
 
@@ -417,6 +432,9 @@ class FrontendController extends Controller
                 'grades_count' => count($grades)
             ]);
 
+            // Get student data for authenticated users
+            $studentData = $this->getStudentData();
+
             return Inertia::render('Frontend/Courses', [
                 'courses' => $courses,
                 'filters' => [
@@ -434,7 +452,16 @@ class FrontendController extends Controller
                 'pageTitle' => $pageTitle,
                 'metaDescription' => $metaDescription,
                 'currentLanguage' => $language,
-                'availableLanguages' => ['en', 'bn']
+                'availableLanguages' => ['en', 'bn'],
+                'auth' => [
+                    'user' => Auth::check() ? [
+                        'id' => Auth::user()->id,
+                        'name' => Auth::user()->name,
+                        'email' => Auth::user()->email,
+                        'role' => Auth::user()->role,
+                        'student' => $studentData,
+                    ] : null
+                ]
             ]);
 
         } catch (\Exception $e) {
@@ -517,6 +544,9 @@ class FrontendController extends Controller
                     ];
                 });
 
+            // Get student data for authenticated users
+            $studentData = $this->getStudentData();
+
             return Inertia::render('Frontend/CourseSingle', [
                 'course' => $courseData,
                 'relatedCourses' => $relatedCourses,
@@ -524,7 +554,16 @@ class FrontendController extends Controller
                 'pageTitle' => $courseData['name'] . ' - Pathshala',
                 'metaDescription' => $courseData['description'],
                 'currentLanguage' => $language,
-                'availableLanguages' => ['en', 'bn']
+                'availableLanguages' => ['en', 'bn'],
+                'auth' => [
+                    'user' => Auth::check() ? [
+                        'id' => Auth::user()->id,
+                        'name' => Auth::user()->name,
+                        'email' => Auth::user()->email,
+                        'role' => Auth::user()->role,
+                        'student' => $studentData,
+                    ] : null
+                ]
             ]);
 
         } catch (\Exception $e) {
@@ -592,6 +631,9 @@ class FrontendController extends Controller
             ->pluck('education_qualification')
             ->toArray();
 
+        // Get student data for authenticated users
+        $studentData = $this->getStudentData();
+
         return Inertia::render('Frontend/Instructors', [
             'instructors' => $teachers,
             'specializations' => $specializations,
@@ -601,7 +643,16 @@ class FrontendController extends Controller
             'pageTitle' => $language === 'bn' ? 'ইন্সট্রাক্টর - পাঠশালা' : 'Instructors - Pathshala',
             'metaDescription' => $language === 'bn' 
                 ? 'আমাদের বিশেষজ্ঞ ইন্সট্রাক্টরদের সাথে পরিচিত হোন' 
-                : 'Meet our expert instructors'
+                : 'Meet our expert instructors',
+            'auth' => [
+                'user' => Auth::check() ? [
+                    'id' => Auth::user()->id,
+                    'name' => Auth::user()->name,
+                    'email' => Auth::user()->email,
+                    'role' => Auth::user()->role,
+                    'student' => $studentData,
+                ] : null
+            ]
         ]);
     }
 
@@ -762,6 +813,9 @@ class FrontendController extends Controller
                 'profile_picture_path' => $instructorData['profile_picture']
             ]);
 
+            // Get student data for authenticated users
+            $studentData = $this->getStudentData();
+
             return Inertia::render('Frontend/InstructorDetails', [
                 'instructor' => $instructorData,
                 'classes' => $classes->toArray(),
@@ -776,7 +830,16 @@ class FrontendController extends Controller
                 'pageTitle' => $instructor->name . ' - Instructor - Pathshala',
                 'metaDescription' => $this->generateBio($instructor),
                 'currentLanguage' => $language,
-                'availableLanguages' => ['en', 'bn']
+                'availableLanguages' => ['en', 'bn'],
+                'auth' => [
+                    'user' => Auth::check() ? [
+                        'id' => Auth::user()->id,
+                        'name' => Auth::user()->name,
+                        'email' => Auth::user()->email,
+                        'role' => Auth::user()->role,
+                        'student' => $studentData,
+                    ] : null
+                ]
             ]);
 
         } catch (\Exception $e) {
@@ -799,6 +862,9 @@ class FrontendController extends Controller
             'working_hours' => 'Monday - Friday: 9:00 AM - 6:00 PM'
         ];
 
+        // Get student data for authenticated users
+        $studentData = $this->getStudentData();
+
         return Inertia::render('Frontend/Contact', [
             'contactInfo' => $contactInfo,
             'pageTitle' => $language === 'bn' ? 'যোগাযোগ - পাঠশালা' : 'Contact Us - Pathshala',
@@ -806,11 +872,20 @@ class FrontendController extends Controller
                 ? 'পাঠশালার সাথে যোগাযোগ করুন। আমরা আপনার প্রশ্নের উত্তর দিতে এবং আপনার শেখার যাত্রা শুরু করতে এখানে আছি।'
                 : 'Get in touch with Pathshala. We\'re here to answer your questions and help you start your learning journey.',
             'currentLanguage' => $language,
-            'availableLanguages' => ['en', 'bn']
+            'availableLanguages' => ['en', 'bn'],
+            'auth' => [
+                'user' => Auth::check() ? [
+                    'id' => Auth::user()->id,
+                    'name' => Auth::user()->name,
+                    'email' => Auth::user()->email,
+                    'role' => Auth::user()->role,
+                    'student' => $studentData,
+                ] : null
+            ]
         ]);
     }
 
-        /**
+    /**
      * Simple language switch API
      */
     public function switchLanguageApi(Request $request)
@@ -840,7 +915,7 @@ class FrontendController extends Controller
         ]);
     }
 
-        /**
+    /**
      * Switch language for about page - returns about content
      */
     public function switchLanguageAbout(Request $request)
@@ -903,6 +978,47 @@ class FrontendController extends Controller
     }
 
     // ==================== HELPER METHODS ====================
+
+    /**
+     * Get student data for authenticated users
+     */
+    private function getStudentData()
+    {
+        if (Auth::check() && Auth::user()->role === 'student') {
+            $student = Student::where('user_id', Auth::id())->first();
+            
+            Log::info('🔍 Student data debug:', [
+                'user_id' => Auth::id(),
+                'student_found' => !!$student,
+                'student_id' => $student?->id,
+                'profile_picture' => $student?->profile_picture,
+                'profile_picture_url' => $student?->profile_picture_url,
+            ]);
+            
+            if ($student) {
+                return [
+                    'id' => $student->id,
+                    'user_id' => $student->user_id,
+                    'profile_picture' => $student->profile_picture,
+                    'profile_picture_url' => $student->profile_picture_url,
+                    'roll_number' => $student->roll_number,
+                    'academic_class_id' => $student->academic_class_id,
+                    'father_name' => $student->father_name,
+                    'mother_name' => $student->mother_name,
+                    'parent_contact' => $student->parent_contact,
+                    'country_code' => $student->country_code,
+                    'full_parent_contact' => $student->full_parent_contact,
+                    'address' => $student->address,
+                    'admission_date' => $student->admission_date?->format('M d, Y'),
+                    'phone' => $student->phone,
+                    'bio' => $student->bio,
+                    'location' => $student->location,
+                    'status' => $student->status,
+                ];
+            }
+        }
+        return null;
+    }
 
     /**
      * Get testimonials based on language
@@ -1133,7 +1249,7 @@ class FrontendController extends Controller
         return $experience;
     }
 
-        /**
+    /**
      * Get current language from session only - NO URL PARAMETERS
      */
     private function getCurrentLanguage()
@@ -1142,8 +1258,6 @@ class FrontendController extends Controller
         app()->setLocale($language);
         return $language;
     }
-
-
 
     /**
      * Render courses with fallback data
@@ -1175,6 +1289,9 @@ class FrontendController extends Controller
             ]
         ];
 
+        // Get student data for authenticated users
+        $studentData = $this->getStudentData();
+
         return Inertia::render('Frontend/Courses', [
             'courses' => $fallbackCourses,
             'filters' => $request->only(['search', 'category', 'type', 'grade', 'sort']),
@@ -1188,7 +1305,16 @@ class FrontendController extends Controller
                 ? 'আমাদের ব্যাপক কোর্স এবং ক্লাস ক্যাটালগ ব্রাউজ করুন।'
                 : 'Browse our comprehensive catalog of courses and classes.',
             'currentLanguage' => $language,
-            'availableLanguages' => ['en', 'bn']
+            'availableLanguages' => ['en', 'bn'],
+            'auth' => [
+                'user' => Auth::check() ? [
+                    'id' => Auth::user()->id,
+                    'name' => Auth::user()->name,
+                    'email' => Auth::user()->email,
+                    'role' => Auth::user()->role,
+                    'student' => $studentData,
+                ] : null
+            ]
         ]);
     }
 
@@ -1441,11 +1567,23 @@ class FrontendController extends Controller
     {
         $language = $this->getCurrentLanguage();
         
+        // Get student data for authenticated users
+        $studentData = $this->getStudentData();
+
         return Inertia::render('Frontend/Errors/404', [
             'message' => $message,
             'pageTitle' => $language === 'bn' ? 'পৃষ্ঠা পাওয়া যায়নি - পাঠশালা' : 'Page Not Found - Pathshala',
             'currentLanguage' => $language,
-            'availableLanguages' => ['en', 'bn']
+            'availableLanguages' => ['en', 'bn'],
+            'auth' => [
+                'user' => Auth::check() ? [
+                    'id' => Auth::user()->id,
+                    'name' => Auth::user()->name,
+                    'email' => Auth::user()->email,
+                    'role' => Auth::user()->role,
+                    'student' => $studentData,
+                ] : null
+            ]
         ]);
     }
 }
