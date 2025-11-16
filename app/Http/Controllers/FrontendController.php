@@ -303,12 +303,12 @@ class FrontendController extends Controller
             $courses->getCollection()->transform(function ($course) use ($language, $user) {
                 $courseData = [
                     'id' => $course->id,
-                    'name' => $this->getTranslatedCourseName($course, $language),
-                    'subject' => $this->getTranslatedSubject($course->subject, $language),
+                    'name' => $course->name,
+                    'subject' => $course->subject,
                     'grade' => $course->grade,
                     'type' => $course->type,
-                    'category' => $this->getTranslatedCategory($course->category, $language),
-                    'description' => $this->getTranslatedDescription($course, $language),
+                    'category' => $course->category,
+                    'description' => $course->description,
                     // Image data
                     'image' => $course->image,
                     'thumbnail' => $course->thumbnail,
@@ -541,41 +541,49 @@ class FrontendController extends Controller
     {
         $language = $this->getCurrentLanguage();
 
+        // Get all teachers with their classes and student counts
         $teachers = User::where('role', 'teacher')
-        ->where('status', 'active')
-        ->select([
-            'id', 
-            'name', 
-            'username', 
-            'email', 
-            'dob',
-            'education_qualification', 
-            'institute', 
-            'experience', 
-            'bio',
-            'profile_picture',
-            'order_column',
-            'created_at'
-        ])
-        ->withCount(['classes as courses_count'])
-        ->orderBy('order_column')
-        ->get()
-        ->map(function ($teacher) use ($language) {
-            return [
-                'id' => $teacher->id,
-                'name' => $teacher->name,
-                'email' => $teacher->email,
-                'education_qualification' => $this->getTranslatedQualification($teacher->education_qualification, $language),
-                'institute' => $teacher->institute,
-                'experience' => $this->getTranslatedExperience($teacher->experience, $language),
-                'profile_picture' => $teacher->profile_picture,
-                'order_column' => $teacher->order_column,
-                'courses_count' => $teacher->courses_count,
-                'students_count' => $this->getTeacherStudentsCount($teacher->id),
-                'rating' => $this->getTeacherRating($teacher->id),
-                'created_at' => $teacher->created_at,
-            ];
-        });
+            ->where('status', 'active')
+            ->select([
+                'id', 
+                'name', 
+                'username', 
+                'email', 
+                'dob',
+                'education_qualification', 
+                'institute', 
+                'experience', 
+                'bio',
+                'profile_picture',
+                'order_column',
+                'created_at'
+            ])
+            ->withCount(['classes as courses_count'])
+            ->with(['classes' => function($query) {
+                $query->select('id', 'teacher_id')
+                    ->withCount('students');
+            }])
+            ->orderBy('order_column')
+            ->get()
+            ->map(function ($teacher) use ($language) {
+                // Calculate total students across all classes
+                $totalStudents = $teacher->classes->sum('students_count');
+                
+                return [
+                    'id' => $teacher->id,
+                    'name' => $teacher->name,
+                    'email' => $teacher->email,
+                    'education_qualification' => $this->getTranslatedQualification($teacher->education_qualification, $language),
+                    'institute' => $teacher->institute,
+                    'experience' => $this->getTranslatedExperience($teacher->experience, $language),
+                    'profile_picture' => $teacher->profile_picture,
+                    'order_column' => $teacher->order_column,
+                    'courses_count' => $teacher->courses_count,
+                    'students_count' => $totalStudents,
+                    'rating' => $this->getTeacherRating($teacher->id),
+                    'created_at' => $teacher->created_at,
+                ];
+            });
 
         $specializations = User::where('role', 'teacher')
             ->whereNotNull('education_qualification')

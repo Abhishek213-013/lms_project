@@ -136,7 +136,6 @@ const submit = () => {
 </script>
 
 <style scoped>
-
 :deep(*) {
     font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
     font-weight: 400;
@@ -148,7 +147,7 @@ const submit = () => {
 
 .login-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
   display: flex;
   align-items: center;
   padding: 20px 0;
@@ -158,7 +157,8 @@ const submit = () => {
   background: white;
   padding: 2.5rem;
   border-radius: 15px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 15px 35px rgba(59, 130, 246, 0.1);
+  border: 1px solid #e0f2fe;
 }
 
 /* Logo Container */
@@ -182,7 +182,7 @@ const submit = () => {
 .logo-main {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #e74c3c;
+  color: #3b82f6;
   margin: 0;
   line-height: 1.2;
 }
@@ -190,14 +190,14 @@ const submit = () => {
 .logo-subtitle {
   font-size: 0.8rem;
   font-weight: 500;
-  color: #6c757d;
+  color: #6b7280;
   margin: 0;
   letter-spacing: 1px;
   text-transform: uppercase;
 }
 
 .login-title {
-  color: #2c3e50;
+  color: #1f2937;
   font-weight: 600;
   margin-bottom: 0.5rem;
 }
@@ -205,13 +205,14 @@ const submit = () => {
 .form-control {
   padding: 0.75rem 1rem;
   border-radius: 10px;
-  border: 2px solid #e9ecef;
+  border: 2px solid #e5e7eb;
   transition: all 0.3s ease;
+  font-size: 14px;
 }
 
 .form-control:focus {
-  border-color: #e74c3c;
-  box-shadow: 0 0 0 0.2rem rgba(231, 76, 60, 0.25);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
 }
 
 .form-control.is-invalid {
@@ -223,34 +224,78 @@ const submit = () => {
   padding: 0.75rem 1.5rem;
   border-radius: 10px;
   font-weight: 600;
+  transition: all 0.3s ease;
+  font-size: 14px;
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   border: none;
-  transition: all 0.3s ease;
+  color: white;
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+  box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
 }
 
 .btn-outline-primary {
-  border-color: #e74c3c;
-  color: #e74c3c;
-  transition: all 0.3s ease;
+  border: 2px solid #3b82f6;
+  color: #3b82f6;
+  background: transparent;
 }
 
 .btn-outline-primary:hover {
-  background-color: #e74c3c;
-  border-color: #e74c3c;
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+}
+
+.btn-outline-secondary {
+  border: 2px solid #6b7280;
+  color: #6b7280;
+  background: transparent;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #6b7280;
+  border-color: #6b7280;
+  color: white;
   transform: translateY(-2px);
 }
 
 .alert {
   border-radius: 10px;
   border: none;
+  font-size: 14px;
+}
+
+.alert-danger {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border-left: 4px solid #dc2626;
+}
+
+.alert-success {
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border-left: 4px solid #16a34a;
+}
+
+.btn-close {
+  background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat;
+  opacity: 0.7;
+}
+
+.btn-close:hover {
+  opacity: 1;
 }
 
 .btn:disabled {
@@ -268,6 +313,34 @@ const submit = () => {
   display: block;
   font-size: 0.875em;
   color: #dc3545;
+  margin-top: 0.25rem;
+}
+
+.form-check-input:checked {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.form-check-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+}
+
+/* Text link styling */
+.text-decoration-none {
+  color: #3b82f6;
+  transition: color 0.3s ease;
+  font-weight: 500;
+}
+
+.text-decoration-none:hover {
+  color: #1d4ed8;
+  text-decoration: underline !important;
+}
+
+/* Border top for admin/teacher section */
+.border-top {
+  border-top: 1px solid #e5e7eb !important;
 }
 
 /* Responsive Design */
@@ -289,11 +362,17 @@ const submit = () => {
   .logo-subtitle {
     font-size: 0.7rem;
   }
+  
+  .d-flex.gap-2 {
+    flex-direction: column;
+    gap: 0.5rem !important;
+  }
 }
 
 @media (max-width: 576px) {
   .login-card {
     padding: 2rem 1.5rem;
+    margin: 0 10px;
   }
   
   .logo {
@@ -303,25 +382,50 @@ const submit = () => {
   .logo-main {
     font-size: 1.2rem;
   }
+  
+  .btn {
+    padding: 0.75rem 1rem;
+  }
 }
 
 .spinner-border-sm {
   width: 1rem;
   height: 1rem;
+  border-width: 0.15em;
 }
 
-/* Text link styling */
-.text-decoration-none {
-  color: #e74c3c;
-  transition: color 0.3s ease;
+/* Form label styling */
+.form-label {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+  font-size: 14px;
 }
 
-.text-decoration-none:hover {
-  color: #c0392b;
+.form-check-label {
+  color: #374151;
+  font-size: 14px;
 }
 
-/* Border top for admin/teacher section */
-.border-top {
-  border-top: 1px solid #e9ecef !important;
+/* Additional hover effects */
+.login-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.login-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(59, 130, 246, 0.15);
+}
+
+/* Focus states for accessibility */
+.btn:focus,
+.form-control:focus,
+.form-check-input:focus {
+  outline: none;
+}
+
+/* Loading state improvements */
+.btn:disabled .spinner-border-sm {
+  border-color: currentColor transparent currentColor transparent;
 }
 </style>

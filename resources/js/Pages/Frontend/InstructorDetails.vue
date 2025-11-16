@@ -18,15 +18,6 @@
                         @error="handleProfilePictureError"
                         class="profile-picture"
                       >
-                      <!-- Upload overlay for teacher's own profile -->
-                      <!-- <div 
-                        v-if="canEditProfile" 
-                        class="profile-upload-overlay"
-                        @click="triggerProfilePictureUpload"
-                      >
-                        <i class="fas fa-camera"></i>
-                        <span>{{ t('Change Photo') }}</span>
-                      </div> -->
                     </div>
                     <div class="profile-info">
                       <h2 class="title">{{ instructor.name }}</h2>
@@ -239,21 +230,21 @@
                   </div>
 
                   <!-- No Videos Message -->
-                  <div v-if="videos.length === 0" class="text-center py-8">
-                    <i class="fas fa-video-slash fa-3x text-gray-400 mb-4"></i>
-                    <h4 class="text-gray-600">{{ t('No Videos Available') }}</h4>
-                    <p class="text-gray-500">{{ t('This instructor hasn\'t uploaded any demo videos yet.') }}</p>
+                  <div v-if="videos.length === 0" class="no-content-state">
+                    <i class="fas fa-video-slash fa-3x mb-4"></i>
+                    <h4>{{ t('No Videos Available') }}</h4>
+                    <p>{{ t('This instructor hasn\'t uploaded any demo videos yet.') }}</p>
                   </div>
 
                   <!-- No Videos in Category Message -->
-                  <div v-if="filteredVideos.length === 0 && videos.length > 0" class="text-center py-8">
-                    <i class="fas fa-filter fa-3x text-gray-400 mb-4"></i>
-                    <h4 class="text-gray-600">{{ t('No videos in this class') }}</h4>
-                    <p class="text-gray-500">{{ t('Try selecting a different class to see more videos.') }}</p>
+                  <div v-if="filteredVideos.length === 0 && videos.length > 0" class="no-content-state">
+                    <i class="fas fa-filter fa-3x mb-4"></i>
+                    <h4>{{ t('No videos in this class') }}</h4>
+                    <p>{{ t('Try selecting a different class to see more videos.') }}</p>
                   </div>
 
                   <!-- Load More Button -->
-                  <div v-if="showLoadMore" class="text-center mt-5">
+                  <div v-if="showLoadMore" class="load-more-section">
                     <button class="btn btn-primary" @click="loadMoreVideos">
                       {{ t('Load More Videos') }}
                     </button>
@@ -305,13 +296,13 @@
                 </div>
 
                 <!-- No Classes Message -->
-                <div v-if="classes.length === 0 && videos.length === 0" class="text-center py-8">
-                  <i class="fas fa-info-circle fa-3x text-gray-400 mb-4"></i>
-                  <h4 class="text-gray-600">{{ t('Content Coming Soon') }}</h4>
-                  <p class="text-gray-500">{{ t('This instructor hasn\'t uploaded any content yet.') }}</p>
+                <div v-if="classes.length === 0 && videos.length === 0" class="no-content-state">
+                  <i class="fas fa-info-circle fa-3x mb-4"></i>
+                  <h4>{{ t('Content Coming Soon') }}</h4>
+                  <p>{{ t('This instructor hasn\'t uploaded any content yet.') }}</p>
                 </div>
 
-                <!-- Teaching Philosophy - Always show the section -->
+                <!-- Teaching Philosophy -->
                 <div class="instructor__details-biography">
                   <h4 class="title">{{ t('Teaching Philosophy') }}</h4>
                   <p>{{ instructor.bio || instructor.teaching_philosophy || t('This instructor is passionate about education and dedicated to student success.') }}</p>
@@ -322,147 +313,91 @@
         </div>
       </section>
 
-      <!-- Profile Picture Upload Modal -->
-      <div v-if="showProfilePictureModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-lg w-full max-w-md mx-4">
-          <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-800">{{ t('Upload Profile Picture') }}</h3>
-          </div>
-
-          <div class="p-6">
-            <!-- Image Preview -->
-            <div v-if="profilePicturePreview" class="mb-4 flex justify-center">
-              <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-gray-200">
-                <img :src="profilePicturePreview" alt="Preview" class="w-full h-full object-cover">
-              </div>
-            </div>
-
-            <!-- Upload Area -->
-            <div 
-              @drop="handleDrop"
-              @dragover="handleDragOver"
-              @dragleave="handleDragLeave"
-              :class="`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
-              }`"
-              @click="triggerFileInput"
-            >
-              <input 
-                type="file" 
-                ref="fileInput"
-                @change="handleFileSelect"
-                accept="image/jpeg,image/png,image/jpg,image/gif"
-                class="hidden"
-              >
-              
-              <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-              </svg>
-              
-              <p class="text-gray-600 mb-2">
-                <span class="text-blue-600 font-medium">{{ t('Click to upload') }}</span> {{ t('or drag and drop') }}
-              </p>
-              <p class="text-xs text-gray-500">
-                PNG, JPG, GIF {{ t('up to 2MB') }}
-              </p>
-            </div>
-
-            <!-- Error Message -->
-            <div v-if="uploadError" class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p class="text-sm text-red-600">{{ uploadError }}</p>
-            </div>
-
-            <!-- Form Actions -->
-            <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 mt-4">
-              <button 
-                type="button"
-                @click="cancelProfilePictureUpload"
-                class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                {{ t('Cancel') }}
-              </button>
-              <button 
-                type="button"
-                @click="uploadProfilePicture"
-                :disabled="!selectedFile || uploadingPicture"
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
-              >
-                <svg v-if="uploadingPicture" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                {{ uploadingPicture ? t('Uploading...') : t('Upload Picture') }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Video Player Modal -->
+      <!-- Video Player Modal - CLEAN VERSION -->
       <div 
         v-if="showVideoPlayer && currentVideo" 
-        class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-50 video-player-modal"
+        class="video-player-modal"
         @click.self="closeVideoPlayer"
       >
-        <div class="bg-white rounded-lg w-full max-w-4xl mx-4">
-          <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-            <h3 class="text-lg font-semibold text-gray-800">{{ currentVideo.title }}</h3>
-            <button 
-              @click="closeVideoPlayer" 
-              class="text-gray-500 hover:text-gray-700 transition-colors"
-              aria-label="Close video player"
-            >
-              <i class="fas fa-times text-xl"></i>
-            </button>
-          </div>
-          
-          <div class="p-6">
-            <div class="video-container aspect-w-16 aspect-h-9 bg-black rounded-lg overflow-hidden">
-              <div v-if="currentVideo.isEmbed" class="iframe-container youtube-isolation-fix">
-                <iframe 
-                  :src="currentVideo.ultraCleanUrl" 
-                  frameborder="0" 
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                  allowfullscreen
-                  class="w-full h-full"
-                ></iframe>
-              </div>
-              <div v-else-if="currentVideo.isDirectStream || currentVideo.isDirectVideo" class="w-full h-full">
-                <video 
-                  ref="videoPlayer"
-                  :src="currentVideo.directVideoUrl" 
-                  controls
-                  class="w-full h-full"
-                  @play="isPlaying = true"
-                  @pause="isPlaying = false"
-                  @ended="isPlaying = false"
-                >
-                  Your browser does not support the video tag.
-                </video>
-              </div>
-              <div v-else class="flex items-center justify-center h-64 text-white">
-                <p>Unable to load video</p>
-              </div>
-            </div>
-            
-            <div class="mt-4 video-info">
-              <h4 class="text-lg font-semibold mb-2">{{ currentVideo.title }}</h4>
-              <div class="flex flex-wrap gap-4 text-sm text-gray-600">
-                <span><i class="far fa-clock mr-1"></i> {{ currentVideo.duration || 'N/A' }}</span>
-                <span><i class="far fa-calendar mr-1"></i> {{ formatDate(currentVideo.created_at) }}</span>
+        <div class="modal-container">
+          <!-- Header - 20% -->
+          <div class="header-section">
+            <div class="header-content">
+              <h3>{{ currentVideo.title }}</h3>
+              <div class="video-meta">
+                <span><i class="far fa-clock mr-2"></i> {{ currentVideo.duration || 'N/A' }}</span>
+                <span><i class="far fa-calendar mr-2"></i> {{ formatDate(currentVideo.created_at) }}</span>
                 <span class="video-class">{{ getClassName(currentVideo.class_id) }}</span>
               </div>
-              <p v-if="currentVideo.description" class="mt-2 text-gray-700">{{ currentVideo.description }}</p>
+            </div>
+            <button 
+              @click="closeVideoPlayer" 
+              class="close-button"
+              aria-label="Close video player"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          
+          <!-- Video Player - 70% -->
+          <div class="video-player-section">
+            <!-- Loading State -->
+            <div v-if="isLoading" class="loading-state">
+              <div class="spinner"></div>
+              <p>{{ t('Loading video...') }}</p>
+            </div>
+            
+            <!-- YouTube Embed -->
+            <div v-else-if="currentVideo.isEmbed" class="youtube-container">
+              <iframe 
+                :src="currentVideo.ultraCleanUrl" 
+                frameborder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowfullscreen
+                @load="isLoading = false"
+              ></iframe>
+            </div>
+            
+            <!-- Direct Video -->
+            <div v-else-if="currentVideo.isDirectStream || currentVideo.isDirectVideo" class="direct-video-container">
+              <video 
+                ref="videoPlayer"
+                :src="currentVideo.directVideoUrl" 
+                controls
+                controlsList="nodownload"
+                @play="isPlaying = true"
+                @pause="isPlaying = false"
+                @ended="isPlaying = false"
+                @loadeddata="isLoading = false"
+                @error="handleVideoError"
+                autoplay
+              >
+                {{ t('Your browser does not support the video tag.') }}
+              </video>
+            </div>
+            
+            <!-- Error State -->
+            <div v-else class="error-state">
+              <i class="fas fa-exclamation-triangle"></i>
+              <p>{{ t('Unable to load video') }}</p>
+              <p class="error-subtext">{{ t('Please try again later.') }}</p>
             </div>
           </div>
           
-          <div class="px-6 py-4 border-t border-gray-200 flex justify-end">
-            <button 
-              @click="closeVideoPlayer" 
-              class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
-            >
-              {{ t('Close') }}
-            </button>
+          <!-- Footer - 10% -->
+          <div class="footer-section">
+            <div class="footer-content">
+              <!-- <p v-if="currentVideo.description" class="video-description">
+                {{ currentVideo.description }}
+              </p>
+              <p v-else class="no-description">
+                {{ t('No description available') }}
+              </p> -->
+              <button @click="closeVideoPlayer" class="close-btn">
+                <i class="fas fa-times mr-2"></i>
+                {{ t('Close') }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -472,7 +407,7 @@
 
 <script setup>
 import { Link } from '@inertiajs/vue3';
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import FrontendLayout from '../Layout/FrontendLayout.vue';
 import { useTranslation } from '@/composables/useTranslation';
 
@@ -503,16 +438,7 @@ const props = defineProps({
   }
 });
 
-// Reactive data for profile picture
-const showProfilePictureModal = ref(false);
-const selectedFile = ref(null);
-const profilePicturePreview = ref(null);
-const isDragging = ref(false);
-const uploadError = ref(null);
-const uploadingPicture = ref(false);
-const fileInput = ref(null);
-
-// Existing reactive data
+// Reactive data
 const selectedVideo = ref(null);
 const currentVideo = ref(null);
 const showVideoPlayer = ref(false);
@@ -520,199 +446,30 @@ const videoPlayer = ref(null);
 const activeCategory = ref('all');
 const videosPerPage = ref(6);
 const currentPage = ref(1);
-const currentTheme = ref('light');
 const isPlaying = ref(false);
 const isLoading = ref(false);
-const iconRenderKey = ref(0);
 
 // Computed properties
 const canEditProfile = computed(() => {
-  // Check if the authenticated user is viewing their own profile
   return props.auth.user && props.auth.user.id === props.instructor.id;
 });
 
 const profilePictureUrl = computed(() => {
-  console.log('🔄 [profilePictureUrl] Computing profile picture URL');
-  console.log('📊 Instructor profile_picture field:', props.instructor?.profile_picture);
-  
-  // Use only profile_picture from database
   if (props.instructor?.profile_picture) {
-    console.log('✅ Using profile_picture from database:', props.instructor.profile_picture);
-    
-    // If it's already a full URL, use it directly
     if (props.instructor.profile_picture.startsWith('http')) {
-      console.log('🌐 Already a full URL');
       return props.instructor.profile_picture;
     }
     
-    // Handle storage path - ensure it starts with /storage/
     let picturePath = props.instructor.profile_picture;
-    
-    // Remove any leading slashes or storage/ prefixes to avoid double slashes
     picturePath = picturePath.replace(/^\/+/, '').replace(/^storage\//, '');
-    
-    // Construct the proper URL
     const finalUrl = `/storage/${picturePath}`;
-    
-    console.log('🖼️ Final profile picture URL:', finalUrl);
-    console.log('🔍 Path transformation:', {
-      original: props.instructor.profile_picture,
-      cleaned: picturePath,
-      final: finalUrl
-    });
     
     return finalUrl;
   }
   
-  // No profile picture found
-  console.log('❌ No profile picture found, using default');
-  console.log('🔍 Available instructor fields:', Object.keys(props.instructor || {}));
   return '/assets/img/instructor/instructor01.png';
 });
 
-// Profile Picture Methods
-const triggerProfilePictureUpload = () => {
-  if (!canEditProfile.value) return;
-  
-  showProfilePictureModal.value = true;
-  uploadError.value = null;
-  selectedFile.value = null;
-  profilePicturePreview.value = null;
-};
-
-const triggerFileInput = () => {
-  fileInput.value?.click();
-};
-
-const handleFileSelect = (event) => {
-  const file = event.target.files[0];
-  if (file) {
-    validateAndSetFile(file);
-  }
-};
-
-const handleDrop = (event) => {
-  event.preventDefault();
-  isDragging.value = false;
-  
-  const files = event.dataTransfer.files;
-  if (files.length > 0) {
-    validateAndSetFile(files[0]);
-  }
-};
-
-const handleDragOver = (event) => {
-  event.preventDefault();
-  isDragging.value = true;
-};
-
-const handleDragLeave = (event) => {
-  event.preventDefault();
-  isDragging.value = false;
-};
-
-const validateAndSetFile = (file) => {
-  uploadError.value = null;
-  
-  // Validate file type
-  const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
-  if (!validTypes.includes(file.type)) {
-    uploadError.value = t('Please select a valid image file (JPEG, PNG, JPG, GIF)');
-    return;
-  }
-  
-  // Validate file size (2MB)
-  if (file.size > 2 * 1024 * 1024) {
-    uploadError.value = t('File size must be less than 2MB');
-    return;
-  }
-  
-  selectedFile.value = file;
-  
-  // Create preview
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    profilePicturePreview.value = e.target.result;
-  };
-  reader.readAsDataURL(file);
-};
-
-const uploadProfilePicture = async () => {
-  if (!selectedFile.value || !canEditProfile.value) return;
-  
-  uploadingPicture.value = true;
-  uploadError.value = null;
-  
-  try {
-    const formData = new FormData();
-    formData.append('profile_picture', selectedFile.value);
-    
-    console.log('📤 [uploadProfilePicture] Uploading for instructor:', props.instructor.id);
-    
-    const response = await fetch(`/api/profile-picture/teacher/${props.instructor.id}/upload`, {
-      method: 'POST',
-      headers: {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-      },
-      body: formData
-    });
-    
-    // Handle both JSON and non-JSON responses
-    const text = await response.text();
-    let result;
-    
-    try {
-      result = JSON.parse(text);
-    } catch (parseError) {
-      console.error('❌ Failed to parse JSON:', text);
-      throw new Error(t('Server returned an invalid response'));
-    }
-    
-    if (result.success) {
-      console.log('✅ [uploadProfilePicture] Upload successful:', result);
-      
-      // Update the instructor object with new profile picture data
-      props.instructor.profile_picture = result.profile_picture_path;
-      
-      showProfilePictureModal.value = false;
-      selectedFile.value = null;
-      profilePicturePreview.value = null;
-      
-      // Show success message
-      alert(t('Profile picture updated successfully!'));
-      
-      // Force refresh the page to get updated data from server
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-      
-    } else {
-      uploadError.value = result.message || t('Failed to upload profile picture');
-      console.error('❌ [uploadProfilePicture] Upload failed:', result);
-    }
-  } catch (error) {
-    console.error('❌ [uploadProfilePicture] Error:', error);
-    uploadError.value = error.message || t('An error occurred while uploading the picture');
-  } finally {
-    uploadingPicture.value = false;
-  }
-};
-
-const cancelProfilePictureUpload = () => {
-  showProfilePictureModal.value = false;
-  selectedFile.value = null;
-  profilePicturePreview.value = null;
-  uploadError.value = null;
-};
-
-const handleProfilePictureError = (event) => {
-  console.log('❌ Profile picture failed to load, using fallback');
-  event.target.src = '/assets/img/instructor/instructor01.png';
-};
-
-// ... rest of the methods remain the same ...
-
-// Video related computed properties
 const uniqueClasses = computed(() => {
   return props.classes.filter((classItem, index, self) => 
     index === self.findIndex(c => c.id === classItem.id)
@@ -955,73 +712,79 @@ const handleVideoThumbnailError = (event) => {
   event.target.src = '/assets/img/courses/video_thumb01.jpg';
 };
 
+const handleProfilePictureError = (event) => {
+  event.target.src = '/assets/img/instructor/instructor01.png';
+};
+
 // Video player methods
 const playVideo = async (video) => {
-  console.log('🎬 [playVideo] Attempting to play video:', video.title);
   isLoading.value = true;
-  
-  const cleanVideo = {
-    ...video,
-    title: getCleanTitle(video.title)
-  };
-  
-  const videoContent = getVideoContent(video);
-  
-  if (!videoContent) {
-    alert(`No video content found for: ${cleanVideo.title}`);
-    isLoading.value = false;
-    return;
-  }
-  
-  if (isYouTubeUrl(videoContent)) {
-    const videoId = getYouTubeVideoId(videoContent);
-    
-    if (videoId) {
-      console.log('✅ Playing YouTube video with ID:', videoId);
-      
-      const directVideoUrl = await getDirectVideoStream(videoId);
-      
-      if (directVideoUrl) {
-        console.log('🎯 Using direct video stream');
-        currentVideo.value = {
-          ...cleanVideo,
-          directVideoUrl: directVideoUrl,
-          videoId: videoId,
-          thumbnail: getVideoThumbnail(video),
-          isDirectStream: true
-        };
-      } else {
-        console.log('🔄 Using ultra-clean embed as fallback');
-        currentVideo.value = {
-          ...cleanVideo,
-          ultraCleanUrl: generateUltraCleanEmbedUrl(videoId),
-          videoId: videoId,
-          originalUrl: videoContent,
-          isEmbed: true
-        };
-      }
-      
-    } else {
-      alert('Could not extract YouTube video ID from the URL.');
-      isLoading.value = false;
-      return;
-    }
-  } else {
-    console.log('🎯 Using direct video file');
-    currentVideo.value = {
-      ...cleanVideo,
-      directVideoUrl: videoContent,
-      isDirectVideo: true
-    };
-  }
-  
   showVideoPlayer.value = true;
-  document.body.style.overflow = 'hidden';
-  isLoading.value = false;
+  
+  try {
+    const cleanVideo = {
+      ...video,
+      title: getCleanTitle(video.title),
+      description: video.description || ''
+    };
+    
+    const videoContent = getVideoContent(video);
+    
+    if (!videoContent) {
+      throw new Error('No video content found');
+    }
+    
+    if (isYouTubeUrl(videoContent)) {
+      const videoId = getYouTubeVideoId(videoContent);
+      
+      if (videoId) {
+        const directVideoUrl = await getDirectVideoStream(videoId);
+        
+        if (directVideoUrl) {
+          currentVideo.value = {
+            ...cleanVideo,
+            directVideoUrl: directVideoUrl,
+            videoId: videoId,
+            thumbnail: getVideoThumbnail(video),
+            isDirectStream: true,
+            isEmbed: false,
+            isDirectVideo: false
+          };
+        } else {
+          currentVideo.value = {
+            ...cleanVideo,
+            ultraCleanUrl: generateUltraCleanEmbedUrl(videoId),
+            videoId: videoId,
+            originalUrl: videoContent,
+            isEmbed: true,
+            isDirectStream: false,
+            isDirectVideo: false
+          };
+        }
+      } else {
+        throw new Error('Could not extract YouTube video ID');
+      }
+    } else {
+      currentVideo.value = {
+        ...cleanVideo,
+        directVideoUrl: videoContent,
+        isDirectVideo: true,
+        isEmbed: false,
+        isDirectStream: false
+      };
+    }
+    
+  } catch (error) {
+    console.error('Error preparing video:', error);
+    alert(`Error loading video: ${error.message}`);
+    closeVideoPlayer();
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 const closeVideoPlayer = () => {
-  if (videoPlayer.value && videoPlayer.value.pause) {
+  if (videoPlayer.value && typeof videoPlayer.value.pause === 'function') {
     videoPlayer.value.pause();
     videoPlayer.value.currentTime = 0;
   }
@@ -1030,7 +793,30 @@ const closeVideoPlayer = () => {
   currentVideo.value = null;
   isPlaying.value = false;
   isLoading.value = false;
+  
   document.body.style.overflow = 'auto';
+  
+  setTimeout(() => {
+    if (videoPlayer.value) {
+      videoPlayer.value.src = '';
+      videoPlayer.value.load();
+    }
+  }, 100);
+};
+
+const handleVideoError = (event) => {
+  console.error('Video playback error:', event);
+  isLoading.value = false;
+  
+  if (currentVideo.value && currentVideo.value.videoId && !currentVideo.value.isEmbed) {
+    currentVideo.value = {
+      ...currentVideo.value,
+      ultraCleanUrl: generateUltraCleanEmbedUrl(currentVideo.value.videoId),
+      isEmbed: true,
+      isDirectStream: false,
+      isDirectVideo: false
+    };
+  }
 };
 
 const generateUltraCleanEmbedUrl = (videoId) => {
@@ -1038,11 +824,11 @@ const generateUltraCleanEmbedUrl = (videoId) => {
     'autoplay': '1',
     'rel': '0',
     'modestbranding': '1',
-    'controls': '0',
+    'controls': '1',
     'showinfo': '0',
     'iv_load_policy': '3',
-    'fs': '0',
-    'disablekb': '1',
+    'fs': '1',
+    'disablekb': '0',
     'playsinline': '1',
     'enablejsapi': '1',
     'origin': window.location.origin,
@@ -1050,13 +836,7 @@ const generateUltraCleanEmbedUrl = (videoId) => {
     'cc_load_policy': '0',
     'color': 'white',
     'hl': 'en',
-    'cc_lang_pref': 'en',
-    'version': '3',
-    'loop': '0',
-    'playlist': videoId,
-    'mute': '0',
-    'start': '0',
-    'end': '0'
+    'cc_lang_pref': 'en'
   });
   
   return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
@@ -1064,146 +844,51 @@ const generateUltraCleanEmbedUrl = (videoId) => {
 
 const getDirectVideoStream = async (videoId) => {
   try {
-    console.log('🔍 Getting direct video stream for:', videoId);
+    const response = await fetch(`/api/youtube-direct-stream?videoId=${videoId}`);
+    const data = await response.json();
     
-    try {
-      const response = await fetch(`/api/youtube-direct-stream?videoId=${videoId}`);
-      const data = await response.json();
-      
-      if (data.success && data.directUrl) {
-        console.log('✅ Got direct video stream from API:', data.directUrl);
-        return data.directUrl;
-      }
-    } catch (apiError) {
-      console.log('❌ API method failed, trying proxy...');
+    if (data.success && data.directUrl) {
+      return data.directUrl;
     }
-    
-    const proxyUrl = `/api/video-proxy/${videoId}`;
-    console.log('🔄 Using proxy URL:', proxyUrl);
-    
-    try {
-      const testResponse = await fetch(proxyUrl, { method: 'HEAD' });
-      if (testResponse.ok) {
-        console.log('✅ Proxy URL is accessible');
-        return proxyUrl;
-      }
-    } catch (proxyError) {
-      console.log('❌ Proxy URL not accessible');
-    }
-    
-    console.log('🔄 Falling back to ultra-clean embed');
-    return null;
-    
-  } catch (error) {
-    console.error('❌ Error getting direct video stream:', error);
-    return null;
+  } catch (apiError) {
+    console.log('API method failed');
   }
+  
+  const proxyUrl = `/api/video-proxy/${videoId}`;
+  
+  try {
+    const testResponse = await fetch(proxyUrl, { method: 'HEAD' });
+    if (testResponse.ok) {
+      return proxyUrl;
+    }
+  } catch (proxyError) {
+    console.log('Proxy URL not accessible');
+  }
+  
+  return null;
 };
 
 // Event handlers
-const handleLanguageChange = async (event) => {
-  iconRenderKey.value++;
-  await nextTick();
-};
-
-const handleThemeChange = (event) => {
-  currentTheme.value = event.detail.theme;
+const handleKeyDown = (event) => {
+  if (event.key === 'Escape' && showVideoPlayer.value) {
+    closeVideoPlayer();
+  }
 };
 
 // Lifecycle
 onMounted(() => {
-  console.log('🎯 Instructor Details Component Mounted');
-  console.log('📊 Full instructor data:', props.instructor);
-  console.log('🖼️ Profile picture field:', props.instructor?.profile_picture);
-  console.log('🔍 All instructor props:', Object.keys(props.instructor));
-  
-  // Check if profile_picture exists and its value
-  if (props.instructor?.profile_picture) {
-    console.log('✅ Profile picture path:', props.instructor.profile_picture);
-    console.log('🔗 Constructed URL:', profilePictureUrl.value);
-  } else {
-    console.log('❌ No profile picture found in props');
-  }
-  
-  const savedTheme = localStorage.getItem('preferredTheme');
-  currentTheme.value = savedTheme || 'light';
-  
-  window.addEventListener('languageChanged', handleLanguageChange);
-  window.addEventListener('themeChanged', handleThemeChange);
+  window.addEventListener('keydown', handleKeyDown);
 });
 
 onUnmounted(() => {
-  window.removeEventListener('languageChanged', handleLanguageChange);
-  window.removeEventListener('themeChanged', handleThemeChange);
+  window.removeEventListener('keydown', handleKeyDown);
 });
 </script>
 
 <style scoped>
-/* Profile Picture Styles - Rectangular */
-.profile-avatar {
-  position: relative;
-  width: 210px; /* Increased by 50% from 140px */
-  height: 180px; /* Increased by 50% from 120px */
-  margin: 0 auto 30px; /* Increased margin to accommodate larger size */
-}
-
-.profile-picture {
-  width: 100%;
-  height: 100%;
-  border-radius: 20px; /* Slightly larger rounded corners */
-  object-fit: cover;
-  border: 6px solid #e5e7eb; /* Thicker border */
-  transition: all 0.3s ease;
-}
-
-.profile-upload-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  border-radius: 20px; /* Match the larger rounded corners */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  cursor: pointer;
-}
-
-.profile-upload-overlay:hover {
-  opacity: 1;
-}
-
-.profile-upload-overlay i {
-  font-size: 36px; /* Larger icon */
-  margin-bottom: 8px;
-}
-
-.profile-upload-overlay span {
-  font-size: 14px; /* Slightly larger text */
-  text-align: center;
-}
-
-/* Update the profile avatar in profile card */
-.profile-avatar img {
-  width: 210px; /* Increased by 50% from 140px */
-  height: 180px; /* Increased by 50% from 120px */
-  border-radius: 20px; /* Larger rounded corners */
-  object-fit: cover;
-  border: 6px solid var(--bg-secondary); /* Thicker border */
-  box-shadow: var(--shadow);
-  transition: all 0.3s ease;
-}
-
 /* ==================== */
 /* CRITICAL ICON FIXES */
 /* ==================== */
-
-/* Force Font Awesome icons to always display properly */
 .fas, .fab, .far {
   display: inline-block !important;
   font-family: 'Font Awesome 6 Free' !important;
@@ -1216,152 +901,35 @@ onUnmounted(() => {
   -moz-osx-font-smoothing: grayscale !important;
 }
 
-/* Ensure icons don't disappear during language changes */
-.fa-star,
-.fa-book-open,
-.fa-users,
-.fa-video,
-.fa-user-graduate,
-.fa-language,
-.fa-clock,
-.fa-envelope,
-.fa-phone,
-.fa-graduation-cap,
-.fa-play,
-.fa-video-slash,
-.fa-filter,
-.fa-info-circle,
-.fa-clock,
-.fa-calendar,
-.fa-book,
-.fa-graduation-cap,
-.fa-users,
-.fa-facebook-f,
-.fa-twitter,
-.fa-instagram,
-.fa-linkedin-in,
-.fa-youtube {
-  font-family: 'Font Awesome 6 Free' !important;
-  font-weight: 900 !important;
-}
-
-/* Fix for Font Awesome Brands */
 .fab {
   font-family: 'Font Awesome 6 Brands' !important;
   font-weight: 400 !important;
 }
 
-/* Fix for Font Awesome Regular */
 .far {
   font-family: 'Font Awesome 6 Free' !important;
   font-weight: 400 !important;
 }
 
 /* ==================== */
-/* VIDEO PLAYER MODAL - CRITICAL Z-INDEX FIXES */
+/* CSS VARIABLES FOR THEMING */
 /* ==================== */
-.video-player-modal {
-  backdrop-filter: blur(8px);
-  z-index: 9999 !important;
-}
-
-/* Modal container with high z-index */
-.video-player-modal > div {
-  z-index: 10000 !important;
-  position: relative;
-}
-
-/* Header - Force above everything */
-.video-player-modal .px-6.py-4.bg-white {
-  z-index: 10010 !important;
-  position: relative;
-}
-
-/* Footer - Force above everything */
-.video-player-modal .px-6.py-4.border-t {
-  z-index: 10010 !important;
-  position: relative;
-}
-
-/* Video container with isolation */
-.video-container {
-  position: relative;
-  width: 100%;
-  background: #000;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-  isolation: isolate; /* Critical: creates new stacking context */
-  z-index: 1 !important;
-}
-
-/* YouTube iframe container with transform to contain z-index */
-.iframe-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  transform: translateZ(0); /* Creates new stacking context */
-  z-index: 1 !important;
-}
-
-/* YouTube iframe - keep it contained */
-.iframe-container iframe {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border: none;
-  z-index: 1 !important;
-}
-
-/* Protective border overlay - always on top */
-.video-container .absolute.inset-0.border-2 {
-  z-index: 100 !important;
-  pointer-events: none;
-}
-
-/* Loading overlay - above YouTube */
-.video-container .absolute.inset-0.flex {
-  z-index: 50 !important;
-}
-
-/* Error state - above YouTube */
-.video-container .absolute.inset-0.flex.items-center {
-  z-index: 50 !important;
-}
-
-/* Play button overlay for direct videos */
-.video-container .absolute.inset-0.flex.items-center.justify-center {
-  z-index: 20 !important;
-}
-
-/* Close button in header - extra high z-index */
-.video-player-modal button[aria-label="Close video player"] {
-  z-index: 10020 !important;
-  position: relative;
-}
-
-/* Footer buttons - extra high z-index */
-.video-player-modal .bg-white.px-6.py-4 button {
-  z-index: 10020 !important;
-  position: relative;
-}
-
-/* Nuclear option for YouTube iframe containment */
-.youtube-isolation-fix {
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-  perspective: 1000;
-  isolation: isolate;
-  z-index: 1 !important;
-}
-
-/* Emergency fallback: scale down YouTube slightly */
-.youtube-scale-fix {
-  transform: scale(0.995);
-  transform-origin: center center;
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --card-bg: #ffffff;
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+  --primary-color: #3b82f6;
+  --primary-hover: #2563eb;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --error-color: #ef4444;
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 /* ==================== */
@@ -1369,16 +937,60 @@ onUnmounted(() => {
 /* ==================== */
 .main-area {
   background: var(--bg-primary);
-  transition: background-color 0.3s ease;
+  min-height: 100vh;
 }
 
-/* ==================== */
-/* INSTRUCTOR DETAILS AREA */
-/* ==================== */
+.fix {
+  position: relative;
+}
+
 .instructor__details-area {
   background: var(--bg-primary);
   padding: 80px 0;
-  transition: background-color 0.3s ease;
+}
+
+.section-pt-120 {
+  padding-top: 120px;
+}
+
+.section-pb-90 {
+  padding-bottom: 90px;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 -15px;
+}
+
+.col-xl-4 {
+  flex: 0 0 33.333333%;
+  max-width: 33.333333%;
+  padding: 0 15px;
+}
+
+.col-xl-8 {
+  flex: 0 0 66.666667%;
+  max-width: 66.666667%;
+  padding: 0 15px;
+}
+
+.col-lg-5 {
+  flex: 0 0 41.666667%;
+  max-width: 41.666667%;
+  padding: 0 15px;
+}
+
+.col-lg-7 {
+  flex: 0 0 58.333333%;
+  max-width: 58.333333%;
+  padding: 0 15px;
 }
 
 /* ==================== */
@@ -1399,6 +1011,10 @@ onUnmounted(() => {
   transition: all 0.3s ease;
 }
 
+.sidebar-card:hover {
+  box-shadow: var(--shadow-lg);
+}
+
 .sidebar-card .title {
   font-size: 18px;
   font-weight: 700;
@@ -1406,60 +1022,52 @@ onUnmounted(() => {
   margin-bottom: 20px;
   padding-bottom: 15px;
   border-bottom: 2px solid var(--border-color);
-  transition: all 0.3s ease;
 }
 
 /* ==================== */
 /* PROFILE CARD STYLES */
 /* ==================== */
-.profile-header {
+.profile-card {
   text-align: center;
-  margin-bottom: 30px; /* Increased margin for larger profile picture */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+}
+
+.profile-header {
+  margin-bottom: 30px;
 }
 
 .profile-avatar {
-  margin-bottom: 30px; /* Increased margin for larger profile picture */
-  display: flex;
-  justify-content: center;
-  width: 100%;
+  position: relative;
+  width: 210px;
+  height: 180px;
+  margin: 0 auto 30px;
+  border-radius: 20px;
+  overflow: hidden;
 }
 
-/* Updated profile avatar image to rectangular - 50% larger */
-.profile-avatar img {
-  width: 210px; /* 140px + 50% = 210px */
-  height: 180px; /* 120px + 50% = 180px */
-  border-radius: 20px; /* Larger rounded corners */
+.profile-picture {
+  width: 100%;
+  height: 100%;
+  border-radius: 20px;
   object-fit: cover;
-  border: 6px solid var(--bg-secondary); /* Thicker border */
+  border: 6px solid var(--bg-secondary);
   box-shadow: var(--shadow);
-  transition: all 0.3s ease;
-}
-
-.profile-info {
-  width: 100%;
-  text-align: center;
 }
 
 .profile-info .title {
-  font-size: 28px; /* Slightly larger title to match bigger profile */
+  font-size: 28px;
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 5px;
   border-bottom: none;
   padding-bottom: 0;
-  transition: color 0.3s ease;
 }
 
 .designation {
   color: var(--primary-color);
   font-weight: 600;
-  font-size: 18px; /* Slightly larger designation */
+  font-size: 18px;
   display: block;
   margin-bottom: 10px;
-  transition: color 0.3s ease;
 }
 
 .rating {
@@ -1468,8 +1076,7 @@ onUnmounted(() => {
   justify-content: center;
   gap: 8px;
   color: var(--text-muted);
-  font-size: 16px; /* Slightly larger rating */
-  transition: color 0.3s ease;
+  font-size: 16px;
 }
 
 .rating i {
@@ -1494,6 +1101,10 @@ onUnmounted(() => {
   transition: background-color 0.3s ease;
 }
 
+.stat-item:hover {
+  background: var(--bg-tertiary);
+}
+
 .stat-icon {
   width: 40px;
   height: 40px;
@@ -1504,7 +1115,6 @@ onUnmounted(() => {
   justify-content: center;
   margin: 0 auto 10px;
   color: #ffffff;
-  transition: background-color 0.3s ease;
 }
 
 .stat-number {
@@ -1513,13 +1123,11 @@ onUnmounted(() => {
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 5px;
-  transition: color 0.3s ease;
 }
 
 .stat-label {
   font-size: 12px;
   color: var(--text-muted);
-  transition: color 0.3s ease;
 }
 
 /* ==================== */
@@ -1535,7 +1143,6 @@ onUnmounted(() => {
   align-items: center;
   padding: 12px 0;
   border-bottom: 1px solid var(--border-color);
-  transition: border-color 0.3s ease;
 }
 
 .detail-item:last-child {
@@ -1549,7 +1156,6 @@ onUnmounted(() => {
   color: var(--text-muted);
   font-weight: 500;
   font-size: 14px;
-  transition: color 0.3s ease;
 }
 
 .detail-item span {
@@ -1557,13 +1163,11 @@ onUnmounted(() => {
   font-weight: 600;
   font-size: 14px;
   text-align: right;
-  transition: color 0.3s ease;
 }
 
 .detail-item a {
   color: var(--text-primary);
   text-decoration: none;
-  transition: color 0.3s ease;
 }
 
 .detail-item a:hover {
@@ -1578,7 +1182,6 @@ onUnmounted(() => {
   padding: 15px;
   background: var(--bg-secondary);
   border-radius: 10px;
-  transition: background-color 0.3s ease;
 }
 
 .profile-bio p {
@@ -1586,7 +1189,6 @@ onUnmounted(() => {
   line-height: 1.6;
   margin: 0;
   font-size: 14px;
-  transition: color 0.3s ease;
 }
 
 /* ==================== */
@@ -1601,7 +1203,6 @@ onUnmounted(() => {
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 15px;
-  transition: color 0.3s ease;
 }
 
 .profile-social .list-wrap {
@@ -1633,6 +1234,137 @@ onUnmounted(() => {
 }
 
 /* ==================== */
+/* EXPERIENCE CARD */
+/* ==================== */
+.experience-timeline {
+  position: relative;
+  padding-left: 30px;
+}
+
+.experience-item {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.exp-period {
+  background: var(--primary-color);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+.exp-dot {
+  position: absolute;
+  left: -38px;
+  top: 5px;
+  width: 12px;
+  height: 12px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  border: 3px solid var(--bg-primary);
+}
+
+.exp-dot::before {
+  content: '';
+  position: absolute;
+  left: -24px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 2px;
+  background: var(--primary-color);
+}
+
+.exp-content h6 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 5px;
+}
+
+.exp-company {
+  color: var(--primary-color);
+  font-weight: 500;
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+.exp-description {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ==================== */
+/* EDUCATION CARD */
+/* ==================== */
+.education-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.education-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 15px;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  transition: background-color 0.3s ease;
+}
+
+.education-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.edu-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.edu-content h6 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 5px;
+}
+
+.edu-institution {
+  color: var(--primary-color);
+  font-weight: 500;
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+.edu-year {
+  color: var(--text-muted);
+  font-size: 13px;
+  margin: 0;
+}
+
+/* ==================== */
+/* MAIN CONTENT WRAPPER */
+/* ==================== */
+.instructor__details-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+/* ==================== */
 /* MAIN CONTENT SECTIONS */
 /* ==================== */
 .demo-videos-section,
@@ -1646,8 +1378,15 @@ onUnmounted(() => {
   transition: all 0.3s ease;
 }
 
+.demo-videos-section:hover,
+.classes-section:hover,
+.instructor__details-biography:hover {
+  box-shadow: var(--shadow-lg);
+}
+
 .section-header {
   margin-bottom: 30px;
+  text-align: center;
 }
 
 .section-header .main-title {
@@ -1655,13 +1394,12 @@ onUnmounted(() => {
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 10px;
-  transition: color 0.3s ease;
 }
 
 .section-header p {
   color: var(--text-muted);
   margin-bottom: 0;
-  transition: color 0.3s ease;
+  font-size: 16px;
 }
 
 /* ==================== */
@@ -1674,7 +1412,6 @@ onUnmounted(() => {
   margin-bottom: 30px;
   padding-bottom: 20px;
   border-bottom: 1px solid var(--border-color);
-  transition: border-color 0.3s ease;
 }
 
 .category-btn {
@@ -1686,9 +1423,16 @@ onUnmounted(() => {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
+  font-size: 14px;
 }
 
-.category-btn:hover,
+.category-btn:hover {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
 .category-btn.active {
   background: var(--primary-color);
   border-color: var(--primary-color);
@@ -1702,7 +1446,6 @@ onUnmounted(() => {
   margin-bottom: 40px;
   padding-bottom: 30px;
   border-bottom: 2px solid var(--border-color);
-  transition: border-color 0.3s ease;
 }
 
 .section-subtitle {
@@ -1713,7 +1456,6 @@ onUnmounted(() => {
   padding-bottom: 10px;
   border-bottom: 2px solid var(--primary-color);
   display: inline-block;
-  transition: color 0.3s ease;
 }
 
 .intro-video-card {
@@ -1751,6 +1493,66 @@ onUnmounted(() => {
   transform: scale(1.05);
 }
 
+.video-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.intro-video-card:hover .video-overlay {
+  opacity: 1;
+}
+
+.play-button {
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+  font-size: 20px;
+  transition: all 0.3s ease;
+}
+
+.intro-video-card:hover .play-button {
+  background: #ffffff;
+  transform: scale(1.1);
+}
+
+.video-duration {
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #ffffff;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.video-badge {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: var(--error-color);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
 .intro-video-content {
   padding: 25px;
   display: flex;
@@ -1764,21 +1566,28 @@ onUnmounted(() => {
   color: var(--text-primary);
   margin-bottom: 15px;
   line-height: 1.3;
-  transition: color 0.3s ease;
 }
 
-.intro-video-content .video-description {
-  font-size: 16px;
-  line-height: 1.6;
+.video-stats-simple {
+  display: flex;
+  gap: 15px;
+  font-size: 13px;
   color: var(--text-muted);
-  margin-bottom: 20px;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  line-clamp: 3;
-  box-orient: vertical;
-  transition: color 0.3s ease;
+  flex-wrap: wrap;
+}
+
+.video-stats-simple span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.video-class {
+  background: var(--bg-tertiary);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--text-primary);
 }
 
 /* ==================== */
@@ -1936,31 +1745,27 @@ onUnmounted(() => {
   -webkit-box-orient: vertical;
   line-clamp: 2;
   box-orient: vertical;
-  transition: color 0.3s ease;
 }
 
-.video-meta-horizontal {
-  margin-bottom: 8px;
-}
-
-.video-date-horizontal {
-  color: var(--text-muted);
-  font-size: 11px;
-  transition: color 0.3s ease;
-}
-
-.video-stats-horizontal {
+.video-meta-simple {
   display: flex;
   gap: 12px;
   font-size: 11px;
   color: var(--text-muted);
-  transition: color 0.3s ease;
 }
 
-.video-stats-horizontal span {
+.video-meta-simple span {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.video-class-simple {
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  color: var(--text-primary);
 }
 
 /* ==================== */
@@ -2001,7 +1806,6 @@ onUnmounted(() => {
   margin: 0;
   flex: 1;
   margin-right: 10px;
-  transition: color 0.3s ease;
 }
 
 .class-status {
@@ -2013,7 +1817,7 @@ onUnmounted(() => {
 }
 
 .class-status.active {
-  background: color-mix(in srgb, var(--success-color) 20%, var(--bg-primary));
+  background: color-mix(in srgb, var(--success-color) 20%, transparent);
   color: color-mix(in srgb, var(--success-color) 70%, black);
 }
 
@@ -2032,7 +1836,6 @@ onUnmounted(() => {
   gap: 8px;
   font-size: 13px;
   color: var(--text-muted);
-  transition: color 0.3s ease;
 }
 
 .class-subject i,
@@ -2047,12 +1850,38 @@ onUnmounted(() => {
   font-size: 14px;
   line-height: 1.5;
   margin-bottom: 15px;
-  transition: color 0.3s ease;
 }
 
 .class-actions {
   display: flex;
   justify-content: flex-end;
+}
+
+/* ==================== */
+/* TEACHING PHILOSOPHY */
+/* ==================== */
+.instructor__details-biography {
+  background: var(--card-bg);
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color);
+}
+
+.instructor__details-biography .title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.instructor__details-biography p {
+  color: var(--text-muted);
+  line-height: 1.7;
+  font-size: 16px;
+  margin: 0;
 }
 
 /* ==================== */
@@ -2100,119 +1929,285 @@ onUnmounted(() => {
 }
 
 /* ==================== */
-/* TEXT UTILITIES */
+/* NO CONTENT STATES */
 /* ==================== */
-.text-gray-400 { color: var(--text-muted); }
-.text-gray-500 { color: var(--text-muted); }
-.text-gray-600 { color: var(--text-secondary); }
+.no-content-state {
+  text-align: center;
+  padding: 60px 20px;
+}
 
-.py-8 { padding-top: 2rem; padding-bottom: 2rem; }
-.mb-4 { margin-bottom: 1rem; }
-.mt-5 { margin-top: 1.25rem; }
+.no-content-state i {
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
 
-.text-center { text-align: center; }
+.no-content-state h4 {
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.no-content-state p {
+  color: var(--text-muted);
+  font-size: 14px;
+  max-width: 400px;
+  margin: 0 auto;
+}
 
 /* ==================== */
-/* VIDEO OVERLAY STYLES */
+/* LOAD MORE SECTION */
 /* ==================== */
-.video-overlay {
+.load-more-section {
+  text-align: center;
+  margin-top: 40px;
+  padding-top: 30px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* ==================== */
+/* CLEAN VIDEO PLAYER MODAL - NO FILTERS */
+/* ==================== */
+.video-player-modal {
+  background: rgba(0, 0, 0, 0.95) !important;
+  z-index: 9999 !important;
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.modal-container {
+  background: #000 !important;
+  height: 90vh;
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+  border: 1px solid #333;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Header Section - 20% */
+.header-section {
+  background: #1a1a1a !important;
+  border-bottom: 1px solid #333;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  min-height: 80px;
+  max-height: 120px;
+  flex-shrink: 0;
+}
+
+.header-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.header-section h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: #fff !important;
+  line-height: 1.3;
+}
+
+.video-meta {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.875rem;
+  color: #ccc !important;
+}
+
+.video-meta span {
+  display: flex;
+  align-items: center;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  margin-left: 1rem;
+  flex-shrink: 0;
+  transition: color 0.3s ease;
+}
+
+.close-button:hover {
+  color: #ccc;
+}
+
+/* Video Player Section - 70% */
+.video-player-section {
+  background: #000 !important;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  min-height: 300px;
+}
+
+.youtube-container,
+.direct-video-container {
+  width: 100%;
+  height: 100%;
+  background: #000 !important;
+}
+
+.youtube-container iframe,
+.direct-video-container video {
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+  outline: none !important;
+  background: #000 !important;
+}
+
+/* Loading State */
+.loading-state {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: #000;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  color: #fff;
+  z-index: 10;
 }
 
-.intro-video-card:hover .video-overlay {
-  opacity: 1;
-}
-
-.play-button {
-  width: 60px;
-  height: 60px;
-  background: rgba(255, 255, 255, 0.9);
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #333;
+  border-left: 4px solid #3b82f6;
   border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-state p {
+  font-size: 1.125rem;
+  color: #fff;
+}
+
+/* Error State */
+.error-state {
+  text-align: center;
+  color: #fff;
+  padding: 2rem;
+}
+
+.error-state i {
+  font-size: 3rem;
+  color: #f59e0b;
+  margin-bottom: 1rem;
+}
+
+.error-state p {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.error-subtext {
+  font-size: 1rem;
+  color: #9ca3af;
+}
+
+/* Footer Section - 10% */
+.footer-section {
+  background: #1a1a1a !important;
+  border-top: 1px solid #333;
+  padding: 1rem 1.5rem;
+  min-height: 60px;
+  max-height: 80px;
+  flex-shrink: 0;
+}
+
+.footer-content {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  color: var(--primary-color);
-  font-size: 20px;
-  transition: all 0.3s ease;
+  height: 100%;
 }
 
-.intro-video-card:hover .play-button {
-  background: #ffffff;
-  transform: scale(1.1);
+.video-description {
+  color: #fff !important;
+  margin: 0;
+  flex: 1;
+  margin-right: 1rem;
+  font-size: 0.875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.video-duration {
-  position: absolute;
-  bottom: 15px;
-  right: 15px;
-  background: rgba(0, 0, 0, 0.7);
-  color: #ffffff;
-  padding: 5px 10px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
+.no-description {
+  color: #999 !important;
+  margin: 0;
+  flex: 1;
+  margin-right: 1rem;
+  font-size: 0.875rem;
+  font-style: italic;
 }
 
-.video-badge {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  background: var(--error-color);
+.close-btn {
+  background: #dc2626;
   color: white;
-  padding: 5px 10px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: bold;
-}
-
-.video-stats-simple,
-.video-meta-simple {
-  display: flex;
-  gap: 15px;
-  font-size: 13px;
-  color: var(--text-muted);
-  flex-wrap: wrap;
-}
-
-.video-stats-simple span,
-.video-meta-simple span {
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-weight: 500;
   display: flex;
   align-items: center;
-  gap: 5px;
+  transition: background-color 0.3s ease;
+  flex-shrink: 0;
 }
 
-.video-class,
-.video-class-simple {
-  background: var(--bg-tertiary);
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  color: var(--text-primary);
+.close-btn:hover {
+  background: #b91c1c;
 }
 
 /* ==================== */
 /* RESPONSIVE DESIGN */
 /* ==================== */
-@media (max-width: 1199px) {
-  .video-card-horizontal {
-    flex: 0 0 260px;
-  }
-}
-
 @media (max-width: 991px) {
   .instructor__sidebar {
     position: static;
     margin-bottom: 40px;
+  }
+  
+  .col-xl-4,
+  .col-xl-8,
+  .col-lg-5,
+  .col-lg-7 {
+    flex: 0 0 100%;
+    max-width: 100%;
   }
   
   .profile-stats {
@@ -2237,6 +2232,10 @@ onUnmounted(() => {
 }
 
 @media (max-width: 767px) {
+  .instructor__details-area {
+    padding: 60px 0;
+  }
+  
   .demo-videos-section,
   .sidebar-card,
   .classes-section,
@@ -2255,10 +2254,6 @@ onUnmounted(() => {
   .profile-stats {
     grid-template-columns: 1fr;
     gap: 10px;
-  }
-  
-  .video-player-modal {
-    padding: 10px;
   }
   
   .section-header .main-title {
@@ -2285,22 +2280,36 @@ onUnmounted(() => {
     height: 140px;
   }
   
-  /* Adjust profile picture for mobile - 50% larger */
   .profile-avatar {
-    width: 180px; /* 120px + 50% */
-    height: 150px; /* 100px + 50% */
-  }
-  
-  .profile-avatar img {
     width: 180px;
     height: 150px;
+  }
+  
+  .profile-picture {
+    width: 180px;
+    height: 150px;
+  }
+  
+  .modal-container {
+    height: 95vh;
+    margin: 0.5rem;
+  }
+  
+  .header-section {
+    padding: 1rem;
+    min-height: 70px;
+  }
+  
+  .footer-section {
+    padding: 0.75rem 1rem;
+    min-height: 50px;
   }
 }
 
 @media (max-width: 575px) {
-  .video-meta-modal {
+  .video-meta-simple {
     flex-direction: column;
-    gap: 10px;
+    gap: 5px;
   }
   
   .detail-item {
@@ -2322,13 +2331,12 @@ onUnmounted(() => {
     align-self: flex-start;
   }
   
-  /* Further adjust profile picture for small mobile */
   .profile-avatar {
     width: 150px;
     height: 125px;
   }
   
-  .profile-avatar img {
+  .profile-picture {
     width: 150px;
     height: 125px;
   }
@@ -2337,37 +2345,12 @@ onUnmounted(() => {
     font-size: 20px;
   }
   
-  .video-info {
-    padding: 20px;
-  }
-  
-  .video-info h4 {
-    font-size: 18px;
-  }
-  
-  .video-info p {
-    font-size: 14px;
-  }
-  
-  .video-actions {
-    flex-direction: column;
-  }
-  
-  .btn-outline {
-    width: 100%;
-    justify-content: center;
-  }
-  
   .intro-video-thumbnail {
     height: 180px;
   }
   
   .intro-video-content .video-title {
     font-size: 16px;
-  }
-  
-  .intro-video-content .video-description {
-    font-size: 14px;
   }
   
   .video-card-horizontal {
@@ -2381,6 +2364,44 @@ onUnmounted(() => {
   .video-title-horizontal {
     font-size: 13px;
   }
+  
+  .video-player-modal {
+    padding: 0.5rem;
+  }
+  
+  .modal-container {
+    height: 100vh;
+    margin: 0;
+    border-radius: 0;
+    border: none;
+  }
+  
+  .header-section {
+    min-height: 60px;
+  }
+  
+  .footer-section {
+    min-height: 50px;
+  }
+  
+  .header-section h3 {
+    font-size: 1.1rem;
+  }
+  
+  .video-meta {
+    font-size: 0.75rem;
+    gap: 0.5rem;
+  }
+  
+  .footer-content {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+  
+  .close-btn {
+    align-self: flex-end;
+  }
 }
 
 /* ==================== */
@@ -2388,57 +2409,31 @@ onUnmounted(() => {
 /* ==================== */
 .btn:focus,
 .category-btn:focus,
-.close-modal:focus {
-  outline: 3px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
+.close-button:focus,
+.close-btn:focus {
+  outline: 3px solid rgba(59, 130, 246, 0.5);
   outline-offset: 2px;
 }
 
 /* ==================== */
-/* REDUCED MOTION */
+/* SCROLLBAR STYLING */
 /* ==================== */
-@media (prefers-reduced-motion: reduce) {
-  .sidebar-card,
-  .video-card-horizontal,
-  .class-card,
-  .intro-video-card,
-  .btn,
-  .category-btn,
-  .close-modal {
-    transition: none;
-  }
-  
-  .video-card-horizontal:hover,
-  .class-card:hover,
-  .intro-video-card:hover,
-  .btn:hover:not(:disabled),
-  .category-btn:hover {
-    transform: none;
-  }
-  
-  .video-card-horizontal:hover .video-thumbnail-horizontal img,
-  .intro-video-card:hover .intro-video-thumbnail img {
-    transform: none;
-  }
-  
-  .fadeIn,
-  .slideUp {
-    animation: none;
-  }
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-/* ==================== */
-/* LOADING ANIMATION */
-/* ==================== */
-.animate-spin {
-  animation: spin 1s linear infinite;
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 10px;
 }
 
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-hover);
 }
 </style>

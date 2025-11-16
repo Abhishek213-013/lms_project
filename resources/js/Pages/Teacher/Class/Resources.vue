@@ -1014,7 +1014,7 @@ const uploadVideoFinal = async () => {
 
     console.log('📡 [UPLOAD] Sending YouTube URL:', youtubeUrl)
 
-    const response = await fetch(`/api/teachers/${getCurrentTeacherId()}/resources`, {
+    const response = await fetch(`/api/resources/upload/${getCurrentTeacherId()}`, {
       method: 'POST',
       headers: {
         'Accept': 'application/json',

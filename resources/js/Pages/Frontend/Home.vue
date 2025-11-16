@@ -240,31 +240,6 @@
               </div>
             </div>
           </section>
-
-          <!-- Language Debug Section -->
-          <!-- <div v-if="isDevelopment" class="debug-section p-3 bg-gray-100 mt-5">
-            <div class="container">
-              <h3>🌐 Language Debug Info</h3>
-              <div class="row">
-                <div class="col-md-6">
-                  <p><strong>Current Language:</strong> {{ currentLanguage }}</p>
-                  <p><strong>Props Language:</strong> {{ props.currentLanguage }}</p>
-                  <p><strong>Content Refresh Key:</strong> {{ contentRefreshKey }}</p>
-                  <p><strong>Translation Version:</strong> {{ translationVersion }}</p>
-                  <p><strong>Content Keys:</strong> {{ Object.keys(displayContent).length }}</p>
-                </div>
-                <div class="col-md-6">
-                  <h5>Content Sample:</h5>
-                  <p><strong>Hero Title:</strong> "{{ displayContent.home_hero_title }}"</p>
-                  <p><strong>Hero Subtitle:</strong> "{{ displayContent.home_hero_subtitle }}"</p>
-                  <p><strong>Courses Title:</strong> "{{ displayContent.home_courses_title }}"</p>
-                  <button @click="forceContentRefresh" class="btn btn-sm btn-warning">
-                    Force Refresh Content
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div> -->
         </div>
       </transition>
     </div>
@@ -762,7 +737,75 @@ const getEducation = (instructor) => {
 </script>
 
 <style scoped>
-/* Smooth Transition Styles */
+/* ==================== */
+/* BENGALI FONT SIZE ADJUSTMENTS */
+/* ==================== */
+.bn-lang .hero-title {
+  font-size: 1.7rem !important;
+  line-height: 1.3 !important;
+}
+
+.bn-lang .hero-subtitle {
+  font-size: 1rem !important;
+  line-height: 1.5 !important;
+}
+
+.bn-lang .section-title {
+  font-size: 1.rem !important;
+  line-height: 1.3 !important;
+}
+
+.bn-lang .section-subtitle {
+  font-size: 1rem !important;
+  line-height: 1.5 !important;
+}
+
+.bn-lang .card-title {
+  font-size: 1rem !important;
+  line-height: 1.3 !important;
+}
+
+.bn-lang .card-text {
+  font-size: 0.85rem !important;
+  line-height: 1.4 !important;
+}
+
+.bn-lang .teacher-name {
+  font-size: 1.1rem !important;
+  line-height: 1.3 !important;
+}
+
+.bn-lang .education-text {
+  font-size: 0.8rem !important;
+  line-height: 1.4 !important;
+}
+
+.bn-lang .stat-label-new {
+  font-size: 0.6rem !important;
+  line-height: 1.2 !important;
+}
+
+.bn-lang .cta-title {
+  font-size: 1.8rem !important;
+  line-height: 1.3 !important;
+}
+
+.bn-lang .cta-subtitle {
+  font-size: 1rem !important;
+  line-height: 1.5 !important;
+}
+
+.bn-lang .btn {
+  font-size: 0.9rem !important;
+}
+
+.bn-lang .btn-lg {
+  font-size: 1rem !important;
+}
+
+/* ==================== */
+/* SMOOTH TRANSITION STYLES */
+/* ==================== */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease;
@@ -858,11 +901,11 @@ const getEducation = (instructor) => {
 }
 
 /* Specific fixes for Bengali language */
-:global(.bn-lang) .fas,
-:global(.bn-lang) .fa,
-:global(.bn-lang) .far,
-:global(.bn-lang) .fab,
-:global(.bn-lang) .icon-fixed {
+.bn-lang .fas,
+.bn-lang .fa,
+.bn-lang .far,
+.bn-lang .fab,
+.bn-lang .icon-fixed {
   font-family: 'Font Awesome 6 Free' !important;
   font-weight: 900 !important;
 }
@@ -1444,7 +1487,7 @@ const getEducation = (instructor) => {
   }
   
   .hero-title {
-    font-size: 1.5rem;
+    font-size: 1rem;
   }
   
   .hero-actions {

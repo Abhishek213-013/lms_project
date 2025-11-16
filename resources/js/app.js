@@ -280,13 +280,8 @@ const isAdminPage = () => {
     return adminPaths.some(path => currentPath.startsWith(path));
 };
 
-// Initialize Bengali Fonts
+// FIXED: Initialize Bengali Fonts - REMOVED bad Google Fonts request
 const initializeBengaliFonts = () => {
-    const kalpurushLink = document.createElement('link');
-    kalpurushLink.href = 'https://fonts.googleapis.com/css2?family=Kalpurush&display=swap';
-    kalpurushLink.rel = 'stylesheet';
-    document.head.appendChild(kalpurushLink);
-
     const style = document.createElement('style');
     style.textContent = `
         .bn-lang:not(.admin-page) * {
@@ -294,7 +289,7 @@ const initializeBengaliFonts = () => {
         }
         
         .bn-lang:not(.admin-page) {
-            font-family: 'Kalpurush', 'SolaimanLipi', 'Siyam Rupali', 'AdorshoLipi', 'AponaLohit', 
+            font-family: 'SolaimanLipi', 'Siyam Rupali', 'AdorshoLipi', 'AponaLohit', 
                         'Bangla', 'Nikosh', 'Mina', 'Lohit Bengali', 'Noto Sans Bengali', 
                         "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
             line-height: 1.6;
@@ -326,10 +321,16 @@ const initializeBengaliFonts = () => {
             font-weight: 700;
             line-height: 1.4;
         }
+        
+        /* EMERGENCY FONT FALLBACK - Ensure readable text */
+        * {
+            font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", 
+                       Roboto, "Helvetica Neue", Arial, sans-serif !important;
+        }
     `;
     document.head.appendChild(style);
 
-    console.log('✅ Bengali fonts initialized');
+    console.log('✅ Bengali fonts initialized (Kalpurush removed)');
 };
 
 // Initialize language system
@@ -753,6 +754,7 @@ createInertiaApp({
         });
     }
 });
+
 // Simple URL cleanup - remove ?lang parameter without page reload
 function cleanLangParameter() {
     const url = new URL(window.location);

@@ -942,31 +942,144 @@ const handleThemeChange = (event) => {
 <!-- Add language-specific CSS -->
 <style scoped>
 /* ==================== */
-/* LANGUAGE SUPPORT */
+/* BENGALI FONT FIXES FOR COURSE DETAILS PAGE */
 /* ==================== */
+
+/* Force Bengali font for all text elements */
+.bn-lang .breadcrumb__content .title,
+.bn-lang .breadcrumb,
+.bn-lang .course-title,
+.bn-lang .course-description,
 .bn-lang .course-header,
 .bn-lang .card,
+.bn-lang .card-title,
+.bn-lang .card-body,
 .bn-lang .btn,
 .bn-lang .nav-link,
-.bn-lang .list-group-item {
-  font-family: 'Kalpurush', 'SolaimanLipi', 'Siyam Rupali', Arial, sans-serif;
+.bn-lang .list-group-item,
+.bn-lang .learning-point,
+.bn-lang .subject-name,
+.bn-lang .subject-description,
+.bn-lang .instructor-quick-info,
+.bn-lang .feature-item,
+.bn-lang .detail-item,
+.bn-lang .quick-subject-item,
+.bn-lang .alert,
+.bn-lang .loading-container p,
+.bn-lang .error-container p {
+  font-family: "Noto Sans Bengali", "Nunito Sans", "SolaimanLipi", "Siyam Rupali", 
+              -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
+              "Helvetica Neue", Arial, sans-serif !important;
 }
 
+/* ==================== */
+/* SMALLER BENGALI FONT SIZES */
+/* ==================== */
+
+/* Breadcrumb Section */
+.bn-lang .breadcrumb__content .title {
+  font-size: 1.5rem !important;
+  line-height: 1.3 !important;
+  font-weight: 600 !important;
+}
+
+.bn-lang .breadcrumb {
+  font-size: 0.9rem !important;
+}
+
+/* Course Header */
 .bn-lang .course-title {
-  line-height: 1.5;
+  font-size: 1.8rem !important;
+  line-height: 1.3 !important;
+  font-weight: 600 !important;
 }
 
 .bn-lang .course-description {
-  line-height: 1.7;
+  font-size: 0.95rem !important;
+  line-height: 1.5 !important;
 }
 
+.bn-lang .course-meta {
+  font-size: 0.85rem !important;
+}
+
+/* Tabs */
+.bn-lang .nav-link {
+  font-size: 0.9rem !important;
+}
+
+/* Cards */
+.bn-lang .card-title {
+  font-size: 1.1rem !important;
+  line-height: 1.3 !important;
+}
+
+.bn-lang .card-body {
+  font-size: 0.9rem !important;
+  line-height: 1.5 !important;
+}
+
+/* Learning Points */
 .bn-lang .learning-point {
-  line-height: 1.6;
+  font-size: 0.85rem !important;
+  line-height: 1.4 !important;
 }
 
-/* Ensure Font Awesome icons are properly loaded and don't disappear */
+/* Subjects */
+.bn-lang .subject-name {
+  font-size: 0.95rem !important;
+  line-height: 1.3 !important;
+}
+
+.bn-lang .subject-description {
+  font-size: 0.8rem !important;
+  line-height: 1.4 !important;
+}
+
+/* Instructor Info */
+.bn-lang .instructor-quick-info {
+  font-size: 0.9rem !important;
+  line-height: 1.4 !important;
+}
+
+/* Features List */
+.bn-lang .feature-item {
+  font-size: 0.85rem !important;
+}
+
+/* Course Details */
+.bn-lang .detail-item {
+  font-size: 0.85rem !important;
+}
+
+/* Quick Subjects */
+.bn-lang .quick-subject-item {
+  font-size: 0.85rem !important;
+}
+
+/* Buttons */
+.bn-lang .btn {
+  font-size: 0.9rem !important;
+}
+
+/* Badges */
+.bn-lang .badge {
+  font-size: 0.75rem !important;
+}
+
+/* Loading and Error States */
+.bn-lang .loading-container p,
+.bn-lang .error-container p {
+  font-size: 0.9rem !important;
+}
+
+/* ==================== */
+/* ICON PROTECTION */
+/* ==================== */
+/* Ensure Font Awesome icons don't disappear in Bengali */
 :deep(.fas),
-:deep(.fab) {
+:deep(.fab),
+:deep(.fa) {
   font-family: 'Font Awesome 6 Free' !important;
   font-weight: 900 !important;
   display: inline-block !important;
@@ -983,7 +1096,6 @@ const handleThemeChange = (event) => {
   font-weight: 900 !important;
 }
 
-/* Keep the rest of your existing CSS styles the same */
 /* ==================== */
 /* MAIN LAYOUT */
 /* ==================== */

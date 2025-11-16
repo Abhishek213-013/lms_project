@@ -965,6 +965,119 @@ onUnmounted(() => {
 
 <style scoped>
 /* ==================== */
+/* BENGALI FONT FIXES FOR COURSES PAGE */
+/* ==================== */
+
+/* Force Bengali font for all text elements */
+.bn-lang .title,
+.bn-lang .subtitle,
+.bn-lang .course-title,
+.bn-lang .course-description,
+.bn-lang .course-category,
+.bn-lang .course-students,
+.bn-lang .course-grade,
+.bn-lang .course-category-info,
+.bn-lang .course-status,
+.bn-lang .progress-label,
+.bn-lang .progress-percentage,
+.bn-lang .btn-enroll,
+.bn-lang .btn-continue,
+.bn-lang .search-input,
+.bn-lang .filter-select,
+.bn-lang .pagination-btn,
+.bn-lang .pagination-number,
+.bn-lang .page-jump-section span,
+.bn-lang .btn {
+  font-family: "Noto Sans Bengali", "Nunito Sans", "SolaimanLipi", "Siyam Rupali", 
+              -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
+              "Helvetica Neue", Arial, sans-serif !important;
+}
+
+/* ==================== */
+/* SMALLER BENGALI FONT SIZES */
+/* ==================== */
+
+/* Header Section */
+.bn-lang .title {
+  font-size: 1.8rem !important;
+  line-height: 1.3 !important;
+  font-weight: 600 !important;
+}
+
+.bn-lang .subtitle {
+  font-size: 1rem !important;
+  line-height: 1.5 !important;
+}
+
+/* Course Cards */
+.bn-lang .course-title {
+  font-size: 1rem !important;
+  line-height: 1.3 !important;
+  min-height: 52px !important;
+}
+
+.bn-lang .course-description {
+  font-size: 0.85rem !important;
+  line-height: 1.4 !important;
+  min-height: 40px !important;
+}
+
+.bn-lang .course-category {
+  font-size: 0.75rem !important;
+}
+
+.bn-lang .course-students {
+  font-size: 0.8rem !important;
+}
+
+.bn-lang .course-grade,
+.bn-lang .course-category-info {
+  font-size: 0.8rem !important;
+}
+
+.bn-lang .course-status {
+  font-size: 0.7rem !important;
+}
+
+/* Progress Section */
+.bn-lang .progress-label,
+.bn-lang .progress-percentage {
+  font-size: 0.8rem !important;
+}
+
+/* Buttons */
+.bn-lang .btn-enroll,
+.bn-lang .btn-continue {
+  font-size: 0.85rem !important;
+}
+
+.bn-lang .btn {
+  font-size: 0.9rem !important;
+}
+
+/* Search and Filters */
+.bn-lang .search-input {
+  font-size: 0.9rem !important;
+}
+
+.bn-lang .filter-select {
+  font-size: 0.9rem !important;
+}
+
+/* Pagination */
+.bn-lang .pagination-btn {
+  font-size: 0.85rem !important;
+}
+
+.bn-lang .pagination-number {
+  font-size: 0.85rem !important;
+}
+
+.bn-lang .page-jump-section span {
+  font-size: 0.85rem !important;
+}
+
+/* ==================== */
 /* LAYOUT & CONTAINERS */
 /* ==================== */
 .page-courses {
@@ -1351,6 +1464,7 @@ onUnmounted(() => {
   border-top: 3px solid var(--primary-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
+  transition: border-color 0.3s ease;
 }
 
 .course-type-badge {
@@ -2195,26 +2309,12 @@ onUnmounted(() => {
 }
 
 /* ==================== */
-/* LANGUAGE SUPPORT */
+/* ICON PROTECTION */
 /* ==================== */
-.bn-lang .course-card,
-.bn-lang .search-input,
-.bn-lang .filter-select,
-.bn-lang .btn {
-  font-family: 'Kalpurush', 'SolaimanLipi', 'Siyam Rupali', Arial, sans-serif;
-}
-
-.bn-lang .course-title {
-  line-height: 1.5;
-}
-
-.bn-lang .course-description {
-  line-height: 1.7;
-}
-
-/* Ensure Font Awesome icons don't disappear */
+/* Ensure Font Awesome icons don't disappear in Bengali */
 :deep(.fas),
-:deep(.fab) {
+:deep(.fab),
+:deep(.fa) {
   font-family: 'Font Awesome 6 Free' !important;
   font-weight: 900 !important;
   display: inline-block !important;

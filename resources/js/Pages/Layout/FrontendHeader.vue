@@ -186,9 +186,11 @@
                           
                           <div class="dropdown-divider"></div>
                           
-                          <button class="dropdown-item logout" @click="logout">
+                          <button class="dropdown-item logout" @click="logout" :disabled="isLoggingOut">
                             <i class="fas fa-sign-out-alt"></i>
-                            <span class="dropdown-text">{{ t('Logout') }}</span>
+                            <span class="dropdown-text">
+                              {{ isLoggingOut ? t('Logging out...') : t('Logout') }}
+                            </span>
                           </button>
                         </div>
                       </div>
@@ -359,7 +361,10 @@
                       <li><button @click="navigateToMyCoursesMobile" class="mobile-nav-btn"><i class="fas fa-book"></i>{{ t('My Courses') }}</button></li>
                       <li><button @click="navigateToLearningProgressMobile" class="mobile-nav-btn"><i class="fas fa-chart-line"></i>{{ t('Learning Progress') }}</button></li>
                       <li><button @click="navigateToSettingsMobile" class="mobile-nav-btn"><i class="fas fa-cog"></i>{{ t('Settings') }}</button></li>
-                      <li><button @click="logoutMobile" class="mobile-logout-btn"><i class="fas fa-sign-out-alt"></i>{{ t('Logout') }}</button></li>
+                      <li><button @click="logoutMobile" class="mobile-logout-btn" :disabled="isLoggingOut">
+                        <i class="fas fa-sign-out-alt"></i>
+                        {{ isLoggingOut ? t('Logging out...') : t('Logout') }}
+                      </button></li>
                     </template>
                     <template v-else>
                       <li class="mobile-auth-section">
@@ -402,6 +407,7 @@ const isLoadingSuggestions = ref(false)
 const iconErrors = ref(0)
 const studentAvatar = ref(null)
 const avatarError = ref(false)
+const isLoggingOut = ref(false)
 
 // Create a global theme state that ALWAYS defaults to light
 const getCurrentTheme = () => {
@@ -774,13 +780,35 @@ const closeAll = () => {
   showMobileSuggestions.value = false
 }
 
-const logout = () => {
-  router.post('/logout')
-  closeAll()
+// Updated Logout Methods
+const logout = async () => {
+  if (isLoggingOut.value) return;
+  
+  isLoggingOut.value = true;
+  try {
+    closeAll();
+    
+    // Send logout request
+    await router.post('/logout');
+    
+    // Redirect to student login page after successful logout
+    router.visit('/student-login', {
+      replace: true,
+      preserveState: false,
+      preserveScroll: false
+    });
+    
+  } catch (error) {
+    console.error('❌ Logout error:', error);
+    // Fallback redirect if logout fails
+    window.location.href = '/student-login';
+  } finally {
+    isLoggingOut.value = false;
+  }
 }
 
 const logoutMobile = () => {
-  logout()
+  logout();
 }
 
 // Lifecycle hooks
@@ -917,7 +945,7 @@ const vClickOutside = {
 /* Specific styles for different icon types */
 :deep(.fas) {
   font-family: 'Font Awesome 6 Free' !important;
-  font-weight: 900 !important;
+  font-weight: 300 !important;
 }
 
 :deep(.far) {
@@ -1475,6 +1503,16 @@ const vClickOutside = {
   color: #dc2626;
 }
 
+.logout:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.logout:disabled:hover {
+  background: transparent;
+  color: #ef4444;
+}
+
 /* Auth Utility */
 .auth-utility {
   display: flex;
@@ -1860,6 +1898,16 @@ const vClickOutside = {
 .mobile-logout-btn:hover {
   background: var(--bg-secondary);
   color: var(--primary-color);
+}
+
+.mobile-logout-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.mobile-logout-btn:disabled:hover {
+  background: transparent;
+  color: var(--text-primary);
 }
 
 .mobile-profile-section {

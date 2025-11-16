@@ -5,7 +5,104 @@
 @import 'bootstrap/dist/css/bootstrap.min.css';
 @import '@fortawesome/fontawesome-free/css/all.min.css';
 
+/* ==================== */
+/* EMERGENCY BENGALI FONT FIXES */
+/* ==================== */
+
+/* Force Bengali font loading with proper fallbacks */
+.bn-lang,
+.bn-lang * {
+  font-family: "Noto Sans Bengali", "Nunito Sans", "SolaimanLipi", "Siyam Rupali", 
+              "AdorshoLipi", "AponaLohit", "Bangla", "Nikosh", "Mina", "Lohit Bengali",
+              -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
+              "Helvetica Neue", Arial, sans-serif !important;
+}
+
+/* Emergency system font fallback if Bengali fonts fail */
+.font-fallback-bengali,
+.font-fallback-bengali * {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
+              "Helvetica Neue", Arial, sans-serif !important;
+}
+
+/* ==================== */
+/* BENGALI FONT SIZE ADJUSTMENTS - SMALLER SIZES */
+/* ==================== */
+
+/* Hero Section */
+.bn-lang .hero-title {
+  font-size: 1.8rem !important;
+  line-height: 1.3 !important;
+  font-weight: 600 !important;
+}
+
+.bn-lang .hero-subtitle {
+  font-size: 1rem !important;
+  line-height: 1.5 !important;
+}
+
+/* Section Titles */
+.bn-lang .section-title {
+  font-size: 1.8rem !important;
+  line-height: 1.3 !important;
+}
+
+.bn-lang .section-subtitle {
+  font-size: 1rem !important;
+  line-height: 1.5 !important;
+}
+
+/* Course Cards */
+.bn-lang .card-title {
+  font-size: 1rem !important;
+  line-height: 1.3 !important;
+}
+
+.bn-lang .card-text {
+  font-size: 0.85rem !important;
+  line-height: 1.4 !important;
+}
+
+/* Instructor Cards */
+.bn-lang .teacher-name {
+  font-size: 1.1rem !important;
+  line-height: 1.3 !important;
+}
+
+.bn-lang .education-text {
+  font-size: 0.8rem !important;
+  line-height: 1.4 !important;
+}
+
+.bn-lang .stat-label-new {
+  font-size: 0.6rem !important;
+  line-height: 1.2 !important;
+}
+
+/* CTA Section */
+.bn-lang .cta-title {
+  font-size: 1.8rem !important;
+  line-height: 1.3 !important;
+}
+
+.bn-lang .cta-subtitle {
+  font-size: 1rem !important;
+  line-height: 1.5 !important;
+}
+
+/* Buttons */
+.bn-lang .btn {
+  font-size: 0.9rem !important;
+}
+
+.bn-lang .btn-lg {
+  font-size: 1rem !important;
+}
+
+/* ==================== */
 /* ICON PROTECTION SYSTEM - Prevents icon vanishing during language switches */
+/* ==================== */
+
 /* Font Awesome Icon Protection Layer */
 :root {
   --fa-font-solid: normal 900 1em/1 "Font Awesome 6 Free";
@@ -56,6 +153,14 @@
   font-family: 'Font Awesome 6 Free', 'Font Awesome 6 Brands' !important;
 }
 
+/* But protect Font Awesome icons from Bengali font inheritance */
+.bn-lang [class*="fa-"]:not([class*="fa-font"]),
+.bn-lang .fas,
+.bn-lang .far,
+.bn-lang .fab {
+  font-family: 'Font Awesome 6 Free', 'Font Awesome 6 Brands' !important;
+}
+
 /* Prevent icon inheritance issues during language switch */
 .language-switching [class*="fa-"] {
   opacity: 0.8;
@@ -66,18 +171,16 @@
   opacity: 1;
 }
 
-/* Enhanced Bengali font support with icon protection */
-.bn-lang {
-  font-family: "Nunito Sans", 'Kalpurush', 'SolaimanLipi', 'Siyam Rupali', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
-  line-height: 1.6;
-}
+/* ==================== */
+/* ENHANCED BENGALI FONT SUPPORT */
+/* ==================== */
 
-/* But protect Font Awesome icons from Bengali font inheritance */
-.bn-lang [class*="fa-"]:not([class*="fa-font"]),
-.bn-lang .fas,
-.bn-lang .far,
-.bn-lang .fab {
-  font-family: 'Font Awesome 6 Free', 'Font Awesome 6 Brands' !important;
+.bn-lang {
+  font-family: "Noto Sans Bengali", "Nunito Sans", "SolaimanLipi", "Siyam Rupali", 
+               -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
+               "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", 
+               "Segoe UI Emoji", "Segoe UI Symbol" !important;
+  line-height: 1.6;
 }
 
 /* Improve readability for Bengali */
@@ -98,27 +201,13 @@
 .bn-lang h4, 
 .bn-lang h5, 
 .bn-lang h6 {
-  font-weight: 400;
+  font-weight: 200;
   line-height: 1.4;
 }
 
-/* Ensure Vue components use the correct font but protect icons */
-:deep(*) {
-  font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
-}
-
-:deep(.bn-lang) {
-  font-family: "Nunito Sans", 'Kalpurush', 'SolaimanLipi', 'Siyam Rupali', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
-}
-
-/* Protect icons in Vue deep selectors */
-:deep([class*="fa-"]) {
-  font-family: 'Font Awesome 6 Free', 'Font Awesome 6 Brands' !important;
-}
-
-:deep(.bn-lang [class*="fa-"]) {
-  font-family: 'Font Awesome 6 Free', 'Font Awesome 6 Brands' !important;
-}
+/* ==================== */
+/* GENERAL STYLES */
+/* ==================== */
 
 /* Icon animation for refresh visibility */
 @keyframes icon-refresh {

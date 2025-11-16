@@ -243,7 +243,7 @@ const form = useForm({
   email: '',
   father_name: '',
   mother_name: '',
-  academic_class_id: '', // CHANGED: from class_id to academic_class_id
+  academic_class_id: '',
   country_code: '+880',
   parent_contact: props.phone || '',
   password: '',
@@ -265,7 +265,6 @@ const submit = () => {
 </script>
 
 <style scoped>
-
 :deep(*) {
     font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
     font-weight: 400;
@@ -277,7 +276,7 @@ const submit = () => {
 
 .registration-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
   display: flex;
   align-items: center;
   padding: 20px 0;
@@ -287,7 +286,14 @@ const submit = () => {
   background: white;
   padding: 2.5rem;
   border-radius: 15px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 15px 35px rgba(59, 130, 246, 0.1);
+  border: 1px solid #e0f2fe;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.registration-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(59, 130, 246, 0.15);
 }
 
 /* Logo Container */
@@ -311,7 +317,7 @@ const submit = () => {
 .logo-main {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #e74c3c;
+  color: #3b82f6;
   margin: 0;
   line-height: 1.2;
 }
@@ -319,14 +325,14 @@ const submit = () => {
 .logo-subtitle {
   font-size: 0.8rem;
   font-weight: 500;
-  color: #6c757d;
+  color: #6b7280;
   margin: 0;
   letter-spacing: 1px;
   text-transform: uppercase;
 }
 
 .registration-title {
-  color: #2c3e50;
+  color: #1f2937;
   font-weight: 600;
   margin-bottom: 0.5rem;
 }
@@ -334,13 +340,14 @@ const submit = () => {
 .form-control, .form-select {
   padding: 0.75rem 1rem;
   border-radius: 10px;
-  border: 2px solid #e9ecef;
+  border: 2px solid #e5e7eb;
   transition: all 0.3s ease;
+  font-size: 14px;
 }
 
 .form-control:focus, .form-select:focus {
-  border-color: #e74c3c;
-  box-shadow: 0 0 0 0.2rem rgba(231, 76, 60, 0.25);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
 }
 
 .form-control.is-invalid, .form-select.is-invalid {
@@ -357,26 +364,35 @@ const submit = () => {
   border-radius: 10px;
   font-weight: 600;
   transition: all 0.3s ease;
+  font-size: 14px;
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   border: none;
+  color: white;
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+  box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
 }
 
 .btn-outline-secondary {
-  border-color: #6c757d;
-  color: #6c757d;
+  border: 2px solid #6b7280;
+  color: #6b7280;
+  background: transparent;
 }
 
 .btn-outline-secondary:hover {
-  background-color: #6c757d;
-  border-color: #6c757d;
+  background-color: #6b7280;
+  border-color: #6b7280;
+  color: white;
   transform: translateY(-2px);
 }
 
@@ -389,27 +405,56 @@ const submit = () => {
 .alert {
   border-radius: 10px;
   border: none;
+  font-size: 14px;
+}
+
+.alert-success {
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border-left: 4px solid #16a34a;
+}
+
+.btn-close {
+  background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat;
+  opacity: 0.7;
+}
+
+.btn-close:hover {
+  opacity: 1;
 }
 
 .invalid-feedback {
   display: block;
   font-size: 0.875em;
   color: #dc3545;
+  margin-top: 0.25rem;
+}
+
+.form-check-input:checked {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.form-check-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
 }
 
 /* Text link styling */
 .text-decoration-none {
-  color: #e74c3c;
+  color: #3b82f6;
   transition: color 0.3s ease;
+  font-weight: 500;
 }
 
 .text-decoration-none:hover {
-  color: #c0392b;
+  color: #1d4ed8;
+  text-decoration: underline !important;
 }
 
 /* Border top for admin/teacher section */
 .border-top {
-  border-top: 1px solid #e9ecef !important;
+  border-top: 1px solid #e5e7eb !important;
 }
 
 /* Responsive Design */
@@ -436,6 +481,7 @@ const submit = () => {
 @media (max-width: 576px) {
   .registration-card {
     padding: 2rem 1.5rem;
+    margin: 0 10px;
   }
   
   .logo {
@@ -449,10 +495,56 @@ const submit = () => {
   .country-code {
     max-width: 140px;
   }
+  
+  .btn {
+    padding: 0.75rem 1rem;
+  }
 }
 
 .spinner-border-sm {
   width: 1rem;
   height: 1rem;
+  border-width: 0.15em;
+}
+
+/* Form label styling */
+.form-label {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+  font-size: 14px;
+}
+
+.form-check-label {
+  color: #374151;
+  font-size: 14px;
+}
+
+/* Input group styling */
+.input-group {
+  gap: 0.5rem;
+}
+
+.input-group .form-select,
+.input-group .form-control {
+  border-radius: 10px !important;
+}
+
+/* Focus states for accessibility */
+.btn:focus,
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+  outline: none;
+}
+
+/* Loading state improvements */
+.btn:disabled .spinner-border-sm {
+  border-color: currentColor transparent currentColor transparent;
+}
+
+/* Additional form element hover effects */
+.form-control:hover, .form-select:hover {
+  border-color: #93c5fd;
 }
 </style>
