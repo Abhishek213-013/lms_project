@@ -13,18 +13,9 @@
             </div>
             <p class="footer-description compact-description">{{ t('Transforming education through innovative online learning solutions.') }}</p>
             <div class="social-links compact-social">
-              <a href="#" class="social-link" :title="t('Follow us on Facebook')">
-                <i class="fab fa-facebook-f icon-fixed"></i>
-              </a>
-              <a href="#" class="social-link" :title="t('Follow us on Twitter')">
-                <i class="fab fa-twitter icon-fixed"></i>
-              </a>
-              <a href="#" class="social-link" :title="t('Follow us on LinkedIn')">
-                <i class="fab fa-linkedin-in icon-fixed"></i>
-              </a>
-              <a href="#" class="social-link" :title="t('Follow us on Instagram')">
-                <i class="fab fa-instagram icon-fixed"></i>
-              </a>
+              <a href="https://www.facebook.com/itlabsolutionsltd"><i class="fab fa-facebook-f"></i></a>
+              <a href="https://www.linkedin.com/company/it-lab-solutions/"><i class="fab fa-linkedin-in"></i></a>
+              <a href="https://www.youtube.com/@itlabsolutionsltd"><i class="fab fa-youtube"></i></a>
             </div>
           </div>
           
@@ -85,11 +76,11 @@
             <ul class="contact-info compact-contact">
               <li class="contact-item">
                 <i class="fas fa-map-marker-alt contact-icon icon-fixed"></i>
-                <span class="contact-text">159 Anabil, Dhopadighir Par (North), Jail Road, Sylhet, Sylhet 3100</span>
+                <span class="contact-text">{{ t('159 Anabil, Dhopadighir Par (North), Jail Road, Sylhet, Sylhet 3100') }} </span>
               </li>
               <li class="contact-item">
                 <i class="fas fa-phone contact-icon icon-fixed"></i>
-                <span class="contact-text">+88 01842-485222</span>
+                <span class="contact-text">{{ t('+88 01842-485222') }}</span>
               </li>
               <li class="contact-item">
                 <i class="fas fa-envelope contact-icon icon-fixed"></i>
@@ -109,7 +100,7 @@
           <div class="row align-items-center">
             <div class="col-md-6">
               <p class="copyright">
-                &copy; {{ new Date().getFullYear() }} IT Lab Solutions Ltd. {{ t('All rights reserved.') }}
+                &copy; {{ new Date().getFullYear() }} Pathshala LMS - <Link href="https://www.itlabsolutions.com/" > IT Lab Solutions Ltd. </Link> {{ t('All rights reserved.') }}
               </p>
             </div>
             <div class="col-md-6 text-md-end">

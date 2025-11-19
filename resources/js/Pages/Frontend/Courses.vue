@@ -575,35 +575,37 @@ const showPagination = computed(() => {
 
 // Course enrollment methods
 const enrollCourse = async (course) => {
-  if (!isLoggedIn.value) {
-    // Redirect to login if not authenticated
-    router.visit('/student-login', {
-      data: {
-        redirect: window.location.pathname
-      }
-    });
-    return;
-  }
-
+  console.log('🎯 Starting enrollment for course:', course.id);
+  
   enrollingCourseId.value = course.id;
   
   try {
+    console.log('📤 Sending enrollment request for course:', course.id);
+    
     const response = await fetch(`/api/courses/${course.id}/enroll`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-      }
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      credentials: 'same-origin'
     });
 
+    const result = await response.json();
+    
     if (response.ok) {
+      console.log('✅ Enrollment successful');
+      // Show success message
+      alert(t('Successfully enrolled in the course!'));
       // Refresh the page to show updated enrollment status
-      router.reload({ only: ['courses'] });
+      router.reload({ only: ['courses', 'studentInfo'] });
     } else {
-      alert(t('Failed to enroll in course. Please try again.'));
+      console.error('❌ Enrollment failed:', result);
+      alert(result.message || t('Failed to enroll in course. Please try again.'));
     }
   } catch (error) {
-    console.error('Enrollment error:', error);
+    console.error('💥 Enrollment error:', error);
     alert(t('An error occurred while enrolling. Please try again.'));
   } finally {
     enrollingCourseId.value = null;

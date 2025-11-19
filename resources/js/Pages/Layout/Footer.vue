@@ -21,10 +21,9 @@
                         </div>
                         <p>SkillGro is a comprehensive learning management system designed to provide quality education and skill development for students and professionals.</p>
                         <div class="tg-footer__social">
-                          <a href="#"><i class="fab fa-facebook-f"></i></a>
-                          <a href="#"><i class="fab fa-twitter"></i></a>
-                          <a href="#"><i class="fab fa-linkedin-in"></i></a>
-                          <a href="#"><i class="fab fa-instagram"></i></a>
+                          <a href="https://www.facebook.com/itlabsolutionsltd"><i class="fab fa-facebook-f"></i></a>
+                          <a href="https://www.linkedin.com/company/it-lab-solutions/"><i class="fab fa-linkedin-in"></i></a>
+                          <a href="https://www.youtube.com/@itlabsolutionsltd"><i class="fab fa-youtube"></i></a>
                         </div>
                       </div>
                     </div>

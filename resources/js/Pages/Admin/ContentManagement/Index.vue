@@ -1,34 +1,48 @@
 <template>
   <div class="min-h-screen bg-gray-50 flex">
+    <!-- Mobile Menu Overlay -->
+    <div 
+      v-if="isMobileMenuOpen" 
+      class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+      @click="closeMobileMenu"
+    ></div>
+
     <!-- Sidebar -->
-    <Sidebar />
+    <Sidebar 
+      :is-mobile-menu-open="isMobileMenuOpen" 
+      @menu-click="closeMobileMenu" 
+    />
 
     <!-- Main Content -->
-    <div class="flex-1 ml-64">
+    <div class="flex-1 w-full lg:ml-64 transition-all duration-300">
       <!-- Top Navbar -->
-      <Navbar page-title="Content Management" @search="handleSearch" />
+      <Navbar 
+        page-title="Content Management" 
+        @search="handleSearch"
+        @toggle-mobile-menu="toggleMobileMenu"
+      />
       
       <!-- Page Content -->
-      <div class="p-6">
+      <div class="p-4 lg:p-6">
         <!-- Welcome Message -->
         <div class="mb-6">
-          <h1 class="text-2xl font-bold text-gray-900 mb-2">Content Management</h1>
-          <p class="text-gray-600">Manage all frontend content and text across your application in both English and Bengali.</p>
+          <h1 class="text-xl lg:text-2xl font-bold text-gray-900 mb-2">Content Management</h1>
+          <p class="text-gray-600 text-sm lg:text-base">Manage all frontend content and text across your application in both English and Bengali.</p>
         </div>
 
         <!-- Language Toggle -->
         <div class="mb-6">
           <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div class="flex items-center justify-between">
-              <div>
-                <h3 class="text-lg font-semibold text-gray-800">Language Management</h3>
-                <p class="text-gray-600">Switch between English and Bengali to manage content for both languages</p>
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div class="flex-1">
+                <h3 class="text-base lg:text-lg font-semibold text-gray-800">Language Management</h3>
+                <p class="text-gray-600 text-sm">Switch between English and Bengali to manage content for both languages</p>
               </div>
               <div class="flex space-x-2 bg-gray-100 rounded-lg p-1">
                 <button
                   @click="activeLanguage = 'en'"
                   :class="[
-                    'px-4 py-2 rounded-md text-sm font-medium transition-colors',
+                    'px-3 lg:px-4 py-2 rounded-md text-sm font-medium transition-colors',
                     activeLanguage === 'en'
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
@@ -39,13 +53,13 @@
                 <button
                   @click="activeLanguage = 'bn'"
                   :class="[
-                    'px-4 py-2 rounded-md text-sm font-medium transition-colors',
+                    'px-3 lg:px-4 py-2 rounded-md text-sm font-medium transition-colors',
                     activeLanguage === 'bn'
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                   ]"
                 >
-                  বাংলা (Bengali)
+                  বাংলা
                 </button>
               </div>
             </div>
@@ -53,32 +67,32 @@
         </div>
 
         <!-- Success/Error Messages -->
-        <div v-if="flashSuccess" class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
+        <div v-if="flashSuccess" class="mb-4 p-3 lg:p-4 bg-green-100 border border-green-400 text-green-700 rounded text-sm lg:text-base">
           {{ flashSuccess }}
         </div>
         
-        <div v-if="flashError" class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+        <div v-if="flashError" class="mb-4 p-3 lg:p-4 bg-red-100 border border-red-400 text-red-700 rounded text-sm lg:text-base">
           {{ flashError }}
         </div>
 
-        <div v-if="successMessage" class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
+        <div v-if="successMessage" class="mb-4 p-3 lg:p-4 bg-green-100 border border-green-400 text-green-700 rounded text-sm lg:text-base">
           {{ successMessage }}
         </div>
         
-        <div v-if="errorMessage" class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+        <div v-if="errorMessage" class="mb-4 p-3 lg:p-4 bg-red-100 border border-red-400 text-red-700 rounded text-sm lg:text-base">
           {{ errorMessage }}
         </div>
 
         <!-- Tabs for Different Sections -->
         <div class="mb-6">
           <div class="border-b border-gray-200">
-            <nav class="-mb-px flex space-x-8">
+            <nav class="-mb-px flex space-x-4 lg:space-x-8 overflow-x-auto">
               <button
                 v-for="(section, sectionKey) in sections"
                 :key="sectionKey"
                 @click="activeSection = sectionKey"
                 :class="[
-                  'py-2 px-1 border-b-2 font-medium text-sm',
+                  'py-2 px-1 border-b-2 font-medium text-xs lg:text-sm whitespace-nowrap',
                   activeSection === sectionKey
                     ? 'border-indigo-500 text-indigo-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -91,15 +105,15 @@
         </div>
 
         <!-- Content Editor -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 lg:p-6">
           <div v-if="activeSectionData">
-            <h3 class="text-lg font-semibold text-gray-800 mb-2">{{ activeSectionData.title }}</h3>
-            <p class="text-gray-600 mb-6">{{ activeSectionData.description }}</p>
+            <h3 class="text-base lg:text-lg font-semibold text-gray-800 mb-2">{{ activeSectionData.title }}</h3>
+            <p class="text-gray-600 text-sm lg:text-base mb-4 lg:mb-6">{{ activeSectionData.description }}</p>
 
             <!-- Language Indicator -->
             <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <div class="flex items-center">
-                <span class="text-sm font-medium text-blue-800">
+                <span class="text-xs lg:text-sm font-medium text-blue-800">
                   Currently editing in: 
                   <span class="font-bold">{{ activeLanguage === 'en' ? 'English' : 'বাংলা (Bengali)' }}</span>
                 </span>
@@ -110,7 +124,7 @@
             </div>
 
             <!-- Content Fields -->
-            <div class="space-y-6">
+            <div class="space-y-4 lg:space-y-6">
               <div v-for="(fieldLabel, fieldKey) in activeSectionData.fields" :key="fieldKey">
                 <!-- Special handling for image fields -->
                 <div v-if="fieldKey.includes('_image')">
@@ -122,7 +136,7 @@
                   </label>
                   
                   <!-- Image Upload Section -->
-                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-2">
+                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4 mb-2">
                     <!-- English Version Image -->
                     <div class="border border-gray-200 rounded-lg p-3 bg-gray-50">
                       <label class="block text-xs font-medium text-gray-600 mb-1">
@@ -135,7 +149,7 @@
                         <img 
                           :src="englishContent[fieldKey]" 
                           :alt="fieldLabel"
-                          class="w-full h-32 object-cover rounded-lg border border-gray-300"
+                          class="w-full h-24 lg:h-32 object-cover rounded-lg border border-gray-300"
                         >
                         <p class="text-xs text-gray-500 mt-1 truncate">{{ englishContent[fieldKey] }}</p>
                       </div>
@@ -146,7 +160,7 @@
                         <img 
                           :src="getDefaultImage(fieldKey, 'en')" 
                           :alt="fieldLabel"
-                          class="w-full h-32 object-cover rounded-lg border border-gray-300 opacity-75"
+                          class="w-full h-24 lg:h-32 object-cover rounded-lg border border-gray-300 opacity-75"
                         >
                         <p class="text-xs text-gray-500 mt-1">Using default image</p>
                       </div>
@@ -164,7 +178,7 @@
                         <button
                           type="button"
                           @click="triggerFileInput(fieldKey, 'en')"
-                          class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-xs lg:text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                         >
                           <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
@@ -176,7 +190,7 @@
                           v-if="englishContent[fieldKey] && englishContent[fieldKey] !== getDefaultImage(fieldKey, 'en')"
                           type="button"
                           @click="removeImage(fieldKey, 'en')"
-                          class="w-full px-3 py-2 bg-red-50 border border-red-200 rounded-md text-sm font-medium text-red-700 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          class="w-full px-3 py-2 bg-red-50 border border-red-200 rounded-md text-xs lg:text-sm font-medium text-red-700 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                         >
                           <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -209,7 +223,7 @@
                         <img 
                           :src="bengaliContent[fieldKey]" 
                           :alt="fieldLabel"
-                          class="w-full h-32 object-cover rounded-lg border border-gray-300"
+                          class="w-full h-24 lg:h-32 object-cover rounded-lg border border-gray-300"
                         >
                         <p class="text-xs text-gray-500 mt-1 truncate">{{ bengaliContent[fieldKey] }}</p>
                       </div>
@@ -220,7 +234,7 @@
                         <img 
                           :src="getDefaultImage(fieldKey, 'bn')" 
                           :alt="fieldLabel"
-                          class="w-full h-32 object-cover rounded-lg border border-gray-300 opacity-75"
+                          class="w-full h-24 lg:h-32 object-cover rounded-lg border border-gray-300 opacity-75"
                         >
                         <p class="text-xs text-gray-500 mt-1">Using default image</p>
                       </div>
@@ -238,7 +252,7 @@
                         <button
                           type="button"
                           @click="triggerFileInput(fieldKey, 'bn')"
-                          class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-xs lg:text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                         >
                           <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
@@ -250,7 +264,7 @@
                           v-if="bengaliContent[fieldKey] && bengaliContent[fieldKey] !== getDefaultImage(fieldKey, 'bn')"
                           type="button"
                           @click="removeImage(fieldKey, 'bn')"
-                          class="w-full px-3 py-2 bg-red-50 border border-red-200 rounded-md text-sm font-medium text-red-700 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          class="w-full px-3 py-2 bg-red-50 border border-red-200 rounded-md text-xs lg:text-sm font-medium text-red-700 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                         >
                           <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -278,21 +292,21 @@
                   </div>
 
                   <!-- Quick Actions for Images -->
-                  <div class="flex justify-between items-center text-xs text-gray-500 mt-2">
-                    <span>
+                  <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center text-xs text-gray-500 mt-2 gap-2">
+                    <span class="text-center sm:text-left">
                       Last saved: {{ getLastSaved(fieldKey) }}
                     </span>
-                    <div class="flex space-x-2">
+                    <div class="flex justify-center sm:justify-end space-x-2">
                       <button
                         @click="copyImageToBengali(fieldKey)"
-                        class="text-blue-600 hover:text-blue-800"
+                        class="text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50"
                         title="Copy English image to Bengali"
                       >
                         Copy EN → BN
                       </button>
                       <button
                         @click="resetImageToDefault(fieldKey)"
-                        class="text-gray-600 hover:text-gray-800"
+                        class="text-gray-600 hover:text-gray-800 px-2 py-1 rounded hover:bg-gray-50"
                         title="Reset to default image"
                       >
                         Reset
@@ -311,7 +325,7 @@
                   </label>
                   
                   <!-- Show both languages side by side for better management -->
-                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-2">
+                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4 mb-2">
                     <!-- English Version -->
                     <div class="border border-gray-200 rounded-lg p-3 bg-gray-50">
                       <label class="block text-xs font-medium text-gray-600 mb-1">
@@ -349,21 +363,21 @@
                   </div>
 
                   <!-- Quick Actions -->
-                  <div class="flex justify-between items-center text-xs text-gray-500">
-                    <span>
+                  <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center text-xs text-gray-500 gap-2">
+                    <span class="text-center sm:text-left">
                       Last saved: {{ getLastSaved(fieldKey) }}
                     </span>
-                    <div class="flex space-x-2">
+                    <div class="flex justify-center sm:justify-end space-x-2">
                       <button
                         @click="copyToBengali(fieldKey)"
-                        class="text-blue-600 hover:text-blue-800"
+                        class="text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50"
                         title="Copy English to Bengali"
                       >
                         Copy EN → BN
                       </button>
                       <button
                         @click="resetToDefault(fieldKey)"
-                        class="text-gray-600 hover:text-gray-800"
+                        class="text-gray-600 hover:text-gray-800 px-2 py-1 rounded hover:bg-gray-50"
                         title="Reset to default"
                       >
                         Reset
@@ -375,17 +389,17 @@
             </div>
 
             <!-- Save Button -->
-            <div class="mt-8 flex justify-end space-x-3">
+            <div class="mt-6 lg:mt-8 flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3">
               <button
                 @click="resetSectionToDefaults"
-                class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md shadow-sm text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md shadow-sm text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 order-2 sm:order-1"
               >
                 Reset Section
               </button>
               <button
                 @click="saveAllContent"
                 :disabled="saving"
-                class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed order-1 sm:order-2"
               >
                 <span v-if="saving">Saving...</span>
                 <span v-else>Save All Changes</span>
@@ -401,59 +415,59 @@
         </div>
 
         <!-- Quick Stats -->
-        <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+        <div class="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+          <div class="bg-white p-3 lg:p-4 rounded-lg shadow-sm border border-gray-200">
             <div class="flex items-center">
-              <div class="p-2 bg-green-100 rounded-lg mr-4">
-                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-2 bg-green-100 rounded-lg mr-3 lg:mr-4">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                 </svg>
               </div>
               <div>
-                <p class="text-sm font-medium text-gray-600">Last Updated</p>
-                <p class="text-lg font-semibold text-gray-800">{{ lastUpdated }}</p>
+                <p class="text-xs lg:text-sm font-medium text-gray-600">Last Updated</p>
+                <p class="text-base lg:text-lg font-semibold text-gray-800">{{ lastUpdated }}</p>
               </div>
             </div>
           </div>
 
-          <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div class="bg-white p-3 lg:p-4 rounded-lg shadow-sm border border-gray-200">
             <div class="flex items-center">
-              <div class="p-2 bg-blue-100 rounded-lg mr-4">
-                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-2 bg-blue-100 rounded-lg mr-3 lg:mr-4">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                 </svg>
               </div>
               <div>
-                <p class="text-sm font-medium text-gray-600">Total Fields</p>
-                <p class="text-lg font-semibold text-gray-800">{{ totalFields }}</p>
+                <p class="text-xs lg:text-sm font-medium text-gray-600">Total Fields</p>
+                <p class="text-base lg:text-lg font-semibold text-gray-800">{{ totalFields }}</p>
               </div>
             </div>
           </div>
 
-          <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div class="bg-white p-3 lg:p-4 rounded-lg shadow-sm border border-gray-200">
             <div class="flex items-center">
-              <div class="p-2 bg-purple-100 rounded-lg mr-4">
-                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-2 bg-purple-100 rounded-lg mr-3 lg:mr-4">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
               </div>
               <div>
-                <p class="text-sm font-medium text-gray-600">English Modified</p>
-                <p class="text-lg font-semibold text-gray-800">{{ modifiedEnglishFields }}</p>
+                <p class="text-xs lg:text-sm font-medium text-gray-600">English Modified</p>
+                <p class="text-base lg:text-lg font-semibold text-gray-800">{{ modifiedEnglishFields }}</p>
               </div>
             </div>
           </div>
 
-          <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div class="bg-white p-3 lg:p-4 rounded-lg shadow-sm border border-gray-200">
             <div class="flex items-center">
-              <div class="p-2 bg-orange-100 rounded-lg mr-4">
-                <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-2 bg-orange-100 rounded-lg mr-3 lg:mr-4">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
                 </svg>
               </div>
               <div>
-                <p class="text-sm font-medium text-gray-600">Bengali Modified</p>
-                <p class="text-lg font-semibold text-gray-800">{{ modifiedBengaliFields }}</p>
+                <p class="text-xs lg:text-sm font-medium text-gray-600">Bengali Modified</p>
+                <p class="text-base lg:text-lg font-semibold text-gray-800">{{ modifiedBengaliFields }}</p>
               </div>
             </div>
           </div>
@@ -468,6 +482,18 @@ import { ref, computed, onMounted, reactive } from 'vue'
 import { router, useForm } from '@inertiajs/vue3'
 import Navbar from '../../Layout/Navbar.vue'
 import Sidebar from '../../Layout/Sidebar.vue'
+
+// Mobile menu state
+const isMobileMenuOpen = ref(false)
+
+// Mobile menu functions
+const toggleMobileMenu = () => {
+  isMobileMenuOpen.value = !isMobileMenuOpen.value
+}
+
+const closeMobileMenu = () => {
+  isMobileMenuOpen.value = false
+}
 
 // Props from Laravel backend
 const props = defineProps({
@@ -913,7 +939,9 @@ onMounted(() => {
 
 <style scoped>
 /* Bengali font support */
-
+.font-bengali {
+  font-family: "Noto Sans Bengali", "Kalpurush", "Siyam Rupali", "SolaimanLipi", Arial, sans-serif;
+}
 
 /* Ensure proper text direction for Bengali */
 [dir="auto"] {
@@ -924,5 +952,27 @@ onMounted(() => {
 img {
   max-width: 100%;
   height: auto;
+}
+
+/* Responsive text sizes */
+@media (max-width: 640px) {
+  .text-responsive {
+    font-size: 0.875rem; /* text-sm */
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .mobile-stack {
+    flex-direction: column;
+  }
+  
+  .mobile-full {
+    width: 100%;
+  }
+  
+  .mobile-text-center {
+    text-align: center;
+  }
 }
 </style>

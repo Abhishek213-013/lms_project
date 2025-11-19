@@ -398,6 +398,7 @@
   </header>
 </template>
 
+
 <script setup>
 import { Link, router, usePage } from '@inertiajs/vue3'
 import { ref, onMounted, watch, nextTick, computed, onUnmounted } from 'vue'
@@ -413,7 +414,7 @@ const { currentLanguage, t, switchLanguage: switchLang } = useTranslation()
 const mobileOpen = ref(false)
 const profileOpen = ref(false)
 const searchQuery = ref('')
-const currentTheme = ref('light') // Default to light theme
+const currentTheme = ref('light')
 const showSuggestions = ref(false)
 const showMobileSuggestions = ref(false)
 const courseSuggestions = ref([])
@@ -422,120 +423,165 @@ const iconErrors = ref(0)
 const avatarError = ref(false)
 const isLoggingOut = ref(false)
 const avatarLoaded = ref(false)
+const isLanguageSwitching = ref(false)
 
-// Computed property for student avatar - uses page props directly
+// Computed property for student avatar
 const studentData = computed(() => {
   return $page.props.auth?.user?.student || null
 })
 
 const studentAvatar = computed(() => {
   const url = studentData.value?.profile_picture_url
-  console.log('🖼️ Student Avatar URL:', url)
   return url
 })
 
-// Create a global theme state that ALWAYS defaults to light
+// Theme functions (keep your existing theme logic)
 const getCurrentTheme = () => {
-    // Check localStorage - if user explicitly set dark theme, use it
     const savedTheme = localStorage.getItem('preferredTheme')
     if (savedTheme === 'dark') {
-        console.log('💾 Using saved dark theme from localStorage')
         return 'dark'
     }
-    
-    // Otherwise, ALWAYS default to light theme
-    console.log('☀️ Defaulting to light theme')
     return 'light'
 }
 
-// Enhanced theme management with proper synchronization
 const applyTheme = (theme) => {
-    console.log('🎨 Applying theme:', theme)
     currentTheme.value = theme
-    
-    // Remove all theme classes first
     document.documentElement.classList.remove('light-theme', 'dark-theme')
     document.body.classList.remove('light-theme', 'dark-theme')
     
-    // Add the current theme class
     if (theme === 'dark') {
         document.documentElement.classList.add('dark-theme')
         document.body.classList.add('dark-theme')
-        console.log('🌙 Dark theme applied')
     } else {
         document.documentElement.classList.add('light-theme')
         document.body.classList.add('light-theme')
-        console.log('☀️ Light theme applied')
     }
     
-    // Always save to localStorage
     localStorage.setItem('preferredTheme', theme)
-    
-    // Also set a data attribute on html for global access
     document.documentElement.setAttribute('data-theme', theme)
 }
 
-// Toggle theme function with better state management
 const toggleTheme = () => {
     const newTheme = currentTheme.value === 'light' ? 'dark' : 'light'
-    console.log('🔄 Toggling theme from', currentTheme.value, 'to', newTheme)
-    
     currentTheme.value = newTheme
     applyTheme(newTheme)
-    
-    // Dispatch event for other components
     window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: newTheme } }))
     closeAll()
 }
 
-// Synchronize theme across components
 const syncTheme = () => {
     const theme = getCurrentTheme()
-    console.log('🔄 Syncing theme to:', theme)
     currentTheme.value = theme
     applyTheme(theme)
 }
 
-// Initialize theme on first load - ALWAYS default to light
 const initializeTheme = () => {
-    console.log('🚀 Initializing theme...')
-    
     const theme = getCurrentTheme()
-    console.log('⭐ Setting theme to:', theme)
     currentTheme.value = theme
     applyTheme(theme)
 }
 
-// Add method to handle avatar loading errors
+// NEW: Synchronized Language Switch using the same pattern as About page
+const switchLanguage = async (lang) => {
+  if (lang === currentLanguage.value || isLanguageSwitching.value) return;
+  
+  console.log('🌐 Header: Switching language to:', lang);
+  isLanguageSwitching.value = true;
+  
+  try {
+    closeAll();
+    
+    // Show loading state immediately
+    document.body.classList.add('language-switching');
+    
+    // Call the API to switch language - same pattern as About page
+    const response = await fetch('/switch-language', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      },
+      body: JSON.stringify({
+        language: lang
+      })
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      console.log('✅ Header: Language switch successful');
+      
+      // Update the translation composable state
+      currentLanguage.value = lang;
+      localStorage.setItem('preferredLanguage', lang);
+      
+      // Apply language settings to DOM
+      document.body.classList.remove('en-lang', 'bn-lang');
+      document.body.classList.add(`${lang}-lang`);
+      document.documentElement.lang = lang;
+      
+      // Clean URL parameters
+      cleanUrlLanguageParameter();
+      
+      // Dispatch global event for other components
+      window.dispatchEvent(new CustomEvent('languageChanged', {
+        detail: { 
+          language: lang,
+          timestamp: Date.now()
+        }
+      }));
+      
+      // Refresh icons after language change
+      setTimeout(() => {
+        refreshIcons();
+      }, 100);
+      
+    } else {
+      console.error('❌ Header: Language switch failed:', result);
+    }
+    
+  } catch (error) {
+    console.error('❌ Error switching language in header:', error);
+  } finally {
+    // Remove loading state
+    document.body.classList.remove('language-switching');
+    isLanguageSwitching.value = false;
+  }
+};
+
+// Clean URL parameters function
+const cleanUrlLanguageParameter = () => {
+  if (typeof window !== 'undefined') {
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('lang')) {
+      url.searchParams.delete('lang');
+      window.history.replaceState({}, '', url.toString());
+      console.log('🧹 Header: Cleaned lang parameter from URL');
+    }
+  }
+}
+
+// Keep your existing functions (they remain the same)
 const handleAvatarError = (event) => {
-  console.warn('⚠️ Avatar image failed to load, using fallback')
   avatarError.value = true
   avatarLoaded.value = false
-  
   if (event.target) {
     event.target.style.display = 'none'
   }
 }
 
-// Add method to handle avatar successful load
 const handleAvatarLoad = (event) => {
-  console.log('✅ Avatar image loaded successfully')
   avatarError.value = false
   avatarLoaded.value = true
-  
   if (event.target) {
     event.target.style.display = 'block'
   }
 }
 
-// Enhanced refresh icons function
 const refreshIcons = () => {
-  console.log('🔄 Refreshing icons...')
-  
   if (window.FontAwesome && window.FontAwesome.dom && window.FontAwesome.dom.i2svg) {
     try {
       window.FontAwesome.dom.i2svg()
-      console.log('✅ Font Awesome icons refreshed via i2svg')
     } catch (error) {
       console.error('❌ Error refreshing Font Awesome icons:', error)
     }
@@ -548,20 +594,9 @@ const refreshIcons = () => {
       icon.offsetHeight
       icon.style.display = 'inline-block'
     })
-    console.log(`✅ Forced re-render of ${icons.length} icons`)
   }, 50)
-  
-  const faStylesheet = Array.from(document.styleSheets).find(sheet => 
-    sheet.href && sheet.href.includes('fontawesome')
-  )
-  
-  if (!faStylesheet) {
-    console.warn('⚠️ Font Awesome stylesheet not found, reloading...')
-    loadFontAwesome()
-  }
 }
 
-// Function to dynamically load Font Awesome if needed
 const loadFontAwesome = () => {
   const existingLink = document.querySelector('link[href*="fontawesome"]')
   if (!existingLink) {
@@ -571,23 +606,10 @@ const loadFontAwesome = () => {
     link.integrity = 'sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=='
     link.crossOrigin = 'anonymous'
     document.head.appendChild(link)
-    console.log('✅ Font Awesome CSS loaded dynamically')
   }
 }
 
-// Icon error handler
-const handleIconError = (event) => {
-  console.warn('⚠️ Icon loading error detected', event)
-  iconErrors.value++
-  
-  if (iconErrors.value < 3) {
-    setTimeout(refreshIcons, 100)
-  } else {
-    loadFontAwesome()
-  }
-}
-
-// Simple navigation without language parameters
+// Navigation functions (keep your existing ones)
 const navigateWithLanguage = (url, options = {}) => {
   return router.visit(url, {
     preserveState: true,
@@ -596,30 +618,7 @@ const navigateWithLanguage = (url, options = {}) => {
   });
 }
 
-// Simple language switch without page reload
-const switchLanguage = async (lang) => {
-  if (lang === currentLanguage.value) return;
-  
-  console.log('🌐 Switching language to:', lang);
-  
-  try {
-    // Use the composable's switchLanguage function
-    switchLang(lang);
-    
-    // Close all dropdowns
-    closeAll();
-    
-    // Refresh icons
-    refreshIcons();
-    
-    console.log('✅ Language switched successfully');
-    
-  } catch (error) {
-    console.error('❌ Error switching language:', error);
-  }
-}
-
-// Fetch course suggestions
+// Search functions (keep your existing ones)
 const fetchCourseSuggestions = async (query = '') => {
   try {
     isLoadingSuggestions.value = true
@@ -629,18 +628,15 @@ const fetchCourseSuggestions = async (query = '') => {
       const data = await response.json()
       courseSuggestions.value = data.data || []
     } else {
-      console.error('❌ Failed to fetch course suggestions')
       courseSuggestions.value = []
     }
   } catch (error) {
-    console.error('❌ Error fetching course suggestions:', error)
     courseSuggestions.value = []
   } finally {
     isLoadingSuggestions.value = false
   }
 }
 
-// Filtered suggestions based on search query
 const filteredSuggestions = computed(() => {
   if (!searchQuery.value.trim()) {
     return courseSuggestions.value.slice(0, 5)
@@ -654,7 +650,6 @@ const filteredSuggestions = computed(() => {
   ).slice(0, 8)
 })
 
-// Handle search input with debouncing
 let searchTimeout = null
 const handleSearchInput = () => {
   if (searchTimeout) {
@@ -674,7 +669,6 @@ const handleSearchInput = () => {
   }, 300)
 }
 
-// Handle search focus
 const handleSearchFocus = () => {
   if (courseSuggestions.value.length === 0) {
     fetchCourseSuggestions()
@@ -683,7 +677,6 @@ const handleSearchFocus = () => {
   showMobileSuggestions.value = true
 }
 
-// Handle search blur with delay
 const onSearchBlur = () => {
   setTimeout(() => {
     showSuggestions.value = false
@@ -696,7 +689,6 @@ const onMobileSearchBlur = () => {
   }, 200)
 }
 
-// Select a suggestion
 const selectSuggestion = (course) => {
   searchQuery.value = course.name
   showSuggestions.value = false
@@ -704,7 +696,6 @@ const selectSuggestion = (course) => {
   searchCourses()
 }
 
-// Search courses function
 const searchCourses = () => {
   if (searchQuery.value.trim()) {
     navigateWithLanguage('/courses', { data: { search: searchQuery.value } })
@@ -715,7 +706,7 @@ const searchCourses = () => {
   closeAll()
 }
 
-// Enhanced Navigation methods
+// Navigation methods (keep your existing ones)
 const navigateToProfile = () => {
   closeAll()
   navigateWithLanguage('/student-profile')
@@ -736,7 +727,6 @@ const navigateToSettings = () => {
   navigateWithLanguage('/settings')
 }
 
-// Mobile Navigation Methods
 const navigateToProfileMobile = () => {
   closeAll()
   navigateWithLanguage('/student-profile')
@@ -757,7 +747,7 @@ const navigateToSettingsMobile = () => {
   navigateWithLanguage('/settings')
 }
 
-// UI control methods
+// UI control methods (keep your existing ones)
 const toggleProfileDropdown = (event) => {
   event?.stopPropagation()
   profileOpen.value = !profileOpen.value
@@ -779,27 +769,20 @@ const closeAll = () => {
   showMobileSuggestions.value = false
 }
 
-// Updated Logout Methods
 const logout = async () => {
   if (isLoggingOut.value) return;
   
   isLoggingOut.value = true;
   try {
     closeAll();
-    
-    // Send logout request
     await router.post('/logout');
-    
-    // Redirect to student login page after successful logout
     router.visit('/student-login', {
       replace: true,
       preserveState: false,
       preserveScroll: false
     });
-    
   } catch (error) {
     console.error('❌ Logout error:', error);
-    // Fallback redirect if logout fails
     window.location.href = '/student-login';
   } finally {
     isLoggingOut.value = false;
@@ -812,23 +795,12 @@ const logoutMobile = () => {
 
 // Lifecycle hooks
 onMounted(() => {
-    console.log('🚀 FrontendHeader mounted - initializing theme and icons');
-    console.log('👤 Student data:', studentData.value)
-    console.log('🖼️ Student avatar URL:', studentAvatar.value)
-    console.log('🔐 Auth props:', $page.props.auth)
-    
-    // Test avatar image loading
-    if (studentAvatar.value) {
-      const testImg = new Image()
-      testImg.onload = () => console.log('✅ Avatar image loads successfully in test')
-      testImg.onerror = () => console.log('❌ Avatar image failed to load in test')
-      testImg.src = studentAvatar.value
-    }
+    console.log('🚀 FrontendHeader mounted');
     
     // Ensure Font Awesome is loaded
     loadFontAwesome()
     
-    // Initialize theme first - ALWAYS defaults to light
+    // Initialize theme
     initializeTheme()
     
     // Initial icon refresh
@@ -836,57 +808,24 @@ onMounted(() => {
         refreshIcons()
     }, 500)
     
-    // Then load other resources
+    // Load initial suggestions
     fetchCourseSuggestions()
     
-    // Add debug logging for theme state
-    console.log('🎯 Current theme state:', {
-        currentTheme: currentTheme.value,
-        savedTheme: localStorage.getItem('preferredTheme'),
-        systemPrefersDark: window.matchMedia('(prefers-color-scheme: dark)').matches
-    })
-    
-    // Add debug logging for student data
-    console.log('👤 Student data from page props:', {
-        hasUser: !!$page.props.auth?.user,
-        hasStudentData: !!$page.props.auth?.user?.student,
-        studentAvatar: $page.props.auth?.user?.student?.profile_picture_url
-    })
-    
-    // Add periodic icon refresh (as a safeguard)
-    const iconRefreshInterval = setInterval(() => {
-        const hiddenIcons = document.querySelectorAll('i[class*="fa-"]:not(:visible)')
-        if (hiddenIcons.length > 0) {
-            console.log(`⚠️ Found ${hiddenIcons.length} hidden icons, refreshing...`)
-            refreshIcons()
-        }
-    }, 30000)
-    
-    // Cleanup interval on unmount
-    onUnmounted(() => {
-        clearInterval(iconRefreshInterval)
-    })
-    
-    // Listen for system theme changes (but ignore them since we default to light)
+    // Listen for theme changes
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-        // Only respect system theme changes if user hasn't explicitly set a preference
         if (!localStorage.getItem('preferredTheme')) {
             console.log('🖥️ System theme changed, but we default to light theme')
-            // We ignore system changes and stick with light theme
         }
     })
     
     // Listen for theme changes from other components
     window.addEventListener('themeChanged', (event) => {
-        console.log('📢 Received theme change event:', event.detail.theme)
         currentTheme.value = event.detail.theme
         applyTheme(event.detail.theme)
     })
     
-    // Listen for page navigation events to ensure theme sync
+    // Listen for page navigation events
     router.on('navigate', (event) => {
-        console.log('🧭 Page navigation detected, ensuring theme sync')
-        // Small delay to ensure DOM is ready
         setTimeout(() => {
             syncTheme()
             refreshIcons()
@@ -894,22 +833,15 @@ onMounted(() => {
     })
 })
 
-// Watch for auth changes to reset avatar error state
+// Watch for auth changes
 watch(() => $page.props.auth?.user, (newUser, oldUser) => {
   if (newUser && newUser.id !== (oldUser?.id)) {
-    console.log('👤 User changed, resetting avatar state')
     avatarError.value = false
     avatarLoaded.value = false
   } else if (!newUser) {
-    console.log('👤 User logged out, clearing avatar state')
     avatarError.value = false
     avatarLoaded.value = false
   }
-})
-
-// Add a watcher to debug theme changes
-watch(currentTheme, (newTheme, oldTheme) => {
-  console.log('👀 Theme changed:', { from: oldTheme, to: newTheme })
 })
 
 // Click outside directive
@@ -929,6 +861,60 @@ const vClickOutside = {
 </script>
 
 <style scoped>
+/* Add language switching styles */
+.language-switching {
+  pointer-events: none;
+}
+
+.language-switching * {
+  transition: opacity 0.3s ease-in-out !important;
+}
+
+/* Your existing CSS styles remain exactly the same */
+/* ... all your existing CSS ... */
+
+/* Enhanced language buttons with loading state */
+.lang-btn-nav:disabled,
+.lang-btn-mobile:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  position: relative;
+}
+
+.lang-btn-nav:disabled::after,
+.lang-btn-mobile:disabled::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Smooth transitions for text during language switch */
+.navigation li a,
+.text-link,
+.dropdown-text,
+.mobile-nav-btn {
+  transition: opacity 0.2s ease-in-out;
+}
+
+body.language-switching .navigation li a,
+body.language-switching .text-link,
+body.language-switching .dropdown-text,
+body.language-switching .mobile-nav-btn {
+  opacity: 0.7;
+}
 /* Enhanced theme toggle icon styles */
 .theme-btn-nav i,
 .theme-btn-mobile i {
@@ -1017,7 +1003,7 @@ img {
   opacity: 1 !important;
 }
 
-/* Base header styles using CSS variables */
+/* Base header styles using CSS variables - FIXED HEIGHT */
 .header-area {
   background: var(--header-bg);
   box-shadow: var(--shadow);
@@ -1028,6 +1014,8 @@ img {
   z-index: 1000;
   width: 100%;
   transition: all 0.3s ease;
+  /* FIXED HEIGHT */
+  height: 70px;
 }
 
 .menu-wrap {
@@ -1035,6 +1023,8 @@ img {
   align-items: center;
   justify-content: space-between;
   padding: 0;
+  /* FIXED HEIGHT */
+  height: 70px;
 }
 
 /* Main navigation layout with three sections */
@@ -1043,13 +1033,20 @@ img {
   align-items: center;
   width: 100%;
   justify-content: space-between;
-  padding: 12px 0;
+  /* REMOVED VERTICAL PADDING - using fixed height instead */
+  padding: 0;
   gap: 20px;
+  /* FIXED HEIGHT */
+  height: 70px;
 }
 
-/* SECTION 1: Logo */
+/* SECTION 1: Logo - Fixed height container */
 .logo-section {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  /* FIXED HEIGHT */
+  height: 70px;
 }
 
 .logo-container {
@@ -1057,6 +1054,9 @@ img {
   align-items: center;
   text-decoration: none;
   transition: opacity 0.3s ease;
+  /* FIXED HEIGHT */
+  height: 70px;
+  padding: 10px 0;
 }
 
 .logo-container:hover {
@@ -1064,16 +1064,21 @@ img {
 }
 
 .logo-image {
-  height: 36px;
+  /* Logo can have variable height but max constraint */
+  height: 60px;
   width: auto;
   object-fit: contain;
+  transition: height 0.3s ease;
 }
 
-/* SECTION 2: Navigation Components */
+/* SECTION 2: Navigation Components - Fixed height */
 .nav-components-section {
   flex: 1;
   display: flex;
   justify-content: center;
+  /* FIXED HEIGHT */
+  height: 70px;
+  align-items: center;
 }
 
 .navigation {
@@ -1083,6 +1088,15 @@ img {
   gap: 24px;
   margin: 0;
   padding: 0;
+  /* FIXED HEIGHT */
+  height: 70px;
+}
+
+.navigation li {
+  display: flex;
+  align-items: center;
+  /* FIXED HEIGHT */
+  height: 70px;
 }
 
 .navigation li a {
@@ -1093,18 +1107,36 @@ img {
   padding: 10px 0;
   transition: color 0.3s ease;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  /* FIXED HEIGHT */
+  height: 70px;
 }
 
 .navigation li a:hover {
   color: var(--primary-color);
 }
 
-/* SECTION 3: Utilities & Profile */
+/* SECTION 3: Utilities & Profile - Fixed height */
 .utilities-section {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 12px;
+  /* FIXED HEIGHT */
+  height: 70px;
+}
+
+/* All utility items should align properly */
+.search-utility,
+.theme-utility,
+.language-utility,
+.profile-utility,
+.auth-utility {
+  display: flex;
+  align-items: center;
+  /* FIXED HEIGHT */
+  height: 70px;
 }
 
 /* Search Utility */
@@ -1394,6 +1426,8 @@ img {
   transition: all 0.3s ease;
   white-space: nowrap;
   outline: none !important;
+  /* CONSISTENT HEIGHT */
+  height: 40px;
 }
 
 .profile-trigger:hover {
@@ -1597,6 +1631,9 @@ img {
   padding: 6px;
   transition: color 0.3s ease;
   outline: none !important;
+  /* FIXED HEIGHT */
+  height: 70px;
+  align-items: center;
 }
 
 .mobile-menu {
@@ -1627,10 +1664,13 @@ img {
   align-items: center;
   padding: 16px;
   border-bottom: 1px solid var(--border-color);
+  /* FIXED HEIGHT for mobile header */
+  height: 70px;
 }
 
 .mobile-logo-container .logo-image {
   height: 32px;
+  max-height: 32px;
 }
 
 .mobile-controls {
@@ -2043,7 +2083,7 @@ img {
 }
 
 #header-fixed-height {
-  height: 60px;
+  height: 70px; /* Match the fixed navbar height */
 }
 
 /* Responsive */
@@ -2054,7 +2094,12 @@ img {
   }
   
   .mobile-menu-toggler {
-    display: block;
+    display: flex; /* Changed from block to flex for better alignment */
+  }
+  
+  /* Ensure mobile logo section maintains height */
+  .logo-section {
+    height: 70px;
   }
 }
 
@@ -2064,7 +2109,8 @@ img {
   }
   
   .logo-image {
-    height: 32px;
+    height: 35px; /* Slightly smaller for mobile but consistent */
+    max-height: 35px;
   }
   
   .profile-trigger {
@@ -2101,7 +2147,8 @@ img {
   }
   
   .logo-image {
-    height: 30px;
+    height: 32px; /* Even smaller for very small screens */
+    max-height: 32px;
   }
   
   .search-input-group {

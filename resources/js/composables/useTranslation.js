@@ -17,7 +17,8 @@ export const translations = {
     'Login': 'Login',
     'Get Started': 'Get Started',
     'View Course': 'View Course',
-
+    '159 Anabil, Dhopadighir Par (North), Jail Road, Sylhet, Sylhet 3100': '159 Anabil, Dhopadighir Par (North), Jail Road, Sylhet, Sylhet 3100',
+    '+88 01842-485222': '+88 01842-485222',
     // Home Page
     'Learning is What You Make of it. Make it Yours at Pathshala LMS.': 'Learning is What You Make of it. Make it Yours at Pathshala LMS.',
     'Unlock your potential with our expert-led courses and transform your career.': 'Unlock your potential with our expert-led courses and transform your career.',
@@ -480,7 +481,8 @@ export const translations = {
     'Login': 'লগইন',
     'Get Started': 'শুরু করুন',
     'View Course': 'কোর্স দেখুন',
-    
+    '159 Anabil, Dhopadighir Par (North), Jail Road, Sylhet, Sylhet 3100': '১৫৯ অনাবিল, ধোপাদিঘির পাড় (উত্তর), জেল রোড, সিলেট, সিলেট 3100',
+    '+88 01842-485222': '+৮৮ ০১৮৪২-৪৮৫২২২',
     // Home Page
     'Learning is What You Make of it. Make it Yours at Pathshala LMS.': 'শেখা হলো আপনার যা বানাতে চান। এটিকে আপনার নিজের করে নিন পাঠশালা LMS এ।',
     'Unlock your potential with our expert-led courses and transform your career.': 'আমাদের বিশেষজ্ঞ-নির্দেশিত কোর্সের মাধ্যমে আপনার সম্ভাবনা উন্মুক্ত করুন এবং আপনার ক্যারিয়ার রূপান্তর করুন।',

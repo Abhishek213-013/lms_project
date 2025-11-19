@@ -1,8 +1,8 @@
 <template>
-  <aside class="w-64 bg-white border-r border-gray-200 fixed h-screen overflow-y-auto flex flex-col justify-between px-4 py-4 sidebar-font">
+  <aside class="w-64 bg-white border-r border-gray-200 fixed h-screen overflow-y-auto flex flex-col justify-between px-4 py-4 sidebar-font transition-transform duration-300 ease-in-out z-50" :class="sidebarClasses">
     <!-- Top: Logo + Navigation -->
     <div class="logo">
-      <a href="/super-admin">
+      <a href="/super-admin" @click="handleMenuClick">
         <!-- New Rectangular Logo -->
         <div class="logo-container">
           <img src="/assets/img/pathshala-logo.png" alt="Pathshala LMS" class="logo-image">
@@ -33,8 +33,8 @@
           </svg>
         </button>
         <div v-show="activeMenu === 'dashboard'" class="ml-8 mt-1 space-y-0.5">
-          <a href="/super-admin" class="submenu-link sidebar-text">Overview</a>
-          <a href="/super-admin/analytics" class="submenu-link sidebar-text">Analytics</a>
+          <a href="/super-admin" class="submenu-link sidebar-text" @click="handleMenuClick">Overview</a>
+          <a href="/super-admin/analytics" class="submenu-link sidebar-text" @click="handleMenuClick">Analytics</a>
         </div>
       </div>
 
@@ -63,9 +63,9 @@
           </svg>
         </button>
         <div v-show="activeMenu === 'users'" class="ml-8 mt-1 space-y-0.5">
-          <a href="/admin/users/super-admins" class="submenu-link sidebar-text">Super Admins</a>
-          <a href="/admin/users/admins" class="submenu-link sidebar-text">Admins</a>
-          <a href="/admin/users/teachers" class="submenu-link sidebar-text">Teachers</a>
+          <a href="/admin/users/super-admins" class="submenu-link sidebar-text" @click="handleMenuClick">Super Admins</a>
+          <a href="/admin/users/admins" class="submenu-link sidebar-text" @click="handleMenuClick">Admins</a>
+          <a href="/admin/users/teachers" class="submenu-link sidebar-text" @click="handleMenuClick">Teachers</a>
         </div>
       </div>
 
@@ -90,10 +90,10 @@
           </svg>
         </button>
         <div v-show="activeMenu === 'courses'" class="ml-8 mt-1 space-y-0.5">
-          <a href="/admin/courses/all-courses" class="submenu-link sidebar-text">All Courses</a>
-          <a href="/admin/courses/categories" class="submenu-link sidebar-text">Course Categories</a>
-          <a href="/admin/courses/enrollments" class="submenu-link sidebar-text">Enrollments</a>
-          <a href="/admin/courses/reviews" class="submenu-link sidebar-text">Course Reviews</a>
+          <a href="/admin/courses/all-courses" class="submenu-link sidebar-text" @click="handleMenuClick">All Courses</a>
+          <a href="/admin/courses/categories" class="submenu-link sidebar-text" @click="handleMenuClick">Course Categories</a>
+          <a href="/admin/courses/enrollments" class="submenu-link sidebar-text" @click="handleMenuClick">Enrollments</a>
+          <a href="/admin/courses/reviews" class="submenu-link sidebar-text" @click="handleMenuClick">Course Reviews</a>
         </div>
       </div>
 
@@ -118,9 +118,9 @@
           </svg>
         </button>
         <div v-show="activeMenu === 'admissions'" class="ml-8 mt-1 space-y-0.5">
-          <a href="/admin/admissions/applications" class="submenu-link sidebar-text">Applications</a>
-          <a href="/admin/admissions/approvals" class="submenu-link sidebar-text">Approvals</a>
-          <a href="/admin/admissions/enrolled-students" class="submenu-link sidebar-text">Enrolled Students</a>
+          <a href="/admin/admissions/applications" class="submenu-link sidebar-text" @click="handleMenuClick">Applications</a>
+          <a href="/admin/admissions/approvals" class="submenu-link sidebar-text" @click="handleMenuClick">Approvals</a>
+          <a href="/admin/admissions/enrolled-students" class="submenu-link sidebar-text" @click="handleMenuClick">Enrolled Students</a>
         </div>
       </div>
 
@@ -145,9 +145,9 @@
           </svg>
         </button>
         <div v-show="activeMenu === 'reports'" class="ml-8 mt-1 space-y-0.5">
-          <a href="/admin/reports/users" class="submenu-link sidebar-text">User Reports</a>
-          <a href="/admin/reports/courses" class="submenu-link sidebar-text">Course Reports</a>
-          <a href="/admin/reports/financial" class="submenu-link sidebar-text">Financial Reports</a>
+          <a href="/admin/reports/users" class="submenu-link sidebar-text" @click="handleMenuClick">User Reports</a>
+          <a href="/admin/reports/courses" class="submenu-link sidebar-text" @click="handleMenuClick">Course Reports</a>
+          <a href="/admin/reports/financial" class="submenu-link sidebar-text" @click="handleMenuClick">Financial Reports</a>
         </div>
       </div>
 
@@ -173,9 +173,9 @@
           </svg>
         </button>
         <div v-show="activeMenu === 'settings'" class="ml-8 mt-1 space-y-0.5">
-          <a href="/admin/settings/general" class="submenu-link sidebar-text">General</a>
-          <a href="/admin/settings/academic" class="submenu-link sidebar-text">Academic</a>
-          <a href="/admin/settings/notifications" class="submenu-link sidebar-text">Notifications</a>
+          <a href="/admin/settings/general" class="submenu-link sidebar-text" @click="handleMenuClick">General</a>
+          <a href="/admin/settings/academic" class="submenu-link sidebar-text" @click="handleMenuClick">Academic</a>
+          <a href="/admin/settings/notifications" class="submenu-link sidebar-text" @click="handleMenuClick">Notifications</a>
         </div>
       </div>
     </nav>
@@ -189,7 +189,18 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { usePage, Link } from '@inertiajs/vue3'
+import { usePage } from '@inertiajs/vue3'
+
+// Emits
+const emit = defineEmits(['menu-click'])
+
+// Define prop for mobile menu state (to be passed from parent)
+const props = defineProps({
+  isMobileMenuOpen: {
+    type: Boolean,
+    default: false
+  }
+})
 
 const page = usePage()
 
@@ -206,6 +217,11 @@ const isSuperAdmin = computed(() => {
   return user.value?.role === 'super_admin'
 })
 
+// Computed classes for responsive behavior
+const sidebarClasses = computed(() => {
+  return props.isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+})
+
 // Methods
 const toggleMenu = (menu) => {
   activeMenu.value = activeMenu.value === menu ? null : menu
@@ -213,8 +229,11 @@ const toggleMenu = (menu) => {
 
 const toggleCollapsed = () => {
   isCollapsed.value = !isCollapsed.value
-  // You can emit an event here to notify parent component about collapsed state
-  // emit('toggle-collapsed', isCollapsed.value)
+}
+
+const handleMenuClick = () => {
+  // Emit event to parent to close mobile menu when a menu item is clicked
+  emit('menu-click')
 }
 
 // Initialize on mount
@@ -277,7 +296,24 @@ onMounted(() => {
 }
 
 .logo-image {
-  max-width: 180px;
-  height: auto;
+  height: 70px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* Mobile-specific styles */
+@media (max-width: 1023px) {
+  .sidebar-font {
+    background: white;
+    width: 100%;
+    max-width: 16rem;
+  }
+}
+
+/* Desktop styles */
+@media (min-width: 1024px) {
+  .sidebar-font {
+    transform: none !important;
+  }
 }
 </style>

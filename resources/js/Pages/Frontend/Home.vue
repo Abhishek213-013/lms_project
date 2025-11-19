@@ -1,19 +1,19 @@
 <template>
   <FrontendLayout>
     <div class="home-page">
-      <!-- Content with Cross-fade Transition -->
       <transition name="fade" mode="out-in">
         <div :key="contentRefreshKey">
           <!-- Hero Section -->
           <section 
-            class="hero-section p-0"
+            class="hero-section"
             :style="heroSectionStyle"
           >
             <div class="container">
               <div class="row align-items-center">
-                <div class="col-lg-6">
+                <!-- Content Column - Order changes on mobile -->
+                <div class="col-lg-6 order-2 order-lg-1">
                   <div class="hero-content">
-                    <h1 class="hero-title md:w-[400px]">{{ displayContent.home_hero_title }}</h1>
+                    <h1 class="hero-title">{{ displayContent.home_hero_title }}</h1>
                     <p class="hero-subtitle">{{ displayContent.home_hero_subtitle }}</p>
                     
                     <div class="hero-actions">
@@ -42,7 +42,8 @@
                     </div>
                   </div>
                 </div>
-                <div class="col-lg-6">
+                <!-- Image Column - Order changes on mobile -->
+                <div class="col-lg-6 order-1 order-lg-2">
                   <div class="hero-image">
                     <img 
                       :src="heroImageUrl" 
@@ -738,20 +739,292 @@ const getEducation = (instructor) => {
 
 <style scoped>
 /* ==================== */
+/* UPDATED HERO SECTION STYLES - MOBILE FIRST */
+/* ==================== */
+.hero-section {
+  padding: 90px 0 50px; /* Reduced top padding for mobile */
+  position: relative;
+  overflow: hidden;
+  min-height: auto; /* Remove fixed height for mobile */
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, rgba(245, 247, 250, 0.9) 0%, rgba(228, 232, 240, 0.9) 100%), url('/assets/img/banner/banner_bg02.png') center/cover no-repeat;
+}
+
+.hero-content {
+  max-width: 100%; /* Full width on mobile */
+  text-align: center; /* Center align for mobile */
+  padding: 0 10px; /* Add side padding */
+}
+
+.hero-title {
+  font-size: 1.75rem; /* Smaller font for mobile */
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+  word-wrap: break-word;
+}
+
+.hero-subtitle {
+  font-size: 1rem; /* Smaller font for mobile */
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+  line-height: 1.5;
+}
+
+.hero-actions {
+  display: flex;
+  flex-direction: column; /* Stack buttons vertically on mobile */
+  gap: 1rem;
+  margin-bottom: 2.5rem;
+  align-items: center;
+}
+
+.btn-hero-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+  padding: 0.75rem 2rem;
+  font-weight: 600;
+  border-radius: 50px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  width: 100%; /* Full width on mobile */
+  max-width: 280px; /* But limit max width */
+  text-align: center;
+}
+
+.btn-hero-primary:hover {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(74, 108, 247, 0.3);
+}
+
+.btn-outline-primary {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  padding: 0.75rem 2rem;
+  font-weight: 600;
+  border-radius: 50px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  width: 100%; /* Full width on mobile */
+  max-width: 280px; /* But limit max width */
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-outline-primary:hover {
+  background: var(--primary-color);
+  color: white;
+  transform: translateY(-2px);
+}
+
+.hero-stats {
+  display: flex;
+  justify-content: center; /* Center stats on mobile */
+  gap: 1.5rem; /* Reduced gap for mobile */
+  flex-wrap: wrap; /* Allow wrapping if needed */
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center align stat items */
+  min-width: 80px; /* Ensure minimum width */
+}
+
+.stat-number {
+  font-size: 1.5rem; /* Smaller font for mobile */
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.8rem; /* Smaller font for mobile */
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* Hero Image Styles */
+.hero-image {
+  position: relative;
+  text-align: center;
+  margin-bottom: 2rem; /* Add space below image on mobile */
+  animation: float 3s ease-in-out infinite;
+}
+
+.hero-main-image {
+  max-width: 100%;
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+  transition: opacity 0.3s ease;
+}
+
+.hero-fallback-image {
+  max-width: 100%;
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* ==================== */
+/* MEDIUM DEVICES (Tablets) */
+/* ==================== */
+@media (min-width: 768px) {
+  .hero-section {
+    padding: 110px 0 60px;
+  }
+
+  .hero-title {
+    font-size: 2rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1.1rem;
+  }
+
+  .hero-actions {
+    flex-direction: row;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn-hero-primary,
+  .btn-outline-primary {
+    width: auto;
+    min-width: 200px;
+  }
+
+  .hero-stats {
+    gap: 2rem;
+  }
+
+  .stat-number {
+    font-size: 1.75rem;
+  }
+}
+
+/* ==================== */
+/* DESKTOP STYLES (LG breakpoint and up) */
+/* ==================== */
+@media (min-width: 992px) {
+  .hero-section {
+    padding: 140px 0 80px; /* More padding for desktop */
+    min-height: 80vh; /* Full viewport height on desktop */
+  }
+
+  .hero-content {
+    max-width: 600px;
+    text-align: left; /* Left align for desktop */
+    padding: 0; /* Remove side padding */
+  }
+
+  .hero-title {
+    font-size: 2.5rem; /* Larger font for desktop */
+    line-height: 1.2;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1.25rem; /* Larger font for desktop */
+    margin-bottom: 2.5rem;
+  }
+
+  .hero-actions {
+    flex-direction: row; /* Side by side buttons on desktop */
+    justify-content: flex-start; /* Left align on desktop */
+    margin-bottom: 3rem;
+  }
+
+  .btn-hero-primary,
+  .btn-outline-primary {
+    width: auto; /* Auto width on desktop */
+    max-width: none; /* Remove max width limit */
+  }
+
+  .hero-stats {
+    justify-content: flex-start; /* Left align on desktop */
+    gap: 2.5rem; /* More gap on desktop */
+  }
+
+  .stat-item {
+    align-items: flex-start; /* Left align on desktop */
+  }
+
+  .stat-number {
+    font-size: 2rem; /* Larger font for desktop */
+  }
+
+  .stat-label {
+    font-size: 0.9rem; /* Larger font for desktop */
+    text-align: left; /* Left align on desktop */
+  }
+
+  .hero-image {
+    margin-bottom: 0; /* Remove bottom margin on desktop */
+  }
+}
+
+/* ==================== */
+/* EXTRA SMALL DEVICES */
+/* ==================== */
+@media (max-width: 375px) {
+  .hero-section {
+    padding: 80px 0 40px;
+  }
+
+  .hero-title {
+    font-size: 1.5rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-stats {
+    gap: 1rem;
+  }
+
+  .stat-number {
+    font-size: 1.25rem;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+  }
+}
+
+/* ==================== */
 /* BENGALI FONT SIZE ADJUSTMENTS */
 /* ==================== */
 .bn-lang .hero-title {
-  font-size: 1.7rem !important;
-  line-height: 1.3 !important;
+  font-size: 1.4rem !important;
+  line-height: 1.5 !important;
+  font-weight: 700 !important;
 }
 
 .bn-lang .hero-subtitle {
-  font-size: 1rem !important;
+  font-size: 0.8rem !important;
   line-height: 1.5 !important;
 }
 
 .bn-lang .section-title {
-  font-size: 1.rem !important;
+  font-size: 1rem !important;
   line-height: 1.3 !important;
 }
 
@@ -803,6 +1076,19 @@ const getEducation = (instructor) => {
   font-size: 1rem !important;
 }
 
+/* BENGALI MOBILE ADJUSTMENTS */
+@media (max-width: 991px) {
+  .bn-lang .hero-title {
+    font-size: 1.2rem !important;
+    line-height: 1.4 !important;
+  }
+
+  .bn-lang .hero-subtitle {
+    font-size: 0.85rem !important;
+    line-height: 1.5 !important;
+  }
+}
+
 /* ==================== */
 /* SMOOTH TRANSITION STYLES */
 /* ==================== */
@@ -823,7 +1109,6 @@ const getEducation = (instructor) => {
   transition: opacity 0.3s ease;
 }
 
-/* Your existing CSS styles remain the same */
 /* Ensure View Course button uses primary color */
 .course-card .btn-primary {
   background-color: var(--primary-color) !important;
@@ -838,40 +1123,8 @@ const getEducation = (instructor) => {
 }
 
 /* ==================== */
-/* HERO IMAGE STYLES */
+/* HERO IMAGE ANIMATION */
 /* ==================== */
-.hero-image {
-  position: relative;
-  text-align: center;
-  animation: float 3s ease-in-out infinite;
-}
-
-.hero-main-image {
-  max-width: 100%;
-  border-radius: 10px;
-  box-shadow: var(--shadow-lg);
-  transition: opacity 0.3s ease;
-}
-
-.hero-fallback-image {
-  max-width: 100%;
-  border-radius: 10px;
-  box-shadow: var(--shadow-lg);
-  display: none; /* Hidden by default */
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.hero-image img {
-  max-width: 100%;
-  border-radius: 10px;
-  box-shadow: var(--shadow-lg);
-}
-
 @keyframes float {
   0%, 100% {
     transform: translateY(0px);
@@ -1277,101 +1530,6 @@ const getEducation = (instructor) => {
 /* ==================== */
 /* EXISTING STYLES FOR OTHER SECTIONS */
 /* ==================== */
-.hero-section {
-  padding: 120px 0 80px;
-  position: relative;
-  overflow: hidden;
-  min-height: 80vh;
-  display: flex;
-  align-items: center;
-  background: linear-gradient(135deg, rgba(245, 247, 250, 0.9) 0%, rgba(228, 232, 240, 0.9) 100%), url('/assets/img/banner/banner_bg02.png') center/cover no-repeat;
-}
-
-.hero-content {
-  max-width: 600px;
-}
-
-.hero-title {
-  font-size: 2rem;
-  font-weight: 400;
-  line-height: 1.2;
-  margin-bottom: 1rem;
-  color: var(--text-primary);
-}
-
-.hero-subtitle {
-  font-size: 1.25rem;
-  color: var(--text-secondary);
-  margin-bottom: 2.5rem;
-}
-
-.hero-actions {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 3rem;
-}
-
-.btn-hero-primary {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
-  color: white;
-  padding: 0.75rem 2rem;
-  font-weight: 600;
-  border-radius: 50px;
-  text-decoration: none;
-  transition: all 0.3s ease;
-}
-
-.btn-hero-primary:hover {
-  background-color: var(--primary-hover);
-  border-color: var(--primary-hover);
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(74, 108, 247, 0.3);
-}
-
-.btn-hero-secondary {
-  background-color: transparent;
-  color: var(--primary-color);
-  border: 2px solid var(--primary-color);
-  padding: 0.75rem 2rem;
-  font-weight: 600;
-  border-radius: 50px;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.3s ease;
-  text-decoration: none;
-}
-
-.btn-hero-secondary:hover {
-  background-color: var(--primary-color);
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(74, 108, 247, 0.3);
-}
-
-.hero-stats {
-  display: flex;
-  gap: 2rem;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-}
-
-.stat-number {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1;
-}
-
-.stat-label {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-}
 
 /* Section Titles */
 .section-title {
@@ -1476,57 +1634,6 @@ const getEducation = (instructor) => {
 /* Dark theme overrides */
 .dark-theme .hero-section {
   background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%), url('/assets/img/banner/banner_bg02.png') center/cover no-repeat !important;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .hero-section {
-    padding: 80px 0 60px;
-    min-height: auto;
-    text-align: center;
-  }
-  
-  .hero-title {
-    font-size: 1rem;
-  }
-  
-  .hero-actions {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .hero-stats {
-    justify-content: center;
-  }
-  
-  .stat-number {
-    font-size: 1.75rem;
-  }
-  
-  .hero-image {
-    margin-top: 3rem;
-  }
-}
-
-@media (max-width: 576px) {
-  .hero-title {
-    font-size: 2rem;
-  }
-  
-  .hero-subtitle {
-    font-size: 1.1rem;
-  }
-  
-  .btn-hero-primary,
-  .btn-hero-secondary {
-    padding: 0.6rem 1.5rem;
-    font-size: 0.9rem;
-  }
-  
-  .hero-stats {
-    flex-direction: column;
-    gap: 1rem;
-  }
 }
 
 /* Debug Section Styles */

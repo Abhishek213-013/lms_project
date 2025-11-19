@@ -1,26 +1,40 @@
 <template>
   <div class="min-h-screen bg-gray-50 flex">
+    <!-- Mobile Menu Overlay -->
+    <div 
+      v-if="isMobileMenuOpen" 
+      class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+      @click="closeMobileMenu"
+    ></div>
+
     <!-- Sidebar -->
-    <Sidebar />
+    <Sidebar 
+      :is-mobile-menu-open="isMobileMenuOpen" 
+      @menu-click="closeMobileMenu" 
+    />
 
     <!-- Main Content -->
-    <div class="flex-1 ml-64">
+    <div class="flex-1 w-full lg:ml-64 transition-all duration-300">
       <!-- Top Navbar -->
-      <Navbar page-title="Super Admins Management" @search="handleSearch" />
+      <Navbar 
+        page-title="Super Admins Management" 
+        @search="handleSearch"
+        @toggle-mobile-menu="toggleMobileMenu"
+      />
 
       <!-- Page Content -->
-      <div class="p-6">
+      <div class="p-4 lg:p-6">
         <!-- Header -->
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
           <div>
-            <h1 class="text-2xl font-bold text-gray-900">Super Admins Management</h1>
-            <p class="text-gray-600">Manage all super administrator accounts</p>
+            <h1 class="text-xl lg:text-2xl font-bold text-gray-900">Super Admins Management</h1>
+            <p class="text-gray-600 text-sm lg:text-base">Manage all super administrator accounts</p>
           </div>
           <button 
             @click="showCreateModal = true"
-            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center justify-center lg:justify-start space-x-2 transition-colors w-full lg:w-auto text-sm lg:text-base"
           >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
             </svg>
             <span>Add Super Admin</span>
@@ -28,76 +42,76 @@
         </div>
 
         <!-- Flash Messages -->
-        <div v-if="flash?.success" class="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+        <div v-if="flash?.success" class="mb-6 p-3 lg:p-4 bg-green-50 border border-green-200 rounded-lg">
           <div class="flex items-center">
-            <svg class="w-5 h-5 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 lg:w-5 lg:h-5 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
-            <span class="text-green-700">{{ flash.success }}</span>
+            <span class="text-green-700 text-sm lg:text-base">{{ flash.success }}</span>
           </div>
         </div>
 
-        <div v-if="flash?.error" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+        <div v-if="flash?.error" class="mb-6 p-3 lg:p-4 bg-red-50 border border-red-200 rounded-lg">
           <div class="flex items-center">
-            <svg class="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 lg:w-5 lg:h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
-            <span class="text-red-700">{{ flash.error }}</span>
+            <span class="text-red-700 text-sm lg:text-base">{{ flash.error }}</span>
           </div>
         </div>
 
         <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div class="bg-white rounded-lg border border-gray-200 p-6">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 mb-6 lg:mb-8">
+          <div class="bg-white rounded-lg border border-gray-200 p-4 lg:p-6">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-sm font-medium text-gray-600 mb-1">Total Super Admins</p>
-                <h3 class="text-3xl font-bold text-blue-600">{{ superAdmins.length }}</h3>
+                <p class="text-xs lg:text-sm font-medium text-gray-600 mb-1">Total Super Admins</p>
+                <h3 class="text-xl lg:text-3xl font-bold text-blue-600">{{ superAdmins.length }}</h3>
               </div>
-              <div class="p-3 bg-blue-100 rounded-lg">
-                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-2 lg:p-3 bg-blue-100 rounded-lg">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
                 </svg>
               </div>
             </div>
           </div>
 
-          <div class="bg-white rounded-lg border border-gray-200 p-6">
+          <div class="bg-white rounded-lg border border-gray-200 p-4 lg:p-6">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-sm font-medium text-gray-600 mb-1">Active Today</p>
-                <h3 class="text-3xl font-bold text-green-600">{{ stats?.activeToday || 0 }}</h3>
+                <p class="text-xs lg:text-sm font-medium text-gray-600 mb-1">Active Today</p>
+                <h3 class="text-xl lg:text-3xl font-bold text-green-600">{{ stats?.activeToday || 0 }}</h3>
               </div>
-              <div class="p-3 bg-green-100 rounded-lg">
-                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-2 lg:p-3 bg-green-100 rounded-lg">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                 </svg>
               </div>
             </div>
           </div>
 
-          <div class="bg-white rounded-lg border border-gray-200 p-6">
+          <div class="bg-white rounded-lg border border-gray-200 p-4 lg:p-6">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-sm font-medium text-gray-600 mb-1">Last 7 Days</p>
-                <h3 class="text-3xl font-bold text-purple-600">{{ stats?.last7Days || 0 }}</h3>
+                <p class="text-xs lg:text-sm font-medium text-gray-600 mb-1">Last 7 Days</p>
+                <h3 class="text-xl lg:text-3xl font-bold text-purple-600">{{ stats?.last7Days || 0 }}</h3>
               </div>
-              <div class="p-3 bg-purple-100 rounded-lg">
-                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-2 lg:p-3 bg-purple-100 rounded-lg">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                 </svg>
               </div>
             </div>
           </div>
 
-          <div class="bg-white rounded-lg border border-gray-200 p-6">
+          <div class="bg-white rounded-lg border border-gray-200 p-4 lg:p-6">
             <div class="flex justify-between items-start">
               <div>
-                <p class="text-sm font-medium text-gray-600 mb-1">System Access</p>
-                <h3 class="text-3xl font-bold text-orange-600">Full</h3>
+                <p class="text-xs lg:text-sm font-medium text-gray-600 mb-1">System Access</p>
+                <h3 class="text-xl lg:text-3xl font-bold text-orange-600">Full</h3>
               </div>
-              <div class="p-3 bg-orange-100 rounded-lg">
-                <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-2 lg:p-3 bg-orange-100 rounded-lg">
+                <svg class="w-5 h-5 lg:w-6 lg:h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                 </svg>
               </div>
@@ -107,24 +121,69 @@
 
         <!-- Users Table -->
         <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div class="px-6 py-4 border-b border-gray-200">
-            <div class="flex justify-between items-center">
-              <h3 class="text-lg font-semibold text-gray-800">Super Administrators</h3>
-              <div class="relative">
+          <div class="px-4 lg:px-6 py-4 border-b border-gray-200">
+            <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
+              <h3 class="text-base lg:text-lg font-semibold text-gray-800">Super Administrators</h3>
+              <div class="relative w-full lg:w-auto">
                 <input 
                   type="text" 
                   v-model="searchQuery"
                   placeholder="Search super admins..." 
-                  class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  class="w-full lg:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base"
                 >
-                <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 lg:w-5 lg:h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                 </svg>
               </div>
             </div>
           </div>
 
-          <div class="overflow-x-auto">
+          <!-- Mobile Card View -->
+          <div class="lg:hidden divide-y divide-gray-200">
+            <div v-for="user in filteredSuperAdmins" :key="user.id" class="p-4 hover:bg-gray-50">
+              <div class="flex items-start space-x-3 mb-3">
+                <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span class="text-white text-sm font-semibold">
+                    {{ getUserInitials(user.name) }}
+                  </span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-medium text-gray-900 truncate">{{ user.name }}</div>
+                  <div class="text-sm text-gray-500 truncate">@{{ user.username }}</div>
+                  <div class="text-sm text-gray-500 truncate">{{ user.email }}</div>
+                </div>
+              </div>
+              
+              <div class="space-y-2 text-sm text-gray-600 mb-3">
+                <div><strong>DOB:</strong> {{ formatDate(user.dob) }}</div>
+                <div><strong>Qualification:</strong> {{ user.education_qualification }}</div>
+                <div><strong>Institute:</strong> {{ user.institute }}</div>
+              </div>
+              
+              <div class="flex items-center justify-between">
+                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                  Active
+                </span>
+                <div class="flex space-x-2">
+                  <button 
+                    @click="editSuperAdmin(user)"
+                    class="text-blue-600 hover:text-blue-900 text-sm"
+                  >
+                    Edit
+                  </button>
+                  <button 
+                    @click="deleteSuperAdmin(user)"
+                    class="text-red-600 hover:text-red-900 text-sm"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Desktop Table View -->
+          <div class="hidden lg:block overflow-x-auto">
             <table class="w-full">
               <thead class="bg-gray-50">
                 <tr>
@@ -183,15 +242,15 @@
           </div>
 
           <!-- Empty State -->
-          <div v-if="filteredSuperAdmins.length === 0" class="text-center py-12">
-            <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div v-if="filteredSuperAdmins.length === 0" class="text-center py-8 lg:py-12">
+            <svg class="w-12 h-12 lg:w-16 lg:h-16 text-gray-400 mx-auto mb-3 lg:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
             </svg>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">No super admins found</h3>
-            <p class="text-gray-500 mb-4">Get started by creating your first super administrator.</p>
+            <h3 class="text-base lg:text-lg font-medium text-gray-900 mb-2">No super admins found</h3>
+            <p class="text-gray-500 text-sm lg:text-base mb-4">Get started by creating your first super administrator.</p>
             <button 
               @click="showCreateModal = true"
-              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors text-sm lg:text-base"
             >
               Add Super Admin
             </button>
@@ -200,12 +259,12 @@
 
         <!-- Create Super Admin Modal -->
         <div v-if="showCreateModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div class="px-6 py-4 border-b border-gray-200">
+          <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto mx-2">
+            <div class="px-4 lg:px-6 py-4 border-b border-gray-200">
               <h3 class="text-lg font-semibold text-gray-800">Create New Super Admin</h3>
             </div>
 
-            <form @submit.prevent="createSuperAdmin" class="p-6 space-y-4">
+            <form @submit.prevent="createSuperAdmin" class="p-4 lg:p-6 space-y-4">
               <!-- Personal Information -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -214,7 +273,7 @@
                     v-model="form.name"
                     type="text" 
                     required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base"
                     placeholder="Enter full name"
                     :class="{ 'border-red-300': form.errors.name }"
                   >
@@ -226,7 +285,7 @@
                     v-model="form.username"
                     type="text" 
                     required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base"
                     placeholder="Enter username"
                     :class="{ 'border-red-300': form.errors.username }"
                   >
@@ -241,7 +300,7 @@
                     v-model="form.email"
                     type="email" 
                     required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base"
                     placeholder="Enter email address"
                     :class="{ 'border-red-300': form.errors.email }"
                   >
@@ -253,7 +312,7 @@
                     v-model="form.dob"
                     type="date" 
                     required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base"
                     :class="{ 'border-red-300': form.errors.dob }"
                   >
                   <div v-if="form.errors.dob" class="text-red-500 text-sm mt-1">{{ form.errors.dob }}</div>
@@ -267,7 +326,7 @@
                   <select 
                     v-model="form.education_qualification"
                     required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base"
                     :class="{ 'border-red-300': form.errors.education_qualification }"
                   >
                     <option value="">Select qualification</option>
@@ -287,7 +346,7 @@
                     v-model="form.institute"
                     type="text" 
                     required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base"
                     placeholder="Enter institute name"
                     :class="{ 'border-red-300': form.errors.institute }"
                   >
@@ -303,7 +362,7 @@
                     v-model="form.password"
                     type="password" 
                     required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base"
                     placeholder="Enter password"
                     :class="{ 'border-red-300': form.errors.password }"
                   >
@@ -315,25 +374,25 @@
                     v-model="form.password_confirmation"
                     type="password" 
                     required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base"
                     placeholder="Confirm password"
                   >
                 </div>
               </div>
 
               <!-- Form Actions -->
-              <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+              <div class="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-4 border-t border-gray-200">
                 <button 
                   type="button"
                   @click="closeModal"
-                  class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm lg:text-base order-2 sm:order-1"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
                   :disabled="form.processing"
-                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-sm lg:text-base order-1 sm:order-2"
                 >
                   {{ form.processing ? 'Creating...' : 'Create Super Admin' }}
                 </button>
@@ -344,12 +403,12 @@
 
         <!-- Edit Super Admin Modal -->
         <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div class="px-6 py-4 border-b border-gray-200">
+          <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto mx-2">
+            <div class="px-4 lg:px-6 py-4 border-b border-gray-200">
               <h3 class="text-lg font-semibold text-gray-800">Edit Super Admin</h3>
             </div>
 
-            <form @submit.prevent="updateSuperAdmin" class="p-6 space-y-4">
+            <form @submit.prevent="updateSuperAdmin" class="p-4 lg:p-6 space-y-4">
               <!-- Personal Information -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -358,7 +417,7 @@
                     v-model="editForm.name"
                     type="text" 
                     required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base"
                     placeholder="Enter full name"
                     :class="{ 'border-red-300': editForm.errors.name }"
                   >
@@ -370,7 +429,7 @@
                     v-model="editForm.username"
                     type="text" 
                     required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base"
                     placeholder="Enter username"
                     :class="{ 'border-red-300': editForm.errors.username }"
                   >
@@ -385,7 +444,7 @@
                     v-model="editForm.email"
                     type="email" 
                     required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base"
                     placeholder="Enter email address"
                     :class="{ 'border-red-300': editForm.errors.email }"
                   >
@@ -397,7 +456,7 @@
                     v-model="editForm.dob"
                     type="date" 
                     required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base"
                     :class="{ 'border-red-300': editForm.errors.dob }"
                   >
                   <div v-if="editForm.errors.dob" class="text-red-500 text-sm mt-1">{{ editForm.errors.dob }}</div>
@@ -411,7 +470,7 @@
                   <select 
                     v-model="editForm.education_qualification"
                     required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base"
                     :class="{ 'border-red-300': editForm.errors.education_qualification }"
                   >
                     <option value="">Select qualification</option>
@@ -431,7 +490,7 @@
                     v-model="editForm.institute"
                     type="text" 
                     required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base"
                     placeholder="Enter institute name"
                     :class="{ 'border-red-300': editForm.errors.institute }"
                   >
@@ -446,7 +505,7 @@
                   <input 
                     v-model="editForm.password"
                     type="password" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base"
                     placeholder="Enter new password"
                     :class="{ 'border-red-300': editForm.errors.password }"
                   >
@@ -457,25 +516,25 @@
                   <input 
                     v-model="editForm.password_confirmation"
                     type="password" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm lg:text-base"
                     placeholder="Confirm new password"
                   >
                 </div>
               </div>
 
               <!-- Form Actions -->
-              <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+              <div class="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-4 border-t border-gray-200">
                 <button 
                   type="button"
                   @click="closeEditModal"
-                  class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm lg:text-base order-2 sm:order-1"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
                   :disabled="editForm.processing"
-                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-sm lg:text-base order-1 sm:order-2"
                 >
                   {{ editForm.processing ? 'Updating...' : 'Update Super Admin' }}
                 </button>
@@ -493,6 +552,18 @@ import { ref, computed } from 'vue'
 import { useForm, router } from '@inertiajs/vue3'
 import Sidebar from '../../Layout/Sidebar.vue'
 import Navbar from '../../Layout/Navbar.vue'
+
+// Mobile menu state
+const isMobileMenuOpen = ref(false)
+
+// Mobile menu functions
+const toggleMobileMenu = () => {
+  isMobileMenuOpen.value = !isMobileMenuOpen.value
+}
+
+const closeMobileMenu = () => {
+  isMobileMenuOpen.value = false
+}
 
 // Props from Laravel backend
 const props = defineProps({
@@ -628,7 +699,6 @@ const formatDate = (dateString) => {
 </script>
 
 <style scoped>
-
 :deep(*) {
     font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
     font-weight: 400;
@@ -636,5 +706,35 @@ const formatDate = (dateString) => {
 
 .custom-heading {
     font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .mobile-stack {
+    flex-direction: column;
+  }
+  
+  .mobile-full {
+    width: 100%;
+  }
+  
+  .mobile-text-center {
+    text-align: center;
+  }
+}
+
+/* Improve touch targets on mobile */
+@media (max-width: 640px) {
+  button {
+    min-height: 44px;
+  }
+}
+
+/* Modal responsiveness */
+@media (max-width: 480px) {
+  .modal-content {
+    margin: 0.5rem;
+    width: calc(100% - 1rem);
+  }
 }
 </style>

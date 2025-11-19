@@ -1,49 +1,64 @@
-<!-- resources/js/Pages/Admin/InstructorRequests/Pending.vue -->
 <template>
   <div class="min-h-screen bg-gray-50 flex">
-    <Sidebar />
-    <div class="flex-1 ml-64">
-      <Navbar page-title="Pending Instructor Requests" />
+    <!-- Mobile Menu Overlay -->
+    <div 
+      v-if="isMobileMenuOpen" 
+      class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+      @click="closeMobileMenu"
+    ></div>
+
+    <!-- Sidebar -->
+    <Sidebar 
+      :is-mobile-menu-open="isMobileMenuOpen" 
+      @menu-click="closeMobileMenu" 
+    />
+
+    <!-- Main Content -->
+    <div class="flex-1 w-full lg:ml-64 transition-all duration-300">
+      <Navbar 
+        page-title="Pending Instructor Requests" 
+        @toggle-mobile-menu="toggleMobileMenu"
+      />
       
-      <div class="p-6">
+      <div class="p-4 lg:p-6">
         <!-- Header -->
         <div class="mb-6">
-          <h1 class="text-2xl font-bold text-gray-900 mb-2">Pending Instructor Requests</h1>
-          <p class="text-gray-600">Review and manage instructor applications.</p>
+          <h1 class="text-xl lg:text-2xl font-bold text-gray-900 mb-2">Pending Instructor Requests</h1>
+          <p class="text-gray-600 text-sm lg:text-base">Review and manage instructor applications.</p>
         </div>
 
         <!-- Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6">
+          <div class="bg-white p-3 lg:p-4 rounded-lg shadow-sm border border-gray-200">
             <div class="text-center">
-              <div class="text-2xl font-bold text-blue-600">{{ stats.pending || 0 }}</div>
-              <div class="text-sm text-gray-600">Pending</div>
+              <div class="text-lg lg:text-2xl font-bold text-blue-600">{{ stats.pending || 0 }}</div>
+              <div class="text-xs lg:text-sm text-gray-600">Pending</div>
             </div>
           </div>
-          <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div class="bg-white p-3 lg:p-4 rounded-lg shadow-sm border border-gray-200">
             <div class="text-center">
-              <div class="text-2xl font-bold text-green-600">{{ stats.approved || 0 }}</div>
-              <div class="text-sm text-gray-600">Approved</div>
+              <div class="text-lg lg:text-2xl font-bold text-green-600">{{ stats.approved || 0 }}</div>
+              <div class="text-xs lg:text-sm text-gray-600">Approved</div>
             </div>
           </div>
-          <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div class="bg-white p-3 lg:p-4 rounded-lg shadow-sm border border-gray-200">
             <div class="text-center">
-              <div class="text-2xl font-bold text-red-600">{{ stats.rejected || 0 }}</div>
-              <div class="text-sm text-gray-600">Rejected</div>
+              <div class="text-lg lg:text-2xl font-bold text-red-600">{{ stats.rejected || 0 }}</div>
+              <div class="text-xs lg:text-sm text-gray-600">Rejected</div>
             </div>
           </div>
-          <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div class="bg-white p-3 lg:p-4 rounded-lg shadow-sm border border-gray-200">
             <div class="text-center">
-              <div class="text-2xl font-bold text-purple-600">{{ stats.total_requests || 0 }}</div>
-              <div class="text-sm text-gray-600">Total Requests</div>
+              <div class="text-lg lg:text-2xl font-bold text-purple-600">{{ stats.total_requests || 0 }}</div>
+              <div class="text-xs lg:text-sm text-gray-600">Total Requests</div>
             </div>
           </div>
         </div>
 
         <!-- Error Alert -->
-        <div v-if="errorMessage" class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
+        <div v-if="errorMessage" class="mb-6 bg-red-50 border border-red-200 rounded-lg p-3 lg:p-4">
+          <div class="flex items-start">
+            <div class="flex-shrink-0 pt-0.5">
               <i class="fas fa-exclamation-circle text-red-400"></i>
             </div>
             <div class="ml-3">
@@ -55,36 +70,36 @@
 
         <!-- Requests Table -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div class="p-6 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-800">Pending Applications</h3>
+          <div class="p-4 lg:p-6 border-b border-gray-200">
+            <h3 class="text-base lg:text-lg font-semibold text-gray-800">Pending Applications</h3>
           </div>
           
-          <div v-if="loading" class="p-8 text-center">
-            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p class="mt-2 text-gray-600">Loading requests...</p>
+          <div v-if="loading" class="p-6 lg:p-8 text-center">
+            <div class="inline-block animate-spin rounded-full h-6 lg:h-8 w-6 lg:w-8 border-b-2 border-blue-600"></div>
+            <p class="mt-2 text-gray-600 text-sm lg:text-base">Loading requests...</p>
           </div>
 
-          <div v-else-if="requests.length === 0" class="p-8 text-center">
-            <div class="text-gray-400 mb-4">
-              <i class="fas fa-users fa-3x"></i>
+          <div v-else-if="requests.length === 0" class="p-6 lg:p-8 text-center">
+            <div class="text-gray-400 mb-3 lg:mb-4">
+              <i class="fas fa-users text-2xl lg:text-3xl"></i>
             </div>
-            <h4 class="text-lg font-medium text-gray-900 mb-2">No Pending Requests</h4>
-            <p class="text-gray-600">All instructor applications have been processed.</p>
+            <h4 class="text-base lg:text-lg font-medium text-gray-900 mb-2">No Pending Requests</h4>
+            <p class="text-gray-600 text-sm lg:text-base">All instructor applications have been processed.</p>
           </div>
 
           <div v-else class="divide-y divide-gray-200">
-            <div v-for="request in requests" :key="request.id" class="p-6">
-              <div class="flex justify-between items-start mb-4">
-                <div>
-                  <h4 class="text-lg font-semibold text-gray-900">{{ request.name }}</h4>
-                  <p class="text-gray-600">{{ request.email }}</p>
-                  <p class="text-sm text-gray-500">Applied on {{ formatDate(request.created_at) }}</p>
+            <div v-for="request in requests" :key="request.id" class="p-4 lg:p-6">
+              <div class="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mb-4">
+                <div class="flex-1">
+                  <h4 class="text-base lg:text-lg font-semibold text-gray-900">{{ request.name }}</h4>
+                  <p class="text-gray-600 text-sm lg:text-base">{{ request.email }}</p>
+                  <p class="text-xs lg:text-sm text-gray-500 mt-1">Applied on {{ formatDate(request.created_at) }}</p>
                 </div>
-                <div class="flex space-x-2">
+                <div class="flex flex-col sm:flex-row gap-2 lg:gap-3">
                   <button 
                     @click="approveRequest(request.id)"
                     :disabled="processing"
-                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center space-x-2"
+                    class="px-3 lg:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center justify-center space-x-2 text-sm lg:text-base"
                   >
                     <i class="fas fa-check"></i>
                     <span>Approve</span>
@@ -92,7 +107,7 @@
                   <button 
                     @click="openRejectModal(request)"
                     :disabled="processing"
-                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center space-x-2"
+                    class="px-3 lg:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center justify-center space-x-2 text-sm lg:text-base"
                   >
                     <i class="fas fa-times"></i>
                     <span>Reject</span>
@@ -100,21 +115,26 @@
                 </div>
               </div>
 
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4 text-xs lg:text-sm">
                 <div>
-                  <strong>Username:</strong> {{ request.username }}
+                  <strong class="text-gray-700">Username:</strong> 
+                  <span class="ml-1">{{ request.username }}</span>
                 </div>
                 <div>
-                  <strong>Date of Birth:</strong> {{ formatDate(request.dob) }}
+                  <strong class="text-gray-700">Date of Birth:</strong> 
+                  <span class="ml-1">{{ formatDate(request.dob) }}</span>
                 </div>
                 <div>
-                  <strong>Qualification:</strong> {{ getQualificationLabel(request.education_qualification) }}
+                  <strong class="text-gray-700">Qualification:</strong> 
+                  <span class="ml-1">{{ getQualificationLabel(request.education_qualification) }}</span>
                 </div>
                 <div>
-                  <strong>Institute:</strong> {{ request.institute }}
+                  <strong class="text-gray-700">Institute:</strong> 
+                  <span class="ml-1">{{ request.institute }}</span>
                 </div>
-                <div v-if="request.experience" class="md:col-span-2">
-                  <strong>Experience:</strong> {{ request.experience }}
+                <div v-if="request.experience" class="sm:col-span-2">
+                  <strong class="text-gray-700">Experience:</strong> 
+                  <span class="ml-1">{{ request.experience }}</span>
                 </div>
               </div>
             </div>
@@ -125,28 +145,30 @@
 
     <!-- Reject Modal -->
     <div v-if="rejectModalVisible" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div class="bg-white rounded-lg max-w-md w-full p-6">
-        <h3 class="text-lg font-semibold mb-4">Reject Instructor Application</h3>
-        <p class="text-gray-600 mb-4">Please provide a reason for rejecting {{ selectedRequest?.name }}'s application.</p>
+      <div class="bg-white rounded-lg max-w-md w-full p-4 lg:p-6 mx-2">
+        <h3 class="text-lg font-semibold mb-3 lg:mb-4">Reject Instructor Application</h3>
+        <p class="text-gray-600 text-sm lg:text-base mb-3 lg:mb-4">
+          Please provide a reason for rejecting {{ selectedRequest?.name }}'s application.
+        </p>
         
         <textarea 
           v-model="rejectionReason"
           placeholder="Enter rejection reason..."
-          class="w-full p-3 border border-gray-300 rounded-lg mb-4"
+          class="w-full p-3 border border-gray-300 rounded-lg mb-4 text-sm lg:text-base"
           rows="4"
         ></textarea>
         
-        <div class="flex justify-end space-x-3">
+        <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
           <button 
             @click="closeRejectModal"
-            class="px-4 py-2 text-gray-600 hover:text-gray-800"
+            class="px-4 py-2 text-gray-600 hover:text-gray-800 text-sm lg:text-base order-2 sm:order-1"
           >
             Cancel
           </button>
           <button 
             @click="rejectRequest"
             :disabled="!rejectionReason.trim() || processing"
-            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 text-sm lg:text-base order-1 sm:order-2"
           >
             Reject Application
           </button>
@@ -160,6 +182,18 @@
 import { ref, onMounted } from 'vue'
 import Navbar from '../../Layout/Navbar.vue'
 import Sidebar from '../../Layout/Sidebar.vue'
+
+// Mobile menu state
+const isMobileMenuOpen = ref(false)
+
+// Mobile menu functions
+const toggleMobileMenu = () => {
+  isMobileMenuOpen.value = !isMobileMenuOpen.value
+}
+
+const closeMobileMenu = () => {
+  isMobileMenuOpen.value = false
+}
 
 const props = defineProps({
   pendingRequests: {
@@ -347,3 +381,42 @@ onMounted(() => {
   setInterval(refreshStats, 30000) // Every 30 seconds
 })
 </script>
+
+<style scoped>
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .text-responsive {
+    font-size: 0.875rem; /* text-sm */
+  }
+}
+
+/* Ensure proper spacing on mobile */
+@media (max-width: 768px) {
+  .mobile-stack {
+    flex-direction: column;
+  }
+  
+  .mobile-full {
+    width: 100%;
+  }
+  
+  .mobile-text-center {
+    text-align: center;
+  }
+}
+
+/* Improve button touch targets on mobile */
+@media (max-width: 640px) {
+  button {
+    min-height: 44px; /* Minimum touch target size */
+  }
+}
+
+/* Modal responsiveness */
+@media (max-width: 480px) {
+  .modal-content {
+    margin: 1rem;
+    width: calc(100% - 2rem);
+  }
+}
+</style>
