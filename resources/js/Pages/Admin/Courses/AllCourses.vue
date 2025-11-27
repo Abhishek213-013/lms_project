@@ -1,62 +1,70 @@
 <template>
   <div class="min-h-screen bg-gray-50 flex">
-    <!-- Sidebar -->
-    <Sidebar />
+    <!-- Sidebar with Mobile Support -->
+    <Sidebar 
+      :isMobileMenuOpen="isMobileMenuOpen" 
+      @menu-click="closeMobileMenu"
+      @close-mobile="closeMobileMenu"
+    />
 
     <!-- Main Content -->
-    <div class="flex-1 ml-64">
-      <!-- Top Navbar -->
-      <Navbar page-title="Course Management" @search="handleSearch" />
+    <div class="flex-1 lg:ml-64">
+      <!-- Top Navbar with Hamburger - Remove the wrapper div and use Navbar directly -->
+      <Navbar 
+        page-title="Course Management" 
+        @search="handleSearch"
+        @toggle-mobile-menu="toggleMobileMenu"
+      />
 
       <!-- Page Content -->
-      <div class="p-6">
+      <div class="p-4 md:p-6">
         <!-- Header -->
-        <div class="mb-8">
-          <h1 class="text-2xl font-bold text-gray-900">Course Management</h1>
-          <p class="text-gray-600">Manage all courses and classes in the system</p>
+        <div class="mb-6 md:mb-8">
+          <h1 class="text-xl md:text-2xl font-bold text-gray-900">Course Management</h1>
+          <p class="text-sm md:text-base text-gray-600">Manage all courses and classes in the system</p>
         </div>
 
         <!-- Error Display -->
-        <div v-if="error" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+        <div v-if="error" class="mb-4 md:mb-6 p-3 md:p-4 bg-red-50 border border-red-200 rounded-lg">
           <div class="flex items-center">
-            <svg class="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 md:w-5 md:h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
-            <span class="text-red-700">{{ error }}</span>
+            <span class="text-sm md:text-base text-red-700">{{ error }}</span>
           </div>
         </div>
 
         <!-- Success Message -->
-        <div v-if="successMessage" class="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+        <div v-if="successMessage" class="mb-4 md:mb-6 p-3 md:p-4 bg-green-50 border border-green-200 rounded-lg">
           <div class="flex items-center">
-            <svg class="w-5 h-5 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 md:w-5 md:h-5 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
-            <span class="text-green-700">{{ successMessage }}</span>
+            <span class="text-sm md:text-base text-green-700">{{ successMessage }}</span>
           </div>
         </div>
 
-        <!-- Three Main Tiles -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- Three Main Tiles - Stack on mobile -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
           <!-- Regular Courses Tile -->
           <div 
-            class="bg-white rounded-xl border border-gray-200 p-6 cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
+            class="bg-white rounded-lg md:rounded-xl border border-gray-200 p-4 md:p-6 cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
             @click="viewRegularCourses"
           >
-            <div class="flex items-center justify-between mb-4">
-              <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="flex items-center justify-between mb-3 md:mb-4">
+              <div class="w-10 h-10 md:w-12 md:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 md:w-6 md:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path>
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l9 5m-9-5v10"></path>
                 </svg>
               </div>
-              <span class="text-blue-600 text-sm font-semibold">{{ regularClasses.length }} classes</span>
+              <span class="text-blue-600 text-xs md:text-sm font-semibold">{{ regularClasses.length }} classes</span>
             </div>
-            <h3 class="text-lg font-semibold text-gray-800 mb-2">Regular Courses</h3>
-            <p class="text-gray-600 text-sm mb-4">Manage academic classes from Grade 1 to 12 with standard curriculum</p>
-            <div class="flex items-center text-blue-600 text-sm font-medium">
+            <h3 class="text-base md:text-lg font-semibold text-gray-800 mb-1 md:mb-2">Regular Courses</h3>
+            <p class="text-xs md:text-sm text-gray-600 mb-3 md:mb-4">Manage academic classes from Grade 1 to 12</p>
+            <div class="flex items-center text-blue-600 text-xs md:text-sm font-medium">
               <span>View Classes</span>
-              <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-3 h-3 md:w-4 md:h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
               </svg>
             </div>
@@ -64,22 +72,22 @@
 
           <!-- Skill Based Courses Tile -->
           <div 
-            class="bg-white rounded-xl border border-gray-200 p-6 cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
+            class="bg-white rounded-lg md:rounded-xl border border-gray-200 p-4 md:p-6 cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
             @click="viewSkillCourses"
           >
-            <div class="flex items-center justify-between mb-4">
-              <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="flex items-center justify-between mb-3 md:mb-4">
+              <div class="w-10 h-10 md:w-12 md:h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 md:w-6 md:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                 </svg>
               </div>
-              <span class="text-green-600 text-sm font-semibold">{{ otherCourses.length }} courses</span>
+              <span class="text-green-600 text-xs md:text-sm font-semibold">{{ otherCourses.length }} courses</span>
             </div>
-            <h3 class="text-lg font-semibold text-gray-800 mb-2">Skill Based Courses</h3>
-            <p class="text-gray-600 text-sm mb-4">Manage life skills, spoken English, computer basics, and other skill courses</p>
-            <div class="flex items-center text-green-600 text-sm font-medium">
+            <h3 class="text-base md:text-lg font-semibold text-gray-800 mb-1 md:mb-2">Skill Based Courses</h3>
+            <p class="text-xs md:text-sm text-gray-600 mb-3 md:mb-4">Manage life skills, spoken English, and other skill courses</p>
+            <div class="flex items-center text-green-600 text-xs md:text-sm font-medium">
               <span>View Courses</span>
-              <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-3 h-3 md:w-4 md:h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
               </svg>
             </div>
@@ -87,40 +95,50 @@
 
           <!-- Create New Course Tile -->
           <div 
-            class="bg-white rounded-xl border-2 border-dashed border-gray-300 p-6 cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:border-blue-400"
+            class="bg-white rounded-lg md:rounded-xl border-2 border-dashed border-gray-300 p-4 md:p-6 cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:border-blue-400"
             @click="showCreateModal = true"
           >
-            <div class="flex items-center justify-between mb-4">
-              <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="flex items-center justify-between mb-3 md:mb-4">
+              <div class="w-10 h-10 md:w-12 md:h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 md:w-6 md:h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
               </div>
-              <span class="text-purple-600 text-sm font-semibold">Create New</span>
+              <span class="text-purple-600 text-xs md:text-sm font-semibold">Create New</span>
             </div>
-            <h3 class="text-lg font-semibold text-gray-800 mb-2">Create New Course</h3>
-            <p class="text-gray-600 text-sm mb-4">Add new regular class or skill-based course to the system</p>
-            <div class="flex items-center text-purple-600 text-sm font-medium">
+            <h3 class="text-base md:text-lg font-semibold text-gray-800 mb-1 md:mb-2">Create New Course</h3>
+            <p class="text-xs md:text-sm text-gray-600 mb-3 md:mb-4">Add new regular class or skill-based course</p>
+            <div class="flex items-center text-purple-600 text-xs md:text-sm font-medium">
               <span>Get Started</span>
-              <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-3 h-3 md:w-4 md:h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
               </svg>
             </div>
           </div>
         </div>
 
-        <!-- Create Course Modal -->
-        <div v-if="showCreateModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div class="px-6 py-4 border-b border-gray-200">
-              <h3 class="text-lg font-semibold text-gray-800">Create New Course</h3>
+        <!-- Create Course Modal - Full screen on mobile -->
+        <div v-if="showCreateModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 md:p-4 z-50">
+          <div class="bg-white rounded-lg w-full max-w-full md:max-w-4xl h-full md:h-auto md:max-h-[90vh] overflow-y-auto">
+            <div class="px-4 py-3 md:px-6 md:py-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+              <div class="flex items-center justify-between">
+                <h3 class="text-base md:text-lg font-semibold text-gray-800">Create New Course</h3>
+                <button 
+                  @click="closeModal"
+                  class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+              </div>
             </div>
 
-            <form @submit.prevent="createNewCourse" class="p-6 space-y-6">
+            <form @submit.prevent="createNewCourse" class="p-4 md:p-6 space-y-4 md:space-y-6">
               <!-- Course Type Selection -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Course Type *</label>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                   <label class="relative flex cursor-pointer">
                     <input 
                       type="radio" 
@@ -129,15 +147,15 @@
                       class="sr-only"
                       @change="onCourseTypeChange"
                     >
-                    <div class="flex items-center space-x-3 p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 transition-colors w-full"
+                    <div class="flex items-center space-x-2 md:space-x-3 p-3 md:p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 transition-colors w-full"
                       :class="{'border-blue-500 bg-blue-50': newCourse.type === 'regular'}">
-                      <div class="w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center"
+                      <div class="w-5 h-5 md:w-6 md:h-6 rounded-full border-2 border-gray-300 flex items-center justify-center"
                         :class="{'border-blue-500': newCourse.type === 'regular'}">
-                        <div v-if="newCourse.type === 'regular'" class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                        <div v-if="newCourse.type === 'regular'" class="w-2 h-2 md:w-3 md:h-3 bg-blue-500 rounded-full"></div>
                       </div>
                       <div class="text-left">
-                        <span class="font-medium text-gray-900">Regular Class</span>
-                        <p class="text-sm text-gray-500">Grades 1-12 with standard curriculum</p>
+                        <span class="text-sm md:text-base font-medium text-gray-900">Regular Class</span>
+                        <p class="text-xs md:text-sm text-gray-500">Grades 1-12 with standard curriculum</p>
                       </div>
                     </div>
                   </label>
@@ -150,15 +168,15 @@
                       class="sr-only"
                       @change="onCourseTypeChange"
                     >
-                    <div class="flex items-center space-x-3 p-4 border-2 border-gray-200 rounded-lg hover:border-green-500 transition-colors w-full"
+                    <div class="flex items-center space-x-2 md:space-x-3 p-3 md:p-4 border-2 border-gray-200 rounded-lg hover:border-green-500 transition-colors w-full"
                       :class="{'border-green-500 bg-green-50': newCourse.type === 'other'}">
-                      <div class="w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center"
+                      <div class="w-5 h-5 md:w-6 md:h-6 rounded-full border-2 border-gray-300 flex items-center justify-center"
                         :class="{'border-green-500': newCourse.type === 'other'}">
-                        <div v-if="newCourse.type === 'other'" class="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <div v-if="newCourse.type === 'other'" class="w-2 h-2 md:w-3 md:h-3 bg-green-500 rounded-full"></div>
                       </div>
                       <div class="text-left">
-                        <span class="font-medium text-gray-900">Other Course</span>
-                        <p class="text-sm text-gray-500">Life Skills, Spoken English, etc.</p>
+                        <span class="text-sm md:text-base font-medium text-gray-900">Other Course</span>
+                        <p class="text-xs md:text-sm text-gray-500">Life Skills, Spoken English, etc.</p>
                       </div>
                     </div>
                   </label>
@@ -166,7 +184,7 @@
               </div>
 
               <!-- Course Information -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
                 <!-- For Regular Classes -->
                 <div v-if="newCourse.type === 'regular'">
                   <label class="block text-sm font-medium text-gray-700 mb-2">Class Grade *</label>
@@ -214,13 +232,13 @@
               <!-- Subject Information -->
               <div v-if="newCourse.type === 'regular'">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Subjects *</label>
-                <div class="space-y-4">
+                <div class="space-y-3 md:space-y-4">
                   <div 
                     v-for="(subject, index) in newCourse.subjects" 
                     :key="index"
-                    class="border border-gray-200 rounded-lg p-4 space-y-4"
+                    class="border border-gray-200 rounded-lg p-3 md:p-4 space-y-3 md:space-y-4"
                   >
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
                       <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Subject Name *</label>
                         <input 
@@ -251,7 +269,7 @@
                         @drop="handleSubjectImageDrop($event, index)"
                         @dragover="handleDragOver"
                         @dragleave="handleDragLeave"
-                        class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-blue-400 transition-colors"
+                        class="border-2 border-dashed border-gray-300 rounded-lg p-3 md:p-4 text-center cursor-pointer hover:border-blue-400 transition-colors"
                         :class="{ 'border-blue-500 bg-blue-50': subject.isDragOver }"
                       >
                         <input 
@@ -263,52 +281,52 @@
                         >
                         
                         <div v-if="!subject.imageFile" class="space-y-2">
-                          <svg class="w-8 h-8 text-gray-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg class="w-6 h-6 md:w-8 md:h-8 text-gray-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                           </svg>
                           <div>
-                            <p class="text-sm font-medium text-gray-700">Upload subject image</p>
+                            <p class="text-xs md:text-sm font-medium text-gray-700">Upload subject image</p>
                             <p class="text-xs text-gray-500 mt-1">PNG, JPG, JPEG up to 5MB</p>
                           </div>
-                          <button type="button" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                          <button type="button" class="text-blue-600 hover:text-blue-800 text-xs md:text-sm font-medium">
                             Click to browse or drag & drop
                           </button>
                         </div>
                         
-                        <div v-else class="space-y-3">
+                        <div v-else class="space-y-2 md:space-y-3">
                           <div class="relative inline-block">
                             <img 
                               :src="getSubjectImagePreview(index)" 
                               :alt="`${subject.name} image preview`"
-                              class="w-24 h-24 object-cover rounded-lg mx-auto"
+                              class="w-16 h-16 md:w-24 md:h-24 object-cover rounded-lg mx-auto"
                             >
                             <button 
                               type="button"
                               @click.stop="removeSubjectImage(index)"
-                              class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                              class="absolute -top-1 -right-1 md:-top-2 md:-right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
                             >
-                              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg class="w-2 h-2 md:w-3 md:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                               </svg>
                             </button>
                           </div>
-                          <p class="text-sm text-gray-600">Image ready for upload</p>
+                          <p class="text-xs md:text-sm text-gray-600">Image ready for upload</p>
                           <p class="text-xs text-gray-500">{{ subject.imageFile.name }} ({{ formatFileSize(subject.imageFile.size) }})</p>
                         </div>
                       </div>
                     </div>
 
                     <div class="flex justify-between items-center">
-                      <div class="text-sm text-gray-500">
+                      <div class="text-xs md:text-sm text-gray-500">
                         Subject {{ index + 1 }} of {{ newCourse.subjects.length }}
                       </div>
                       <button 
                         type="button"
                         @click="removeSubject(index)"
-                        class="p-2 text-red-600 hover:text-red-800"
+                        class="p-1 md:p-2 text-red-600 hover:text-red-800"
                         v-if="newCourse.subjects.length > 1"
                       >
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                         </svg>
                       </button>
@@ -318,9 +336,9 @@
                 <button 
                   type="button"
                   @click="addSubject"
-                  class="mt-2 flex items-center space-x-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  class="mt-2 flex items-center space-x-1 md:space-x-2 text-blue-600 hover:text-blue-800 text-xs md:text-sm font-medium"
                 >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                   </svg>
                   <span>Add Another Subject</span>
@@ -330,7 +348,7 @@
               <!-- For Other Courses - Single Subject -->
               <div v-if="newCourse.type === 'other'">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Course Details *</label>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 mb-3 md:mb-4">
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Course Code</label>
                     <input 
@@ -350,7 +368,7 @@
                     @drop="handleImageDrop"
                     @dragover="handleDragOver"
                     @dragleave="handleDragLeave"
-                    class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-green-400 transition-colors"
+                    class="border-2 border-dashed border-gray-300 rounded-lg p-4 md:p-6 text-center cursor-pointer hover:border-green-400 transition-colors"
                     :class="{ 'border-green-500 bg-green-50': isDragOver }"
                   >
                     <input 
@@ -361,37 +379,37 @@
                       class="hidden"
                     >
                     
-                    <div v-if="!selectedImageFile" class="space-y-3">
-                      <svg class="w-12 h-12 text-gray-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div v-if="!selectedImageFile" class="space-y-2 md:space-y-3">
+                      <svg class="w-8 h-8 md:w-12 md:h-12 text-gray-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                       </svg>
                       <div>
-                        <p class="text-sm font-medium text-gray-700">Upload course image</p>
+                        <p class="text-xs md:text-sm font-medium text-gray-700">Upload course image</p>
                         <p class="text-xs text-gray-500 mt-1">PNG, JPG, JPEG up to 5MB</p>
                       </div>
-                      <button type="button" class="text-green-600 hover:text-green-800 text-sm font-medium">
+                      <button type="button" class="text-green-600 hover:text-green-800 text-xs md:text-sm font-medium">
                         Click to browse or drag & drop
                       </button>
                     </div>
                     
-                    <div v-else class="space-y-3">
+                    <div v-else class="space-y-2 md:space-y-3">
                       <div class="relative inline-block">
                         <img 
                           :src="getImagePreview()" 
                           :alt="`Course image preview`"
-                          class="w-32 h-32 object-cover rounded-lg mx-auto"
+                          class="w-20 h-20 md:w-32 md:h-32 object-cover rounded-lg mx-auto"
                         >
                         <button 
                           type="button"
                           @click.stop="removeImage"
-                          class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                          class="absolute -top-1 -right-1 md:-top-2 md:-right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
                         >
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                           </svg>
                         </button>
                       </div>
-                      <p class="text-sm text-gray-600">Image ready for upload</p>
+                      <p class="text-xs md:text-sm text-gray-600">Image ready for upload</p>
                       <p class="text-xs text-gray-500">{{ selectedImageFile.name }} ({{ formatFileSize(selectedImageFile.size) }})</p>
                     </div>
                   </div>
@@ -399,7 +417,7 @@
               </div>
 
               <!-- Course Details -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Course Capacity</label>
                   <input 
@@ -437,18 +455,18 @@
               </div>
 
               <!-- Form Actions -->
-              <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+              <div class="flex flex-col-reverse md:flex-row md:justify-end space-y-2 space-y-reverse md:space-y-0 md:space-x-3 pt-3 md:pt-4 border-t border-gray-200">
                 <button 
                   type="button"
                   @click="closeModal"
-                  class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  class="w-full md:w-auto px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
                   :disabled="creating"
-                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  class="w-full md:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   {{ creating ? 'Creating...' : 'Create Course' }}
                 </button>
@@ -457,91 +475,91 @@
           </div>
         </div>
 
-        <!-- Quick Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div class="bg-white rounded-lg border border-gray-200 p-4">
+        <!-- Quick Stats - 2 columns on mobile -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
+          <div class="bg-white rounded-lg border border-gray-200 p-3 md:p-4">
             <div class="flex items-center">
-              <div class="p-2 bg-blue-100 rounded-lg mr-4">
-                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-1 md:p-2 bg-blue-100 rounded-lg mr-2 md:mr-4">
+                <svg class="w-4 h-4 md:w-6 md:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path>
                 </svg>
               </div>
               <div>
-                <p class="text-sm font-medium text-gray-600">Total Classes</p>
-                <h3 class="text-2xl font-bold text-gray-800">{{ regularClasses.length }}</h3>
+                <p class="text-xs md:text-sm font-medium text-gray-600">Total Classes</p>
+                <h3 class="text-lg md:text-2xl font-bold text-gray-800">{{ regularClasses.length }}</h3>
               </div>
             </div>
           </div>
 
-          <div class="bg-white rounded-lg border border-gray-200 p-4">
+          <div class="bg-white rounded-lg border border-gray-200 p-3 md:p-4">
             <div class="flex items-center">
-              <div class="p-2 bg-green-100 rounded-lg mr-4">
-                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-1 md:p-2 bg-green-100 rounded-lg mr-2 md:mr-4">
+                <svg class="w-4 h-4 md:w-6 md:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                 </svg>
               </div>
               <div>
-                <p class="text-sm font-medium text-gray-600">Skill Courses</p>
-                <h3 class="text-2xl font-bold text-gray-800">{{ otherCourses.length }}</h3>
+                <p class="text-xs md:text-sm font-medium text-gray-600">Skill Courses</p>
+                <h3 class="text-lg md:text-2xl font-bold text-gray-800">{{ otherCourses.length }}</h3>
               </div>
             </div>
           </div>
 
-          <div class="bg-white rounded-lg border border-gray-200 p-4">
+          <div class="bg-white rounded-lg border border-gray-200 p-3 md:p-4">
             <div class="flex items-center">
-              <div class="p-2 bg-purple-100 rounded-lg mr-4">
-                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-1 md:p-2 bg-purple-100 rounded-lg mr-2 md:mr-4">
+                <svg class="w-4 h-4 md:w-6 md:h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                 </svg>
               </div>
               <div>
-                <p class="text-sm font-medium text-gray-600">Total Students</p>
-                <h3 class="text-2xl font-bold text-gray-800">{{ totalStudents }}</h3>
+                <p class="text-xs md:text-sm font-medium text-gray-600">Total Students</p>
+                <h3 class="text-lg md:text-2xl font-bold text-gray-800">{{ totalStudents }}</h3>
               </div>
             </div>
           </div>
 
-          <div class="bg-white rounded-lg border border-gray-200 p-4">
+          <div class="bg-white rounded-lg border border-gray-200 p-3 md:p-4">
             <div class="flex items-center">
-              <div class="p-2 bg-orange-100 rounded-lg mr-4">
-                <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-1 md:p-2 bg-orange-100 rounded-lg mr-2 md:mr-4">
+                <svg class="w-4 h-4 md:w-6 md:h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
                 </svg>
               </div>
               <div>
-                <p class="text-sm font-medium text-gray-600">Active Teachers</p>
-                <h3 class="text-2xl font-bold text-gray-800">{{ activeTeachersCount }}</h3>
+                <p class="text-xs md:text-sm font-medium text-gray-600">Active Teachers</p>
+                <h3 class="text-lg md:text-2xl font-bold text-gray-800">{{ activeTeachersCount }}</h3>
               </div>
             </div>
           </div>
         </div>
 
         <!-- Recent Courses Section -->
-        <div class="bg-white rounded-lg border border-gray-200 p-6">
-          <div class="flex justify-between items-center mb-6">
-            <h3 class="text-lg font-semibold text-gray-800">Recent Courses</h3>
+        <div class="bg-white rounded-lg border border-gray-200 p-4 md:p-6">
+          <div class="flex justify-between items-center mb-4 md:mb-6">
+            <h3 class="text-base md:text-lg font-semibold text-gray-800">Recent Courses</h3>
             <button 
               @click="fetchClasses"
-              class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center space-x-1"
+              class="text-blue-600 hover:text-blue-800 text-xs md:text-sm font-medium flex items-center space-x-1"
             >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
               </svg>
               <span>Refresh</span>
             </button>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
             <!-- Regular Classes Preview -->
             <div 
               v-for="classItem in regularClasses.slice(0, 3)" 
               :key="classItem.id"
-              class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+              class="border border-gray-200 rounded-lg p-3 md:p-4 hover:shadow-md transition-shadow cursor-pointer"
               @click="viewClassDetails(classItem)"
             >
-              <div class="flex items-center justify-between mb-3">
-                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <span class="text-blue-600 font-bold text-sm">{{ classItem.grade }}</span>
+              <div class="flex items-center justify-between mb-2 md:mb-3">
+                <div class="w-8 h-8 md:w-10 md:h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <span class="text-blue-600 font-bold text-xs md:text-sm">{{ classItem.grade }}</span>
                 </div>
                 <span 
                   :class="`px-2 py-1 text-xs rounded-full ${
@@ -555,8 +573,8 @@
                   {{ classItem.status }}
                 </span>
               </div>
-              <h4 class="font-semibold text-gray-800 mb-1">{{ classItem.name }}</h4>
-              <p class="text-sm text-gray-600 mb-2">{{ classItem.subjectCount }} subjects</p>
+              <h4 class="text-sm md:text-base font-semibold text-gray-800 mb-1">{{ classItem.name }}</h4>
+              <p class="text-xs md:text-sm text-gray-600 mb-2">{{ classItem.subjectCount }} subjects</p>
               <div class="flex justify-between text-xs text-gray-500">
                 <span>{{ classItem.studentCount }} students</span>
                 <span>{{ classItem.teachers?.length || 0 }} teachers</span>
@@ -567,12 +585,12 @@
             <div 
               v-for="course in otherCourses.slice(0, 3)" 
               :key="course.id"
-              class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+              class="border border-gray-200 rounded-lg p-3 md:p-4 hover:shadow-md transition-shadow cursor-pointer"
               @click="viewClassDetails(course)"
             >
-              <div class="flex items-center justify-between mb-3">
-                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                  <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="flex items-center justify-between mb-2 md:mb-3">
+                <div class="w-8 h-8 md:w-10 md:h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-4 h-4 md:w-5 md:h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                   </svg>
                 </div>
@@ -588,8 +606,8 @@
                   {{ course.status }}
                 </span>
               </div>
-              <h4 class="font-semibold text-gray-800 mb-1">{{ course.name }}</h4>
-              <p class="text-sm text-gray-600 mb-2">{{ course.category }}</p>
+              <h4 class="text-sm md:text-base font-semibold text-gray-800 mb-1">{{ course.name }}</h4>
+              <p class="text-xs md:text-sm text-gray-600 mb-2">{{ course.category }}</p>
               <div class="flex justify-between text-xs text-gray-500">
                 <span>{{ course.studentCount }} students</span>
                 <span>{{ course.teachers?.length || 0 }} teachers</span>
@@ -597,14 +615,14 @@
             </div>
           </div>
 
-          <div v-if="classes.length === 0 && !loading" class="text-center py-8">
-            <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div v-if="classes.length === 0 && !loading" class="text-center py-6 md:py-8">
+            <svg class="w-8 h-8 md:w-12 md:h-12 text-gray-400 mx-auto mb-3 md:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
             </svg>
-            <p class="text-gray-600">No courses found</p>
+            <p class="text-sm md:text-base text-gray-600">No courses found</p>
             <button 
               @click="showCreateModal = true"
-              class="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+              class="mt-2 text-blue-600 hover:text-blue-800 text-xs md:text-sm font-medium"
             >
               Create your first course
             </button>
@@ -612,12 +630,19 @@
         </div>
 
         <!-- Loading State -->
-        <div v-if="loading" class="text-center py-12">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p class="text-gray-600">Loading courses...</p>
+        <div v-if="loading" class="text-center py-8 md:py-12">
+          <div class="animate-spin rounded-full h-8 w-8 md:h-12 md:w-12 border-b-2 border-blue-600 mx-auto mb-3 md:mb-4"></div>
+          <p class="text-sm md:text-base text-gray-600">Loading courses...</p>
         </div>
       </div>
     </div>
+
+    <!-- Mobile Overlay -->
+    <div 
+      v-if="isMobileMenuOpen"
+      @click="closeMobileMenu"
+      class="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+    ></div>
   </div>
 </template>
 
@@ -627,6 +652,18 @@ import { router } from '@inertiajs/vue3'
 import apiClient from '../../../api/client.js'
 import Sidebar from '../../Layout/Sidebar.vue'
 import Navbar from '../../Layout/Navbar.vue'
+
+// Mobile menu state
+const isMobileMenuOpen = ref(false)
+
+// Mobile menu functions
+const toggleMobileMenu = () => {
+  isMobileMenuOpen.value = !isMobileMenuOpen.value
+}
+
+const closeMobileMenu = () => {
+  isMobileMenuOpen.value = false
+}
 
 // Course management state
 const classes = ref([])
@@ -879,12 +916,13 @@ const createNewCourse = async () => {
       })
 
       if (response.data.success) {
-        successMessage.value = 'Course created successfully!'
-        console.log('✅ Course created successfully:', response.data.data)
-        closeModal()
-        await fetchClasses()
+            successMessage.value = 'Course created successfully! Announcement has been generated.';
+            console.log('✅ Course created successfully:', response.data.data);
+            closeModal();
+            await fetchClasses();
+            window.dispatchEvent(new CustomEvent('announcements-updated'));
       } else {
-        error.value = response.data.message || 'Failed to create course'
+        error.value = response.data.message || 'Failed to create course';
       }
     } else {
       error.value = 'Debug test failed: ' + debugResponse.data.message

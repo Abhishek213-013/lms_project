@@ -3,8 +3,10 @@ namespace App\Http\Controllers;
 
 use App\Models\ClassModel;
 use App\Models\User;
+use App\Models\AcademicClass;
 use App\Models\Student;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -12,6 +14,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Models\Resource;
 
 class CourseController extends Controller
 {
@@ -900,6 +903,16 @@ class CourseController extends Controller
 
             Log::info("📡 [DEBUG] Save operation result: " . ($saved ? 'SUCCESS' : 'FAILED'));
             
+            // ✅ CREATE AUTOMATIC ANNOUNCEMENT FOR TEACHER ASSIGNMENT
+            $announcementData = [
+                'teacher_id' => $teacher->id,
+                'class_id' => $class->id,
+                'assigned_at' => now()
+            ];
+
+            \App\Http\Controllers\Admin\AnnouncementController::createTeacherAssignmentAnnouncement($announcementData);
+            Log::info("✅ [DEBUG] Announcement created for teacher assignment");
+
             // Verify the update
             $updatedClass = ClassModel::find($subjectId);
             Log::info("📡 [DEBUG] Teacher_id after update: " . $updatedClass->teacher_id);
@@ -921,7 +934,7 @@ class CourseController extends Controller
 
             $response = [
                 'success' => true,
-                'message' => 'Teacher assigned successfully',
+                'message' => 'Teacher assigned successfully! Announcement has been generated.',
                 'data' => [
                     'subject' => [
                         'id' => $class->id,
@@ -1968,8 +1981,29 @@ class CourseController extends Controller
                 DB::commit();
                 Log::info("🎉 SUCCESS: Created class with " . count($createdClasses) . " subjects");
 
+                // ✅ CREATE ANNOUNCEMENT FOR REGULAR CLASS
+                try {
+                    Log::info("📢 Creating announcement for regular class");
+                    $firstClass = $createdClasses[0];
+                    
+                    $announcementData = [
+                        'id' => $firstClass->id,
+                        'type' => 'regular',
+                        'grade' => $firstClass->grade,
+                        'name' => $firstClass->name,
+                        'category' => null,
+                        'subject_count' => count($createdClasses),
+                    ];
+
+                    $this->createCourseAnnouncement($announcementData);
+                    Log::info("✅ SUCCESS: Announcement created for regular class");
+                    
+                } catch (\Exception $announcementError) {
+                    Log::error("❌ ANNOUNCEMENT ERROR: " . $announcementError->getMessage());
+                    // Don't throw error - course creation should still succeed even if announcement fails
+                }
+
                 // Return the first class as representative
-                $firstClass = $createdClasses[0];
                 return response()->json([
                     'success' => true,
                     'message' => 'Class created successfully with ' . count($createdClasses) . ' subjects',
@@ -2026,6 +2060,26 @@ class CourseController extends Controller
                 DB::commit();
                 Log::info("✅ SUCCESS: Created other course: " . $class->name . " (ID: {$class->id})");
 
+                // ✅ CREATE ANNOUNCEMENT FOR OTHER COURSE
+                try {
+                    Log::info("📢 Creating announcement for other course");
+                    
+                    $announcementData = [
+                        'id' => $class->id,
+                        'type' => 'other',
+                        'grade' => null,
+                        'name' => $class->name,
+                        'category' => $class->category,
+                    ];
+
+                    $this->createCourseAnnouncement($announcementData);
+                    Log::info("✅ SUCCESS: Announcement created for other course");
+                    
+                } catch (\Exception $announcementError) {
+                    Log::error("❌ ANNOUNCEMENT ERROR: " . $announcementError->getMessage());
+                    // Don't throw error - course creation should still succeed even if announcement fails
+                }
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Course created successfully',
@@ -2059,6 +2113,90 @@ class CourseController extends Controller
                 ]
             ], 500);
         }
+    }
+
+    /**
+     * Create automatic announcement for new course
+     */
+    private function createCourseAnnouncement($courseData)
+    {
+        try {
+            Log::info("📢 Creating course announcement for:", $courseData);
+            
+            // Generate Bengali date
+            $bengaliDate = $this->getBengaliDate();
+
+            $announcement = new \App\Models\Announcement();
+            
+            if ($courseData['type'] === 'regular') {
+                // Regular class announcement
+                $subjectCount = $courseData['subject_count'] ?? 1;
+                $subjectText = $subjectCount > 1 ? "with {$subjectCount} subjects" : "";
+                
+                $announcement->title = "New Class Alert: Class {$courseData['grade']} - {$courseData['name']} is Created {$subjectText}";
+                $announcement->title_bn = "নতুন ক্লাস সতর্কতা: ক্লাস {$courseData['grade']} - {$courseData['name']} তৈরি করা হয়েছে";
+                $announcement->content = "A new class has been created: Class {$courseData['grade']} - {$courseData['name']}. This class includes {$subjectCount} subjects and is now available for enrollment.";
+                $announcement->content_bn = "একটি নতুন ক্লাস তৈরি করা হয়েছে: ক্লাস {$courseData['grade']} - {$courseData['name']}। এই ক্লাসে {$subjectCount}টি বিষয় অন্তর্ভুক্ত রয়েছে এবং এখন ভর্তির জন্য উপলব্ধ।";
+            } else {
+                // Skill-based course announcement
+                $categoryName = $this->getCategoryName($courseData['category']);
+                $announcement->title = "New Course Alert: {$courseData['name']} - {$categoryName} Course is Created";
+                $announcement->title_bn = "নতুন কোর্স সতর্কতা: {$courseData['name']} - {$categoryName} কোর্স তৈরি করা হয়েছে";
+                $announcement->content = "A new skill-based course has been created: {$courseData['name']}. This {$categoryName} course is now available for enrollment.";
+                $announcement->content_bn = "একটি নতুন দক্ষতা-ভিত্তিক কোর্স তৈরি করা হয়েছে: {$courseData['name']}। এই {$categoryName} কোর্স এখন ভর্তির জন্য উপলব্ধ।";
+            }
+
+            $announcement->date = now()->toDateString();
+            $announcement->date_bn = $bengaliDate;
+            $announcement->type = 'auto_course'; // Auto-generated for course creation
+            $announcement->related_id = $courseData['id'] ?? null;
+            $announcement->related_type = 'course';
+            $announcement->is_active = true;
+
+            $announcement->save();
+
+            Log::info("✅ Announcement created successfully with ID: " . $announcement->id);
+            return $announcement;
+
+        } catch (\Exception $e) {
+            Log::error("❌ Failed to create announcement: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Get Bengali date
+     */
+    private function getBengaliDate()
+    {
+        $englishMonths = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        $bengaliMonths = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+        
+        $date = now();
+        $bengaliMonth = $bengaliMonths[$date->month - 1];
+        
+        return $date->format('d') . ' ' . $bengaliMonth . ' ' . $date->format('Y');
+    }
+
+    /**
+     * Get category name for display
+     */
+    private function getCategoryName($category)
+    {
+        $categories = [
+            'life_skills' => 'Life Skills',
+            'spoken_english' => 'Spoken English',
+            'computer_basics' => 'Computer Basics',
+            'art_craft' => 'Art & Craft',
+            'music' => 'Music',
+            'sports' => 'Sports',
+            'dance' => 'Dance',
+            'yoga' => 'Yoga & Meditation',
+            'career_counseling' => 'Career Counseling',
+            'other' => 'Other'
+        ];
+
+        return $categories[$category] ?? 'Skill';
     }
 
     private function processSubjectImageSimple($request, $subjectIndex)
@@ -2458,5 +2596,287 @@ class CourseController extends Controller
         ];
 
         return $descriptions[$subjectName] ?? 'Comprehensive learning materials and expert instruction';
+    }
+
+            /**
+     * Enroll student in a course
+     */
+    public function enrollStudent(Request $request, $courseId)
+    {
+        DB::beginTransaction();
+        try {
+            $user = Auth::user();
+            
+            Log::info("🎯 Starting course enrollment", [
+                'user_id' => $user ? $user->id : 'null',
+                'course_id' => $courseId,
+                'user_role' => $user ? $user->role : 'null'
+            ]);
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Authentication required. Please log in to enroll in courses.'
+                ], 401);
+            }
+
+            // Check if user is a student
+            if ($user->role !== 'student') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only students can enroll in courses'
+                ], 403);
+            }
+
+            // Find the student record
+            $student = Student::where('user_id', $user->id)->first();
+            
+            if (!$student) {
+                Log::error('❌ Student profile not found', ['user_id' => $user->id]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Student profile not found. Please complete your student profile.'
+                ], 404);
+            }
+
+            // Find the course
+            $course = ClassModel::find($courseId);
+            
+            if (!$course) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Course not found'
+                ], 404);
+            }
+
+            // Check if course is active
+            if ($course->status !== 'active') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This course is not available for enrollment'
+                ], 400);
+            }
+
+            // Check if student is already enrolled
+            $isEnrolled = $course->students()->where('student_id', $student->id)->exists();
+            
+            if ($isEnrolled) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You are already enrolled in this course'
+                ], 400);
+            }
+
+            // Check capacity
+            $currentEnrollment = $course->students()->count();
+            if ($course->capacity && $currentEnrollment >= $course->capacity) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This course has reached maximum capacity'
+                ], 400);
+            }
+
+            // Additional check for regular classes - ensure student is in correct grade
+            if ($course->type === 'regular' && $student->academic_class_id) {
+                $academicClass = AcademicClass::find($student->academic_class_id);
+                if ($academicClass && $course->grade != $academicClass->grade) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'This course is not available for your grade level'
+                    ], 400);
+                }
+            }
+
+            // Enroll the student
+            $course->students()->attach($student->id, [
+                'progress' => 0,
+                'last_accessed' => now(),
+                'last_activity_type' => 'enrollment',
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
+            DB::commit();
+
+            Log::info("✅ Student enrolled successfully", [
+                'student_id' => $student->id,
+                'course_id' => $courseId,
+                'user_id' => $user->id,
+                'course_name' => $course->name,
+                'course_type' => $course->type
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Successfully enrolled in the course!',
+                'data' => [
+                    'course_id' => $course->id,
+                    'course_name' => $course->name,
+                    'course_type' => $course->type,
+                    'enrollment_date' => now()->toDateString(),
+                    'progress' => 0
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('❌ Enrollment error: ' . $e->getMessage(), [
+                'course_id' => $courseId,
+                'user_id' => Auth::id(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to enroll in course: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+            /**
+     * Unenroll student from a course
+     */
+    public function unenrollStudent(Request $request, $courseId)
+    {
+        DB::beginTransaction();
+        try {
+            $user = Auth::user();
+            
+            if (!$user || $user->role !== 'student') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Authentication required'
+                ], 401);
+            }
+
+            $student = Student::where('user_id', $user->id)->first();
+            
+            if (!$student) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Student profile not found'
+                ], 404);
+            }
+
+            $course = ClassModel::find($courseId);
+            
+            if (!$course) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Course not found'
+                ], 404);
+            }
+
+            // Check if student is enrolled
+            $isEnrolled = $course->students()->where('student_id', $student->id)->exists();
+            
+            if (!$isEnrolled) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You are not enrolled in this course'
+                ], 400);
+            }
+
+            // Unenroll the student
+            $course->students()->detach($student->id);
+
+            DB::commit();
+
+            Log::info("✅ Student unenrolled successfully", [
+                'student_id' => $student->id,
+                'course_id' => $courseId
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Successfully unenrolled from the course'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('❌ Unenrollment error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to unenroll from course: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Add this method to your CourseController.php
+    public function getCourseVideo($courseId)
+    {
+        try {
+            Log::info("🎬 Fetching video for course ID: {$courseId}");
+
+            $course = ClassModel::find($courseId);
+            
+            if (!$course) {
+                Log::warning("❌ Course not found: {$courseId}");
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Course not found'
+                ], 404);
+            }
+
+            // Get video resources for this course/class
+            $video = Resource::where('class_id', $courseId)
+                ->where('type', 'video')
+                ->where('status', 'active')
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            Log::info("🔍 Video query result:", [
+                'course_id' => $courseId,
+                'video_found' => $video ? 'Yes' : 'No',
+                'video_id' => $video ? $video->id : null
+            ]);
+
+            if (!$video) {
+                Log::info("ℹ️ No video found for course: {$courseId}");
+                return response()->json([
+                    'success' => true,
+                    'message' => 'No video found for this course',
+                    'data' => null
+                ]);
+            }
+
+            // Format video data using Resource model accessors
+            $videoData = [
+                'id' => $video->id,
+                'title' => $video->title,
+                'description' => $video->description,
+                'type' => $video->type,
+                'thumbnail' => $video->thumbnail_url,
+                'file_url' => $video->file_url,
+                'is_youtube' => $video->is_youtube,
+                'youtube_video_id' => $video->youtube_video_id,
+                'youtube_embed_url' => $video->youtube_embed_url,
+                'duration' => '15:30',
+                'views' => '250',
+                'created_at' => $video->created_at->format('Y-m-d H:i:s'),
+            ];
+
+            Log::info("✅ Video data prepared:", [
+                'title' => $videoData['title'],
+                'is_youtube' => $videoData['is_youtube'],
+                'has_thumbnail' => !empty($videoData['thumbnail'])
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $videoData
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('❌ Error fetching course video: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch course video: ' . $e->getMessage(),
+                'data' => null
+            ], 500);
+        }
     }
 }

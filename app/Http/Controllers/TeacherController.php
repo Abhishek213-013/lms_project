@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
-
+use App\Http\Controllers\Admin\AnnouncementController;
 class TeacherController extends Controller
 {
     // ============ INERTIA PAGE METHODS ============
@@ -322,6 +322,7 @@ class TeacherController extends Controller
         ]);
     }
 
+    
     /**
      * Display class assignments page
      */
@@ -978,6 +979,17 @@ class TeacherController extends Controller
 
                 Log::info("✅ [UPLOAD] Resource created successfully: ID {$resource->id}");
 
+                // ✅ CREATE AUTOMATIC ANNOUNCEMENT FOR RESOURCE UPLOAD
+                $announcementData = [
+                    'resource_id' => $resource->id,
+                    'teacher_id' => $id,
+                    'class_id' => $request->assigned_class,
+                    'uploaded_at' => now()
+                ];
+
+                AnnouncementController::createResourceAnnouncement($announcementData);
+                Log::info("📢 [ANNOUNCEMENT] Resource upload announcement created");
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Video link uploaded successfully',
@@ -1142,6 +1154,8 @@ class TeacherController extends Controller
         }
     }
 
+
+
     /**
      * Update download count
      */
@@ -1235,74 +1249,75 @@ class TeacherController extends Controller
     /**
      * Get teacher resources
      */
-    public function getTeacherResources($id)
+    public function getTeacherResources()
     {
         try {
-            Log::info("Fetching resources for teacher ID: {$id}");
+            $teacherId = Auth::id();
             
-            $teacher = User::find($id);
-            if (!$teacher || $teacher->role !== 'teacher') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Teacher not found',
-                    'data' => []
-                ], 404);
-            }
-
-            $resources = Resource::where('teacher_id', $id)
-                ->with('class')
+            $resources = Resource::where('teacher_id', $teacherId)
+                ->with(['teacher:id,name,email', 'class:id,name'])
                 ->orderBy('created_at', 'desc')
-                ->limit(10)
                 ->get()
                 ->map(function ($resource) {
+                    $fileInfo = [];
+                    
+                    if ($resource->file_path) {
+                        try {
+                            $fileSize = Storage::disk('public')->size($resource->file_path);
+                            $fileInfo['size'] = $this->formatFileSize($fileSize);
+                        } catch (\Exception $e) {
+                            $fileInfo['size'] = 'Unknown';
+                        }
+                    }
+
                     return [
                         'id' => $resource->id,
                         'title' => $resource->title,
                         'type' => $resource->type,
                         'description' => $resource->description,
-                        'class' => $resource->class ? $resource->class->name : 'General',
-                        'uploaded_at' => $resource->created_at->format('Y-m-d'),
-                        'status' => $resource->status
+                        'file_info' => $fileInfo,
+                        'file_path' => $resource->file_path,
+                        'thumbnail_path' => $resource->thumbnail_path,
+                        'download_count' => $resource->download_count ?? 0,
+                        'created_at' => $resource->created_at->toISOString(),
+                        'teacher' => $resource->teacher,
+                        'class' => $resource->class ? $resource->class->name : 'General'
                     ];
                 });
 
-            Log::info("Found {$resources->count()} resources for teacher ID: {$id}");
-            
             return response()->json([
                 'success' => true,
                 'data' => $resources
             ]);
-            
+
         } catch (\Exception $e) {
-            Log::error('Error in getTeacherResources: ' . $e->getMessage());
-            
-            $mockResources = $this->getMockResources();
+            Log::error('Error fetching teacher resources: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch resources, using mock data',
-                'data' => $mockResources
-            ]);
+                'message' => 'Failed to fetch resources'
+            ], 500);
         }
     }
 
-    /**
-     * Get teacher classes
+        /**
+     * Get teacher classes - UPDATED: Works for current authenticated teacher
      */
-    public function getTeacherClasses($id)
+    public function getTeacherClasses(Request $request)
     {
         try {
-            Log::info("Fetching classes for teacher ID: {$id}");
+            $teacherId = Auth::id();
+            Log::info("Fetching classes for authenticated teacher ID: {$teacherId}");
             
-            $teacher = User::find($id);
+            $teacher = User::find($teacherId);
             if (!$teacher || $teacher->role !== 'teacher') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Teacher not found',
+                    'message' => 'Teacher not found or user is not a teacher',
                     'data' => []
                 ], 404);
             }
 
-            $classes = ClassModel::where('teacher_id', $id)
+            $classes = ClassModel::where('teacher_id', $teacherId)
                 ->withCount('students')
                 ->get()
                 ->map(function ($class) {
@@ -1318,11 +1333,12 @@ class TeacherController extends Controller
                         'description' => $class->description,
                         'schedule' => $class->schedule ? 'Custom Schedule' : 'Not Scheduled',
                         'type' => $class->type,
-                        'category' => $class->category
+                        'category' => $class->category,
+                        'last_activity' => $class->updated_at ?? $class->created_at
                     ];
                 });
 
-            Log::info("Found {$classes->count()} classes for teacher ID: {$id}");
+            Log::info("Found {$classes->count()} classes for teacher ID: {$teacherId}");
             
             return response()->json([
                 'success' => true,
@@ -2117,7 +2133,7 @@ class TeacherController extends Controller
 
     // ============ NEW METHODS FOR SIDEBAR NAVIGATION ============
 
-    /**
+        /**
      * Display teacher classes list
      */
     public function classesList(): Response

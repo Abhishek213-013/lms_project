@@ -3,6 +3,69 @@
     <div class="home-page">
       <transition name="fade" mode="out-in">
         <div :key="contentRefreshKey">
+          <!-- Announcements Section -->
+          <section class="announcements-section" v-if="announcements.length > 0">
+            <div class="container-fluid">
+              <div class="announcements-container">
+                <!-- Announcement Label -->
+                <div class="announcement-label">
+                  <i class="fas fa-bullhorn icon-fixed"></i>
+                  <span>{{ t('Announcements') }}</span>
+                </div>
+                
+                <!-- Announcements Slider -->
+                <div class="announcements-slider">
+                  <div class="announcements-track" :style="trackStyle">
+                    <div 
+                      v-for="(announcement, index) in announcements" 
+                      :key="announcement.id"
+                      class="announcement-item"
+                      :class="{ active: currentAnnouncementIndex === index }"
+                    >
+                      <div class="announcement-content">
+                        <!-- Announcement Image -->
+                        <div class="announcement-image" v-if="announcement.image">
+                          <img 
+                            :src="`/storage/${announcement.image}`" 
+                            :alt="announcement.title"
+                            class="announcement-img"
+                            @error="handleAnnouncementImageError"
+                          >
+                        </div>
+                        
+                        <!-- Announcement Text -->
+                        <div class="announcement-text">
+                          <h4 class="announcement-title">
+                            {{ currentLanguage === 'bn' && announcement.title_bn ? announcement.title_bn : announcement.title }}
+                          </h4>
+                          <p class="announcement-description">
+                            {{ currentLanguage === 'bn' && announcement.content_bn ? truncateContent(announcement.content_bn, 80) : truncateContent(announcement.content, 80) }}
+                          </p>
+                          <span class="announcement-date">
+                            {{ formatAnnouncementDate(announcement.date) }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Navigation Controls - Only Indicators -->
+                <div class="announcement-controls">
+                  <div class="announcement-indicators">
+                    <span 
+                      v-for="(announcement, index) in announcements" 
+                      :key="announcement.id"
+                      class="indicator"
+                      :class="{ active: currentAnnouncementIndex === index }"
+                      @click="goToAnnouncement(index)"
+                    ></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
           <!-- Hero Section -->
           <section 
             class="hero-section"
@@ -268,6 +331,10 @@ const props = defineProps({
   currentLanguage: {
     type: String,
     default: 'bn'
+  },
+  announcements: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -279,12 +346,30 @@ const fallbackImage = ref(null)
 const contentRefreshKey = ref(0)
 const isDevelopment = ref(false)
 
+// Announcements related reactive data
+const currentAnnouncementIndex = ref(0)
+const autoSlideInterval = ref(null)
+
 // Local content state for smooth updates
 const localContent = ref({})
 
 // Initialize local content with props
 onMounted(() => {
   localContent.value = { ...props.content }
+  
+  // Start auto-slide for announcements if there are multiple
+  if (props.announcements.length > 1) {
+    startAutoSlide()
+  }
+})
+
+// Computed property for announcements track style
+const trackStyle = computed(() => {
+  if (props.announcements.length === 0) return {}
+  
+  return {
+    transform: `translateX(-${currentAnnouncementIndex.value * 100}%)`
+  }
 })
 
 // Enhanced computed properties
@@ -308,6 +393,64 @@ const heroSectionStyle = computed(() => {
   }
 })
 
+// Announcements methods
+const nextAnnouncement = () => {
+  if (currentAnnouncementIndex.value < props.announcements.length - 1) {
+    currentAnnouncementIndex.value++
+  } else {
+    currentAnnouncementIndex.value = 0
+  }
+  resetAutoSlide()
+}
+
+const prevAnnouncement = () => {
+  if (currentAnnouncementIndex.value > 0) {
+    currentAnnouncementIndex.value--
+  } else {
+    currentAnnouncementIndex.value = props.announcements.length - 1
+  }
+  resetAutoSlide()
+}
+
+const goToAnnouncement = (index) => {
+  currentAnnouncementIndex.value = index
+  resetAutoSlide()
+}
+
+const startAutoSlide = () => {
+  if (props.announcements.length > 1) {
+    autoSlideInterval.value = setInterval(() => {
+      nextAnnouncement()
+    }, 5000) // Change announcement every 5 seconds
+  }
+}
+
+const resetAutoSlide = () => {
+  if (autoSlideInterval.value) {
+    clearInterval(autoSlideInterval.value)
+    startAutoSlide()
+  }
+}
+
+const formatAnnouncementDate = (dateString) => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  return date.toLocaleDateString(currentLanguage.value, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
+}
+
+const truncateContent = (content, length = 50) => {
+  if (!content) return ''
+  return content.length > length ? content.substring(0, length) + '...' : content
+}
+
+const handleAnnouncementImageError = (event) => {
+  console.warn('Announcement image failed to load:', event.target.src)
+  event.target.style.display = 'none'
+}
 
 const handleLanguageChange = async (event) => {
   const newLanguage = event.detail.language;
@@ -395,6 +538,7 @@ watch(() => props.currentLanguage, (newLang) => {
     currentLanguage.value = newLang;
   }
 });
+
 // In your Home.vue script section, add this watcher:
 watch(() => props.currentLanguage, (newPropsLanguage, oldPropsLanguage) => {
   console.log('🔄 Props language changed:', { from: oldPropsLanguage, to: newPropsLanguage });
@@ -420,11 +564,13 @@ watch(() => props.currentLanguage, (newLang) => {
     currentLanguage.value = newLang;
   }
 }, { immediate: true });
+
 // Watch translation version for reactivity
 watch(translationVersion, () => {
   console.log('🔄 Translation version changed, refreshing content');
   contentRefreshKey.value++;
 });
+
 watch(() => props.currentLanguage, (newPropsLanguage) => {
   console.log('🔄 Props language received:', newPropsLanguage);
   
@@ -471,6 +617,10 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('themeChanged', handleThemeChange)
   window.removeEventListener('languageChanged', handleLanguageChange)
+  
+  if (autoSlideInterval.value) {
+    clearInterval(autoSlideInterval.value)
+  }
 })
 
 // Image handling methods
@@ -739,6 +889,240 @@ const getEducation = (instructor) => {
 
 <style scoped>
 /* ==================== */
+/* ANNOUNCEMENTS SECTION STYLES - TRANSPARENT */
+/* ==================== */
+.announcements-section {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.announcements-container {
+  display: flex;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+  gap: 20px;
+}
+
+.announcement-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--primary-color);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.announcement-label i {
+  font-size: 0.8rem;
+}
+
+.announcements-slider {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.announcements-track {
+  display: flex;
+  transition: transform 0.3s ease;
+  width: 100%;
+}
+
+.announcement-item {
+  flex: 0 0 100%;
+  min-width: 100%;
+  padding: 0 10px;
+}
+
+.announcement-content {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-height: 60px;
+}
+
+.announcement-image {
+  flex-shrink: 0;
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.announcement-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.announcement-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.announcement-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.announcement-description {
+  font-size: 0.85rem;
+  margin: 0 0 4px 0;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.announcement-date {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.announcement-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.announcement-indicators {
+  display: flex;
+  gap: 6px;
+}
+
+.indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border-color);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.indicator.active {
+  background: var(--primary-color);
+  transform: scale(1.2);
+}
+
+.indicator:hover {
+  background: var(--primary-hover);
+}
+
+/* ==================== */
+/* RESPONSIVE DESIGN FOR ANNOUNCEMENTS */
+/* ==================== */
+@media (max-width: 768px) {
+  .announcements-container {
+    flex-direction: column;
+    gap: 12px;
+    padding: 0 10px;
+  }
+  
+  .announcement-label {
+    align-self: flex-start;
+    font-size: 0.8rem;
+    padding: 6px 12px;
+  }
+  
+  .announcement-content {
+    gap: 12px;
+    min-height: 50px;
+  }
+  
+  .announcement-image {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .announcement-title {
+    font-size: 0.9rem;
+  }
+  
+  .announcement-description {
+    font-size: 0.8rem;
+    -webkit-line-clamp: 1;
+  }
+  
+  .announcement-controls {
+    align-self: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .announcements-section {
+    padding: 8px 0;
+  }
+  
+  .announcement-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+  }
+  
+  .announcement-image {
+    align-self: center;
+  }
+  
+  .announcement-text {
+    text-align: center;
+  }
+}
+
+/* BENGALI LANGUAGE ADJUSTMENTS FOR ANNOUNCEMENTS */
+.bn-lang .announcement-title {
+  font-size: 0.95rem !important;
+  line-height: 1.4 !important;
+}
+
+.bn-lang .announcement-description {
+  font-size: 0.8rem !important;
+  line-height: 1.4 !important;
+}
+
+.bn-lang .announcement-label {
+  font-size: 0.75rem !important;
+}
+
+/* Dark theme adjustments */
+.dark-theme .announcements-section {
+  border-bottom-color: var(--border-dark);
+}
+
+.dark-theme .announcement-image {
+  background: var(--bg-dark-secondary);
+  border-color: var(--border-dark);
+}
+
+.dark-theme .announcement-title {
+  color: var(--text-dark-primary);
+}
+
+.dark-theme .announcement-description {
+  color: var(--text-dark-secondary);
+}
+
+.dark-theme .announcement-date {
+  color: var(--text-dark-muted);
+}
+
+/* ==================== */
 /* UPDATED HERO SECTION STYLES - MOBILE FIRST */
 /* ==================== */
 .hero-section {
@@ -758,9 +1142,9 @@ const getEducation = (instructor) => {
 }
 
 .hero-title {
-  font-size: 1.75rem; /* Smaller font for mobile */
+  font-size: 2rem; /* Smaller font for mobile */
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1.5;
   margin-bottom: 1rem;
   color: var(--text-primary);
   word-wrap: break-word;
@@ -1013,9 +1397,9 @@ const getEducation = (instructor) => {
 /* BENGALI FONT SIZE ADJUSTMENTS */
 /* ==================== */
 .bn-lang .hero-title {
-  font-size: 1.4rem !important;
+  font-size: 2.8rem !important;
   line-height: 1.5 !important;
-  font-weight: 700 !important;
+  font-weight: 1000 !important;
 }
 
 .bn-lang .hero-subtitle {
@@ -1024,8 +1408,9 @@ const getEducation = (instructor) => {
 }
 
 .bn-lang .section-title {
-  font-size: 1rem !important;
+  font-size: 2.2rem !important;
   line-height: 1.3 !important;
+  font-weight: 800 !important;
 }
 
 .bn-lang .section-subtitle {

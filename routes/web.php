@@ -1,5 +1,5 @@
 <?php
-
+use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Http\Controllers\AuthController;
@@ -22,8 +22,8 @@ use App\Http\Controllers\MyCoursesController;
 use App\Http\Controllers\LearningProgressController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\InstructorController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CertificateController;
+use App\Http\Controllers\Admin\AnnouncementController;
 
 // ============ PUBLIC ROUTES ============
 Route::post('/switch-language-about', [FrontendController::class, 'switchLanguageAbout']);
@@ -78,6 +78,10 @@ Route::prefix('api')->middleware('web')->group(function () {
     Route::get('/content/home/{language?}', [ContentController::class, 'getHomeContent'])->name('api.content.home');
     Route::get('/content/{language?}', [ContentController::class, 'getAllContent'])->name('api.content.all');
     
+    // Announcement API Routes (Public - for frontend display)
+    Route::get('/public/announcements', [AnnouncementController::class, 'getPublicAnnouncements'])->name('api.public.announcements');
+    Route::get('/public/announcements/active', [AnnouncementController::class, 'getActiveAnnouncements'])->name('api.public.announcements.active');
+    
     // Language API Routes - FIXED: Added the correct API endpoint
     Route::post('/switch-language', [FrontendController::class, 'switchLanguageApi'])->name('api.switch.language');
     Route::get('/current-language', function() {
@@ -108,6 +112,69 @@ Route::prefix('api')->middleware('web')->group(function () {
     
     // Student Profile Public Route (for header avatar)
     Route::get('/student-profile', [StudentProfileController::class, 'getStudentProfileForHeader'])->name('api.student-profile.header');
+    
+    // Course Enrollment Public Route - ADDED: Allow guest users to access enrollment
+    Route::post('/courses/{courseId}/enroll', [CourseController::class, 'enrollStudent'])->name('api.courses.enroll');
+    
+    // ============ ADDED: COURSE VIDEO PUBLIC ROUTE ============
+   // In the Public API Routes section, replace the video route with:
+    Route::get('/courses/{courseId}/video', function ($courseId) {
+        try {
+            $course = \App\Models\ClassModel::find($courseId);
+            
+            if (!$course) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Course not found'
+                ], 404);
+            }
+
+            // Get video resources for this course/class
+            $video = \App\Models\Resource::where('class_id', $courseId)
+                ->where('type', 'video')
+                ->where('status', 'active')
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            if (!$video) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No video found for this course',
+                    'data' => null
+                ]);
+            }
+
+            // Format video data using Resource model accessors
+            $videoData = [
+                'id' => $video->id,
+                'title' => $video->title,
+                'description' => $video->description,
+                'type' => $video->type,
+                'thumbnail' => $video->thumbnail_url,
+                'file_url' => $video->file_url,
+                'is_youtube' => $video->is_youtube,
+                'youtube_video_id' => $video->youtube_video_id,
+                'youtube_embed_url' => $video->youtube_embed_url,
+                'duration' => '15:30',
+                'views' => '250',
+                'created_at' => $video->created_at->format('Y-m-d H:i:s'),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $videoData
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error fetching course video: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch course video',
+                'data' => null
+            ], 500);
+        }
+    })->name('api.courses.video');
     
     // Health check
     Route::get('/health', function () {
@@ -157,12 +224,24 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/profile', [StudentController::class, 'profile'])->name('student.profile');
         Route::get('/progress', [StudentController::class, 'progress'])->name('student.progress');
         Route::get('/settings', [StudentController::class, 'settings'])->name('student.settings');
+        
+        // Learning routes for enrolled students
+        Route::get('/learning/{courseId}', [StudentController::class, 'learning'])->name('student.learning');
     });
 
     // ============ ADMIN & SUPER ADMIN ROUTES ============
     Route::middleware(['role:admin,super_admin'])->group(function () {
         // Admin Dashboard
         Route::get('/admin', [AdminController::class, 'admin'])->name('admin');
+        
+        // ============ ANNOUNCEMENT MANAGEMENT ROUTES ============
+        Route::prefix('/admin/announcements')->group(function () {
+            Route::get('/', [AnnouncementController::class, 'index'])->name('admin.announcements');
+            Route::post('/', [AnnouncementController::class, 'store'])->name('admin.announcements.store');
+            Route::post('/{announcement}', [AnnouncementController::class, 'update'])->name('admin.announcements.update');
+            Route::delete('/{announcement}', [AnnouncementController::class, 'destroy'])->name('admin.announcements.destroy');
+            Route::post('/{announcement}/toggle-status', [AnnouncementController::class, 'toggleStatus'])->name('admin.announcements.toggle-status');
+        });
         
         // Super Admin Dashboard (only for super admins)
         Route::middleware(['role:super_admin'])->group(function () {
@@ -264,13 +343,17 @@ Route::middleware(['auth'])->group(function () {
             // All Classes List
             Route::get('/', [TeacherController::class, 'classesList'])->name('teacher.classes');
             
-            // Class Schedule
-            Route::get('/schedule', [ScheduleController::class, 'teacherSchedule'])->name('teacher.class-schedule');
+            // Class Schedule - FIXED: This route now points to TeacherController instead of ScheduleController
+            Route::get('/schedule', [TeacherController::class, 'classesList'])->name('teacher.class-schedule');
             
             // Student Roster
             Route::get('/students', [TeacherController::class, 'studentRoster'])->name('teacher.student-roster');
         });
 
+        // Resources routes
+        Route::get('/resources', [TeacherController::class, 'teacherResources'])->name('teacher.resources');
+        Route::get('/resources/shared', [TeacherController::class, 'sharedResources'])->name('teacher.shared-resources');
+        
         // ============ RESOURCES SECTION ============
         Route::prefix('/resources')->group(function () {
             // My Resources List
@@ -349,6 +432,16 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/remove-image', [ContentController::class, 'removeImage'])->name('api.content.remove-image');
         });
 
+        // Announcement API Routes (Protected - for admin management)
+        Route::prefix('announcements')->group(function () {
+            Route::get('/', [AnnouncementController::class, 'getAnnouncements'])->name('api.announcements');
+            Route::post('/', [AnnouncementController::class, 'store'])->name('api.announcements.store');
+            Route::put('/{announcement}', [AnnouncementController::class, 'update'])->name('api.announcements.update');
+            Route::delete('/{announcement}', [AnnouncementController::class, 'destroy'])->name('api.announcements.destroy');
+            Route::post('/{announcement}/toggle-status', [AnnouncementController::class, 'toggleStatus'])->name('api.announcements.toggle-status');
+            Route::post('/{announcement}/upload-image', [AnnouncementController::class, 'uploadImage'])->name('api.announcements.upload-image');
+        });
+
         // User Management API Routes
         Route::prefix('users')->group(function () {
             Route::get('/profile', [UserController::class, 'getProfile']);
@@ -388,7 +481,10 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{courseId}/teachers', [CourseController::class, 'getCourseTeachers']);
             Route::post('/{courseId}/assign-teacher', [CourseController::class, 'assignTeacherToCourse']);
             Route::delete('/{courseId}/teacher/{teacherId}', [CourseController::class, 'removeTeacherFromCourse']);
-            Route::post('/{courseId}/enroll', [CourseController::class, 'enrollStudent']);
+            
+            // UPDATED: Course enrollment route - moved to public section above for guest access
+            // Route::post('/{courseId}/enroll', [CourseController::class, 'enrollStudent']);
+            
             Route::post('/{courseId}/unenroll', [CourseController::class, 'unenrollStudent']);
             Route::get('/user/my-courses', [CourseController::class, 'getMyCourses']);
             Route::get('/{courseId}/subjects', [CourseController::class, 'getCourseSubjects']);
@@ -402,6 +498,9 @@ Route::middleware(['auth'])->group(function () {
             
             // Search classes route
             Route::get('/search-classes', [CourseController::class, 'searchClasses'])->name('api.courses.search-classes');
+            
+            // ============ ADDED: COURSE VIDEO PROTECTED ROUTE ============
+            Route::get('/{courseId}/video', [CourseController::class, 'getCourseVideo'])->name('api.courses.video.protected');
         });
 
         // Teacher API Routes - FIXED: Changed from 'teachers' to 'teacher' prefix
@@ -413,6 +512,10 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{id}', [TeacherController::class, 'getTeacher']);
             Route::get('/{id}/classes', [TeacherController::class, 'getTeacherClasses']);
             Route::get('/{id}/resources', [TeacherController::class, 'getTeacherResources']);
+            
+            // ADDED: The missing route for teacher resources
+            Route::get('/resources/all', [TeacherController::class, 'getTeacherResources'])->name('api.teacher.resources.all');
+            
             Route::post('/{id}/resources', [TeacherController::class, 'uploadResource'])->name('teacher.upload.resource');
             
             // ADDED: Teacher profile update route
@@ -591,6 +694,9 @@ Route::middleware(['auth'])->group(function () {
             
             // Content image upload route
             Route::post('/content-image', [ContentManagementController::class, 'uploadImage'])->name('api.upload.content-image');
+            
+            // Announcement image upload route
+            Route::post('/announcement-image', [AnnouncementController::class, 'uploadImage'])->name('api.upload.announcement-image');
         });
 
         // Dashboard and Analytics API Routes
@@ -610,6 +716,12 @@ Route::middleware(['auth'])->group(function () {
             // Student profile picture routes
             Route::post('/student/upload', [StudentProfileController::class, 'uploadAvatar'])->name('api.profile-picture.student.upload');
         });
+
+        // ============ ADDED: FIXED TEACHER CLASSES ROUTE ============
+        Route::get('/courses/teacher/classes', [TeacherController::class, 'getTeacherClasses'])->name('api.courses.teacher.classes');
+
+        // ============ ADDED: THE MISSING TEACHER RESOURCES ROUTE ============
+        Route::get('/teacher/resources', [TeacherController::class, 'getAllResources'])->name('api.teacher.resources');
     });
 });
 
@@ -644,6 +756,17 @@ Route::get('/storage/content-images/{filename}', function ($filename) {
     
     return response()->file($path);
 })->name('storage.content-images');
+
+// Announcement images public access route
+Route::get('/storage/announcements/{filename}', function ($filename) {
+    $path = storage_path('app/public/announcements/' . $filename);
+    
+    if (!file_exists($path)) {
+        abort(404);
+    }
+    
+    return response()->file($path);
+})->name('storage.announcements');
 
 // PROFILE PICTURES PUBLIC ACCESS ROUTE
 Route::get('/storage/profile-pictures/{filename}', function ($filename) {

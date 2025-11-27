@@ -6,6 +6,7 @@ use App\Models\ClassModel;
 use App\Models\User;
 use App\Models\Student;
 use App\Models\Resource;
+use App\Models\Announcement; // ADD THIS IMPORT
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,12 @@ class FrontendController extends Controller
      */
     public function home(Request $request): Response
     {
+
+        $activeAnnouncements = Announcement::where('is_active', true)
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
         // SIMPLE: Get language from session, default to Bengali
         $language = session('lang', 'bn');
         
@@ -40,6 +47,30 @@ class FrontendController extends Controller
             'hero_title' => $content['home_hero_title'] ?? 'Not found',
             'hero_subtitle' => $content['home_hero_subtitle'] ?? 'Not found'
         ]);
+
+        // ============ GET ACTIVE ANNOUNCEMENTS ============
+        $announcements = Announcement::where('is_active', true)
+            ->orderBy('date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function($announcement) use ($language) {
+                return [
+                    'id' => $announcement->id,
+                    'title' => $announcement->title,
+                    'title_bn' => $announcement->title_bn,
+                    'content' => $announcement->content,
+                    'content_bn' => $announcement->content_bn,
+                    'image' => $announcement->image,
+                    'date' => $announcement->date,
+                    'date_bn' => $announcement->date_bn,
+                    'is_active' => $announcement->is_active,
+                    'created_at' => $announcement->created_at,
+                    'updated_at' => $announcement->updated_at,
+                ];
+            });
+
+        Log::info("📢 Loaded {$announcements->count()} active announcements");
 
         // Rest of your method...
         $featuredCourses = ClassModel::where('status', 'active')
@@ -122,6 +153,7 @@ class FrontendController extends Controller
             'instructors' => $instructors,
             'stats' => $stats,
             'testimonials' => $this->getTestimonials($language),
+            'announcements' => $activeAnnouncements, // ADD ANNOUNCEMENTS HERE
             'pageTitle' => $content['home_hero_title'] ?? 'Pathshala',
             'metaDescription' => $content['home_hero_subtitle'] ?? 'Learn with Expert Teachers',
             'auth' => [
@@ -136,14 +168,6 @@ class FrontendController extends Controller
             'currentLanguage' => $language,
             'availableLanguages' => ['en', 'bn']
         ]);
-    }
-
-    private function isBengaliText($text)
-    {
-        if (!is_string($text)) return false;
-        
-        $bengaliRegex = '/[অ-ঔক-হ০-৯]/u';
-        return preg_match($bengaliRegex, $text) === 1;
     }
 
     /**

@@ -596,10 +596,10 @@ const enrollCourse = async (course) => {
     
     if (response.ok) {
       console.log('✅ Enrollment successful');
-      // Show success message
-      alert(t('Successfully enrolled in the course!'));
-      // Refresh the page to show updated enrollment status
-      router.reload({ only: ['courses', 'studentInfo'] });
+      
+      // Navigate directly to course details page after successful enrollment
+      router.visit(`/course/${course.id}`);
+      
     } else {
       console.error('❌ Enrollment failed:', result);
       alert(result.message || t('Failed to enroll in course. Please try again.'));
@@ -1109,7 +1109,7 @@ onUnmounted(() => {
 }
 
 .title {
-  font-size: 2rem;
+  font-size: 24px;
   font-weight: 400;
   color: var(--text-primary);
   margin-bottom: 16px;

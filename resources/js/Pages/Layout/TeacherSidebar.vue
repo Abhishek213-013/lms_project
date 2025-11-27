@@ -3,7 +3,7 @@
     <!-- Top: Logo + Navigation -->
     <div>
       <div class="logo">
-        <a href="/teacher-portal">
+        <a href="/teacher/portal">
           <!-- New Rectangular Logo -->
           <div class="logo-container">
             <img src="/assets/img/pathshala-logo.png" alt="Pathshala LMS" class="logo-image">
@@ -12,22 +12,22 @@
       </div>
 
       <!-- Sidebar Navigation -->
-      <nav class="space-y-1">
+      <nav class="space-y-2 flex-1">
         <!-- Dashboard -->
-        <div>
+        <!-- <div>
           <Link 
-            href="/teacher"
+            href="/teacher/portal"
             class="w-full flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors no-underline sidebar-item"
-            :class="{ 'bg-blue-50 text-blue-700': $page.url === '/teacher' }"
+            :class="{ 'bg-blue-50 text-black': $page.url === '/teacher/portal' }"
           >
             <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
             </svg>
             <span class="sidebar-text">Dashboard</span>
           </Link>
-        </div>
+        </div> -->
 
-        <p class="sidebar-label px-2 mt-4 mb-2">
+        <p class="sidebar-label px-2 mt-4 mb-1">
           Teaching
         </p>
 
@@ -35,27 +35,35 @@
         <div>
           <button 
             @click="toggleMenu('classes')"
-            class="w-full flex items-center justify-between p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors no-underline sidebar-item"
+            class="w-full flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors no-underline sidebar-item"
             :class="{ 'bg-blue-50 text-blue-700': activeMenu === 'classes' }"
           >
-            <div class="flex items-center">
+            <!-- Chevron - Show down arrow when open, right arrow when closed -->
+            <svg 
+              v-if="activeMenu === 'classes'" 
+              class="w-4 h-4 mr-2" 
+              fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+            <svg 
+              v-else 
+              class="w-4 h-4 mr-2" 
+              fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+            
+            <div class="flex items-center flex-1">
               <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
               </svg>
               <span class="sidebar-text">My Classes</span>
             </div>
-            <svg 
-              class="w-4 h-4 transition-transform duration-200" 
-              :class="{ 'rotate-180': activeMenu === 'classes' }"
-              fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            >
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-            </svg>
           </button>
           <div v-show="activeMenu === 'classes'" class="ml-8 mt-1 space-y-0.5">
             <Link href="/teacher/classes" class="submenu-link sidebar-text">All Classes</Link>
             <Link href="/teacher/classes/schedule" class="submenu-link sidebar-text">Class Schedule</Link>
-            <Link href="/teacher/classes/students" class="submenu-link sidebar-text">Student Roster</Link>
           </div>
         </div>
 
@@ -63,22 +71,31 @@
         <div>
           <button 
             @click="toggleMenu('resources')"
-            class="w-full flex items-center justify-between p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors no-underline sidebar-item"
+            class="w-full flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors no-underline sidebar-item"
             :class="{ 'bg-blue-50 text-blue-700': activeMenu === 'resources' }"
           >
-            <div class="flex items-center">
+            <!-- Chevron - Show down arrow when open, right arrow when closed -->
+            <svg 
+              v-if="activeMenu === 'resources'" 
+              class="w-4 h-4 mr-2" 
+              fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+            <svg 
+              v-else 
+              class="w-4 h-4 mr-2" 
+              fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+            
+            <div class="flex items-center flex-1">
               <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
               </svg>
               <span class="sidebar-text">Resources</span>
             </div>
-            <svg 
-              class="w-4 h-4 transition-transform duration-200" 
-              :class="{ 'rotate-180': activeMenu === 'resources' }"
-              fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            >
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-            </svg>
           </button>
           <div v-show="activeMenu === 'resources'" class="ml-8 mt-1 space-y-0.5">
             <a href="#" class="submenu-link sidebar-text" @click.prevent="$emit('showUploadModal')">Upload Resources</a>
@@ -91,22 +108,31 @@
         <div>
           <button 
             @click="toggleMenu('assessments')"
-            class="w-full flex items-center justify-between p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors no-underline sidebar-item"
+            class="w-full flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors no-underline sidebar-item"
             :class="{ 'bg-blue-50 text-blue-700': activeMenu === 'assessments' }"
           >
-            <div class="flex items-center">
+            <!-- Chevron - Show down arrow when open, right arrow when closed -->
+            <svg 
+              v-if="activeMenu === 'assessments'" 
+              class="w-4 h-4 mr-2" 
+              fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+            <svg 
+              v-else 
+              class="w-4 h-4 mr-2" 
+              fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+            
+            <div class="flex items-center flex-1">
               <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
               </svg>
               <span class="sidebar-text">Assessments</span>
             </div>
-            <svg 
-              class="w-4 h-4 transition-transform duration-200" 
-              :class="{ 'rotate-180': activeMenu === 'assessments' }"
-              fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            >
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-            </svg>
           </button>
           <div v-show="activeMenu === 'assessments'" class="ml-8 mt-1 space-y-0.5">
             <a href="#" class="submenu-link sidebar-text" @click.prevent="$emit('createAssignment')">Create Assignment</a>
@@ -116,7 +142,7 @@
         </div>
 
         <!-- Analytics -->
-        <div>
+        <!-- <div>
           <Link 
             href="/teacher/analytics"
             class="w-full flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors no-underline sidebar-item"
@@ -127,10 +153,10 @@
             </svg>
             <span class="sidebar-text">Analytics</span>
           </Link>
-        </div>
+        </div> -->
 
         <!-- Settings -->
-        <div>
+        <!-- <div>
           <Link 
             href="/teacher/settings"
             class="w-full flex items-center p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors no-underline sidebar-item"
@@ -142,14 +168,10 @@
             </svg>
             <span class="sidebar-text">Settings</span>
           </Link>
-        </div>
+        </div> -->
       </nav>
     </div>
 
-    <!-- Bottom: Back to Admin -->
-    <div class="sidebar-back-link cursor-pointer px-2 transition-colors hover:text-indigo-700" @click="$emit('goBackToAdmin')">
-      ← Back to Admin
-    </div>
   </aside>
 </template>
 
@@ -177,8 +199,7 @@ const toggleMenu = (menu) => {
 
 /* Main navigation text */
 .sidebar-text {
-  font-size: 12px;
-  font-weight: 400;
+  font-size: 12.8px !important;
   font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
 }
 

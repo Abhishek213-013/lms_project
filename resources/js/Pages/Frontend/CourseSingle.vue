@@ -311,12 +311,102 @@
             <div class="col-xl-4 col-lg-5">
               <div class="courses__details-sidebar">
                 <div class="sticky-sidebar">
-                  <!-- Course Info Card -->
+                  <!-- Course Info Card with Video -->
                   <div class="card border-0 shadow-sm mb-4">
                     <div class="card-body p-0">
-                      <div class="preview-video position-relative">
+                      <!-- Video Section - Replacing the preview image -->
+                      <div v-if="courseVideo" class="preview-video position-relative">
+                        <!-- YouTube Video Embed -->
+                        <div v-if="courseVideo.is_youtube" class="video-container">
+                          <div class="video-thumbnail position-relative cursor-pointer" @click="playVideo(courseVideo)">
+                            <img 
+                              :src="getVideoThumbnail(courseVideo)" 
+                              :alt="courseVideo.title"
+                              class="w-100 rounded-top"
+                              style="height: 200px; object-fit: cover;"
+                            >
+                            <div class="video-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
+                              <div class="play-button">
+                                <i class="fas fa-play"></i>
+                              </div>
+                              <div class="video-duration">{{ courseVideo.duration || '15:30' }}</div>
+                              <div class="video-badge">{{ t('Preview') }}</div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <!-- Local Video Player -->
+                        <div v-else-if="courseVideo.file_url" class="video-container">
+                          <div class="video-thumbnail position-relative cursor-pointer" @click="playVideo(courseVideo)">
+                            <img 
+                              :src="getVideoThumbnail(courseVideo)" 
+                              :alt="courseVideo.title"
+                              class="w-100 rounded-top"
+                              style="height: 200px; object-fit: cover;"
+                            >
+                            <div class="video-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
+                              <div class="play-button">
+                                <i class="fas fa-play"></i>
+                              </div>
+                              <div class="video-duration">{{ courseVideo.duration || '15:30' }}</div>
+                              <div class="video-badge">{{ t('Preview') }}</div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <!-- Video Thumbnail Fallback -->
+                        <div v-else class="video-thumbnail position-relative cursor-pointer" @click="playVideo(courseVideo)">
+                          <img 
+                            :src="getVideoThumbnail(courseVideo)" 
+                            :alt="courseVideo.title"
+                            class="w-100 rounded-top"
+                            style="height: 200px; object-fit: cover;"
+                          >
+                          <div class="video-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center">
+                            <div class="play-button">
+                              <i class="fas fa-play"></i>
+                            </div>
+                            <div class="video-duration">{{ courseVideo.duration || '15:30' }}</div>
+                            <div class="video-badge">{{ t('Preview') }}</div>
+                          </div>
+                        </div>
+                        
+                        <!-- Video Info -->
+                        <div class="p-3">
+                          <h6 class="video-title mb-2">{{ getCleanTitle(courseVideo.title) }}</h6>
+                          <p class="video-description text-muted small mb-2" v-if="courseVideo.description">
+                            {{ courseVideo.description }}
+                          </p>
+                          <div class="video-meta d-flex justify-content-between align-items-center">
+                            <span class="badge bg-light text-dark">
+                              <i class="fas fa-clock me-1"></i>
+                              {{ courseVideo.duration || '15:30' }}
+                            </span>
+                            <span class="badge bg-light text-dark">
+                              <i class="fas fa-eye me-1"></i>
+                              {{ courseVideo.views || '250' }} {{ t('views') }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Video Loading State -->
+                      <div v-else-if="loadingVideo" class="preview-video position-relative">
+                        <div class="video-loading d-flex align-items-center justify-content-center" style="height: 200px;">
+                          <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                              <span class="visually-hidden">{{ t('Loading video...') }}</span>
+                            </div>
+                            <p class="mt-2 small text-muted">{{ t('Loading course video...') }}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Fallback to course image if no video -->
+                      <div v-else class="preview-video position-relative">
                         <img :src="getPreviewImage(course)" :alt="getCourseTitle(course)" class="w-100 rounded-top">
                       </div>
+
                       <div class="p-4">
                         <div class="price-section text-center mb-3">
                           <span class="text-muted d-block mb-1">{{ t('Course Fee') }}</span>
@@ -432,6 +522,89 @@
           </div>
         </div>
       </section>
+
+      <!-- Video Player Modal - CLEAN VERSION (from reference) -->
+      <div 
+        v-if="showVideoPlayer && currentVideo" 
+        class="video-player-modal"
+        @click.self="closeVideoPlayer"
+      >
+        <div class="modal-container">
+          <!-- Header - 20% -->
+          <div class="header-section">
+            <div class="header-content">
+              <h3>{{ getCleanTitle(currentVideo.title) }}</h3>
+              <div class="video-meta">
+                <span><i class="far fa-clock mr-2"></i> {{ currentVideo.duration || 'N/A' }}</span>
+                <span><i class="far fa-calendar mr-2"></i> {{ formatDate(currentVideo.created_at) }}</span>
+                <span class="video-class">{{ getCourseTitle(course) }}</span>
+              </div>
+            </div>
+            <button 
+              @click="closeVideoPlayer" 
+              class="close-button"
+              aria-label="Close video player"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          
+          <!-- Video Player - 70% -->
+          <div class="video-player-section">
+            <!-- Loading State -->
+            <div v-if="isLoading" class="loading-state">
+              <div class="spinner"></div>
+              <p>{{ t('Loading video...') }}</p>
+            </div>
+            
+            <!-- YouTube Embed -->
+            <div v-else-if="currentVideo.isEmbed" class="youtube-container">
+              <iframe 
+                :src="currentVideo.ultraCleanUrl" 
+                frameborder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowfullscreen
+                @load="isLoading = false"
+              ></iframe>
+            </div>
+            
+            <!-- Direct Video -->
+            <div v-else-if="currentVideo.isDirectStream || currentVideo.isDirectVideo" class="direct-video-container">
+              <video 
+                ref="videoPlayer"
+                :src="currentVideo.directVideoUrl" 
+                controls
+                controlsList="nodownload"
+                @play="isPlaying = true"
+                @pause="isPlaying = false"
+                @ended="isPlaying = false"
+                @loadeddata="isLoading = false"
+                @error="handleVideoError"
+                autoplay
+              >
+                {{ t('Your browser does not support the video tag.') }}
+              </video>
+            </div>
+            
+            <!-- Error State -->
+            <div v-else class="error-state">
+              <i class="fas fa-exclamation-triangle"></i>
+              <p>{{ t('Unable to load video') }}</p>
+              <p class="error-subtext">{{ t('Please try again later.') }}</p>
+            </div>
+          </div>
+          
+          <!-- Footer - 10% -->
+          <div class="footer-section">
+            <div class="footer-content">
+              <button @click="closeVideoPlayer" class="close-btn">
+                <i class="fas fa-times mr-2"></i>
+                {{ t('Close') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </main>
   </FrontendLayout>
 </template>
@@ -480,6 +653,7 @@ const page = usePage();
 const loading = ref(false);
 const loadingSubjects = ref(false);
 const loadingEnroll = ref(false);
+const loadingVideo = ref(false);
 const error = ref(null);
 const activeTab = ref('overview');
 const openModule = ref(null);
@@ -487,6 +661,314 @@ const subjects = ref([]);
 const isEnrolled = ref(props.isEnrolled);
 const currentCourse = ref(props.course);
 const currentTheme = ref('light');
+const courseVideo = ref(null);
+const showVideoPlayer = ref(false);
+const currentVideo = ref(null);
+const videoPlayer = ref(null);
+const isPlaying = ref(false);
+const isLoading = ref(false);
+
+// Fetch course video
+const fetchCourseVideo = async () => {
+  if (!currentCourse.value?.id) return;
+  
+  loadingVideo.value = true;
+  try {
+    console.log('🎬 Fetching video for course:', currentCourse.value.id);
+    
+    const response = await fetch(`/api/courses/${currentCourse.value.id}/video`);
+    
+    if (response.status === 404) {
+      console.log('ℹ️ No video found for this course (404)');
+      courseVideo.value = null;
+      return;
+    }
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success && data.data) {
+      courseVideo.value = data.data;
+      console.log('✅ Course video loaded:', courseVideo.value);
+    } else {
+      console.log('ℹ️ No video data received:', data.message);
+      courseVideo.value = null;
+    }
+  } catch (err) {
+    console.error('❌ Error fetching course video:', err);
+    courseVideo.value = null;
+  } finally {
+    loadingVideo.value = false;
+  }
+};
+
+// Video player methods from reference
+const playVideo = async (video) => {
+  isLoading.value = true;
+  showVideoPlayer.value = true;
+  
+  try {
+    const cleanVideo = {
+      ...video,
+      title: getCleanTitle(video.title),
+      description: video.description || ''
+    };
+    
+    const videoContent = getVideoContent(video);
+    
+    if (!videoContent) {
+      throw new Error('No video content found');
+    }
+    
+    if (isYouTubeUrl(videoContent)) {
+      const videoId = getYouTubeVideoId(videoContent);
+      
+      if (videoId) {
+        const directVideoUrl = await getDirectVideoStream(videoId);
+        
+        if (directVideoUrl) {
+          currentVideo.value = {
+            ...cleanVideo,
+            directVideoUrl: directVideoUrl,
+            videoId: videoId,
+            thumbnail: getVideoThumbnail(video),
+            isDirectStream: true,
+            isEmbed: false,
+            isDirectVideo: false
+          };
+        } else {
+          currentVideo.value = {
+            ...cleanVideo,
+            ultraCleanUrl: generateUltraCleanEmbedUrl(videoId),
+            videoId: videoId,
+            originalUrl: videoContent,
+            isEmbed: true,
+            isDirectStream: false,
+            isDirectVideo: false
+          };
+        }
+      } else {
+        throw new Error('Could not extract YouTube video ID');
+      }
+    } else {
+      currentVideo.value = {
+        ...cleanVideo,
+        directVideoUrl: videoContent,
+        isDirectVideo: true,
+        isEmbed: false,
+        isDirectStream: false
+      };
+    }
+    
+  } catch (error) {
+    console.error('Error preparing video:', error);
+    alert(`Error loading video: ${error.message}`);
+    closeVideoPlayer();
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const closeVideoPlayer = () => {
+  if (videoPlayer.value && typeof videoPlayer.value.pause === 'function') {
+    videoPlayer.value.pause();
+    videoPlayer.value.currentTime = 0;
+  }
+  
+  showVideoPlayer.value = false;
+  currentVideo.value = null;
+  isPlaying.value = false;
+  isLoading.value = false;
+  
+  document.body.style.overflow = 'auto';
+  
+  setTimeout(() => {
+    if (videoPlayer.value) {
+      videoPlayer.value.src = '';
+      videoPlayer.value.load();
+    }
+  }, 100);
+};
+
+const handleVideoError = (event) => {
+  console.error('Video playback error:', event);
+  isLoading.value = false;
+  
+  if (currentVideo.value && currentVideo.value.videoId && !currentVideo.value.isEmbed) {
+    currentVideo.value = {
+      ...currentVideo.value,
+      ultraCleanUrl: generateUltraCleanEmbedUrl(currentVideo.value.videoId),
+      isEmbed: true,
+      isDirectStream: false,
+      isDirectVideo: false
+    };
+  }
+};
+
+const generateUltraCleanEmbedUrl = (videoId) => {
+  const params = new URLSearchParams({
+    'autoplay': '1',
+    'rel': '0',
+    'modestbranding': '1',
+    'controls': '1',
+    'showinfo': '0',
+    'iv_load_policy': '3',
+    'fs': '1',
+    'disablekb': '0',
+    'playsinline': '1',
+    'enablejsapi': '1',
+    'origin': window.location.origin,
+    'widget_referrer': window.location.origin,
+    'cc_load_policy': '0',
+    'color': 'white',
+    'hl': 'en',
+    'cc_lang_pref': 'en'
+  });
+  
+  return `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
+};
+
+const getDirectVideoStream = async (videoId) => {
+  try {
+    const response = await fetch(`/api/youtube-direct-stream?videoId=${videoId}`);
+    const data = await response.json();
+    
+    if (data.success && data.directUrl) {
+      return data.directUrl;
+    }
+  } catch (apiError) {
+    console.log('API method failed');
+  }
+  
+  const proxyUrl = `/api/video-proxy/${videoId}`;
+  
+  try {
+    const testResponse = await fetch(proxyUrl, { method: 'HEAD' });
+    if (testResponse.ok) {
+      return proxyUrl;
+    }
+  } catch (proxyError) {
+    console.log('Proxy URL not accessible');
+  }
+  
+  return null;
+};
+
+// Video utility methods from reference
+const getCleanTitle = (title) => {
+  if (!title) return t('Untitled Video');
+  
+  let cleanTitle = title.replace(/https?:\/\/[^\s]+/g, '').trim();
+  cleanTitle = cleanTitle.replace(/youtu\.be\/[^\s]+/g, '');
+  cleanTitle = cleanTitle.replace(/youtube\.com\/watch\?v=[^\s]+/g, '');
+  cleanTitle = cleanTitle.replace(/\?si=[^\s]+/g, '');
+  cleanTitle = cleanTitle.replace(/\s+/g, ' ').trim();
+  
+  if (!cleanTitle) return t('Demo Video');
+  
+  return cleanTitle;
+};
+
+const getVideoThumbnail = (video) => {
+  if (video.thumbnail && video.thumbnail !== '/images/default-video-thumbnail.jpg') {
+    return video.thumbnail;
+  }
+  
+  const videoContent = getVideoContent(video);
+  if (videoContent && isYouTubeUrl(videoContent)) {
+    const videoId = getYouTubeVideoId(videoContent);
+    if (videoId) {
+      return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+    }
+  }
+  
+  return '/assets/img/courses/video_thumb01.jpg';
+};
+
+const getVideoContent = (video) => {
+  if (!video) return null;
+  
+  const possibleFields = [
+    'content',
+    'file_path',
+    'url',
+    'video_url',
+    'link',
+    'source',
+    'video_content',
+    'youtube_url',
+    'resource_url',
+    'videoUrl',
+    'file_url',
+    'youtube_embed_url'
+  ];
+  
+  for (const field of possibleFields) {
+    if (video[field] && typeof video[field] === 'string') {
+      const value = video[field].trim();
+      if (value.startsWith('http')) {
+        return value;
+      }
+      
+      if ((value.includes('youtube.com') || value.includes('youtu.be')) && !value.startsWith('http')) {
+        return 'https://' + value.replace(/^\/\//, '');
+      }
+    }
+  }
+  
+  return null;
+};
+
+const isYouTubeUrl = (url) => {
+  if (!url || typeof url !== 'string') return false;
+  
+  const cleanUrl = url.trim();
+  const youtubePatterns = [
+    /youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/,
+    /youtu\.be\/([a-zA-Z0-9_-]+)/,
+    /youtube\.com\/embed\/([a-zA-Z0-9_-]+)/,
+    /youtube\.com\/v\/([a-zA-Z0-9_-]+)/,
+    /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]+)/,
+    /youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/,
+    /youtube\.com\/live\/([a-zA-Z0-9_-]+)/
+  ];
+  
+  return youtubePatterns.some(pattern => pattern.test(cleanUrl));
+};
+
+const getYouTubeVideoId = (url) => {
+  if (!url || typeof url !== 'string') return null;
+  
+  const cleanUrl = url.trim();
+  const patterns = [
+    /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
+    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/live\/([a-zA-Z0-9_-]{11})/
+  ];
+  
+  for (const pattern of patterns) {
+    const match = cleanUrl.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+  
+  return null;
+};
+
+// Event handlers
+const handleKeyDown = (event) => {
+  if (event.key === 'Escape' && showVideoPlayer.value) {
+    closeVideoPlayer();
+  }
+};
 
 // Get class name from course data
 const getClassName = (course) => {
@@ -749,16 +1231,36 @@ const toggleModule = (index) => {
 const enrollCourse = async () => {
   loadingEnroll.value = true;
   try {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    isEnrolled.value = true;
-    alert(t('Successfully enrolled in the course!'));
+    console.log('🎯 Enrolling in course:', currentCourse.value?.id);
     
-    const courseId = currentCourse.value?.id;
-    if (courseId) {
-      router.visit(`/learning/${courseId}`);
+    const response = await fetch(`/api/courses/${currentCourse.value.id}/enroll`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      credentials: 'same-origin'
+    });
+
+    const result = await response.json();
+    
+    if (response.ok) {
+      console.log('✅ Enrollment successful from course details page');
+      isEnrolled.value = true;
+      
+      // Show success message
+      alert(t('Successfully enrolled in the course!'));
+      
+      // Optionally redirect to learning page
+      // router.visit(`/learning/${currentCourse.value.id}`);
+      
+    } else {
+      console.error('❌ Enrollment failed:', result);
+      alert(result.message || t('Failed to enroll in course. Please try again.'));
     }
   } catch (err) {
-    console.error('Error enrolling:', err);
+    console.error('❌ Enrollment error:', err);
     alert(t('Failed to enroll. Please try again.'));
   } finally {
     loadingEnroll.value = false;
@@ -922,15 +1424,28 @@ onMounted(() => {
   
   // Listen for theme changes
   window.addEventListener('themeChanged', handleThemeChange);
+  // Listen for escape key
+  document.addEventListener('keydown', handleKeyDown);
 
   if (!props.course) {
     fetchCourse();
+  } else {
+    // If course is provided via props, fetch the video
+    fetchCourseVideo();
   }
   fetchOtherSubjects();
 });
 
 onUnmounted(() => {
   window.removeEventListener('themeChanged', handleThemeChange);
+  document.removeEventListener('keydown', handleKeyDown);
+});
+
+// Watch for course changes to fetch video
+watch(() => currentCourse.value, (newCourse) => {
+  if (newCourse) {
+    fetchCourseVideo();
+  }
 });
 
 // Handle theme changes
@@ -939,7 +1454,6 @@ const handleThemeChange = (event) => {
 };
 </script>
 
-<!-- Add language-specific CSS -->
 <style scoped>
 /* ==================== */
 /* BENGALI FONT FIXES FOR COURSE DETAILS PAGE */
@@ -1097,6 +1611,308 @@ const handleThemeChange = (event) => {
 }
 
 /* ==================== */
+/* VIDEO STYLES - UPDATED TO MATCH REFERENCE */
+/* ==================== */
+
+/* Video Thumbnail Styles */
+.video-thumbnail {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.video-thumbnail img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.video-thumbnail:hover img {
+  transform: scale(1.05);
+}
+
+.video-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.video-thumbnail:hover .video-overlay {
+  opacity: 1;
+}
+
+.play-button {
+  width: 60px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+  font-size: 20px;
+  transition: all 0.3s ease;
+}
+
+.video-thumbnail:hover .play-button {
+  background: #ffffff;
+  transform: scale(1.1);
+}
+
+.video-duration {
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #ffffff;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.video-badge {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: var(--error-color);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* Video Info */
+.video-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.video-description {
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* ==================== */
+/* CLEAN VIDEO PLAYER MODAL - FROM REFERENCE */
+/* ==================== */
+.video-player-modal {
+  background: rgba(0, 0, 0, 0.95) !important;
+  z-index: 9999 !important;
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.modal-container {
+  background: #000 !important;
+  height: 90vh;
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+  border: 1px solid #333;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Header Section - 20% */
+.header-section {
+  background: #1a1a1a !important;
+  border-bottom: 1px solid #333;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  min-height: 80px;
+  max-height: 120px;
+  flex-shrink: 0;
+}
+
+.header-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.header-section h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: #fff !important;
+  line-height: 1.3;
+}
+
+.video-meta {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.875rem;
+  color: #ccc !important;
+}
+
+.video-meta span {
+  display: flex;
+  align-items: center;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  margin-left: 1rem;
+  flex-shrink: 0;
+  transition: color 0.3s ease;
+}
+
+.close-button:hover {
+  color: #ccc;
+}
+
+/* Video Player Section - 70% */
+.video-player-section {
+  background: #000 !important;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  min-height: 300px;
+}
+
+.youtube-container,
+.direct-video-container {
+  width: 100%;
+  height: 100%;
+  background: #000 !important;
+}
+
+.youtube-container iframe,
+.direct-video-container video {
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+  outline: none !important;
+  background: #000 !important;
+}
+
+/* Loading State */
+.loading-state {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  z-index: 10;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #333;
+  border-left: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-state p {
+  font-size: 1.125rem;
+  color: #fff;
+}
+
+/* Error State */
+.error-state {
+  text-align: center;
+  color: #fff;
+  padding: 2rem;
+}
+
+.error-state i {
+  font-size: 3rem;
+  color: #f59e0b;
+  margin-bottom: 1rem;
+}
+
+.error-state p {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.error-subtext {
+  font-size: 1rem;
+  color: #9ca3af;
+}
+
+/* Footer Section - 10% */
+.footer-section {
+  background: #1a1a1a !important;
+  border-top: 1px solid #333;
+  padding: 1rem 1.5rem;
+  min-height: 60px;
+  max-height: 80px;
+  flex-shrink: 0;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+}
+
+.close-btn {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  transition: background-color 0.3s ease;
+  flex-shrink: 0;
+}
+
+.close-btn:hover {
+  background: #b91c1c;
+}
+
+/* ==================== */
 /* MAIN LAYOUT */
 /* ==================== */
 .main-area {
@@ -1109,7 +1925,7 @@ const handleThemeChange = (event) => {
 /* ==================== */
 .breadcrumb__area {
   position: relative;
-  padding: 20px 0 20px;
+  padding: 10px 0 10px;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -1608,9 +2424,18 @@ const handleThemeChange = (event) => {
     flex-wrap: wrap;
     gap: 0.5rem;
   }
+
+  /* Video responsive */
+  .video-thumbnail img {
+    height: 180px !important;
+  }
+  
+  .modal-container {
+    margin: 1rem;
+  }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 576px) {
   .courses__details-area {
     padding: 40px 0;
   }
@@ -1627,6 +2452,49 @@ const handleThemeChange = (event) => {
   .course-tabs .nav-pills .nav-link {
     width: 100%;
   }
+
+  /* Video responsive */
+  .video-thumbnail img {
+    height: 160px !important;
+  }
+  
+  .video-player-modal {
+    padding: 0.5rem;
+  }
+  
+  .modal-container {
+    height: 100vh;
+    margin: 0;
+    border-radius: 0;
+    border: none;
+  }
+  
+  .header-section {
+    min-height: 60px;
+  }
+  
+  .footer-section {
+    min-height: 50px;
+  }
+  
+  .header-section h3 {
+    font-size: 1.1rem;
+  }
+  
+  .video-meta {
+    font-size: 0.75rem;
+    gap: 0.5rem;
+  }
+  
+  .footer-content {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+  
+  .close-btn {
+    align-self: flex-end;
+  }
 }
 
 /* ==================== */
@@ -1634,7 +2502,9 @@ const handleThemeChange = (event) => {
 /* ==================== */
 .btn:focus,
 .nav-link:focus,
-.accordion-button:focus {
+.accordion-button:focus,
+.close-button:focus,
+.close-btn:focus {
   outline: 3px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
   outline-offset: 2px;
 }
@@ -1647,13 +2517,16 @@ const handleThemeChange = (event) => {
   .subject-card,
   .btn,
   .nav-link,
-  .list-group-item {
+  .list-group-item,
+  .video-thumbnail img,
+  .play-button {
     transition: none;
   }
   
   .card:hover,
   .subject-card:hover,
-  .btn:hover:not(:disabled) {
+  .btn:hover:not(:disabled),
+  .video-thumbnail:hover img {
     transform: none;
   }
   

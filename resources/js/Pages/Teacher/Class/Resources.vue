@@ -72,24 +72,30 @@
                     </div>
                   </div>
                   
-                  <!-- Dropdown Menu Items -->
-                  <a href="#" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center" @click="editProfile">
+                  <!-- Dropdown Menu Items - FIXED: No underline -->
+                  <button 
+                    @click="editProfile"
+                    class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center no-underline"
+                  >
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                     </svg>
                     Profile
-                  </a>
-                  <a href="#" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center" @click="navigateToSettings">
+                  </button>
+                  <button 
+                    @click="navigateToSettings"
+                    class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center no-underline"
+                  >
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                     </svg>
                     Settings
-                  </a>
+                  </button>
                   <div class="border-t border-gray-200 my-1"></div>
                   <button 
                     @click="logout"
-                    class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center"
+                    class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center no-underline"
                   >
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
@@ -132,6 +138,16 @@
                 </svg>
                 <span>Add Video Link</span>
               </button>
+            </div>
+          </div>
+
+          <!-- Success Message -->
+          <div v-if="successMessage" class="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div class="flex items-center">
+              <svg class="w-5 h-5 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <span class="text-green-700 text-sm">{{ successMessage }}</span>
             </div>
           </div>
 
@@ -199,15 +215,6 @@
                           <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
                             VIDEO
                           </span>
-                        </div>
-                        
-                        <!-- Debug Info (only in development) -->
-                        <div v-if="isDevelopment" class="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
-                          <p class="font-semibold">Debug Info:</p>
-                          <p>Content: {{ resource.content }}</p>
-                          <p>File Path: {{ resource.file_path }}</p>
-                          <p>Type: {{ resource.type }}</p>
-                          <p>Video Found: {{ !!getVideoContent(resource) }}</p>
                         </div>
                         
                         <!-- Video Link -->
@@ -375,6 +382,7 @@
                 </div>
               </div>
             </div>
+
           </div>
         </div>
         
@@ -517,7 +525,7 @@ const props = defineProps({
   classId: String,
   classData: Object,
   resources: Array,
-  teacher: { // ADD THIS PROP
+  teacher: {
     type: Object,
     default: () => ({
       name: 'Teacher',
@@ -530,9 +538,7 @@ const props = defineProps({
 })
 
 // ==================== TEACHER DATA ====================
-// Use the teacher prop directly
 const teacher = computed(() => {
-  // Ensure profile_picture_url is set if profile_picture exists
   if (props.teacher?.profile_picture && !props.teacher.profile_picture_url) {
     props.teacher.profile_picture_url = `/storage/${props.teacher.profile_picture}`
   }
@@ -559,6 +565,7 @@ const videoPlayer = ref(null)
 const loading = ref(!props.resources)
 const userMenuOpen = ref(false)
 const isPlaying = ref(false)
+const successMessage = ref('') // ADDED: For success messages
 
 // Check if we're in development mode
 const isDevelopment = computed(() => {
@@ -626,9 +633,102 @@ const handleClickOutside = (event) => {
   }
 }
 
-// ==================== VIDEO RESOURCE METHODS ====================
+// Enhanced upload function with announcement feedback
+const uploadVideoFinal = async () => {
+  if (!videoForm.title || !videoForm.url) {
+    alert('Please provide both title and video URL');
+    return;
+  }
+
+  // Validate and normalize YouTube URL
+  let youtubeUrl = videoForm.url.trim();
+  
+  // Ensure URL has proper protocol
+  if (!youtubeUrl.startsWith('http')) {
+    youtubeUrl = 'https://' + youtubeUrl;
+  }
+  
+  // Validate it's a YouTube URL
+  if (!isYouTubeUrl(youtubeUrl)) {
+    alert('Please provide a valid YouTube URL (youtube.com or youtu.be)');
+    return;
+  }
+
+  uploading.value = true;
+
+  try {
+    const formData = new FormData()
+    formData.append('title', videoForm.title)
+    formData.append('description', videoForm.description || '')
+    formData.append('type', 'video')
+    formData.append('content', youtubeUrl)
+    
+    // Also store in multiple fields for redundancy
+    formData.append('url', youtubeUrl)
+    formData.append('video_url', youtubeUrl)
+    
+    if (props.classId) {
+      formData.append('assigned_class', props.classId)
+    }
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+    
+    if (!csrfToken) {
+      throw new Error('CSRF token not found')
+    }
+
+    console.log('📡 [UPLOAD] Sending YouTube URL:', youtubeUrl)
+
+    const response = await fetch(`/api/resources/upload/${getCurrentTeacherId()}`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-TOKEN': csrfToken,
+      },
+      body: formData,
+      credentials: 'include'
+    })
+
+    const data = await response.json()
+    console.log('📥 [UPLOAD] Response:', data)
+
+    if (data.success) {
+      showVideoUpload.value = false
+      resetVideoForm()
+      
+      // ✅ Enhanced success message with announcement info
+      successMessage.value = `Video "${videoForm.title}" uploaded successfully! Announcement has been generated for students.`
+      
+      // Trigger announcements refresh
+      window.dispatchEvent(new CustomEvent('announcements-updated'))
+      
+      // Refresh the page to get updated resources
+      setTimeout(() => {
+        router.reload()
+      }, 2000) // Small delay to show success message
+      
+    } else {
+      let errorMessage = 'Failed to add video: '
+      if (data.errors) {
+        const errorMessages = Object.values(data.errors).flat()
+        errorMessage += errorMessages.join(', ')
+      } else if (data.message) {
+        errorMessage += data.message
+      }
+      alert(errorMessage)
+    }
+  } catch (error) {
+    console.error('❌ Upload error:', error)
+    alert('Network error. Please try again.')
+  } finally {
+    uploading.value = false
+  }
+}
+
+// ==================== EXISTING VIDEO RESOURCE METHODS ====================
 // (Keep all your existing video resource methods exactly as they were)
-// getVideoContent, playVideo, uploadVideoFinal, getResourceThumbnail, etc.
+// getVideoContent, playVideo, getResourceThumbnail, etc.
 
 // Debug function to check resource structure
 const debugResources = () => {
@@ -967,91 +1067,6 @@ const closeVideoPlayer = () => {
   currentVideo.value = null;
   isPlaying.value = false;
 };
-
-// Enhanced upload function with URL normalization
-const uploadVideoFinal = async () => {
-  if (!videoForm.title || !videoForm.url) {
-    alert('Please provide both title and video URL');
-    return;
-  }
-
-  // Validate and normalize YouTube URL
-  let youtubeUrl = videoForm.url.trim();
-  
-  // Ensure URL has proper protocol
-  if (!youtubeUrl.startsWith('http')) {
-    youtubeUrl = 'https://' + youtubeUrl;
-  }
-  
-  // Validate it's a YouTube URL
-  if (!isYouTubeUrl(youtubeUrl)) {
-    alert('Please provide a valid YouTube URL (youtube.com or youtu.be)');
-    return;
-  }
-
-  uploading.value = true;
-
-  try {
-    const formData = new FormData()
-    formData.append('title', videoForm.title)
-    formData.append('description', videoForm.description || '')
-    formData.append('type', 'video')
-    formData.append('content', youtubeUrl) // Make sure this is the normalized YouTube URL
-    
-    // Also store in multiple fields for redundancy
-    formData.append('url', youtubeUrl)
-    formData.append('video_url', youtubeUrl)
-    
-    if (props.classId) {
-      formData.append('assigned_class', props.classId)
-    }
-
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-    
-    if (!csrfToken) {
-      throw new Error('CSRF token not found')
-    }
-
-    console.log('📡 [UPLOAD] Sending YouTube URL:', youtubeUrl)
-
-    const response = await fetch(`/api/resources/upload/${getCurrentTeacherId()}`, {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-CSRF-TOKEN': csrfToken,
-      },
-      body: formData,
-      credentials: 'include'
-    })
-
-    const data = await response.json()
-    console.log('📥 [UPLOAD] Response:', data)
-
-    if (data.success) {
-      showVideoUpload.value = false
-      resetVideoForm()
-      showNotification('Video added successfully!', 'success')
-      
-      // Refresh the page to get updated resources
-      router.reload()
-    } else {
-      let errorMessage = 'Failed to add video: '
-      if (data.errors) {
-        const errorMessages = Object.values(data.errors).flat()
-        errorMessage += errorMessages.join(', ')
-      } else if (data.message) {
-        errorMessage += data.message
-      }
-      alert(errorMessage)
-    }
-  } catch (error) {
-    console.error('❌ Upload error:', error)
-    alert('Network error. Please try again.')
-  } finally {
-    uploading.value = false
-  }
-}
 
 // Fetch resources
 const fetchResources = async () => {

@@ -23,7 +23,7 @@
 
       <!-- Role Selection - Informational Only -->
       <div class="mb-5">
-        <label class="block text-gray-700 text-sm font-medium mb-2">I am a</label>
+        <label class="block text-gray-700 text-sm font-medium mb-2">I am a/an</label>
         <div class="grid grid-cols-2 gap-2">
           <button
             v-for="role in roles"

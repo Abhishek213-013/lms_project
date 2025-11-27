@@ -1,38 +1,72 @@
 <template>
-  <div class="min-h-screen bg-gray-50 flex">
-    <!-- Sidebar -->
-    <Sidebar />
+  <div class="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
+    <!-- Sidebar - Hidden on mobile, shown on desktop -->
+    <div class="hidden lg:block">
+      <Sidebar :is-mobile-menu-open="isMobileMenuOpen" @close-mobile="closeMobileMenu" />
+    </div>
+
+    <!-- Mobile Sidebar Toggle Button -->
+    <div class="lg:hidden fixed top-4 left-4 z-40">
+      <button 
+        @click="toggleMobileMenu"
+        class="bg-white p-2 rounded-lg shadow-md"
+      >
+        <!-- <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg> -->
+      </button>
+    </div>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div 
+      v-if="isMobileMenuOpen"
+      class="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+      @click="closeMobileMenu"
+    ></div>
+
+    <!-- Mobile Sidebar -->
+    <div 
+      v-if="isMobileMenuOpen"
+      class="fixed inset-y-0 left-0 z-40 w-64 bg-white transform lg:hidden transition-transform duration-300 ease-in-out"
+      :class="isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'"
+    >
+      <Sidebar :is-mobile-menu-open="isMobileMenuOpen" @close-mobile="closeMobileMenu" />
+    </div>
 
     <!-- Main Content -->
-    <div class="flex-1 ml-64">
-      <!-- Top Navbar -->
-      <Navbar page-title="Class Subjects" @search="handleSearch" />
+    <div class="flex-1 lg:ml-64 w-full">
+      <!-- Top Navbar - Pass the toggle function -->
+      <Navbar 
+        page-title="Class Subjects" 
+        @search="handleSearch"
+        @toggle-mobile-menu="toggleMobileMenu"
+      />
 
-      <!-- Page Content -->
-      <div class="p-6">
+      <!-- Rest of your existing content remains the same -->
+      <div class="p-4 lg:p-6">
         <!-- Header -->
-        <div class="flex justify-between items-center mb-6">
-          <div>
-            <h1 class="text-2xl font-bold text-gray-900">Class {{ grade }} - Subjects</h1>
-            <p class="text-gray-600">Manage subjects and teacher assignments</p>
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+          <div class="flex-1">
+            <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Class {{ grade }} - Subjects</h1>
+            <p class="text-gray-600 text-sm sm:text-base">Manage subjects and teacher assignments</p>
             <div v-if="subjects.length > 0" class="mt-2">
-              <span class="text-sm text-gray-500">
+              <span class="text-xs sm:text-sm text-gray-500">
                 Data Source: <span class="font-medium">{{ dataSource }}</span>
               </span>
             </div>
           </div>
-          <div class="flex space-x-3">
-            <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+          <div class="flex flex-col xs:flex-row gap-2 sm:gap-3">
+            <button class="text-blue-600 hover:text-blue-800 text-sm font-medium order-2 xs:order-1">
               <Link href="/admin/courses/all-courses">← Back to Classes</Link>
             </button>
             <button 
               @click="refreshData"
-              class="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              class="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors order-1 xs:order-2"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
               </svg>
-              <span>Refresh</span>
+              <span class="hidden sm:inline">Refresh</span>
             </button>
           </div>
         </div>
@@ -43,7 +77,7 @@
             <svg class="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
-            <span class="text-red-700">{{ error }}</span>
+            <span class="text-red-700 text-sm">{{ error }}</span>
           </div>
         </div>
 
@@ -53,79 +87,79 @@
             <svg class="w-5 h-5 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
-            <span class="text-green-700">{{ successMessage }}</span>
+            <span class="text-green-700 text-sm">{{ successMessage }}</span>
           </div>
         </div>
 
         <!-- Stats Overview -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div class="bg-white rounded-lg border border-gray-200 p-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
+          <div class="bg-white rounded-lg border border-gray-200 p-3 sm:p-4">
             <div class="flex items-center">
-              <div class="p-2 bg-blue-100 rounded-lg mr-4">
-                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-2 bg-blue-100 rounded-lg mr-3 sm:mr-4">
+                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                 </svg>
               </div>
               <div>
-                <p class="text-sm font-medium text-gray-600">Total Subjects</p>
-                <h3 class="text-2xl font-bold text-gray-800">{{ filteredSubjects.length }}</h3>
+                <p class="text-xs sm:text-sm font-medium text-gray-600">Total Subjects</p>
+                <h3 class="text-lg sm:text-2xl font-bold text-gray-800">{{ filteredSubjects.length }}</h3>
               </div>
             </div>
           </div>
 
-          <div class="bg-white rounded-lg border border-gray-200 p-4">
+          <div class="bg-white rounded-lg border border-gray-200 p-3 sm:p-4">
             <div class="flex items-center">
-              <div class="p-2 bg-green-100 rounded-lg mr-4">
-                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-2 bg-green-100 rounded-lg mr-3 sm:mr-4">
+                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                 </svg>
               </div>
               <div>
-                <p class="text-sm font-medium text-gray-600">Total Students</p>
-                <h3 class="text-2xl font-bold text-gray-800">{{ totalStudents }}</h3>
+                <p class="text-xs sm:text-sm font-medium text-gray-600">Total Students</p>
+                <h3 class="text-lg sm:text-2xl font-bold text-gray-800">{{ totalStudents }}</h3>
               </div>
             </div>
           </div>
 
-          <div class="bg-white rounded-lg border border-gray-200 p-4">
+          <div class="bg-white rounded-lg border border-gray-200 p-3 sm:p-4">
             <div class="flex items-center">
-              <div class="p-2 bg-purple-100 rounded-lg mr-4">
-                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-2 bg-purple-100 rounded-lg mr-3 sm:mr-4">
+                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
                 </svg>
               </div>
               <div>
-                <p class="text-sm font-medium text-gray-600">Assigned Teachers</p>
-                <h3 class="text-2xl font-bold text-gray-800">{{ totalTeachers }}</h3>
+                <p class="text-xs sm:text-sm font-medium text-gray-600">Assigned Teachers</p>
+                <h3 class="text-lg sm:text-2xl font-bold text-gray-800">{{ totalTeachers }}</h3>
               </div>
             </div>
           </div>
 
-          <div class="bg-white rounded-lg border border-gray-200 p-4">
+          <div class="bg-white rounded-lg border border-gray-200 p-3 sm:p-4">
             <div class="flex items-center">
-              <div class="p-2 bg-orange-100 rounded-lg mr-4">
-                <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-2 bg-orange-100 rounded-lg mr-3 sm:mr-4">
+                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                 </svg>
               </div>
               <div>
-                <p class="text-sm font-medium text-gray-600">Completion</p>
-                <h3 class="text-2xl font-bold text-gray-800">{{ completionRate }}%</h3>
+                <p class="text-xs sm:text-sm font-medium text-gray-600">Completion</p>
+                <h3 class="text-lg sm:text-2xl font-bold text-gray-800">{{ completionRate }}%</h3>
               </div>
             </div>
           </div>
         </div>
 
         <!-- Subjects Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           <div 
             v-for="subject in filteredSubjects" 
             :key="subject.id"
-            class="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1"
+            class="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1"
           >
             <!-- Subject Image -->
             <div class="mb-4">
-              <div class="w-full h-32 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+              <div class="w-full h-28 sm:h-32 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
                 <img 
                   v-if="subject.image"
                   :src="getImageUrl(subject.image)"
@@ -133,7 +167,7 @@
                   class="w-full h-full object-cover"
                 >
                 <div v-else class="text-gray-400 flex flex-col items-center">
-                  <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-10 h-10 sm:w-12 sm:h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                   </svg>
                   <span class="text-xs">No Image</span>
@@ -142,7 +176,7 @@
             </div>
 
             <div class="flex justify-between items-start mb-4">
-              <h3 class="font-semibold text-gray-800 text-lg">{{ subject.name }}</h3>
+              <h3 class="font-semibold text-gray-800 text-base sm:text-lg">{{ subject.name }}</h3>
               <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
                 {{ subject.code }}
               </span>
@@ -168,14 +202,14 @@
                   <div 
                     v-for="teacher in subject.assignedTeachers.slice(0, 3)" 
                     :key="teacher.id"
-                    class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-semibold border-2 border-white shadow-sm"
+                    class="w-7 h-7 sm:w-8 sm:h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-semibold border-2 border-white shadow-sm"
                     :title="teacher.name"
                   >
                     {{ getInitials(teacher.name) }}
                   </div>
                   <div 
                     v-if="subject.assignedTeachers.length > 3"
-                    class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 text-xs font-semibold border-2 border-white shadow-sm"
+                    class="w-7 h-7 sm:w-8 sm:h-8 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 text-xs font-semibold border-2 border-white shadow-sm"
                     title="More teachers"
                   >
                     +{{ subject.assignedTeachers.length - 3 }}
@@ -184,7 +218,7 @@
               </div>
 
               <div v-else class="mt-4 pt-4 border-t border-gray-100">
-                <span class="inline-flex items-center px-3 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full font-medium">
+                <span class="inline-flex items-center px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full font-medium">
                   <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
                   </svg>
@@ -255,11 +289,11 @@
         <!-- Edit Subject Modal -->
         <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div class="px-6 py-4 border-b border-gray-200">
+            <div class="px-4 sm:px-6 py-4 border-b border-gray-200">
               <h3 class="text-lg font-semibold text-gray-800">Edit Subject</h3>
             </div>
             
-            <form @submit.prevent="updateSubject" class="p-6 space-y-6">
+            <form @submit.prevent="updateSubject" class="p-4 sm:p-6 space-y-6">
               <!-- Image Upload Section -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Subject Image</label>
@@ -271,14 +305,14 @@
                     <img 
                       :src="getImageUrl(editingSubject.image)" 
                       alt="Current subject image"
-                      class="w-32 h-32 object-cover rounded-lg border"
+                      class="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-lg border"
                     >
                     <button 
                       type="button"
                       @click="removeCurrentImage"
                       class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
                     >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                       </svg>
                     </button>
@@ -296,7 +330,7 @@
                   @drop="handleImageDrop"
                   @dragover="handleDragOver"
                   @dragleave="handleDragLeave"
-                  class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 transition-colors"
+                  class="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 text-center cursor-pointer hover:border-blue-400 transition-colors"
                   :class="{ 'border-blue-500 bg-blue-50': isDragOver }"
                 >
                   <input 
@@ -308,7 +342,7 @@
                   >
                   
                   <div v-if="!selectedImageFile" class="space-y-3">
-                    <svg class="w-12 h-12 text-gray-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                     </svg>
                     <div>
@@ -325,20 +359,20 @@
                       <img 
                         :src="getImagePreview()" 
                         alt="Subject image preview"
-                        class="w-32 h-32 object-cover rounded-lg mx-auto"
+                        class="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-lg mx-auto"
                       >
                       <button 
                         type="button"
                         @click.stop="removeImage"
                         class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
                       >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                       </button>
                     </div>
                     <p class="text-sm text-gray-600">New image ready for upload</p>
-                    <p class="text-xs text-gray-500">{{ selectedImageFile.name }} ({{ formatFileSize(selectedImageFile.size) }})</p>
+                    <p class="text-xs text-gray-500 truncate">{{ selectedImageFile.name }} ({{ formatFileSize(selectedImageFile.size) }})</p>
                   </div>
                 </div>
               </div>
@@ -408,7 +442,7 @@
 
         <!-- Delete Confirmation Modal -->
         <div v-if="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div class="bg-white rounded-lg max-w-md w-full p-6">
+          <div class="bg-white rounded-lg max-w-md w-full p-4 sm:p-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-2">Delete Subject</h3>
             <p class="text-gray-600 mb-4">Are you sure you want to delete <strong>{{ deletingSubject?.name }}</strong>? This action cannot be undone.</p>
             <div class="flex justify-end space-x-3">
@@ -447,6 +481,21 @@ const props = defineProps({
   }
 })
 
+// Add mobile menu state
+const isMobileMenuOpen = ref(false)
+
+// Mobile menu functions
+const toggleMobileMenu = () => {
+  console.log('🍔 Toggling mobile menu')
+  isMobileMenuOpen.value = !isMobileMenuOpen.value
+}
+
+const closeMobileMenu = () => {
+  console.log('❌ Closing mobile menu')
+  isMobileMenuOpen.value = false
+}
+
+// Rest of your existing script remains the same...
 const subjects = ref([])
 const loading = ref(true)
 const error = ref('')
@@ -465,6 +514,11 @@ const deletingSubject = ref(null)
 
 const handleSearch = (searchQuery) => {
   console.log('Search query:', searchQuery)
+}
+
+// Toggle mobile sidebar
+const toggleMobileSidebar = () => {
+  mobileSidebarOpen.value = !mobileSidebarOpen.value
 }
 
 // Computed properties for statistics
@@ -841,5 +895,12 @@ onMounted(() => {
 
 .custom-heading {
     font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+}
+
+/* Custom breakpoint for extra small screens */
+@media (min-width: 475px) {
+  .xs\:flex-row {
+    flex-direction: row;
+  }
 }
 </style>

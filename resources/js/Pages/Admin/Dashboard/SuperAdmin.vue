@@ -23,79 +23,79 @@
       />
       
       <!-- Page Content -->
-      <div class="p-4 lg:p-6">
+      <div class="p-3 sm:p-4 lg:p-6">
         <!-- Welcome Message -->
-        <div class="mb-6">
-          <h2 class="mb-2 text-lg lg:text-xl">Welcome back, {{ $page.props.auth.user?.name || 'Admin' }}!</h2>
-          <p class="text-gray-600 text-sm lg:text-base">Here's what's happening in your LMS today.</p>
+        <div class="mb-4 sm:mb-6">
+          <h2 class="mb-1 sm:mb-2 text-base sm:text-lg lg:text-xl">Welcome back, {{ $page.props.auth.user?.name || 'Admin' }}!</h2>
+          <p class="text-gray-600 text-xs sm:text-sm lg:text-base">Here's what's happening in your LMS today.</p>
         </div>
 
         <!-- Quick Actions -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Link href="/admin/users/super-admins" class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:border-blue-500 transition-colors text-left block">
-            <div class="flex items-center space-x-3">
-              <div class="p-2 bg-blue-100 rounded-lg">
-                <svg class="w-5 h-5 lg:w-6 lg:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <Link href="/admin/users/super-admins" class="no-underline-card bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200 hover:border-blue-500 transition-colors text-left block">
+            <div class="flex items-center space-x-2 sm:space-x-3">
+              <div class="p-1.5 sm:p-2 bg-blue-100 rounded-lg">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
                 </svg>
               </div>
-              <div>
-                <h3 class="font-semibold text-gray-800 text-sm">Manage Users</h3>
-                <p class="text-xs text-gray-600">View and manage all users</p>
+              <div class="min-w-0 flex-1">
+                <h3 class="font-semibold text-gray-800 text-xs sm:text-sm truncate">Manage Users</h3>
+                <p class="text-gray-600 text-xs truncate">View and manage all users</p>
               </div>
             </div>
           </Link>
 
-          <Link href="/admin/courses/all-courses" class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:border-green-500 transition-colors text-left block">
-            <div class="flex items-center space-x-3">
-              <div class="p-2 bg-green-100 rounded-lg">
-                <svg class="w-5 h-5 lg:w-6 lg:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <Link href="/admin/courses/all-courses" class="no-underline-card bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200 hover:border-green-500 transition-colors text-left block">
+            <div class="flex items-center space-x-2 sm:space-x-3">
+              <div class="p-1.5 sm:p-2 bg-green-100 rounded-lg">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                 </svg>
               </div>
-              <div>
-                <h3 class="font-semibold text-gray-800 text-sm">Courses</h3>
-                <p class="text-xs text-gray-600">Manage courses & content</p>
+              <div class="min-w-0 flex-1">
+                <h3 class="font-semibold text-gray-800 text-xs sm:text-sm truncate">Courses</h3>
+                <p class="text-gray-600 text-xs truncate">Manage courses & content</p>
               </div>
             </div>
           </Link>
 
-          <Link href="/admin/admissions/applications" class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:border-purple-500 transition-colors text-left block">
-            <div class="flex items-center space-x-3">
-              <div class="p-2 bg-purple-100 rounded-lg">
-                <svg class="w-5 h-5 lg:w-6 lg:h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+          <Link href="/admin/announcements" class="no-underline-card bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200 hover:border-purple-500 transition-colors text-left block">
+            <div class="flex items-center space-x-2 sm:space-x-3">
+              <div class="p-1.5 sm:p-2 bg-purple-100 rounded-lg">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path>
                 </svg>
               </div>
-              <div>
-                <h3 class="font-semibold text-gray-800 text-sm">Admissions</h3>
-                <p class="text-xs text-gray-600">Process applications</p>
+              <div class="min-w-0 flex-1">
+                <h3 class="font-semibold text-gray-800 text-xs sm:text-sm truncate">Announcements</h3>
+                <p class="text-gray-600 text-xs truncate">Manage announcements</p>
               </div>
             </div>
           </Link>
 
-          <Link href="/admin/content-management" class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:border-indigo-500 transition-colors text-left block">
-            <div class="flex items-center space-x-3">
-              <div class="p-2 bg-indigo-100 rounded-lg">
-                <svg class="w-5 h-5 lg:w-6 lg:h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <Link href="/admin/content-management" class="no-underline-card bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200 hover:border-indigo-500 transition-colors text-left block">
+            <div class="flex items-center space-x-2 sm:space-x-3">
+              <div class="p-1.5 sm:p-2 bg-indigo-100 rounded-lg">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                 </svg>
               </div>
-              <div>
-                <h3 class="font-semibold text-gray-800 text-sm">Update Text</h3>
-                <p class="text-xs text-gray-600">Manage frontend content</p>
+              <div class="min-w-0 flex-1">
+                <h3 class="font-semibold text-gray-800 text-xs sm:text-sm truncate">Update Text</h3>
+                <p class="text-gray-600 text-xs truncate">Manage frontend content</p>
               </div>
             </div>
           </Link>
         </div>
 
         <!-- Stats Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
-          <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 lg:p-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6 lg:mb-8">
+          <div class="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-6">
             <div class="flex justify-between items-start">
-              <div>
-                <p class="text-xs font-medium text-gray-600 mb-1">Total Students</p>
-                <h3 class="text-xl lg:text-2xl font-bold text-blue-600">{{ stats.totalStudents || '2,847' }}</h3>
+              <div class="min-w-0 flex-1">
+                <p class="text-xs font-medium text-gray-600 mb-1 truncate">Total Students</p>
+                <h3 class="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600 truncate">{{ stats.totalStudents || '2,847' }}</h3>
                 <p class="text-xs text-green-600 mt-1">
                   <span class="inline-flex items-center">
                     <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -105,19 +105,19 @@
                   </span>
                 </p>
               </div>
-              <div class="p-2 lg:p-3 bg-blue-100 rounded-lg">
-                <svg class="w-5 h-5 lg:w-6 lg:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-1.5 sm:p-2 lg:p-3 bg-blue-100 rounded-lg ml-2">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                 </svg>
               </div>
             </div>
           </div>
 
-          <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 lg:p-6">
+          <div class="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-6">
             <div class="flex justify-between items-start">
-              <div>
-                <p class="text-xs font-medium text-gray-600 mb-1">Active Teachers</p>
-                <h3 class="text-xl lg:text-2xl font-bold text-green-600">{{ stats.totalTeachers || '156' }}</h3>
+              <div class="min-w-0 flex-1">
+                <p class="text-xs font-medium text-gray-600 mb-1 truncate">Active Teachers</p>
+                <h3 class="text-lg sm:text-xl lg:text-2xl font-bold text-green-600 truncate">{{ stats.totalTeachers || '156' }}</h3>
                 <p class="text-xs text-green-600 mt-1">
                   <span class="inline-flex items-center">
                     <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -127,26 +127,26 @@
                   </span>
                 </p>
               </div>
-              <div class="p-2 lg:p-3 bg-green-100 rounded-lg">
-                <svg class="w-5 h-5 lg:w-6 lg:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-1.5 sm:p-2 lg:p-3 bg-green-100 rounded-lg ml-2">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                 </svg>
               </div>
             </div>
           </div>
 
-          <Link href="/admin/instructor-requests/pending" class="block">
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 lg:p-6 hover:border-yellow-400 transition-colors cursor-pointer">
+          <Link href="/admin/instructor-requests/pending" class="block no-underline-card">
+            <div class="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-6 hover:border-yellow-400 transition-colors cursor-pointer">
               <div class="flex justify-between items-start">
-                <div>
-                  <p class="text-xs font-medium text-gray-600 mb-1">Pending Instructor Approvals</p>
-                  <h3 class="text-xl lg:text-2xl font-bold text-yellow-600">{{ stats.pendingApprovals || '0' }}</h3>
-                  <p class="text-xs text-yellow-600 mt-1">
+                <div class="min-w-0 flex-1">
+                  <p class="text-xs font-medium text-gray-600 mb-1 truncate">Pending Instructor Approvals</p>
+                  <h3 class="text-lg sm:text-xl lg:text-2xl font-bold text-yellow-600 truncate">{{ stats.pendingApprovals || '0' }}</h3>
+                  <p class="text-xs text-yellow-600 mt-1 truncate">
                     Click to review requests
                   </p>
                 </div>
-                <div class="p-2 lg:p-3 bg-yellow-100 rounded-lg">
-                  <svg class="w-5 h-5 lg:w-6 lg:h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="p-1.5 sm:p-2 lg:p-3 bg-yellow-100 rounded-lg ml-2">
+                  <svg class="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                   </svg>
                 </div>
@@ -154,11 +154,11 @@
             </div>
           </Link>
 
-          <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 lg:p-6">
+          <div class="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-6">
             <div class="flex justify-between items-start">
-              <div>
-                <p class="text-xs font-medium text-gray-600 mb-1">Active Courses</p>
-                <h3 class="text-xl lg:text-2xl font-bold text-purple-600">{{ stats.activeCourses || '89' }}</h3>
+              <div class="min-w-0 flex-1">
+                <p class="text-xs font-medium text-gray-600 mb-1 truncate">Active Courses</p>
+                <h3 class="text-lg sm:text-xl lg:text-2xl font-bold text-purple-600 truncate">{{ stats.activeCourses || '89' }}</h3>
                 <p class="text-xs text-green-600 mt-1">
                   <span class="inline-flex items-center">
                     <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -168,8 +168,8 @@
                   </span>
                 </p>
               </div>
-              <div class="p-2 lg:p-3 bg-purple-100 rounded-lg">
-                <svg class="w-5 h-5 lg:w-6 lg:h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="p-1.5 sm:p-2 lg:p-3 bg-purple-100 rounded-lg ml-2">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                 </svg>
               </div>
@@ -178,50 +178,50 @@
         </div>
 
         <!-- Charts and Additional Content -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
           <!-- Recent Activity -->
-          <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-4 lg:p-6">
-            <h3 class="text-base lg:text-lg font-semibold text-gray-800 mb-4">Recent Admissions Activity</h3>
-            <div class="space-y-3 lg:space-y-4">
-              <div v-for="activity in recentActivities" :key="activity.id" class="flex items-center justify-between p-3 lg:p-4 border border-gray-200 rounded-lg">
-                <div class="flex items-center space-x-3">
-                  <div :class="`w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center ${activity.iconBg}`">
-                    <svg class="w-4 h-4 lg:w-5 lg:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="lg:col-span-2 bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-6">
+            <h3 class="text-sm sm:text-base lg:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">Recent Admissions Activity</h3>
+            <div class="space-y-2 sm:space-y-3 lg:space-y-4">
+              <div v-for="activity in recentActivities" :key="activity.id" class="flex items-center justify-between p-2 sm:p-3 lg:p-4 border border-gray-200 rounded-lg">
+                <div class="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+                  <div :class="`w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center ${activity.iconBg} flex-shrink-0`">
+                    <svg class="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path :d="activity.icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
                     </svg>
                   </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="font-medium text-gray-800 text-sm truncate">{{ activity.title }}</p>
-                    <p class="text-xs text-gray-600 truncate">{{ activity.description }}</p>
+                  <div class="min-w-0 flex-1">
+                    <p class="font-medium text-gray-800 text-xs sm:text-sm truncate">{{ activity.title }}</p>
+                    <p class="text-gray-600 text-xs truncate">{{ activity.description }}</p>
                   </div>
                 </div>
-                <div class="text-right ml-2">
-                  <p class="text-sm font-medium text-gray-800">{{ activity.status }}</p>
-                  <p class="text-xs text-gray-500">{{ activity.time }}</p>
+                <div class="text-right ml-2 flex-shrink-0">
+                  <p class="text-xs sm:text-sm font-medium text-gray-800 truncate">{{ activity.status }}</p>
+                  <p class="text-gray-500 text-xs truncate">{{ activity.time }}</p>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Quick Stats -->
-          <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 lg:p-6">
-            <h3 class="text-base lg:text-lg font-semibold text-gray-800 mb-4">Quick Stats</h3>
-            <div class="space-y-3 lg:space-y-4">
-              <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                <span class="text-xs font-medium text-blue-800">New Students This Week</span>
-                <span class="font-bold text-blue-600 text-sm">{{ stats.newStudentsThisWeek || '42' }}</span>
+          <div class="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 lg:p-6">
+            <h3 class="text-sm sm:text-base lg:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">Quick Stats</h3>
+            <div class="space-y-2 sm:space-y-3 lg:space-y-4">
+              <div class="flex justify-between items-center p-2 sm:p-3 bg-blue-50 rounded-lg">
+                <span class="text-xs font-medium text-blue-800 truncate">New Students This Week</span>
+                <span class="font-bold text-blue-600 text-xs sm:text-sm">{{ stats.newStudentsThisWeek || '42' }}</span>
               </div>
-              <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                <span class="text-xs font-medium text-green-800">Course Completions</span>
-                <span class="font-bold text-green-600 text-sm">{{ stats.courseCompletions || '127' }}</span>
+              <div class="flex justify-between items-center p-2 sm:p-3 bg-green-50 rounded-lg">
+                <span class="text-xs font-medium text-green-800 truncate">Course Completions</span>
+                <span class="font-bold text-green-600 text-xs sm:text-sm">{{ stats.courseCompletions || '127' }}</span>
               </div>
-              <div class="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
-                <span class="text-xs font-medium text-yellow-800">Pending Teacher Approvals</span>
-                <span class="font-bold text-yellow-600 text-sm">{{ stats.pendingTeacherApprovals || '8' }}</span>
+              <div class="flex justify-between items-center p-2 sm:p-3 bg-yellow-50 rounded-lg">
+                <span class="text-xs font-medium text-yellow-800 truncate">Pending Teacher Approvals</span>
+                <span class="font-bold text-yellow-600 text-xs sm:text-sm">{{ stats.pendingTeacherApprovals || '8' }}</span>
               </div>
-              <div class="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
-                <span class="text-xs font-medium text-purple-800">Active Classes</span>
-                <span class="font-bold text-purple-600 text-sm">{{ stats.activeClasses || '34' }}</span>
+              <div class="flex justify-between items-center p-2 sm:p-3 bg-purple-50 rounded-lg">
+                <span class="text-xs font-medium text-purple-800 truncate">Active Classes</span>
+                <span class="font-bold text-purple-600 text-xs sm:text-sm">{{ stats.activeClasses || '34' }}</span>
               </div>
             </div>
           </div>
@@ -338,5 +338,14 @@ onUnmounted(() => {
 
 .custom-heading {
     font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+}
+
+/* Remove underline from Link components */
+:deep(.no-underline-card) {
+    text-decoration: none !important;
+}
+
+:deep(.no-underline-card:hover) {
+    text-decoration: none !important;
 }
 </style>

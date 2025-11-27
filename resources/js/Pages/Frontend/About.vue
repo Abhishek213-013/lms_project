@@ -286,20 +286,20 @@ watch(() => props.content, (newContent, oldContent) => {
 /* Breadcrumb Area - Reduced Height */
 .breadcrumb__area {
   position: relative;
-  padding: 20px 0 10px;
+  padding: 10px 0 10px;
   background-size: cover;
   background-position: center;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 150px;
+  background-repeat: no-repeat;
+  overflow: hidden;
+  color: var(--text-primary);
   background-color: var(--bg-secondary);
+  transition: all 0.3s ease;
 }
 
 .breadcrumb__area::before {
   content: '';
   position: absolute;
+  padding: 10px 0 10px;
   left: 0;
   top: 0;
   width: 100%;
@@ -318,9 +318,9 @@ watch(() => props.content, (newContent, oldContent) => {
   font-size: 24px;
   font-weight: 400;
   color: var(--text-primary);
-  margin-bottom: 10px;
-  text-align: center;
-  width: 100%;
+  margin-bottom: 15px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+  transition: color 0.3s ease;
 }
 
 .breadcrumb {
@@ -717,7 +717,7 @@ watch(() => props.content, (newContent, oldContent) => {
 
 @media (max-width: 767px) {
   .breadcrumb__area {
-    padding: 25px 0 15px;
+    padding: 10px 0 10px;
     min-height: 120px;
   }
   
@@ -841,7 +841,7 @@ watch(() => props.content, (newContent, oldContent) => {
   
   .breadcrumb__area {
     min-height: 100px;
-    padding: 20px 0 15px;
+    padding: 10px 0 10px;
   }
 }
 

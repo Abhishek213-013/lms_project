@@ -671,4 +671,124 @@ class ScheduleController extends Controller
             ],
         ];
     }
+
+    public function teacherSchedule(): Response
+    {
+        $teacherId = Auth::id();
+        
+        // Get all classes for this teacher
+        $classes = ClassModel::where('teacher_id', $teacherId)
+            ->withCount('students')
+            ->get(['id', 'name', 'subject', 'grade']);
+
+        // Get upcoming schedules for all classes
+        $upcomingSchedules = Schedule::whereHas('class', function($query) use ($teacherId) {
+                $query->where('teacher_id', $teacherId);
+            })
+            ->with(['class:id,name', 'teacher:id,name'])
+            ->where('date', '>=', now()->toDateString())
+            ->where('status', 'scheduled')
+            ->orderBy('date', 'asc')
+            ->orderBy('time', 'asc')
+            ->limit(10)
+            ->get()
+            ->map(function ($schedule) {
+                return $this->formatScheduleData($schedule);
+            });
+
+        // Get schedule stats for all classes
+        $scheduleStats = $this->getTeacherScheduleStats($teacherId);
+
+        return Inertia::render('Teacher/Schedule/Overview', [
+            'user' => Auth::user(),
+            'initialData' => [
+                'classes' => $classes,
+                'upcomingSchedules' => $upcomingSchedules,
+                'scheduleStats' => $scheduleStats,
+                'timeSlots' => $this->getTimeSlots(),
+                'scheduleTypes' => $this->getScheduleTypes(),
+            ]
+        ]);
+    }
+
+    /**
+     * Get teacher schedule stats for all classes
+     */
+    private function getTeacherScheduleStats($teacherId)
+    {
+        try {
+            $totalSchedules = Schedule::whereHas('class', function($query) use ($teacherId) {
+                $query->where('teacher_id', $teacherId);
+            })->count();
+
+            $upcomingSchedules = Schedule::whereHas('class', function($query) use ($teacherId) {
+                $query->where('teacher_id', $teacherId);
+            })
+            ->where('date', '>=', now()->toDateString())
+            ->where('status', 'scheduled')
+            ->count();
+
+            $completedSchedules = Schedule::whereHas('class', function($query) use ($teacherId) {
+                $query->where('teacher_id', $teacherId);
+            })
+            ->where('status', 'completed')
+            ->count();
+
+            $cancelledSchedules = Schedule::whereHas('class', function($query) use ($teacherId) {
+                $query->where('teacher_id', $teacherId);
+            })
+            ->where('status', 'cancelled')
+            ->count();
+
+            return [
+                'total_schedules' => $totalSchedules,
+                'upcoming_schedules' => $upcomingSchedules,
+                'completed_schedules' => $completedSchedules,
+                'cancelled_schedules' => $cancelledSchedules,
+                'completion_rate' => $totalSchedules > 0 ? round(($completedSchedules / $totalSchedules) * 100, 1) : 0,
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error in getTeacherScheduleStats: ' . $e->getMessage());
+            return [
+                'total_schedules' => 0,
+                'upcoming_schedules' => 0,
+                'completed_schedules' => 0,
+                'cancelled_schedules' => 0,
+                'completion_rate' => 0,
+            ];
+        }
+    }
+
+    /**
+     * Get schedules for teacher (API endpoint)
+     */
+    public function getTeacherSchedules(Request $request)
+    {
+        try {
+            $teacherId = Auth::id();
+            
+            $schedules = Schedule::whereHas('class', function($query) use ($teacherId) {
+                $query->where('teacher_id', $teacherId);
+            })
+            ->with(['class:id,name', 'teacher:id,name'])
+            ->orderBy('date', 'asc')
+            ->orderBy('time', 'asc')
+            ->get()
+            ->map(function ($schedule) {
+                return $this->formatScheduleData($schedule);
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $schedules
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching teacher schedules: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch schedules'
+            ], 500);
+        }
+    }
 }
