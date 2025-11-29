@@ -4,7 +4,11 @@
       <transition name="fade" mode="out-in">
         <div :key="contentRefreshKey">
           <!-- Announcements Section -->
-          <section class="announcements-section" v-if="announcements.length > 0">
+          <section 
+            class="announcements-section" 
+            v-if="todaysAnnouncements.length > 0"
+            :style="heroSectionStyle"
+          >
             <div class="container-fluid">
               <div class="announcements-container">
                 <!-- Announcement Label -->
@@ -17,10 +21,15 @@
                 <div class="announcements-slider">
                   <div class="announcements-track" :style="trackStyle">
                     <div 
-                      v-for="(announcement, index) in announcements" 
+                      v-for="(announcement, index) in todaysAnnouncements" 
                       :key="announcement.id"
                       class="announcement-item"
-                      :class="{ active: currentAnnouncementIndex === index }"
+                      :class="{ 
+                        active: currentAnnouncementIndex === index,
+                        'clickable': announcement.isClickable 
+                      }"
+                      :data-announcement-type="announcement.announcementType"
+                      @click="handleAnnouncementClick(announcement, $event)"
                     >
                       <div class="announcement-content">
                         <!-- Announcement Image -->
@@ -45,6 +54,19 @@
                             {{ formatAnnouncementDate(announcement.date) }}
                           </span>
                         </div>
+
+                        <!-- Click Indicator for Clickable Announcements -->
+                        <div class="announcement-click-indicator" v-if="announcement.isClickable">
+                          <i class="fas fa-external-link-alt"></i>
+                          <span class="click-hint">
+                            {{ 
+                              announcement.announcementType === 'course' ? 'View Course' : 
+                              announcement.announcementType === 'teacher' ? 'View Instructor' :
+                              announcement.announcementType === 'resource' ? 'View Instructor' :
+                              'View Details' 
+                            }}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -54,11 +76,11 @@
                 <div class="announcement-controls">
                   <div class="announcement-indicators">
                     <span 
-                      v-for="(announcement, index) in announcements" 
+                      v-for="(announcement, index) in todaysAnnouncements" 
                       :key="announcement.id"
                       class="indicator"
                       :class="{ active: currentAnnouncementIndex === index }"
-                      @click="goToAnnouncement(index)"
+                      @click.stop="goToAnnouncement(index)"
                     ></span>
                   </div>
                 </div>
@@ -66,6 +88,7 @@
             </div>
           </section>
 
+          <!-- Rest of your existing sections remain the same -->
           <!-- Hero Section -->
           <section 
             class="hero-section"
@@ -349,23 +372,115 @@ const isDevelopment = ref(false)
 // Announcements related reactive data
 const currentAnnouncementIndex = ref(0)
 const autoSlideInterval = ref(null)
+const dateCheckInterval = ref(null)
 
 // Local content state for smooth updates
 const localContent = ref({})
+
+// Enhanced computed property to filter today's announcements with clickable data
+const todaysAnnouncements = computed(() => {
+  if (!props.announcements || props.announcements.length === 0) {
+    return [];
+  }
+
+  const now = new Date();
+  const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+  
+  const filteredAnnouncements = props.announcements.filter(announcement => {
+    if (!announcement.date) return false;
+    
+    const announcementDate = new Date(announcement.date);
+    
+    // Check if announcement is within last 24 hours
+    const isWithin24Hours = announcementDate >= twentyFourHoursAgo && announcementDate <= now;
+    
+    return isWithin24Hours;
+  }).map(announcement => {
+    // Debug each announcement
+    console.log('📢 Announcement data:', {
+      id: announcement.id,
+      title: announcement.title,
+      type: announcement.type,
+      related_type: announcement.related_type,
+      related_id: announcement.related_id,
+      date: announcement.date
+    });
+
+    // Enhanced clickable logic - check all possible types
+    const isCourseAnnouncement = (
+      announcement.related_type === 'course' || 
+      announcement.type === 'auto_course'
+    ) && announcement.related_id;
+    
+    const isTeacherAnnouncement = (
+      announcement.type === 'auto_teacher' ||
+      announcement.related_type === 'teacher_assignment'
+    ) && announcement.related_id;
+    
+    const isResourceAnnouncement = (
+      announcement.type === 'auto_resource' ||
+      announcement.related_type === 'resource_upload'
+    ) && announcement.related_id;
+    
+    const isClickable = isCourseAnnouncement || isTeacherAnnouncement || isResourceAnnouncement;
+    
+    // Determine target URL based on announcement type
+    let targetUrl = null;
+    let announcementType = 'general';
+    
+    if (isCourseAnnouncement) {
+      targetUrl = `/course/${announcement.related_id}`;
+      announcementType = 'course';
+    } else if (isTeacherAnnouncement) {
+      targetUrl = `/instructor/${announcement.related_id}`;
+      announcementType = 'teacher';
+    } else if (isResourceAnnouncement) {
+      // For resource announcements, we'll fetch the teacher_id when clicked
+      // Store the resource_id for later lookup
+      targetUrl = null; // Will be determined on click
+      announcementType = 'resource';
+    }
+    
+    return {
+      ...announcement,
+      isClickable: isClickable,
+      targetUrl: targetUrl,
+      announcementType: announcementType,
+      // Store additional data for resource lookups
+      resource_id: isResourceAnnouncement ? announcement.related_id : null,
+      teacher_id: isTeacherAnnouncement ? announcement.related_id : null
+    };
+  });
+
+  console.log(`📅 Filtered announcements: ${filteredAnnouncements.length}`);
+  console.log('🎯 Clickable announcements:', filteredAnnouncements.filter(a => a.isClickable).map(a => ({
+    id: a.id,
+    title: a.title,
+    type: a.announcementType,
+    targetUrl: a.targetUrl,
+    resource_id: a.resource_id,
+    teacher_id: a.teacher_id
+  })));
+  
+  return filteredAnnouncements;
+});
 
 // Initialize local content with props
 onMounted(() => {
   localContent.value = { ...props.content }
   
-  // Start auto-slide for announcements if there are multiple
-  if (props.announcements.length > 1) {
+  // Start auto-slide for today's announcements if there are multiple
+  if (todaysAnnouncements.value.length > 1) {
     startAutoSlide()
   }
+  
+  // Start date change checker
+  startDateChangeChecker()
 })
 
 // Computed property for announcements track style
 const trackStyle = computed(() => {
-  if (props.announcements.length === 0) return {}
+  if (todaysAnnouncements.value.length === 0) return {}
   
   return {
     transform: `translateX(-${currentAnnouncementIndex.value * 100}%)`
@@ -395,7 +510,9 @@ const heroSectionStyle = computed(() => {
 
 // Announcements methods
 const nextAnnouncement = () => {
-  if (currentAnnouncementIndex.value < props.announcements.length - 1) {
+  if (todaysAnnouncements.value.length === 0) return;
+  
+  if (currentAnnouncementIndex.value < todaysAnnouncements.value.length - 1) {
     currentAnnouncementIndex.value++
   } else {
     currentAnnouncementIndex.value = 0
@@ -404,21 +521,25 @@ const nextAnnouncement = () => {
 }
 
 const prevAnnouncement = () => {
+  if (todaysAnnouncements.value.length === 0) return;
+  
   if (currentAnnouncementIndex.value > 0) {
     currentAnnouncementIndex.value--
   } else {
-    currentAnnouncementIndex.value = props.announcements.length - 1
+    currentAnnouncementIndex.value = todaysAnnouncements.value.length - 1
   }
   resetAutoSlide()
 }
 
 const goToAnnouncement = (index) => {
+  if (todaysAnnouncements.value.length === 0) return;
+  
   currentAnnouncementIndex.value = index
   resetAutoSlide()
 }
 
 const startAutoSlide = () => {
-  if (props.announcements.length > 1) {
+  if (todaysAnnouncements.value.length > 1) {
     autoSlideInterval.value = setInterval(() => {
       nextAnnouncement()
     }, 5000) // Change announcement every 5 seconds
@@ -432,10 +553,224 @@ const resetAutoSlide = () => {
   }
 }
 
+// API method to fetch resource details
+const fetchResourceDetails = async (resourceId) => {
+  try {
+    console.log(`🔍 Fetching resource details for ID: ${resourceId}`);
+    
+    const response = await fetch(`/api/resources/${resourceId}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success && data.data && data.data.teacher_id) {
+      console.log(`✅ Found teacher ID: ${data.data.teacher_id} for resource: ${resourceId}`);
+      return data.data.teacher_id;
+    } else {
+      console.warn(`⚠️ No teacher_id found for resource: ${resourceId}`);
+      return null;
+    }
+  } catch (error) {
+    console.error(`❌ Failed to fetch resource details for ${resourceId}:`, error);
+    return null;
+  }
+}
+
+// Enhanced announcement click handler with API call for resources
+const handleAnnouncementClick = async (announcement, event) => {
+  console.log('🎯 Announcement clicked:', {
+    id: announcement.id,
+    title: announcement.title,
+    isClickable: announcement.isClickable,
+    targetUrl: announcement.targetUrl,
+    type: announcement.type,
+    related_type: announcement.related_type,
+    related_id: announcement.related_id,
+    announcementType: announcement.announcementType,
+    resource_id: announcement.resource_id
+  });
+  
+  if (announcement.isClickable) {
+    // Show loading state
+    const announcementElement = event?.currentTarget;
+    if (announcementElement) {
+      announcementElement.style.opacity = '0.7';
+      announcementElement.style.cursor = 'wait';
+    }
+    
+    let targetUrl = announcement.targetUrl;
+    
+    // If it's a resource announcement, fetch the teacher_id from the resource
+    if (announcement.announcementType === 'resource' && announcement.resource_id) {
+      console.log(`📚 Resource announcement detected, fetching teacher for resource: ${announcement.resource_id}`);
+      
+      try {
+        const teacherId = await fetchResourceDetails(announcement.resource_id);
+        
+        if (teacherId) {
+          targetUrl = `/instructor/${teacherId}`;
+          console.log(`🎯 Navigation target set to instructor: ${teacherId}`);
+        } else {
+          // If we can't find the teacher, show the announcement details instead
+          console.warn('❌ Could not determine teacher for resource, showing announcement details');
+          if (announcementElement) {
+            announcementElement.style.opacity = '1';
+            announcementElement.style.cursor = '';
+          }
+          showAnnouncementDetails(announcement);
+          return;
+        }
+      } catch (error) {
+        console.error('❌ Error fetching resource details:', error);
+        if (announcementElement) {
+          announcementElement.style.opacity = '1';
+          announcementElement.style.cursor = '';
+        }
+        showAnnouncementDetails(announcement);
+        return;
+      }
+    }
+    
+    // Navigate to the appropriate page after a small delay for better UX
+    setTimeout(() => {
+      console.log('🚀 Navigating to:', targetUrl);
+      router.visit(targetUrl);
+    }, 150);
+    
+  } else {
+    // For non-clickable announcements, show details
+    console.log('ℹ️ Non-clickable announcement, showing details');
+    showAnnouncementDetails(announcement);
+  }
+};
+
+// Enhanced announcement details modal
+const showAnnouncementDetails = (announcement) => {
+  const title = currentLanguage.value === 'bn' && announcement.title_bn 
+    ? announcement.title_bn 
+    : announcement.title;
+  
+  const content = currentLanguage.value === 'bn' && announcement.content_bn 
+    ? announcement.content_bn 
+    : announcement.content;
+  
+  const date = formatAnnouncementDate(announcement.date);
+  
+  // Create type badge
+  const getTypeBadge = (type) => {
+    const badges = {
+      'course': '<span class="announcement-type-badge course-badge">Course Announcement</span>',
+      'teacher': '<span class="announcement-type-badge teacher-badge">Teacher Announcement</span>',
+      'resource': '<span class="announcement-type-badge resource-badge">New Resources</span>',
+      'general': '<span class="announcement-type-badge general-badge">General Announcement</span>'
+    };
+    return badges[type] || badges['general'];
+  };
+  
+  // Create a custom modal
+  const modalHtml = `
+    <div class="announcement-modal-overlay">
+      <div class="announcement-modal">
+        <div class="modal-header">
+          <div class="modal-header-content">
+            ${getTypeBadge(announcement.announcementType)}
+            <h3>${title}</h3>
+          </div>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          ${announcement.image ? `<img src="/storage/${announcement.image}" alt="${title}" class="modal-image">` : ''}
+          <p class="announcement-content">${content}</p>
+          <div class="modal-footer">
+            <div class="modal-date">${date}</div>
+            <div class="modal-actions">
+              <button class="btn btn-secondary close-modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Add modal to DOM
+  const modalContainer = document.createElement('div');
+  modalContainer.innerHTML = modalHtml;
+  document.body.appendChild(modalContainer);
+  
+  // Add event listeners
+  const closeButton = modalContainer.querySelector('.modal-close');
+  const closeModalBtn = modalContainer.querySelector('.close-modal');
+  const overlay = modalContainer.querySelector('.announcement-modal-overlay');
+  
+  const closeModal = () => {
+    document.body.removeChild(modalContainer);
+  };
+  
+  closeButton.addEventListener('click', closeModal);
+  closeModalBtn.addEventListener('click', closeModal);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      closeModal();
+    }
+  });
+  
+  // Add escape key listener
+  const handleEscape = (e) => {
+    if (e.key === 'Escape') {
+      closeModal();
+      document.removeEventListener('keydown', handleEscape);
+    }
+  };
+  
+  document.addEventListener('keydown', handleEscape);
+};
+
+// Date change detection
+const startDateChangeChecker = () => {
+  // Check every minute for date changes
+  dateCheckInterval.value = setInterval(() => {
+    const now = new Date();
+    const currentDate = now.toDateString();
+    
+    // Store current date in localStorage to compare
+    const lastCheckedDate = localStorage.getItem('lastCheckedDate');
+    
+    if (!lastCheckedDate) {
+      localStorage.setItem('lastCheckedDate', currentDate);
+      return;
+    }
+    
+    if (lastCheckedDate !== currentDate) {
+      console.log('📅 Date changed! Refreshing announcements...');
+      localStorage.setItem('lastCheckedDate', currentDate);
+      
+      // Force content refresh to get new announcements
+      contentRefreshKey.value++;
+      
+      // Reset announcement index
+      currentAnnouncementIndex.value = 0;
+      
+      // Restart auto-slide if needed
+      if (autoSlideInterval.value) {
+        clearInterval(autoSlideInterval.value);
+      }
+      if (todaysAnnouncements.value.length > 1) {
+        startAutoSlide();
+      }
+    }
+  }, 60 * 1000); // Check every minute
+}
+
+// Updated date formatting to show only dates (no time)
 const formatAnnouncementDate = (dateString) => {
   if (!dateString) return ''
-  const date = new Date(dateString)
-  return date.toLocaleDateString(currentLanguage.value, {
+  const announcementDate = new Date(dateString)
+  
+  // Always show date in short format (e.g., "Jan 1, 2024")
+  return announcementDate.toLocaleDateString(currentLanguage.value, {
     year: 'numeric',
     month: 'short',
     day: 'numeric'
@@ -539,6 +874,25 @@ watch(() => props.currentLanguage, (newLang) => {
   }
 });
 
+// Watch today's announcements for changes
+watch(todaysAnnouncements, (newAnnouncements, oldAnnouncements) => {
+  console.log('📢 Today\'s announcements updated:', {
+    from: oldAnnouncements?.length || 0,
+    to: newAnnouncements?.length || 0
+  });
+  
+  // Reset index when announcements change
+  currentAnnouncementIndex.value = 0;
+  
+  // Restart auto-slide
+  if (autoSlideInterval.value) {
+    clearInterval(autoSlideInterval.value);
+  }
+  if (newAnnouncements.length > 1) {
+    startAutoSlide();
+  }
+});
+
 // In your Home.vue script section, add this watcher:
 watch(() => props.currentLanguage, (newPropsLanguage, oldPropsLanguage) => {
   console.log('🔄 Props language changed:', { from: oldPropsLanguage, to: newPropsLanguage });
@@ -590,6 +944,9 @@ watch(() => props.currentLanguage, (newPropsLanguage) => {
 onMounted(() => {
   isDevelopment.value = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   
+  // Initialize date tracking
+  localStorage.setItem('lastCheckedDate', new Date().toDateString());
+  
   // RESPECT PROPS LANGUAGE - If props says 'bn', use 'bn'
   if (props.currentLanguage && props.currentLanguage !== currentLanguage.value) {
     console.log('🎯 Using props language instead of localStorage:', props.currentLanguage);
@@ -606,6 +963,7 @@ onMounted(() => {
   
   if (isDevelopment.value) {
     console.log('🏠 Home Page Mounted - Language:', currentLanguage.value);
+    console.log('📢 Today\'s announcements:', todaysAnnouncements.value.length);
   }
   
   window.addEventListener('themeChanged', handleThemeChange)
@@ -620,6 +978,10 @@ onUnmounted(() => {
   
   if (autoSlideInterval.value) {
     clearInterval(autoSlideInterval.value)
+  }
+  
+  if (dateCheckInterval.value) {
+    clearInterval(dateCheckInterval.value)
   }
 })
 
@@ -888,14 +1250,259 @@ const getEducation = (instructor) => {
 </script>
 
 <style scoped>
+/* Resource badge style */
+.resource-badge {
+  background: rgba(var(--info-color-rgb), 0.1);
+  color: var(--info-color);
+  border: 1px solid rgba(var(--info-color-rgb), 0.3);
+}
 /* ==================== */
-/* ANNOUNCEMENTS SECTION STYLES - TRANSPARENT */
+/* ANNOUNCEMENT TYPE INDICATORS */
+/* ==================== */
+.announcement-item.clickable[data-announcement-type="course"] {
+  border-left: 3px solid var(--primary-color);
+}
+
+.announcement-item.clickable[data-announcement-type="teacher"] {
+  border-left: 3px solid var(--success-color);
+}
+
+.announcement-item.clickable[data-announcement-type="resource"] {
+  border-left: 3px solid var(--info-color);
+}
+
+.announcement-item.clickable[data-announcement-type="general"] {
+  border-left: 3px solid var(--warning-color);
+}
+
+.announcement-item.clickable[data-announcement-type="course"]:hover {
+  background: rgba(var(--primary-color-rgb), 0.05);
+}
+
+.announcement-item.clickable[data-announcement-type="teacher"]:hover {
+  background: rgba(var(--success-color-rgb), 0.05);
+}
+
+.announcement-item.clickable[data-announcement-type="resource"]:hover {
+  background: rgba(var(--info-color-rgb), 0.05);
+}
+
+.announcement-item.clickable[data-announcement-type="general"]:hover {
+  background: rgba(var(--warning-color-rgb), 0.05);
+}
+
+/* Add info color to CSS variables if not already present */
+:root {
+  --primary-color-rgb: 59, 130, 246;
+  --success-color-rgb: 16, 185, 129;
+  --info-color-rgb: 14, 165, 233;
+  --warning-color-rgb: 245, 158, 11;
+  --info-color: #0ea5e9;
+}
+
+.dark-theme {
+  --info-color: #38bdf8;
+}
+/* ==================== */
+/* ENHANCED ANNOUNCEMENT MODAL STYLES */
+/* ==================== */
+.announcement-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  backdrop-filter: blur(5px);
+}
+
+.announcement-modal {
+  background: var(--card-bg);
+  border-radius: 16px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border-color);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 25px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  border-radius: 16px 16px 0 0;
+}
+
+.modal-header-content {
+  flex: 1;
+}
+
+.modal-header h3 {
+  margin: 10px 0 0 0;
+  color: var(--text-primary);
+  font-size: 1.3rem;
+  line-height: 1.4;
+}
+
+.announcement-type-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.course-badge {
+  background: rgba(var(--primary-color-rgb), 0.1);
+  color: var(--primary-color);
+  border: 1px solid rgba(var(--primary-color-rgb), 0.3);
+}
+
+.teacher-badge {
+  background: rgba(var(--success-color-rgb), 0.1);
+  color: var(--success-color);
+  border: 1px solid rgba(var(--success-color-rgb), 0.3);
+}
+
+.general-badge {
+  background: rgba(var(--warning-color-rgb), 0.1);
+  color: var(--warning-color);
+  border: 1px solid rgba(var(--warning-color-rgb), 0.3);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.modal-close:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 25px;
+}
+
+.modal-image {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border-color);
+}
+
+.announcement-content {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  font-size: 1rem;
+  margin-bottom: 20px;
+  white-space: pre-line;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.modal-date {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.btn-secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background: var(--border-color);
+}
+
+.btn-primary {
+  background: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+/* Add data attribute to announcement items in template */
+/* ==================== */
+/* ANNOUNCEMENTS SECTION STYLES - HERO BACKGROUND */
 /* ==================== */
 .announcements-section {
-  background: var(--bg-primary) !important;
+  /* Background will be set dynamically via :style binding */
   color: var(--text-primary);
-  padding: 10px 0;
-  border-bottom: 1px solid var(--border-light);
+  padding: 8px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.announcements-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: inherit;
+  z-index: -1;
 }
 
 .announcements-container {
@@ -904,7 +1511,9 @@ const getEducation = (instructor) => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 15px;
-  gap: 20px;
+  gap: 15px;
+  position: relative;
+  z-index: 1;
 }
 
 .announcement-label {
@@ -913,12 +1522,15 @@ const getEducation = (instructor) => {
   gap: 8px;
   background: var(--primary-color);
   color: white;
-  padding: 8px 16px;
+  padding: 8px 12px;
   border-radius: 20px;
   font-weight: 600;
   font-size: 0.85rem;
   white-space: nowrap;
   flex-shrink: 0;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .announcement-label i {
@@ -929,6 +1541,7 @@ const getEducation = (instructor) => {
   flex: 1;
   overflow: hidden;
   position: relative;
+  min-width: 0; /* Crucial for flex item shrinking */
 }
 
 .announcements-track {
@@ -940,24 +1553,42 @@ const getEducation = (instructor) => {
 .announcement-item {
   flex: 0 0 100%;
   min-width: 100%;
-  padding: 0 10px;
+  padding: 0 5px;
+}
+
+.announcement-item.clickable {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.announcement-item.clickable:hover {
+  transform: translateY(-2px);
 }
 
 .announcement-content {
   display: flex;
   align-items: center;
-  gap: 15px;
-  min-height: 60px;
+  gap: 12px;
+  min-height: 50px;
+  padding: 5px 0;
+  position: relative;
 }
 
 .announcement-image {
   flex-shrink: 0;
-  width: 50px;
-  height: 50px;
-  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
   overflow: hidden;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: transform 0.3s ease;
+}
+
+.announcement-item.clickable:hover .announcement-image {
+  transform: scale(1.05);
 }
 
 .announcement-img {
@@ -968,31 +1599,59 @@ const getEducation = (instructor) => {
 
 .announcement-text {
   flex: 1;
-  min-width: 0;
-}
-
-.announcement-title {
-  font-size: 1rem;
-  font-weight: 600;
-  margin: 0 0 4px 0;
-  color: var(--text-primary);
-  line-height: 1.3;
-}
-
-.announcement-description {
-  font-size: 0.85rem;
-  margin: 0 0 4px 0;
-  color: var(--text-secondary);
-  line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  min-width: 0; /* Crucial for text truncation */
   overflow: hidden;
 }
 
+.announcement-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0 0 3px 0;
+  color: var(--text-primary);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+  transition: color 0.3s ease;
+}
+
+.announcement-item.clickable:hover .announcement-title {
+  color: var(--primary-color);
+}
+
+.announcement-description {
+  font-size: 0.8rem;
+  margin: 0 0 3px 0;
+  color: var(--text-secondary);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+
 .announcement-date {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.announcement-click-indicator {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  color: var(--primary-color);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  font-size: 0.8rem;
+}
+
+.announcement-item.clickable:hover .announcement-click-indicator {
+  opacity: 1;
 }
 
 .announcement-controls {
@@ -1004,21 +1663,23 @@ const getEducation = (instructor) => {
 
 .announcement-indicators {
   display: flex;
-  gap: 6px;
+  gap: 5px;
 }
 
 .indicator {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: var(--border-color);
+  background: rgba(255, 255, 255, 0.5);
   cursor: pointer;
   transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .indicator.active {
   background: var(--primary-color);
   transform: scale(1.2);
+  border-color: var(--primary-color);
 }
 
 .indicator:hover {
@@ -1026,42 +1687,156 @@ const getEducation = (instructor) => {
 }
 
 /* ==================== */
-/* RESPONSIVE DESIGN FOR ANNOUNCEMENTS */
+/* ANNOUNCEMENT MODAL STYLES */
+/* ==================== */
+.announcement-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.announcement-modal {
+  background: var(--card-bg);
+  border-radius: 12px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  flex: 1;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-image {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.modal-date {
+  margin-top: 15px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  text-align: right;
+}
+
+/* ==================== */
+/* MOBILE RESPONSIVE DESIGN FOR ANNOUNCEMENTS */
 /* ==================== */
 @media (max-width: 768px) {
+  .announcements-section {
+    padding: 10px 0;
+  }
+  
   .announcements-container {
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     padding: 0 10px;
   }
   
   .announcement-label {
-    align-self: flex-start;
+    align-self: stretch;
+    text-align: center;
+    justify-content: center;
     font-size: 0.8rem;
     padding: 6px 12px;
+    border-radius: 15px;
+  }
+  
+  .announcements-slider {
+    width: 100%;
+    order: 2;
   }
   
   .announcement-content {
-    gap: 12px;
-    min-height: 50px;
+    gap: 10px;
+    min-height: 45px;
+    padding: 3px 0;
   }
   
   .announcement-image {
-    width: 40px;
-    height: 40px;
+    width: 35px;
+    height: 35px;
+    border-radius: 5px;
   }
   
   .announcement-title {
-    font-size: 0.9rem;
-  }
-  
-  .announcement-description {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     -webkit-line-clamp: 1;
   }
   
+  .announcement-description {
+    font-size: 0.75rem;
+    -webkit-line-clamp: 1;
+  }
+  
+  .announcement-date {
+    font-size: 0.65rem;
+  }
+  
+  .announcement-click-indicator {
+    display: none; /* Hide on mobile for cleaner look */
+  }
+  
   .announcement-controls {
-    align-self: center;
+    order: 3;
+    width: 100%;
+    margin-top: 5px;
+  }
+  
+  .announcement-indicators {
+    gap: 4px;
+  }
+  
+  .indicator {
+    width: 5px;
+    height: 5px;
   }
 }
 
@@ -1070,10 +1845,47 @@ const getEducation = (instructor) => {
     padding: 8px 0;
   }
   
+  .announcements-container {
+    gap: 8px;
+    padding: 0 8px;
+  }
+  
+  .announcement-label {
+    font-size: 0.75rem;
+    padding: 5px 10px;
+  }
+  
+  .announcement-content {
+    gap: 8px;
+    min-height: 40px;
+  }
+  
+  .announcement-image {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .announcement-title {
+    font-size: 0.8rem;
+  }
+  
+  .announcement-description {
+    font-size: 0.7rem;
+  }
+  
+  .announcement-date {
+    font-size: 0.6rem;
+  }
+}
+
+/* Extra small devices (phones under 360px) */
+@media (max-width: 360px) {
   .announcement-content {
     flex-direction: column;
     text-align: center;
-    gap: 8px;
+    gap: 5px;
+    min-height: auto;
+    padding: 8px 0;
   }
   
   .announcement-image {
@@ -1082,17 +1894,26 @@ const getEducation = (instructor) => {
   
   .announcement-text {
     text-align: center;
+    width: 100%;
+  }
+  
+  .announcement-title,
+  .announcement-description {
+    -webkit-line-clamp: 1;
+    text-align: center;
   }
 }
 
+/* ==================== */
 /* BENGALI LANGUAGE ADJUSTMENTS FOR ANNOUNCEMENTS */
+/* ==================== */
 .bn-lang .announcement-title {
-  font-size: 0.95rem !important;
+  font-size: 0.85rem !important;
   line-height: 1.4 !important;
 }
 
 .bn-lang .announcement-description {
-  font-size: 0.8rem !important;
+  font-size: 0.75rem !important;
   line-height: 1.4 !important;
 }
 
@@ -1100,14 +1921,21 @@ const getEducation = (instructor) => {
   font-size: 0.75rem !important;
 }
 
-/* Dark theme adjustments */
-.dark-theme .announcements-section {
-  border-bottom-color: var(--border-dark);
+/* Bengali mobile adjustments */
+@media (max-width: 768px) {
+  .bn-lang .announcement-title {
+    font-size: 0.8rem !important;
+  }
+  
+  .bn-lang .announcement-description {
+    font-size: 0.7rem !important;
+  }
 }
 
+/* Dark theme adjustments */
 .dark-theme .announcement-image {
-  background: var(--bg-dark-secondary);
-  border-color: var(--border-dark);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .dark-theme .announcement-title {
@@ -1121,6 +1949,14 @@ const getEducation = (instructor) => {
 .dark-theme .announcement-date {
   color: var(--text-dark-muted);
 }
+
+.dark-theme .indicator {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Rest of your existing CSS styles remain the same */
+/* ... (all your existing hero, courses, instructors, stats, CTA styles) ... */
 
 /* ==================== */
 /* UPDATED HERO SECTION STYLES - MOBILE FIRST */

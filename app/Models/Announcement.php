@@ -43,8 +43,44 @@ class Announcement extends Model
         return $query->where('type', 'like', 'auto_%');
     }
 
+    /**
+     * Get the related model based on related_type
+     */
     public function related()
     {
-        return $this->morphTo();
+        // Map related_type to actual model classes
+        $typeMap = [
+            'course' => ClassModel::class,
+            'teacher_assignment' => User::class,
+            // Add other mappings as needed
+        ];
+
+        $modelClass = $typeMap[$this->related_type] ?? null;
+
+        if ($modelClass) {
+            return $this->morphTo(__FUNCTION__, 'related_type', 'related_id')->withDefault();
+        }
+
+        return $this->morphTo()->withDefault();
+    }
+
+    /**
+     * Check if this announcement is related to a course
+     */
+    public function isCourseRelated()
+    {
+        return $this->related_type === 'course' || $this->type === 'auto_course';
+    }
+
+    /**
+     * Get the course if this announcement is course-related
+     */
+    public function getCourseAttribute()
+    {
+        if ($this->isCourseRelated() && $this->related_type === 'course') {
+            return $this->related;
+        }
+
+        return null;
     }
 }

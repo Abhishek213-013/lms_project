@@ -23,11 +23,34 @@ class FrontendController extends Controller
      */
     public function home(Request $request): Response
     {
-
+        // FIXED: Handle announcements without eager loading problematic relationships
         $activeAnnouncements = Announcement::where('is_active', true)
+            ->orderBy('date', 'desc')
             ->orderBy('created_at', 'desc')
             ->limit(5)
-            ->get();
+            ->get()
+            ->map(function($announcement) {
+                return [
+                    'id' => $announcement->id,
+                    'title' => $announcement->title,
+                    'title_bn' => $announcement->title_bn,
+                    'content' => $announcement->content,
+                    'content_bn' => $announcement->content_bn,
+                    'image' => $announcement->image,
+                    'date' => $announcement->date,
+                    'date_bn' => $announcement->date_bn,
+                    'type' => $announcement->type,
+                    'related_id' => $announcement->related_id,
+                    'related_type' => $announcement->related_type,
+                    'is_active' => $announcement->is_active,
+                    'created_at' => $announcement->created_at,
+                    'updated_at' => $announcement->updated_at,
+                ];
+            });
+
+            
+
+        Log::info("📢 Loaded {$activeAnnouncements->count()} active announcements");
 
         // SIMPLE: Get language from session, default to Bengali
         $language = session('lang', 'bn');
@@ -48,31 +71,7 @@ class FrontendController extends Controller
             'hero_subtitle' => $content['home_hero_subtitle'] ?? 'Not found'
         ]);
 
-        // ============ GET ACTIVE ANNOUNCEMENTS ============
-        $announcements = Announcement::where('is_active', true)
-            ->orderBy('date', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get()
-            ->map(function($announcement) use ($language) {
-                return [
-                    'id' => $announcement->id,
-                    'title' => $announcement->title,
-                    'title_bn' => $announcement->title_bn,
-                    'content' => $announcement->content,
-                    'content_bn' => $announcement->content_bn,
-                    'image' => $announcement->image,
-                    'date' => $announcement->date,
-                    'date_bn' => $announcement->date_bn,
-                    'is_active' => $announcement->is_active,
-                    'created_at' => $announcement->created_at,
-                    'updated_at' => $announcement->updated_at,
-                ];
-            });
-
-        Log::info("📢 Loaded {$announcements->count()} active announcements");
-
-        // Rest of your method...
+        // Rest of your method remains the same...
         $featuredCourses = ClassModel::where('status', 'active')
             ->with(['teacher:id,name', 'students'])
             ->select([
@@ -153,7 +152,7 @@ class FrontendController extends Controller
             'instructors' => $instructors,
             'stats' => $stats,
             'testimonials' => $this->getTestimonials($language),
-            'announcements' => $activeAnnouncements, // ADD ANNOUNCEMENTS HERE
+            'announcements' => $activeAnnouncements,
             'pageTitle' => $content['home_hero_title'] ?? 'Pathshala',
             'metaDescription' => $content['home_hero_subtitle'] ?? 'Learn with Expert Teachers',
             'auth' => [

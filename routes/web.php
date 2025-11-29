@@ -24,7 +24,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\InstructorController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\Admin\AnnouncementController;
-
+use Illuminate\Support\Facades\Log;
 // ============ PUBLIC ROUTES ============
 Route::post('/switch-language-about', [FrontendController::class, 'switchLanguageAbout']);
 Route::post('/switch-language', [FrontendController::class, 'switchLanguageApi'])->name('switch.language');
@@ -166,7 +166,7 @@ Route::prefix('api')->middleware('web')->group(function () {
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error fetching course video: ' . $e->getMessage());
+            Log::error('Error fetching course video: ' . $e->getMessage());
             
             return response()->json([
                 'success' => false,
@@ -175,6 +175,49 @@ Route::prefix('api')->middleware('web')->group(function () {
             ], 500);
         }
     })->name('api.courses.video');
+    
+    // ============ ADDED: RESOURCE DETAILS API ROUTE ============
+    Route::get('/resources/{resourceId}', function ($resourceId) {
+        try {
+            Log::info("🔍 API: Fetching resource details for ID: {$resourceId}");
+            
+            $resource = \App\Models\Resource::with('teacher')->find($resourceId);
+            
+            if (!$resource) {
+                Log::warning("❌ API: Resource not found with ID: {$resourceId}");
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Resource not found'
+                ], 404);
+            }
+            
+            Log::info("✅ API: Found resource - Title: {$resource->title}, Teacher ID: {$resource->teacher_id}");
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => $resource->id,
+                    'title' => $resource->title,
+                    'type' => $resource->type,
+                    'teacher_id' => $resource->teacher_id,
+                    'teacher' => $resource->teacher ? [
+                        'id' => $resource->teacher->id,
+                        'name' => $resource->teacher->name
+                    ] : null,
+                    'class_id' => $resource->class_id,
+                    'created_at' => $resource->created_at
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('❌ API: Error fetching resource details: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch resource details'
+            ], 500);
+        }
+    })->name('api.resources.details');
     
     // Health check
     Route::get('/health', function () {

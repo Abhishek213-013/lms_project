@@ -1,35 +1,58 @@
 <template>
   <div class="min-h-screen bg-gray-50 flex">
+    <!-- Mobile Menu Button -->
+    <div class="lg:hidden fixed top-4 left-4 z-50">
+      <button 
+        @click="toggleMobileMenu"
+        class="p-2 bg-white rounded-lg shadow-md border border-gray-200"
+      >
+        <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path v-if="!isMobileMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Mobile Overlay -->
+    <div 
+      v-if="isMobileMenuOpen"
+      @click="closeMobileMenu"
+      class="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+    ></div>
+
     <!-- Sidebar -->
     <TeacherSidebar 
+      :is-mobile-menu-open="isMobileMenuOpen"
       @showUploadModal="showUploadModal = true"
       @createAssignment="createAssignment"
       @goBackToAdmin="goBackToAdmin"
+      @close-mobile="closeMobileMenu"
     />
 
     <!-- Main Content -->
-    <div class="flex-1 ml-64 min-w-0">
+    <div class="flex-1 lg:ml-64 min-w-0 w-full transition-all duration-300">
       <!-- Top Navbar -->
-      <nav class="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div class="px-6 py-4">
+      <nav class="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div class="px-4 sm:px-6 py-4">
           <div class="flex justify-between items-center">
-            <div class="flex items-center min-w-0">
-              <h1 class="custom-heading truncate">Teacher Portal - {{ teacher.name || 'Loading...' }}</h1>
+            <div class="flex items-center min-w-0 flex-1 lg:flex-none">
+              <!-- Mobile menu button space -->
+              <div class="w-10 lg:hidden"></div>
+              <h1 class="custom-heading truncate text-lg sm:text-xl ml-2 lg:ml-0">Teacher Portal - {{ teacher.name || 'Loading...' }}</h1>
             </div>
             
-            <div class="flex items-center space-x-4 flex-shrink-0">
-              <!-- Search -->
-              <div class="relative hidden md:block">
+            <div class="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
+              <!-- Search - Hidden on mobile, visible on medium screens and up -->
+              <div class="relative hidden sm:block">
                 <input 
                   type="text" 
                   placeholder="Search..." 
-                  class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+                  class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-40 md:w-64 text-sm"
                 >
                 <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                 </svg>
               </div>
-              
 
               <!-- User Menu -->
               <div class="relative flex-shrink-0">
@@ -46,13 +69,12 @@
                     >
                     <span v-else class="text-white text-sm font-semibold">{{ userInitials }}</span>
                   </div>
-                  <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-4 h-4 text-gray-400 flex-shrink-0 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                   </svg>
                 </button>
 
                 <!-- User Dropdown -->
-                <!-- In the User Dropdown section -->
                 <div v-show="userMenuOpen" class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-20">
                   <!-- User Info in Dropdown Header -->
                   <div class="px-4 py-3 border-b border-gray-200">
@@ -73,7 +95,7 @@
                     </div>
                   </div>
                   
-                  <!-- Dropdown Menu Items - FIXED: No underline -->
+                  <!-- Dropdown Menu Items -->
                   <button 
                     @click="editProfile"
                     class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center no-underline"
@@ -110,16 +132,16 @@
       </nav>
 
       <!-- Page Content -->
-      <div class="p-6 max-w-full overflow-x-hidden">
+      <div class="p-4 sm:p-6 max-w-full overflow-x-hidden">
         <!-- Main Content -->
-        <div class="space-y-6">
+        <div class="space-y-4 sm:space-y-6">
           <!-- Teacher Profile Header -->
-          <div class="bg-white rounded-lg border border-gray-200 p-6">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between">
-              <div class="flex items-center space-x-4 mb-4 md:mb-0">
+          <div class="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <div class="flex items-center space-x-3 sm:space-x-4 mb-4 sm:mb-0">
                 <!-- Profile Picture with Upload Functionality -->
                 <div class="relative group">
-                  <div class="w-20 h-20 bg-purple-600 rounded-full flex items-center justify-center overflow-hidden cursor-pointer"
+                  <div class="w-16 h-16 sm:w-20 sm:h-20 bg-purple-600 rounded-full flex items-center justify-center overflow-hidden cursor-pointer"
                        @click="triggerProfilePictureUpload">
                     <img 
                       v-if="teacher.profile_picture_url" 
@@ -127,13 +149,13 @@
                       :alt="teacher.name"
                       class="w-full h-full object-cover"
                     >
-                    <span v-else class="text-white text-2xl font-semibold">
+                    <span v-else class="text-white text-lg sm:text-2xl font-semibold">
                       {{ getUserInitials(teacher.name) }}
                     </span>
                     
                     <!-- Upload Overlay -->
                     <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                      <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg class="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
                       </svg>
@@ -144,7 +166,7 @@
                   <button 
                     v-if="teacher.profile_picture_url"
                     @click.stop="removeProfilePicture"
-                    class="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors shadow-md"
+                    class="absolute -top-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors shadow-md"
                     title="Remove profile picture"
                   >
                     ×
@@ -152,29 +174,29 @@
 
                   <!-- Upload Indicator -->
                   <div v-if="uploadingPicture" class="absolute inset-0 bg-black bg-opacity-70 rounded-full flex items-center justify-center">
-                    <svg class="animate-spin w-6 h-6 text-white" fill="none" viewBox="0 0 24 24">
+                    <svg class="animate-spin w-4 h-4 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24">
                       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                       <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                   </div>
                 </div>
                 
-                <div>
-                  <h2 class="text-2xl font-bold text-gray-900">{{ teacher.name }}</h2>
-                  <p class="text-gray-600">{{ teacher.email }}</p>
-                  <p class="text-sm text-gray-500">@{{ teacher.username }}</p>
+                <div class="min-w-0 flex-1">
+                  <h2 class="text-xl sm:text-2xl font-bold text-gray-900 truncate">{{ teacher.name }}</h2>
+                  <p class="text-gray-600 text-sm sm:text-base truncate">{{ teacher.email }}</p>
+                  <p class="text-xs sm:text-sm text-gray-500 truncate">@{{ teacher.username }}</p>
                 </div>
               </div>
-              <div class="flex space-x-3">
+              <div class="flex space-x-2 sm:space-x-3">
                 <button 
                   @click="editProfile"
-                  class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  class="px-3 py-2 sm:px-4 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
                 >
                   Edit Profile
                 </button>
                 <button 
                   @click="sendMessage"
-                  class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  class="px-3 py-2 sm:px-4 sm:py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm sm:text-base"
                 >
                   Message
                 </button>
@@ -183,43 +205,43 @@
           </div>
 
           <!-- Stats Cards -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="bg-white rounded-lg border border-gray-200 p-6">
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div class="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
               <div class="flex justify-between items-start">
-                <div>
-                  <p class="text-sm font-medium text-gray-600 mb-2">Total Classes</p>
-                  <h3 class="text-3xl font-bold text-blue-600">{{ teacherClasses.length }}</h3>
+                <div class="min-w-0">
+                  <p class="text-xs sm:text-sm font-medium text-gray-600 mb-1 sm:mb-2 truncate">Total Classes</p>
+                  <h3 class="text-xl sm:text-2xl lg:text-3xl font-bold text-blue-600">{{ teacherClasses.length }}</h3>
                 </div>
-                <div class="p-3 bg-blue-100 rounded-lg">
-                  <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="p-2 sm:p-3 bg-blue-100 rounded-lg ml-2 flex-shrink-0">
+                  <svg class="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                   </svg>
                 </div>
               </div>
             </div>
 
-            <div class="bg-white rounded-lg border border-gray-200 p-6">
+            <div class="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
               <div class="flex justify-between items-start">
-                <div>
-                  <p class="text-sm font-medium text-gray-600 mb-2">Total Students</p>
-                  <h3 class="text-3xl font-bold text-green-600">{{ totalStudents }}</h3>
+                <div class="min-w-0">
+                  <p class="text-xs sm:text-sm font-medium text-gray-600 mb-1 sm:mb-2 truncate">Total Students</p>
+                  <h3 class="text-xl sm:text-2xl lg:text-3xl font-bold text-green-600">{{ totalStudents }}</h3>
                 </div>
-                <div class="p-3 bg-green-100 rounded-lg">
-                  <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="p-2 sm:p-3 bg-green-100 rounded-lg ml-2 flex-shrink-0">
+                  <svg class="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                   </svg>
                 </div>
               </div>
             </div>
 
-            <div class="bg-white rounded-lg border border-gray-200 p-6">
+            <div class="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
               <div class="flex justify-between items-start">
-                <div>
-                  <p class="text-sm font-medium text-gray-600 mb-2">Resources</p>
-                  <h3 class="text-3xl font-bold text-purple-600">{{ recentResources.length }}</h3>
+                <div class="min-w-0">
+                  <p class="text-xs sm:text-sm font-medium text-gray-600 mb-1 sm:mb-2 truncate">Resources</p>
+                  <h3 class="text-xl sm:text-2xl lg:text-3xl font-bold text-purple-600">{{ recentResources.length }}</h3>
                 </div>
-                <div class="p-3 bg-purple-100 rounded-lg">
-                  <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="p-2 sm:p-3 bg-purple-100 rounded-lg ml-2 flex-shrink-0">
+                  <svg class="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                   </svg>
                 </div>
@@ -227,17 +249,17 @@
             </div>
 
             <!-- Experience Stats Card -->
-            <div class="bg-white rounded-lg border border-gray-200 p-6">
+            <div class="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
               <div class="flex justify-between items-start">
-                <div>
-                  <p class="text-sm font-medium text-gray-600 mb-2">Experience</p>
-                  <h3 class="text-3xl font-bold text-orange-600">
+                <div class="min-w-0">
+                  <p class="text-xs sm:text-sm font-medium text-gray-600 mb-1 sm:mb-2 truncate">Experience</p>
+                  <h3 class="text-xl sm:text-2xl lg:text-3xl font-bold text-orange-600">
                     {{ formatExperience(teacher.experience) }}
                   </h3>
-                  <p class="text-xs text-gray-500 mt-1">Teaching experience</p>
+                  <p class="text-xs text-gray-500 mt-1 hidden sm:block">Teaching experience</p>
                 </div>
-                <div class="p-3 bg-orange-100 rounded-lg">
-                  <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="p-2 sm:p-3 bg-orange-100 rounded-lg ml-2 flex-shrink-0">
+                  <svg class="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                   </svg>
                 </div>
@@ -246,16 +268,16 @@
           </div>
 
           <!-- Main Content Grid -->
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             <!-- Left Column - Teacher Info -->
-            <div class="lg:col-span-1 space-y-6">
+            <div class="lg:col-span-1 space-y-4 sm:space-y-6">
               <!-- Teacher Information -->
-              <div class="bg-white rounded-lg border border-gray-200 p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Teacher Information</h3>
-                <div class="space-y-4">
+              <div class="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+                <h3 class="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">Teacher Information</h3>
+                <div class="space-y-3 sm:space-y-4">
                   <div>
-                    <label class="text-sm font-medium text-gray-600">Experience</label>
-                    <p class="text-gray-900">{{ formatExperience(teacher.experience) }} of teaching experience</p>
+                    <label class="text-xs sm:text-sm font-medium text-gray-600">Experience</label>
+                    <p class="text-gray-900 text-sm sm:text-base">{{ formatExperience(teacher.experience) }} of teaching experience</p>
                     <p class="text-xs text-gray-500 mt-1">
                       <span v-if="getExperienceLevel(teacher.experience)" 
                             :class="`px-2 py-1 rounded-full text-xs ${getExperienceLevel(teacher.experience).color}`">
@@ -264,118 +286,118 @@
                     </p>
                   </div>
                   <div>
-                    <label class="text-sm font-medium text-gray-600">Education</label>
-                    <p class="text-gray-900">{{ teacher.education_qualification }} from {{ teacher.institute }}</p>
+                    <label class="text-xs sm:text-sm font-medium text-gray-600">Education</label>
+                    <p class="text-gray-900 text-sm sm:text-base">{{ teacher.education_qualification }} from {{ teacher.institute }}</p>
                   </div>
                   <div>
-                    <label class="text-sm font-medium text-gray-600">Date of Birth</label>
-                    <p class="text-gray-900">{{ formatDate(teacher.dob) }}</p>
+                    <label class="text-xs sm:text-sm font-medium text-gray-600">Date of Birth</label>
+                    <p class="text-gray-900 text-sm sm:text-base">{{ formatDate(teacher.dob) }}</p>
                   </div>
                   <div>
-                    <label class="text-sm font-medium text-gray-600">Join Date</label>
-                    <p class="text-gray-900">{{ formatDate(teacher.created_at) }}</p>
+                    <label class="text-xs sm:text-sm font-medium text-gray-600">Join Date</label>
+                    <p class="text-gray-900 text-sm sm:text-base">{{ formatDate(teacher.created_at) }}</p>
                   </div>
                 </div>
               </div>
 
               <!-- Quick Actions -->
-              <div class="bg-white rounded-lg border border-gray-200 p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
-                <div class="space-y-3">
+              <div class="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+                <h3 class="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">Quick Actions</h3>
+                <div class="space-y-2 sm:space-y-3">
                   <button 
                     @click="showUploadModal = true"
-                    class="w-full flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                    class="w-full flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left text-sm sm:text-base"
                   >
-                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                     </svg>
-                    <span>Upload Resources</span>
+                    <span class="truncate">Upload Resources</span>
                   </button>
                   <button 
                     @click="createAssignment"
-                    class="w-full flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                    class="w-full flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left text-sm sm:text-base"
                   >
-                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                     </svg>
-                    <span>Create Assignment</span>
+                    <span class="truncate">Create Assignment</span>
                   </button>
                   <button 
                     @click="scheduleClass"
-                    class="w-full flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                    class="w-full flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left text-sm sm:text-base"
                   >
-                    <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                     </svg>
-                    <span>Schedule Class</span>
+                    <span class="truncate">Schedule Class</span>
                   </button>
                 </div>
               </div>
             </div>
 
             <!-- Right Column - Classes and Resources -->
-            <div class="lg:col-span-2 space-y-6">
+            <div class="lg:col-span-2 space-y-4 sm:space-y-6">
               <!-- Classes Section -->
-              <div class="bg-white rounded-lg border border-gray-200 p-6">
-                <div class="flex justify-between items-center mb-4">
-                  <h3 class="text-lg font-semibold text-gray-800">My Classes</h3>
-                  <button class="text-blue-600 hover:text-blue-700 text-sm font-medium" @click="navigateToAllClasses">
+              <div class="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+                <div class="flex justify-between items-center mb-3 sm:mb-4">
+                  <h3 class="text-base sm:text-lg font-semibold text-gray-800">My Classes</h3>
+                  <button class="text-blue-600 hover:text-blue-700 text-xs sm:text-sm font-medium" @click="navigateToAllClasses">
                     View All
                   </button>
                 </div>
-                <div class="space-y-4">
+                <div class="space-y-3 sm:space-y-4">
                   <div 
                     v-for="classItem in teacherClasses" 
                     :key="classItem.id"
-                    class="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                    class="p-3 sm:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
                     @click="viewClass(classItem.id)"
                   >
                     <div class="flex justify-between items-start">
-                      <div>
-                        <h4 class="font-semibold text-gray-900">{{ classItem.name }}</h4>
-                        <p class="text-sm text-gray-600">{{ classItem.subject }} • {{ classItem.studentCount }} students</p>
-                        <p class="text-xs text-gray-500 mt-1">{{ classItem.schedule }}</p>
+                      <div class="min-w-0 flex-1">
+                        <h4 class="font-semibold text-gray-900 text-sm sm:text-base truncate">{{ classItem.name }}</h4>
+                        <p class="text-xs sm:text-sm text-gray-600 truncate">{{ classItem.subject }} • {{ classItem.studentCount }} students</p>
+                        <p class="text-xs text-gray-500 mt-1 truncate">{{ classItem.schedule }}</p>
                       </div>
-                      <span :class="`px-2 py-1 text-xs font-semibold rounded-full ${getClassStatusColor(classItem.status)}`">
+                      <span :class="`px-2 py-1 text-xs font-semibold rounded-full flex-shrink-0 ml-2 ${getClassStatusColor(classItem.status)}`">
                         {{ classItem.status }}
                       </span>
                     </div>
                   </div>
-                  <div v-if="teacherClasses.length === 0" class="text-center py-8 text-gray-500">
+                  <div v-if="teacherClasses.length === 0" class="text-center py-6 sm:py-8 text-gray-500 text-sm sm:text-base">
                     No classes assigned yet.
                   </div>
                 </div>
               </div>
 
               <!-- Recent Resources -->
-              <div class="bg-white rounded-lg border border-gray-200 p-6">
-                <div class="flex justify-between items-center mb-4">
-                  <h3 class="text-lg font-semibold text-gray-800">Recent Resources</h3>
-                  <button class="text-blue-600 hover:text-blue-700 text-sm font-medium" @click="navigateToMyResources">
+              <div class="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+                <div class="flex justify-between items-center mb-3 sm:mb-4">
+                  <h3 class="text-base sm:text-lg font-semibold text-gray-800">Recent Resources</h3>
+                  <button class="text-blue-600 hover:text-blue-700 text-xs sm:text-sm font-medium" @click="navigateToMyResources">
                     View All
                   </button>
                 </div>
-                <div class="space-y-3">
+                <div class="space-y-2 sm:space-y-3">
                   <div 
                     v-for="resource in recentResources" 
                     :key="resource.id"
-                    class="flex items-center justify-between p-3 border border-gray-200 rounded-lg"
+                    class="flex items-center justify-between p-2 sm:p-3 border border-gray-200 rounded-lg"
                   >
-                    <div class="flex items-center space-x-3">
-                      <div :class="`p-2 rounded-lg ${getResourceTypeColor(resource.type)}`">
-                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+                      <div :class="`p-1.5 sm:p-2 rounded-lg ${getResourceTypeColor(resource.type)} flex-shrink-0`">
+                        <svg class="w-3 h-3 sm:w-4 sm:h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path v-if="resource.type === 'video'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
                           <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                         </svg>
                       </div>
-                      <div>
-                        <h4 class="text-sm font-medium text-gray-900">{{ resource.title }}</h4>
-                        <p class="text-xs text-gray-500">{{ resource.class }} • {{ formatDate(resource.uploaded_at) }}</p>
+                      <div class="min-w-0 flex-1">
+                        <h4 class="text-xs sm:text-sm font-medium text-gray-900 truncate">{{ resource.title }}</h4>
+                        <p class="text-xs text-gray-500 truncate">{{ resource.class }} • {{ formatDate(resource.uploaded_at) }}</p>
                       </div>
                     </div>
-                    <span class="text-xs text-gray-500 capitalize">{{ resource.type }}</span>
+                    <span class="text-xs text-gray-500 capitalize flex-shrink-0 ml-2 hidden sm:block">{{ resource.type }}</span>
                   </div>
-                  <div v-if="recentResources.length === 0" class="text-center py-8 text-gray-500">
+                  <div v-if="recentResources.length === 0" class="text-center py-6 sm:py-8 text-gray-500 text-sm sm:text-base">
                     No resources uploaded yet.
                   </div>
                 </div>
@@ -831,7 +853,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
 import TeacherSidebar from '../Layout/TeacherSidebar.vue'
 
@@ -853,6 +875,7 @@ const uploading = ref(false)
 const savingProfile = ref(false)
 const sendingMessage = ref(false)
 const uploadingPicture = ref(false)
+const isMobileMenuOpen = ref(false)
 
 // Profile Picture State
 const selectedFile = ref(null)
@@ -903,6 +926,27 @@ const userInitials = computed(() => {
 const totalStudents = computed(() => {
   return props.teacherClasses.reduce((sum, classItem) => sum + (classItem.studentCount || 0), 0)
 })
+
+// Mobile menu functions
+const toggleMobileMenu = () => {
+  isMobileMenuOpen.value = !isMobileMenuOpen.value
+}
+
+const closeMobileMenu = () => {
+  isMobileMenuOpen.value = false
+}
+
+// Handle escape key to close mobile menu
+const handleEscape = (event) => {
+  if (event.key === 'Escape') {
+    if (isMobileMenuOpen.value) {
+      closeMobileMenu()
+    }
+    if (userMenuOpen.value) {
+      userMenuOpen.value = false
+    }
+  }
+}
 
 // Profile Picture Methods
 const triggerProfilePictureUpload = () => {
@@ -988,26 +1032,23 @@ const uploadProfilePicture = async () => {
       method: 'POST',
       headers: {
         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-        'Accept': 'application/json', // Explicitly ask for JSON
+        'Accept': 'application/json',
       },
       body: formData
     })
     
-    // Check if response is JSON
     const contentType = response.headers.get('content-type');
     let result;
     
     if (contentType && contentType.includes('application/json')) {
       result = await response.json();
     } else {
-      // Handle non-JSON response (likely an error page)
       const text = await response.text();
       console.error('Non-JSON response:', text);
       throw new Error('Server returned an error. Please try again.');
     }
     
     if (result.success) {
-      // Update the teacher object with new profile picture URL
       props.teacher.profile_picture_url = result.profile_picture_url
       props.teacher.profile_picture = result.profile_picture_path
       
@@ -1015,7 +1056,6 @@ const uploadProfilePicture = async () => {
       selectedFile.value = null
       profilePicturePreview.value = null
       
-      // Show success message
       alert('Profile picture updated successfully!')
     } else {
       uploadError.value = result.message || 'Failed to upload profile picture'
@@ -1024,7 +1064,6 @@ const uploadProfilePicture = async () => {
     console.error('Error uploading profile picture:', error)
     uploadError.value = error.message || 'An error occurred while uploading the picture'
     
-    // If it's a server error, show more details
     if (error.message.includes('Server returned an error')) {
       uploadError.value = 'Server error occurred. Please check if the upload endpoint is working.';
     }
@@ -1052,7 +1091,6 @@ const removeProfilePicture = async () => {
     const result = await response.json()
     
     if (result.success) {
-      // Remove profile picture from teacher object
       props.teacher.profile_picture_url = null
       props.teacher.profile_picture = null
       
@@ -1238,7 +1276,6 @@ const uploadResource = async () => {
     return
   }
   uploading.value = true
-  // Simulate upload
   setTimeout(() => {
     uploading.value = false
     showUploadModal.value = false
@@ -1283,7 +1320,6 @@ const saveProfile = async () => {
     const result = await response.json()
 
     if (result.success) {
-      // Update the teacher object with new data
       Object.assign(props.teacher, profileForm.value)
       showEditProfileModal.value = false
       alert('Profile updated successfully!')
@@ -1300,7 +1336,6 @@ const saveProfile = async () => {
 
 const sendMessageToAdmin = async () => {
   sendingMessage.value = true
-  // Simulate send
   setTimeout(() => {
     sendingMessage.value = false
     showMessageModal.value = false
@@ -1337,11 +1372,15 @@ const handleClickOutside = (event) => {
 // Lifecycle
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  document.addEventListener('keydown', handleEscape)
   
-  // Ensure teacher object has profile_picture_url
   if (props.teacher?.profile_picture && !props.teacher.profile_picture_url) {
     props.teacher.profile_picture_url = `/storage/${props.teacher.profile_picture}`
   }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleEscape)
 })
 </script>
 
@@ -1378,12 +1417,30 @@ onMounted(() => {
   opacity: 1;
 }
 
-:deep(*) {
-    font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
-    font-weight: 400;
+/* Mobile-specific adjustments */
+@media (max-width: 640px) {
+  .custom-heading {
+    font-size: 1.125rem;
+  }
 }
 
-.custom-heading {
-    font-family: "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol" !important;
+/* Ensure smooth transitions */
+.transition-transform {
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+/* Z-index for proper layering */
+.z-30 {
+  z-index: 30;
+}
+
+.z-40 {
+  z-index: 40;
+}
+
+.z-50 {
+  z-index: 50;
 }
 </style>
