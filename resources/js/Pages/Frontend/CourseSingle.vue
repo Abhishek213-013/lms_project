@@ -92,9 +92,9 @@
                 </div>
 
                 <!-- Course Thumbnail -->
-                <div class="courses__details-thumb mb-5">
+                <!-- <div class="courses__details-thumb mb-5">
                   <img :src="getCourseImage(course)" :alt="getCourseTitle(course)" class="w-100 rounded-3 shadow-sm">
-                </div>
+                </div> -->
 
                 <!-- Tabs Navigation -->
                 <div class="course-tabs mb-4">
@@ -109,12 +109,12 @@
                         <i class="fas fa-book me-2"></i>{{ t('Curriculum') }}
                       </button>
                     </li>
-                    <li class="nav-item" role="presentation">
+                    <!-- <li class="nav-item" role="presentation">
                       <button class="nav-link" @click="activeTab = 'subjects'" :class="{ active: activeTab === 'subjects' }">
-                        <i class="fas fa-book-open me-2"></i>{{ t('Subjects') }}
+                        <i class="fas fa-book-open me-2"></i>{{ t('Other Subjects') }}
                         <span v-if="otherSubjects.length > 0" class="badge bg-primary ms-2">{{ otherSubjects.length }}</span>
                       </button>
-                    </li>
+                    </li> -->
                     <li class="nav-item" role="presentation">
                       <button class="nav-link" @click="activeTab = 'instructor'" :class="{ active: activeTab === 'instructor' }">
                         <i class="fas fa-user-tie me-2"></i>{{ t('Instructor') }}
@@ -258,9 +258,24 @@
                   <div v-if="activeTab === 'instructor'" class="tab-pane fade show active">
                     <div class="card border-0 shadow-sm">
                       <div class="card-body p-4">
-                        <div class="row g-4">
+                        <!-- Instructor Loading State -->
+                        <div v-if="loadingInstructor" class="text-center py-4">
+                          <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">{{ t('Loading...') }}</span>
+                          </div>
+                          <p class="mt-2">{{ t('Loading instructor profile...') }}</p>
+                        </div>
+                        
+                        <!-- Instructor Content -->
+                        <div v-else class="row g-4">
                           <div class="col-md-3 text-center">
-                            <img :src="getInstructorImage(course.teacher)" :alt="getInstructorName(course.teacher)" class="instructor-main-img rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                            <img 
+                              :src="getInstructorImage(course.teacher)" 
+                              :alt="getInstructorName(course.teacher)" 
+                              class="instructor-main-img rounded-circle mb-3" 
+                              style="width: 150px; height: 150px; object-fit: cover;"
+                              @error="handleInstructorImageError"
+                            >
                           </div>
                           <div class="col-md-9">
                             <h4 class="card-title">{{ getInstructorName(course.teacher) }}</h4>
@@ -372,7 +387,7 @@
                         </div>
                         
                         <!-- Video Info -->
-                        <div class="p-3">
+                        <!-- <div class="p-3">
                           <h6 class="video-title mb-2">{{ getCleanTitle(courseVideo.title) }}</h6>
                           <p class="video-description text-muted small mb-2" v-if="courseVideo.description">
                             {{ courseVideo.description }}
@@ -387,7 +402,7 @@
                               {{ courseVideo.views || '250' }} {{ t('views') }}
                             </span>
                           </div>
-                        </div>
+                        </div> -->
                       </div>
 
                       <!-- Video Loading State -->
@@ -410,7 +425,8 @@
                       <div class="p-4">
                         <div class="price-section text-center mb-3">
                           <span class="text-muted d-block mb-1">{{ t('Course Fee') }}</span>
-                          <h3 class="text-primary mb-0">{{ t('Free') }}</h3>
+                            <span class="price-currency">৳</span>
+                            <span class="price-amount"> {{ t('3999') }} </span> 
                         </div>
                         <button class="btn btn-primary w-100 btn-lg mb-3" @click="enrollCourse" :disabled="isEnrolled || loadingEnroll">
                           <span v-if="loadingEnroll" class="spinner-border spinner-border-sm me-2"></span>
@@ -654,6 +670,7 @@ const loading = ref(false);
 const loadingSubjects = ref(false);
 const loadingEnroll = ref(false);
 const loadingVideo = ref(false);
+const loadingInstructor = ref(false); // NEW: Instructor loading state
 const error = ref(null);
 const activeTab = ref('overview');
 const openModule = ref(null);
@@ -667,6 +684,187 @@ const currentVideo = ref(null);
 const videoPlayer = ref(null);
 const isPlaying = ref(false);
 const isLoading = ref(false);
+
+// NEW: Instructor data state
+const instructorData = ref(null);
+
+// NEW: Fetch instructor details
+const fetchInstructorDetails = async (teacherId) => {
+  if (!teacherId) {
+    console.log('❌ No teacher ID provided');
+    return;
+  }
+
+  loadingInstructor.value = true;
+  try {
+    console.log('🎯 Fetching instructor details for ID:', teacherId);
+    
+    const response = await fetch(`/api/instructors/${teacherId}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success && data.data) {
+      instructorData.value = data.data;
+      console.log('✅ Instructor data loaded:', instructorData.value);
+    } else {
+      console.log('ℹ️ No instructor data received:', data.message);
+      instructorData.value = null;
+    }
+  } catch (err) {
+    console.error('❌ Error fetching instructor details:', err);
+    instructorData.value = null;
+  } finally {
+    loadingInstructor.value = false;
+  }
+};
+
+// NEW: Enhanced instructor methods that use fetched data
+const getInstructorName = (teacher) => {
+  if (instructorData.value?.name) {
+    return instructorData.value.name;
+  }
+  if (teacher?.name) {
+    return teacher.name;
+  }
+  return t('Expert Instructor');
+};
+
+const getInstructorQualification = (teacher) => {
+  if (instructorData.value?.education_qualification) {
+    return instructorData.value.education_qualification;
+  }
+  if (teacher?.education_qualification) {
+    return teacher.education_qualification;
+  }
+  return t('Subject Expert');
+};
+
+const getInstructorRating = (teacher) => {
+  if (instructorData.value?.rating) {
+    return instructorData.value.rating;
+  }
+  return '4.8';
+};
+
+const getInstructorBio = (teacher) => {
+  if (instructorData.value?.bio) {
+    return instructorData.value.bio;
+  }
+  if (teacher?.bio) {
+    return teacher.bio;
+  }
+  if (teacher?.experience) {
+    return t('Experienced instructor with teaching experience. Committed to providing quality education and helping learners achieve their goals through engaging and effective teaching methods.');
+  }
+  return t('Experienced instructor with years of expertise in teaching and mentoring students. Committed to providing quality education and helping learners achieve their goals through engaging and effective teaching methods.');
+};
+
+const getInstructorCoursesCount = (teacher) => {
+  if (instructorData.value?.courses_count !== undefined) {
+    return instructorData.value.courses_count;
+  }
+  if (teacher?.courses_count !== undefined) {
+    return teacher.courses_count;
+  }
+  return 5;
+};
+
+const getInstructorStudentsCount = (teacher) => {
+  if (instructorData.value?.students_count !== undefined) {
+    return instructorData.value.students_count;
+  }
+  if (teacher?.students_count !== undefined) {
+    return teacher.students_count;
+  }
+  return 250;
+};
+
+const getInstructorExperience = (teacher) => {
+  if (instructorData.value?.experience) {
+    const match = instructorData.value.experience.match(/(\d+)/);
+    return match ? match[1] : '5';
+  }
+  if (teacher?.experience) {
+    const match = teacher.experience.match(/(\d+)/);
+    return match ? match[1] : '5';
+  }
+  return '5';
+};
+
+const getInstructorEmail = (teacher) => {
+  if (instructorData.value?.email) {
+    return instructorData.value.email;
+  }
+  return teacher?.email || null;
+};
+
+const getInstructorInstitute = (teacher) => {
+  if (instructorData.value?.institute) {
+    return instructorData.value.institute;
+  }
+  return teacher?.institute || null;
+};
+
+const getInstructorImage = (teacher) => {
+  // First priority: Use fetched instructor data
+  if (instructorData.value?.profile_picture) {
+    const profilePic = instructorData.value.profile_picture;
+    console.log('🎯 Using fetched instructor profile picture:', profilePic);
+    return profilePic;
+  }
+  
+  // Second priority: Use teacher data from course
+  if (teacher?.profile_picture) {
+    const profilePic = teacher.profile_picture;
+    console.log('📸 Using course teacher profile picture:', profilePic);
+    
+    // Ensure the URL is properly formatted
+    if (profilePic && !profilePic.startsWith('http') && !profilePic.startsWith('/assets')) {
+      if (profilePic.startsWith('storage/')) {
+        return asset(profilePic);
+      } else if (profilePic.startsWith('profile-pictures/')) {
+        return asset('storage/' + profilePic);
+      } else {
+        return asset('storage/profile-pictures/' + profilePic);
+      }
+    }
+    return profilePic;
+  }
+  
+  // Fallback: Use default avatar
+  console.log('🔄 Using default instructor avatar');
+  return '/assets/img/instructors/default.jpg';
+};
+
+// Helper method to format asset URLs
+const asset = (path) => {
+  if (!path) return '';
+  
+  // If it's already a full URL, return as is
+  if (path.startsWith('http')) {
+    return path;
+  }
+  
+  // If it starts with /, return as is (absolute path)
+  if (path.startsWith('/')) {
+    return path;
+  }
+  
+  // Otherwise, prepend the base URL
+  const baseUrl = window.location.origin;
+  return `${baseUrl}/${path.replace(/^\//, '')}`;
+};
+// NEW: Handle instructor image errors
+const handleInstructorImageError = (event) => {
+  console.warn('❌ Failed to load instructor image:', event.target.src);
+  console.log('🔄 Using fallback image');
+  event.target.src = '/assets/img/instructors/default.jpg';
+  event.target.onerror = null; // Prevent infinite loop
+};
 
 // Fetch course video
 const fetchCourseVideo = async () => {
@@ -1007,97 +1205,6 @@ const getCourseDescription = (course) => {
   }
 };
 
-// ============ INSTRUCTOR METHODS ============
-
-// Get instructor name with proper fallback
-const getInstructorName = (teacher) => {
-  if (teacher?.name) {
-    return teacher.name;
-  }
-  return t('Expert Instructor');
-};
-
-// Get instructor qualification
-const getInstructorQualification = (teacher) => {
-  if (teacher?.education_qualification) {
-    return teacher.education_qualification;
-  }
-  return t('Subject Expert');
-};
-
-// Get instructor rating
-const getInstructorRating = (teacher) => {
-  if (teacher?.rating) {
-    return teacher.rating;
-  }
-  return '4.8';
-};
-
-// Get instructor bio
-const getInstructorBio = (teacher) => {
-  if (teacher?.bio) {
-    return teacher.bio;
-  }
-  if (teacher?.experience) {
-    return t('Experienced instructor with teaching experience. Committed to providing quality education and helping learners achieve their goals through engaging and effective teaching methods.');
-  }
-  return t('Experienced instructor with years of expertise in teaching and mentoring students. Committed to providing quality education and helping learners achieve their goals through engaging and effective teaching methods.');
-};
-
-// Get instructor courses count
-const getInstructorCoursesCount = (teacher) => {
-  if (teacher?.courses_count !== undefined) {
-    return teacher.courses_count;
-  }
-  return 5;
-};
-
-// Get instructor students count
-const getInstructorStudentsCount = (teacher) => {
-  if (teacher?.students_count !== undefined) {
-    return teacher.students_count;
-  }
-  return 250;
-};
-
-// Get instructor experience
-const getInstructorExperience = (teacher) => {
-  if (teacher?.experience) {
-    // Extract years from experience string (e.g., "5+ years" -> "5")
-    const match = teacher.experience.match(/(\d+)/);
-    return match ? match[1] : '5';
-  }
-  return '5';
-};
-
-// Get instructor email
-const getInstructorEmail = (teacher) => {
-  return teacher?.email || null;
-};
-
-// Get instructor institute
-const getInstructorInstitute = (teacher) => {
-  return teacher?.institute || null;
-};
-
-// Get instructor avatar
-const getInstructorAvatar = (teacher) => {
-  if (teacher?.avatar) {
-    return teacher.avatar;
-  }
-  return '/assets/img/instructors/default.jpg';
-};
-
-// Get instructor image
-const getInstructorImage = (teacher) => {
-  if (teacher?.avatar) {
-    return teacher.avatar;
-  }
-  return '/assets/img/instructors/default.jpg';
-};
-
-// ============ COURSE METHODS ============
-
 // Fetch other subjects for the same class
 const fetchOtherSubjects = async () => {
   loadingSubjects.value = true;
@@ -1390,9 +1497,9 @@ const handleLessonClick = (lesson) => {
 
 const getCourseFeatures = (course) => {
   return [
-    { icon: 'fas fa-play-circle', text: t('45 on-demand videos') },
+    { icon: 'fas fa-play-circle', text: t('40+ on-demand videos') },
     { icon: 'fas fa-file-alt', text: t('Downloadable resources') },
-    { icon: 'fas fa-infinity', text: t('Full lifetime access') },
+    { icon: 'fas fa-infinity', text: t('1 Year Subscription') },
     { icon: 'fas fa-mobile-alt', text: t('Access on mobile and desktop') },
     { icon: 'fas fa-trophy', text: t('Certificate of completion') }
   ];
@@ -1430,8 +1537,13 @@ onMounted(() => {
   if (!props.course) {
     fetchCourse();
   } else {
-    // If course is provided via props, fetch the video
+    currentCourse.value = props.course;
     fetchCourseVideo();
+    
+    // NEW: Fetch instructor data if course has teacher
+    if (props.course.teacher?.id) {
+      fetchInstructorDetails(props.course.teacher.id);
+    }
   }
   fetchOtherSubjects();
 });
@@ -1441,10 +1553,15 @@ onUnmounted(() => {
   document.removeEventListener('keydown', handleKeyDown);
 });
 
-// Watch for course changes to fetch video
+// NEW: Watch for course changes to fetch instructor data
 watch(() => currentCourse.value, (newCourse) => {
   if (newCourse) {
     fetchCourseVideo();
+    
+    // Fetch instructor details when course is loaded
+    if (newCourse.teacher?.id) {
+      fetchInstructorDetails(newCourse.teacher.id);
+    }
   }
 });
 
@@ -1455,6 +1572,20 @@ const handleThemeChange = (event) => {
 </script>
 
 <style scoped>
+/* ... (keep all your existing CSS styles exactly as they are) ... */
+
+.price-amount {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  line-height: 1;
+}
+
+.price-currency {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
 /* ==================== */
 /* BENGALI FONT FIXES FOR COURSE DETAILS PAGE */
 /* ==================== */
@@ -1995,7 +2126,7 @@ const handleThemeChange = (event) => {
 /* ==================== */
 .courses__details-area {
   background: var(--bg-primary);
-  padding: 80px 0;
+  padding: 20px 0;
   transition: background-color 0.3s ease;
 }
 

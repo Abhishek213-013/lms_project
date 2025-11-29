@@ -230,25 +230,31 @@
                     </div>
                   </div>
                   
-                  <!-- Action buttons -->
+                  <!-- Action buttons with price -->
                   <div class="course-actions">
-                    <button 
-                      v-if="!isLoggedInStudent" 
-                      @click.stop="enrollCourse(course)"
-                      class="btn-enroll"
-                      :disabled="enrollingCourseId === course.id"
-                    >
-                      <i class="fas fa-plus"></i>
-                      {{ t('Enroll Now') }}
-                    </button>
-                    <button 
-                      v-else 
-                      @click.stop="continueCourse(course)"
-                      class="btn-continue"
-                    >
-                      <i class="fas fa-play"></i>
-                      {{ t('Continue') }}
-                    </button>
+                    <div class="course-price-section">
+                      <div class="course-price">
+                        <span class="price-currency">৳</span>
+                        <span class="price-amount"> {{ t('3999') }} </span> 
+                      </div>
+                      <button 
+                        v-if="!isLoggedInStudent" 
+                        @click.stop="enrollCourse(course)"
+                        class="btn-enroll"
+                        :disabled="enrollingCourseId === course.id"
+                      >
+                        <i class="fas fa-plus"></i>
+                        {{ t('Enroll Now') }}
+                      </button>
+                      <button 
+                        v-else 
+                        @click.stop="continueCourse(course)"
+                        class="btn-continue"
+                      >
+                        <i class="fas fa-play"></i>
+                        {{ t('Continue') }}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1080,6 +1086,100 @@ onUnmounted(() => {
 }
 
 /* ==================== */
+/* COURSE PRICE SECTION */
+/* ==================== */
+.course-price-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.course-price {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.price-amount {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  line-height: 1;
+}
+
+.price-currency {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+/* Update button styles to fit new layout */
+.btn-enroll, .btn-continue {
+  flex: 1;
+  min-width: 120px;
+  max-width: 140px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.btn-enroll {
+  background: var(--primary-color);
+  color: white;
+}
+
+.btn-enroll:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--primary-color) 30%, transparent);
+}
+
+.btn-enroll:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-continue {
+  background: var(--success-color);
+  color: white;
+}
+
+.btn-continue:hover {
+  background: color-mix(in srgb, var(--success-color) 80%, black);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--success-color) 30%, transparent);
+}
+
+/* Bengali language specific adjustments for price */
+.bn-lang .price-amount {
+  font-size: 1.1rem !important;
+}
+
+.bn-lang .price-currency {
+  font-size: 0.8rem !important;
+}
+
+.bn-lang .btn-enroll,
+.bn-lang .btn-continue {
+  font-size: 0.8rem !important;
+  padding: 8px 12px !important;
+}
+
+/* ==================== */
 /* LAYOUT & CONTAINERS */
 /* ==================== */
 .page-courses {
@@ -1678,46 +1778,6 @@ onUnmounted(() => {
   margin-top: 16px;
 }
 
-.btn-enroll, .btn-continue {
-  width: 100%;
-  padding: 12px 16px;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.btn-enroll {
-  background: var(--primary-color);
-  color: white;
-}
-
-.btn-enroll:hover:not(:disabled) {
-  background: var(--primary-hover);
-  transform: translateY(-2px);
-}
-
-.btn-enroll:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.btn-continue {
-  background: var(--success-color);
-  color: white;
-}
-
-.btn-continue:hover {
-  background: color-mix(in srgb, var(--success-color) 80%, black);
-  transform: translateY(-2px);
-}
-
 /* ==================== */
 /* ENHANCED PAGINATION SECTION */
 /* ==================== */
@@ -2078,6 +2138,22 @@ onUnmounted(() => {
     padding: 24px;
   }
   
+  .course-price-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  
+  .course-price {
+    justify-content: center;
+    text-align: center;
+  }
+  
+  .btn-enroll, .btn-continue {
+    max-width: none;
+    width: 100%;
+  }
+  
   .pagination-section {
     flex-direction: column;
     gap: 20px;
@@ -2293,6 +2369,15 @@ onUnmounted(() => {
 .dark-theme .search-input:focus,
 .dark-theme .filter-select:focus {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 40%, transparent);
+}
+
+/* Dark theme adjustments for price */
+.dark-theme .price-amount {
+  color: var(--primary-color);
+}
+
+.dark-theme .price-currency {
+  color: var(--text-secondary);
 }
 
 /* ==================== */

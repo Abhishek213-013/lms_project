@@ -25,9 +25,11 @@ use App\Http\Controllers\InstructorController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\Admin\AnnouncementController;
 use Illuminate\Support\Facades\Log;
+
 // ============ PUBLIC ROUTES ============
 Route::post('/switch-language-about', [FrontendController::class, 'switchLanguageAbout']);
 Route::post('/switch-language', [FrontendController::class, 'switchLanguageApi'])->name('switch.language');
+
 // Frontend Routes
 Route::get('/', [FrontendController::class, 'home'])->name('home');
 Route::get('/courses', [FrontendController::class, 'courses'])->name('courses');
@@ -69,6 +71,91 @@ Route::prefix('api')->middleware('web')->group(function () {
     Route::get('/public/courses/{id}', [CourseController::class, 'getPublicCourseDetails']);
     Route::get('/public/teachers/{id}', [TeacherController::class, 'getTeacherPublicProfile']);
     Route::get('/public/categories', [CourseController::class, 'getPublicCategories']);
+
+    // ============ ADDED: INSTRUCTOR API ROUTE ============
+    Route::get('/instructors/{id}', function ($id) {
+        try {
+            $instructor = \App\Models\User::where('role', 'teacher')
+                ->where('id', $id)
+                ->select([
+                    'id', 'name', 'username', 'email',
+                    'education_qualification', 'institute', 'experience',
+                    'profile_picture', 'bio', 'created_at'
+                ])
+                ->first();
+
+            if (!$instructor) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Instructor not found'
+                ], 404);
+            }
+
+            // Calculate courses count
+            $coursesCount = \App\Models\ClassModel::where('teacher_id', $instructor->id)->count();
+            
+            // Calculate students count
+            $studentsCount = \Illuminate\Support\Facades\DB::table('class_student')
+                ->join('classes', 'class_student.class_id', '=', 'classes.id')
+                ->where('classes.teacher_id', $instructor->id)
+                ->distinct('class_student.student_id')
+                ->count();
+
+            // Format profile picture URL
+            $profilePicture = null;
+            if ($instructor->profile_picture) {
+                // Check if it's already a full URL
+                if (str_starts_with($instructor->profile_picture, 'http')) {
+                    $profilePicture = $instructor->profile_picture;
+                } 
+                // Check if it's a storage path
+                else if (str_starts_with($instructor->profile_picture, 'storage/')) {
+                    $profilePicture = asset($instructor->profile_picture);
+                }
+                // Check if it's a relative path in profile-pictures directory
+                else if (str_starts_with($instructor->profile_picture, 'profile-pictures/')) {
+                    $profilePicture = asset('storage/' . $instructor->profile_picture);
+                }
+                // Default case - assume it's in storage
+                else {
+                    $profilePicture = asset('storage/profile-pictures/' . $instructor->profile_picture);
+                }
+            } else {
+                // Use default avatar
+                $profilePicture = asset('/assets/img/instructors/default.jpg');
+            }
+
+            // Log for debugging
+            \Illuminate\Support\Facades\Log::info("Instructor API - ID: {$instructor->id}, Profile Picture: {$profilePicture}");
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => $instructor->id,
+                    'name' => $instructor->name,
+                    'username' => $instructor->username,
+                    'email' => $instructor->email,
+                    'education_qualification' => $instructor->education_qualification,
+                    'institute' => $instructor->institute,
+                    'experience' => $instructor->experience,
+                    'profile_picture' => $profilePicture,
+                    'bio' => $instructor->bio,
+                    'courses_count' => $coursesCount,
+                    'students_count' => $studentsCount,
+                    'rating' => 4.8,
+                    'created_at' => $instructor->created_at
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Instructor API error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch instructor details'
+            ], 500);
+        }
+    })->name('api.instructors.details');
     
     // Search classes route
     Route::get('/search-classes', [CourseController::class, 'searchClasses'])->name('api.search-classes');
@@ -82,7 +169,7 @@ Route::prefix('api')->middleware('web')->group(function () {
     Route::get('/public/announcements', [AnnouncementController::class, 'getPublicAnnouncements'])->name('api.public.announcements');
     Route::get('/public/announcements/active', [AnnouncementController::class, 'getActiveAnnouncements'])->name('api.public.announcements.active');
     
-    // Language API Routes - FIXED: Added the correct API endpoint
+    // Language API Routes
     Route::post('/switch-language', [FrontendController::class, 'switchLanguageApi'])->name('api.switch.language');
     Route::get('/current-language', function() {
         return response()->json([
@@ -113,11 +200,10 @@ Route::prefix('api')->middleware('web')->group(function () {
     // Student Profile Public Route (for header avatar)
     Route::get('/student-profile', [StudentProfileController::class, 'getStudentProfileForHeader'])->name('api.student-profile.header');
     
-    // Course Enrollment Public Route - ADDED: Allow guest users to access enrollment
+    // Course Enrollment Public Route
     Route::post('/courses/{courseId}/enroll', [CourseController::class, 'enrollStudent'])->name('api.courses.enroll');
     
-    // ============ ADDED: COURSE VIDEO PUBLIC ROUTE ============
-   // In the Public API Routes section, replace the video route with:
+    // Course Video Public Route
     Route::get('/courses/{courseId}/video', function ($courseId) {
         try {
             $course = \App\Models\ClassModel::find($courseId);
@@ -176,7 +262,7 @@ Route::prefix('api')->middleware('web')->group(function () {
         }
     })->name('api.courses.video');
     
-    // ============ ADDED: RESOURCE DETAILS API ROUTE ============
+    // Resource Details API Route
     Route::get('/resources/{resourceId}', function ($resourceId) {
         try {
             Log::info("🔍 API: Fetching resource details for ID: {$resourceId}");
@@ -386,7 +472,7 @@ Route::middleware(['auth'])->group(function () {
             // All Classes List
             Route::get('/', [TeacherController::class, 'classesList'])->name('teacher.classes');
             
-            // Class Schedule - FIXED: This route now points to TeacherController instead of ScheduleController
+            // Class Schedule
             Route::get('/schedule', [TeacherController::class, 'classesList'])->name('teacher.class-schedule');
             
             // Student Roster
@@ -425,18 +511,18 @@ Route::middleware(['auth'])->group(function () {
 
         // ============ INDIVIDUAL CLASS MANAGEMENT ============
         Route::prefix('/class/{classId}')->group(function () {
-            // Class Dashboard - FIXED: Added teacher data
+            // Class Dashboard
             Route::get('/', [TeacherController::class, 'classDashboard'])->name('teacher.class.dashboard');
             
-            // Class-specific Assignments - FIXED: Added teacher data
+            // Class-specific Assignments
             Route::get('/assignments', [TeacherController::class, 'classAssignments'])->name('teacher.class.assignments');
             Route::get('/assignments/create', [AssignmentController::class, 'createAssignmentPage'])->name('teacher.class.assignments.create');
             Route::get('/assignments/{assignmentId}/edit', [AssignmentController::class, 'editAssignmentPage'])->name('teacher.class.assignments.edit');
             
-            // Class-specific Resources - FIXED: Added teacher data
+            // Class-specific Resources
             Route::get('/resources', [TeacherController::class, 'classResources'])->name('teacher.class.resources');
             
-            // Class Schedule - FIXED: Added teacher data
+            // Class Schedule
             Route::get('/schedule', [ScheduleController::class, 'classSchedule'])->name('teacher.class.schedule');
             Route::post('/schedules', [ScheduleController::class, 'storeSchedule'])->name('teacher.class.schedules.store');
             Route::put('/schedules/{scheduleId}', [ScheduleController::class, 'updateSchedule'])->name('teacher.class.schedules.update');
@@ -525,9 +611,6 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/{courseId}/assign-teacher', [CourseController::class, 'assignTeacherToCourse']);
             Route::delete('/{courseId}/teacher/{teacherId}', [CourseController::class, 'removeTeacherFromCourse']);
             
-            // UPDATED: Course enrollment route - moved to public section above for guest access
-            // Route::post('/{courseId}/enroll', [CourseController::class, 'enrollStudent']);
-            
             Route::post('/{courseId}/unenroll', [CourseController::class, 'unenrollStudent']);
             Route::get('/user/my-courses', [CourseController::class, 'getMyCourses']);
             Route::get('/{courseId}/subjects', [CourseController::class, 'getCourseSubjects']);
@@ -542,11 +625,11 @@ Route::middleware(['auth'])->group(function () {
             // Search classes route
             Route::get('/search-classes', [CourseController::class, 'searchClasses'])->name('api.courses.search-classes');
             
-            // ============ ADDED: COURSE VIDEO PROTECTED ROUTE ============
+            // Course Video Protected Route
             Route::get('/{courseId}/video', [CourseController::class, 'getCourseVideo'])->name('api.courses.video.protected');
         });
 
-        // Teacher API Routes - FIXED: Changed from 'teachers' to 'teacher' prefix
+        // Teacher API Routes
         Route::prefix('teacher')->group(function () {
             Route::get('/', [TeacherController::class, 'getAllTeachers']);
             Route::get('/public', [TeacherController::class, 'getPublicTeachers']);
@@ -556,12 +639,12 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/{id}/classes', [TeacherController::class, 'getTeacherClasses']);
             Route::get('/{id}/resources', [TeacherController::class, 'getTeacherResources']);
             
-            // ADDED: The missing route for teacher resources
+            // Teacher resources
             Route::get('/resources/all', [TeacherController::class, 'getTeacherResources'])->name('api.teacher.resources.all');
             
             Route::post('/{id}/resources', [TeacherController::class, 'uploadResource'])->name('teacher.upload.resource');
             
-            // ADDED: Teacher profile update route
+            // Teacher profile update route
             Route::put('/{id}/profile', [TeacherController::class, 'updateTeacherProfile'])->name('api.teacher.profile.update');
             
             Route::get('/{id}/public-profile', [TeacherController::class, 'getTeacherPublicProfile']);
@@ -760,10 +843,10 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/student/upload', [StudentProfileController::class, 'uploadAvatar'])->name('api.profile-picture.student.upload');
         });
 
-        // ============ ADDED: FIXED TEACHER CLASSES ROUTE ============
+        // Fixed Teacher Classes Route
         Route::get('/courses/teacher/classes', [TeacherController::class, 'getTeacherClasses'])->name('api.courses.teacher.classes');
 
-        // ============ ADDED: THE MISSING TEACHER RESOURCES ROUTE ============
+        // Teacher Resources Route
         Route::get('/teacher/resources', [TeacherController::class, 'getAllResources'])->name('api.teacher.resources');
     });
 });
@@ -840,7 +923,7 @@ Route::get('/debug-session', function() {
     ]);
 });
 
-// Add to routes/web.php
+// Clear language session
 Route::get('/clear-lang', function() {
     session()->forget('lang');
     session()->save();
