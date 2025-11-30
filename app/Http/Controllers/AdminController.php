@@ -393,4 +393,12 @@ class AdminController extends Controller
             return redirect()->back()->withErrors(['message' => 'Failed to delete teacher: ' . $e->getMessage()]);
         }
     }
+
+    // Add this method to your AdminController
+    public function paymentVerification(): Response
+    {
+        return Inertia::render('Admin/PaymentVerification', [
+            'user' => Auth::user(),
+        ]);
+    }
 }

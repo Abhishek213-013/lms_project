@@ -24,6 +24,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\InstructorController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\Admin\AnnouncementController;
+use App\Http\Controllers\PaymentController;
 use Illuminate\Support\Facades\Log;
 
 // ============ PUBLIC ROUTES ============
@@ -38,6 +39,9 @@ Route::get('/course/{id}', [FrontendController::class, 'courseSingle'])->name('c
 // ============ ADDED: SHOPPING CART & CHECKOUT ROUTES ============
 Route::get('/shopping-cart', [FrontendController::class, 'shoppingCart'])->name('shopping.cart');
 Route::post('/checkout/process', [FrontendController::class, 'processCheckout'])->name('checkout.process');
+
+// ============ ADDED: PAYMENT VERIFICATION PENDING ROUTE ============
+Route::get('/payment-verification-pending', [FrontendController::class, 'paymentVerificationPending'])->name('payment.verification.pending');
 
 Route::get('/instructors', [FrontendController::class, 'instructors'])->name('instructors');
 Route::get('/instructor/{id}', [FrontendController::class, 'instructorDetails'])->name('instructor.details');
@@ -69,6 +73,12 @@ Route::get('/phone-verification', [AuthController::class, 'showPhoneVerification
 Route::post('/send-otp', [AuthController::class, 'sendOTP'])->name('send.otp');
 Route::post('/verify-otp', [AuthController::class, 'verifyOTP'])->name('verify.otp');
 
+// ============ PAYMENT ROUTES (PUBLIC) ============
+Route::prefix('api/payments')->group(function () {
+    Route::post('/process-mobile', [PaymentController::class, 'processMobilePayment'])->name('payments.process-mobile');
+    Route::post('/process-bank-transfer', [PaymentController::class, 'processBankTransfer'])->name('payments.process-bank-transfer');
+});
+
 // Public API Routes
 Route::prefix('api')->middleware('web')->group(function () {
     Route::get('/public/courses', [CourseController::class, 'getPublicCourses']);
@@ -82,6 +92,9 @@ Route::prefix('api')->middleware('web')->group(function () {
     Route::get('/cart/items', [CourseController::class, 'getCartItems'])->name('api.cart.items');
     Route::delete('/cart/remove/{courseId}', [CourseController::class, 'removeFromCart'])->name('api.cart.remove');
     Route::post('/cart/apply-coupon', [CourseController::class, 'applyCoupon'])->name('api.cart.apply-coupon');
+
+    // ============ ADDED: PAYMENT STATUS API ROUTE ============
+    Route::get('/payment-status/{paymentId}', [PaymentController::class, 'getPaymentStatus'])->name('api.payment.status');
 
     // ============ ADDED: INSTRUCTOR API ROUTE ============
     Route::get('/instructors/{id}', function ($id) {
@@ -137,7 +150,7 @@ Route::prefix('api')->middleware('web')->group(function () {
             }
 
             // Log for debugging
-            \Illuminate\Support\Facades\Log::info("Instructor API - ID: {$instructor->id}, Profile Picture: {$profilePicture}");
+            Log::info("Instructor API - ID: {$instructor->id}, Profile Picture: {$profilePicture}");
 
             return response()->json([
                 'success' => true,
@@ -316,6 +329,99 @@ Route::prefix('api')->middleware('web')->group(function () {
         }
     })->name('api.resources.details');
     
+    // ============ ADDED: COURSE LEARNING API ROUTES ============
+    Route::prefix('courses')->group(function () {
+        Route::get('/{courseId}/resources', function ($courseId) {
+            try {
+                $course = \App\Models\ClassModel::find($courseId);
+                
+                if (!$course) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Course not found'
+                    ], 404);
+                }
+
+                $resources = \App\Models\Resource::where('class_id', $courseId)
+                    ->where('status', 'active')
+                    ->orderBy('created_at', 'desc')
+                    ->get()
+                    ->map(function ($resource) {
+                        return [
+                            'id' => $resource->id,
+                            'title' => $resource->title,
+                            'type' => $resource->type,
+                            'description' => $resource->description,
+                            'file_url' => $resource->file_url,
+                            'thumbnail_url' => $resource->thumbnail_url,
+                            'is_youtube' => $resource->is_youtube,
+                            'youtube_video_id' => $resource->youtube_video_id,
+                            'created_at' => $resource->created_at->format('M d, Y'),
+                        ];
+                    });
+
+                return response()->json([
+                    'success' => true,
+                    'data' => $resources
+                ]);
+
+            } catch (\Exception $e) {
+                Log::error('Error fetching course resources: ' . $e->getMessage());
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to fetch course resources'
+                ], 500);
+            }
+        })->name('api.courses.resources');
+
+        Route::post('/{courseId}/resources/{resourceId}/complete', function ($courseId, $resourceId) {
+            try {
+                // Mark resource as completed for the student
+                $student = \App\Models\Student::where('user_id', auth()->id())->first();
+                
+                if (!$student) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Student not found'
+                    ], 404);
+                }
+
+                // Update progress in class_student table
+                $enrollment = \Illuminate\Support\Facades\DB::table('class_student')
+                    ->where('student_id', $student->id)
+                    ->where('class_id', $courseId)
+                    ->first();
+
+                if ($enrollment) {
+                    // Calculate new progress (simple implementation)
+                    $totalResources = \App\Models\Resource::where('class_id', $courseId)->count();
+                    $completedResources = 1; // This would come from a separate table in real implementation
+                    $newProgress = min(100, ($completedResources / max(1, $totalResources)) * 100);
+
+                    \Illuminate\Support\Facades\DB::table('class_student')
+                        ->where('student_id', $student->id)
+                        ->where('class_id', $courseId)
+                        ->update(['progress' => $newProgress]);
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Resource marked as completed',
+                    'progress' => $newProgress ?? 0
+                ]);
+
+            } catch (\Exception $e) {
+                Log::error('Error marking resource as completed: ' . $e->getMessage());
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to mark resource as completed'
+                ], 500);
+            }
+        })->name('api.courses.resources.complete');
+    });
+    
     // Health check
     Route::get('/health', function () {
         return response()->json(['status' => 'OK', 'timestamp' => now()]);
@@ -343,6 +449,12 @@ Route::middleware(['auth'])->group(function () {
     // Logout route
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+    // ============ PAYMENT ROUTES (AUTHENTICATED) ============
+    Route::prefix('api/payments')->group(function () {
+        Route::get('/history', [PaymentController::class, 'getPaymentHistory'])->name('payments.history');
+        Route::get('/student/pending', [PaymentController::class, 'getStudentPendingPayments'])->name('payments.student.pending');
+    });
+
     // ============ STUDENT PROFILE ROUTES ============
     Route::middleware(['role:student'])->group(function () {
         // New Profile Dropdown Routes - accessible at root level
@@ -365,14 +477,20 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/progress', [StudentController::class, 'progress'])->name('student.progress');
         Route::get('/settings', [StudentController::class, 'settings'])->name('student.settings');
         
-        // Learning routes for enrolled students
-        Route::get('/learning/{courseId}', [StudentController::class, 'learning'])->name('student.learning');
+        // ============ FIXED: LEARNING ROUTE FOR ENROLLED STUDENTS ============
+        Route::get('/learning/{courseId}', [MyCoursesController::class, 'showLearning'])->name('student.learning');
+        
+        // ============ ADDED: STUDENT PAYMENT VERIFICATION PAGE ============
+        Route::get('/payment-verification', [StudentController::class, 'paymentVerification'])->name('student.payment.verification');
     });
 
     // ============ ADMIN & SUPER ADMIN ROUTES ============
     Route::middleware(['role:admin,super_admin'])->group(function () {
         // Admin Dashboard
         Route::get('/admin', [AdminController::class, 'admin'])->name('admin');
+        
+        // ============ PAYMENT VERIFICATION ROUTES ============
+        Route::get('/admin/payment-verification', [AdminController::class, 'paymentVerification'])->name('admin.payment-verification');
         
         // ============ ANNOUNCEMENT MANAGEMENT ROUTES ============
         Route::prefix('/admin/announcements')->group(function () {
@@ -560,6 +678,18 @@ Route::middleware(['auth'])->group(function () {
         // Direct Video Stream Routes
         Route::get('/youtube-direct-stream', [VideoController::class, 'getYouTubeDirectStream']);
         Route::get('/video-proxy/{videoId}', [VideoController::class, 'proxyVideo']);
+
+        // ============ PAYMENT ADMIN API ROUTES ============
+        Route::prefix('payments')->group(function () {
+            Route::get('/admin/pending-payments', [PaymentController::class, 'getPendingPayments'])->name('api.admin.pending-payments');
+            Route::get('/admin/payment-stats', [PaymentController::class, 'getPaymentStats'])->name('api.admin.payment-stats');
+            Route::post('/verify/{paymentId}', [PaymentController::class, 'verifyPayment'])->name('api.payments.verify');
+            Route::post('/reject/{paymentId}', [PaymentController::class, 'rejectPayment'])->name('api.payments.reject');
+            
+            // ============ ADDED: STUDENT PAYMENT API ROUTES ============
+            Route::get('/student/pending', [PaymentController::class, 'getStudentPendingPayments'])->name('api.payments.student.pending');
+            Route::get('/student/history', [PaymentController::class, 'getStudentPaymentHistory'])->name('api.payments.student.history');
+        });
 
         // Content API Routes (Protected - for admin management)
         Route::prefix('content')->group(function () {
@@ -915,6 +1045,17 @@ Route::get('/storage/profile-pictures/{filename}', function ($filename) {
     
     return response()->file($path);
 })->name('storage.profile-pictures');
+
+// Payment receipts public access route
+Route::get('/storage/payment-receipts/{filename}', function ($filename) {
+    $path = storage_path('app/public/payment-receipts/' . $filename);
+    
+    if (!file_exists($path)) {
+        abort(404);
+    }
+    
+    return response()->file($path);
+})->name('storage.payment-receipts');
 
 // Fallback route for SPA
 Route::get('/{any}', function () {

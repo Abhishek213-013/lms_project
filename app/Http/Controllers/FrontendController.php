@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Student;
 use App\Models\Resource;
 use App\Models\Announcement; // ADD THIS IMPORT
+use App\Models\Payment; // ADD THIS IMPORT
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -25,9 +26,16 @@ class FrontendController extends Controller
     {
         // FIXED: Handle announcements without eager loading problematic relationships
         $activeAnnouncements = Announcement::where('is_active', true)
+            ->where(function($query) {
+                $query->where('type', 'like', '%payment%')
+                      ->orWhere('type', 'like', '%enrollment%')
+                      ->orWhere('type', 'like', '%course%')
+                      ->orWhere('type', 'like', '%teacher%')
+                      ->orWhere('type', 'like', '%resource%');
+            })
             ->orderBy('date', 'desc')
             ->orderBy('created_at', 'desc')
-            ->limit(5)
+            ->limit(10) // Increased limit to include payment announcements
             ->get()
             ->map(function($announcement) {
                 return [
@@ -47,8 +55,6 @@ class FrontendController extends Controller
                     'updated_at' => $announcement->updated_at,
                 ];
             });
-
-            
 
         Log::info("📢 Loaded {$activeAnnouncements->count()} active announcements");
 
@@ -168,6 +174,8 @@ class FrontendController extends Controller
             'availableLanguages' => ['en', 'bn']
         ]);
     }
+
+    
 
     /**
      * About page
@@ -638,6 +646,7 @@ class FrontendController extends Controller
         ]);
     }
 
+
     /**
      * Process checkout
      */
@@ -647,6 +656,8 @@ class FrontendController extends Controller
         $validated = $request->validate([
             'course_id' => 'required|exists:classes,id',
             'amount' => 'required|numeric',
+            'payment_method' => 'required|string|in:bkash,nagad,rocket,upay,bank_transfer',
+            'payment_details' => 'required|array',
             'additional_services' => 'array',
             'coupon_code' => 'nullable|string',
             'send_as_gift' => 'boolean',
@@ -654,38 +665,256 @@ class FrontendController extends Controller
         ]);
 
         try {
-            // Process payment here (integrate with your payment gateway)
-            // For demo, we'll simulate successful payment
+            // Get student record
+            $student = Student::where('user_id', Auth::id())->first();
             
-            // Enroll the student
-            if (Auth::check()) {
-                $student = Student::where('user_id', Auth::id())->first();
-                
-                if ($student) {
-                    // Add enrollment logic here
-                    DB::table('class_student')->insert([
-                        'student_id' => $student->id,
-                        'class_id' => $validated['course_id'],
-                        'enrolled_at' => now(),
-                        'progress' => 0,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                    
-                    // Redirect to success page or learning page
-                    return redirect()->route('student.learning', ['courseId' => $validated['course_id']])
-                        ->with('success', 'Enrollment successful!');
+            if (!$student) {
+                return redirect()->route('shopping.cart')
+                    ->with('error', 'Student record not found. Please contact support.');
+            }
+
+            // Process payment based on method
+            if ($validated['payment_method'] === 'bank_transfer') {
+                // Handle bank transfer - create pending payment
+                $receiptPath = null;
+                if (isset($validated['payment_details']['receipt']) && $validated['payment_details']['receipt']) {
+                    $receiptPath = $validated['payment_details']['receipt'];
                 }
+
+                $payment = Payment::create([
+                    'student_id' => $student->id,
+                    'class_id' => $validated['course_id'],
+                    'amount' => $validated['amount'],
+                    'payment_method' => 'bank_transfer',
+                    'status' => 'pending',
+                    'receipt_path' => $receiptPath,
+                    'additional_services' => $validated['additional_services'],
+                    'coupon_code' => $validated['coupon_code'],
+                    'payment_details' => $validated['payment_details']
+                ]);
+
+                // Create announcement for pending payment
+                $this->createPaymentPendingAnnouncement($student, $validated['course_id'], $payment);
+
+                Log::info('Bank transfer payment submitted', [
+                    'payment_id' => $payment->id,
+                    'student_id' => $student->id,
+                    'class_id' => $validated['course_id']
+                ]);
+
+                // Redirect to success page with verification message
+                return redirect()->route('payment.verification.pending')
+                    ->with('success', 'Payment submitted successfully! Your enrollment will be activated after verification (within 24 hours).')
+                    ->with('payment_reference', $payment->id);
+
+            } else {
+                // Handle mobile payments - auto verify
+                $payment = Payment::create([
+                    'student_id' => $student->id,
+                    'class_id' => $validated['course_id'],
+                    'amount' => $validated['amount'],
+                    'payment_method' => $validated['payment_method'],
+                    'transaction_id' => $validated['payment_details']['transactionId'] ?? null,
+                    'phone_number' => $validated['payment_details']['phoneNumber'] ?? null,
+                    'status' => 'completed',
+                    'payment_details' => $validated['payment_details'],
+                    'additional_services' => $validated['additional_services'],
+                    'coupon_code' => $validated['coupon_code'],
+                    'verified_at' => now(),
+                    'verified_by' => Auth::id()
+                ]);
+
+                // Enroll student immediately for mobile payments
+                $this->enrollStudent($student->id, $validated['course_id']);
+
+                // Create announcement for successful enrollment
+                $this->createPaymentSuccessAnnouncement($student, $validated['course_id'], $payment);
+
+                Log::info('Mobile payment processed successfully', [
+                    'payment_id' => $payment->id,
+                    'student_id' => $student->id,
+                    'class_id' => $validated['course_id']
+                ]);
+
+                // Redirect to learning page
+                return redirect()->route('student.learning', ['courseId' => $validated['course_id']])
+                    ->with('success', 'Payment processed successfully! You are now enrolled in the course.');
             }
             
-            return redirect()->route('shopping.cart')
-                ->with('error', 'Please login to complete enrollment.');
-                
         } catch (\Exception $e) {
             Log::error('Checkout error: ' . $e->getMessage());
             
             return redirect()->route('shopping.cart')
                 ->with('error', 'Payment processing failed. Please try again.');
+        }
+    }
+
+    private function enrollStudent($studentId, $classId)
+    {
+        // Check if already enrolled
+        $existingEnrollment = DB::table('class_student')
+            ->where('student_id', $studentId)
+            ->where('class_id', $classId)
+            ->first();
+
+        if (!$existingEnrollment) {
+            DB::table('class_student')->insert([
+                'student_id' => $studentId,
+                'class_id' => $classId,
+                'enrolled_at' => now(),
+                'progress' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            Log::info('Student enrolled in class', [
+                'student_id' => $studentId,
+                'class_id' => $classId
+            ]);
+        } else {
+            Log::info('Student already enrolled in class', [
+                'student_id' => $studentId,
+                'class_id' => $classId
+            ]);
+        }
+    }
+    private function getBengaliDate()
+    {
+        $englishMonths = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        $bengaliMonths = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+        
+        $date = now();
+        $bengaliMonth = $bengaliMonths[$date->month - 1];
+        
+        return $date->format('d') . ' ' . $bengaliMonth . ' ' . $date->format('Y');
+    }
+    public function paymentVerificationPending(Request $request): Response
+    {
+        $language = $this->getCurrentLanguage();
+        
+        // Get student data for authenticated users
+        $studentData = $this->getStudentData();
+
+        // Get pending payments for the current student
+        $pendingPayments = [];
+        if (Auth::check()) {
+            $student = Student::where('user_id', Auth::id())->first();
+            if ($student) {
+                $pendingPayments = Payment::with('class')
+                    ->where('student_id', $student->id)
+                    ->where('status', 'pending')
+                    ->orderBy('created_at', 'desc')
+                    ->get()
+                    ->map(function($payment) {
+                        return [
+                            'id' => $payment->id,
+                            'amount' => $payment->amount,
+                            'payment_method' => $payment->payment_method,
+                            'created_at' => $payment->created_at->format('M d, Y H:i'),
+                            'class' => $payment->class ? [
+                                'name' => $payment->class->name,
+                                'id' => $payment->class->id
+                            ] : null
+                        ];
+                    });
+            }
+        }
+
+        return Inertia::render('Frontend/PaymentVerificationPending', [
+            'pendingPayments' => $pendingPayments,
+            'pageTitle' => $language === 'bn' ? 'পেমেন্ট যাচাইকরণ - পাঠশালা' : 'Payment Verification - Pathshala',
+            'metaDescription' => $language === 'bn' 
+                ? 'আপনার পেমেন্ট যাচাইকরণের অবস্থা ট্র্যাক করুন'
+                : 'Track your payment verification status',
+            'currentLanguage' => $language,
+            'availableLanguages' => ['en', 'bn'],
+            'auth' => [
+                'user' => Auth::check() ? [
+                    'id' => Auth::user()->id,
+                    'name' => Auth::user()->name,
+                    'email' => Auth::user()->email,
+                    'role' => Auth::user()->role,
+                    'student' => $studentData,
+                ] : null
+            ]
+        ]);
+    }
+
+    // ==================== PAYMENT ANNOUNCEMENT METHODS ====================
+
+    /**
+     * Create announcement for pending payment
+     */
+    private function createPaymentPendingAnnouncement($student, $courseId, $payment)
+    {
+        try {
+            $course = ClassModel::find($courseId);
+
+            if (!$course) {
+                return;
+            }
+
+            $bengaliDate = $this->getBengaliDate();
+
+            $announcement = new Announcement();
+            $announcement->title = "Payment Under Review: {$student->user->name} applied for {$course->name}";
+            $announcement->title_bn = "পেমেন্ট পর্যালোচনাধীন: {$student->user->name} {$course->name} এর জন্য আবেদন করেছেন";
+            $announcement->content = "{$student->user->name} has submitted a payment for {$course->name}. The payment is currently under verification and will be processed within 24 hours.";
+            $announcement->content_bn = "{$student->user->name} {$course->name} এর জন্য পেমেন্ট জমা দিয়েছেন। পেমেন্টটি বর্তমানে যাচাইকরণাধীন এবং ২৪ ঘন্টার মধ্যে প্রক্রিয়া করা হবে।";
+            $announcement->date = now()->toDateString();
+            $announcement->date_bn = $bengaliDate;
+            $announcement->type = 'payment_pending';
+            $announcement->related_id = $payment->id;
+            $announcement->related_type = 'payment';
+            $announcement->is_active = true;
+
+            $announcement->save();
+
+            Log::info('Payment pending announcement created', [
+                'announcement_id' => $announcement->id,
+                'payment_id' => $payment->id
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error creating pending payment announcement: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Create announcement for successful mobile payment
+     */
+    private function createPaymentSuccessAnnouncement($student, $courseId, $payment)
+    {
+        try {
+            $course = ClassModel::find($courseId);
+
+            if (!$course) {
+                return;
+            }
+
+            $bengaliDate = $this->getBengaliDate();
+
+            $announcement = new Announcement();
+            $announcement->title = "Instant Enrollment: {$student->user->name} joined {$course->name}";
+            $announcement->title_bn = "তাত্ক্ষণিক ভর্তি: {$student->user->name} {$course->name} এ যোগদান করেছেন";
+            $announcement->content = "Welcome {$student->user->name}! You have successfully enrolled in {$course->name} through instant payment. Start learning now!";
+            $announcement->content_bn = "স্বাগতম {$student->user->name}! আপনি তাত্ক্ষণিক পেমেন্টের মাধ্যমে {$course->name} এ সফলভাবে ভর্তি হয়েছেন। এখনই শেখা শুরু করুন!";
+            $announcement->date = now()->toDateString();
+            $announcement->date_bn = $bengaliDate;
+            $announcement->type = 'payment_success';
+            $announcement->related_id = $payment->id;
+            $announcement->related_type = 'payment';
+            $announcement->is_active = true;
+
+            $announcement->save();
+
+            Log::info('Payment success announcement created', [
+                'announcement_id' => $announcement->id,
+                'payment_id' => $payment->id
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error creating payment success announcement: ' . $e->getMessage());
         }
     }
 
