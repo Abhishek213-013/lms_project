@@ -34,6 +34,11 @@ Route::post('/switch-language', [FrontendController::class, 'switchLanguageApi']
 Route::get('/', [FrontendController::class, 'home'])->name('home');
 Route::get('/courses', [FrontendController::class, 'courses'])->name('courses');
 Route::get('/course/{id}', [FrontendController::class, 'courseSingle'])->name('course.single');
+
+// ============ ADDED: SHOPPING CART & CHECKOUT ROUTES ============
+Route::get('/shopping-cart', [FrontendController::class, 'shoppingCart'])->name('shopping.cart');
+Route::post('/checkout/process', [FrontendController::class, 'processCheckout'])->name('checkout.process');
+
 Route::get('/instructors', [FrontendController::class, 'instructors'])->name('instructors');
 Route::get('/instructor/{id}', [FrontendController::class, 'instructorDetails'])->name('instructor.details');
 Route::post('/instructors/reorder', [FrontendController::class, 'reorder'])->name('instructors.reorder');
@@ -71,6 +76,12 @@ Route::prefix('api')->middleware('web')->group(function () {
     Route::get('/public/courses/{id}', [CourseController::class, 'getPublicCourseDetails']);
     Route::get('/public/teachers/{id}', [TeacherController::class, 'getTeacherPublicProfile']);
     Route::get('/public/categories', [CourseController::class, 'getPublicCategories']);
+
+    // ============ ADDED: SHOPPING CART API ROUTES ============
+    Route::post('/cart/add', [CourseController::class, 'addToCart'])->name('api.cart.add');
+    Route::get('/cart/items', [CourseController::class, 'getCartItems'])->name('api.cart.items');
+    Route::delete('/cart/remove/{courseId}', [CourseController::class, 'removeFromCart'])->name('api.cart.remove');
+    Route::post('/cart/apply-coupon', [CourseController::class, 'applyCoupon'])->name('api.cart.apply-coupon');
 
     // ============ ADDED: INSTRUCTOR API ROUTE ============
     Route::get('/instructors/{id}', function ($id) {

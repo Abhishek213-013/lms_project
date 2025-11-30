@@ -596,6 +596,99 @@ class FrontendController extends Controller
         }
     }
 
+                /**
+     * Shopping cart page
+     */
+    public function shoppingCart(Request $request): Response
+    {
+        $language = $this->getCurrentLanguage();
+        
+        // Get course data if coming from enrollment
+        $course = null;
+        if ($request->has('course')) {
+            $course = $request->course;
+        } elseif ($request->has('course_id')) {
+            // Fetch course data if only ID is provided
+            $course = ClassModel::with('teacher:id,name')
+                ->select(['id', 'name', 'description', 'image', 'thumbnail', 'type', 'grade', 'subject', 'teacher_id'])
+                ->find($request->course_id);
+        }
+        
+        // Get student data for authenticated users
+        $studentData = $this->getStudentData();
+
+        return Inertia::render('Frontend/ShoppingCart', [
+            'course' => $course,
+            'enrollmentData' => $request->all(),
+            'pageTitle' => $language === 'bn' ? 'শপিং কার্ট - পাঠশালা' : 'Shopping Cart - Pathshala',
+            'metaDescription' => $language === 'bn' 
+                ? 'আপনার কার্ট আইটেম পর্যালোচনা করুন এবং চেকআউট করতে এগিয়ে যান'
+                : 'Review your cart items and proceed to checkout',
+            'currentLanguage' => $language,
+            'availableLanguages' => ['en', 'bn'],
+            'auth' => [
+                'user' => Auth::check() ? [
+                    'id' => Auth::user()->id,
+                    'name' => Auth::user()->name,
+                    'email' => Auth::user()->email,
+                    'role' => Auth::user()->role,
+                    'student' => $studentData,
+                ] : null
+            ]
+        ]);
+    }
+
+    /**
+     * Process checkout
+     */
+    public function processCheckout(Request $request)
+    {
+        // Validate the request
+        $validated = $request->validate([
+            'course_id' => 'required|exists:classes,id',
+            'amount' => 'required|numeric',
+            'additional_services' => 'array',
+            'coupon_code' => 'nullable|string',
+            'send_as_gift' => 'boolean',
+            'gift_recipient_email' => 'nullable|email',
+        ]);
+
+        try {
+            // Process payment here (integrate with your payment gateway)
+            // For demo, we'll simulate successful payment
+            
+            // Enroll the student
+            if (Auth::check()) {
+                $student = Student::where('user_id', Auth::id())->first();
+                
+                if ($student) {
+                    // Add enrollment logic here
+                    DB::table('class_student')->insert([
+                        'student_id' => $student->id,
+                        'class_id' => $validated['course_id'],
+                        'enrolled_at' => now(),
+                        'progress' => 0,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                    
+                    // Redirect to success page or learning page
+                    return redirect()->route('student.learning', ['courseId' => $validated['course_id']])
+                        ->with('success', 'Enrollment successful!');
+                }
+            }
+            
+            return redirect()->route('shopping.cart')
+                ->with('error', 'Please login to complete enrollment.');
+                
+        } catch (\Exception $e) {
+            Log::error('Checkout error: ' . $e->getMessage());
+            
+            return redirect()->route('shopping.cart')
+                ->with('error', 'Payment processing failed. Please try again.');
+        }
+    }
+
     /**
      * Instructors page
      */

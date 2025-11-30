@@ -1338,37 +1338,36 @@ const toggleModule = (index) => {
 const enrollCourse = async () => {
   loadingEnroll.value = true;
   try {
-    console.log('🎯 Enrolling in course:', currentCourse.value?.id);
+    // Prepare the complete course data to pass to shopping cart
+    const courseData = {
+      id: currentCourse.value.id,
+      name: getCourseTitle(currentCourse.value),
+      description: getCourseDescription(currentCourse.value),
+      thumbnail: getCourseImage(currentCourse.value),
+      image: currentCourse.value.image,
+      thumbnail_url: currentCourse.value.thumbnail_url,
+      price: '3999',
+      teacher: currentCourse.value.teacher,
+      duration: '12 weeks',
+      type: currentCourse.value.type,
+      grade: currentCourse.value.grade,
+      subject: currentCourse.value.subject,
+      class_name: currentCourse.value.name // Make sure this is included
+    };
     
-    const response = await fetch(`/api/courses/${currentCourse.value.id}/enroll`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-        'X-Requested-With': 'XMLHttpRequest'
-      },
-      credentials: 'same-origin'
+    console.log('Passing course data to shopping cart:', courseData);
+    
+    // Redirect to shopping cart with course data as query parameter
+    router.visit(`/shopping-cart?course_id=${currentCourse.value.id}`, {
+      method: 'get',
+      data: courseData,
+      preserveState: true,
+      preserveScroll: true
     });
-
-    const result = await response.json();
     
-    if (response.ok) {
-      console.log('✅ Enrollment successful from course details page');
-      isEnrolled.value = true;
-      
-      // Show success message
-      alert(t('Successfully enrolled in the course!'));
-      
-      // Optionally redirect to learning page
-      // router.visit(`/learning/${currentCourse.value.id}`);
-      
-    } else {
-      console.error('❌ Enrollment failed:', result);
-      alert(result.message || t('Failed to enroll in course. Please try again.'));
-    }
   } catch (err) {
     console.error('❌ Enrollment error:', err);
-    alert(t('Failed to enroll. Please try again.'));
+    alert(t('Failed to proceed to checkout. Please try again.'));
   } finally {
     loadingEnroll.value = false;
   }

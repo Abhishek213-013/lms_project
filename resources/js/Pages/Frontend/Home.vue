@@ -180,7 +180,7 @@
                         <small class="students-count">
                           <i class="fas fa-users icon-fixed"></i> {{ course.student_count }} {{ t('students') }}
                         </small>
-                        <strong class="course-price">৳{{ course.fee }}</strong>
+                        <strong class="course-price">৳{{ t('3999') }}</strong>
                       </div>
                     </div>
                     <div class="card-footer">

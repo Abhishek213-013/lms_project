@@ -1605,6 +1605,131 @@ class CourseController extends Controller
         }
     }
 
+        /**
+     * Add course to cart
+     */
+    public function addToCart(Request $request)
+    {
+        try {
+            $request->validate([
+                'course_id' => 'required|exists:classes,id'
+            ]);
+
+            $course = ClassModel::find($request->course_id);
+            
+            // Store cart data in session
+            $cart = session()->get('cart', []);
+            $cart[$course->id] = [
+                'id' => $course->id,
+                'name' => $course->name,
+                'price' => 3999, // Default price
+                'thumbnail' => $course->thumbnail,
+                'teacher' => $course->teacher->name ?? 'Expert Instructor'
+            ];
+            
+            session()->put('cart', $cart);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Course added to cart successfully',
+                'cart_count' => count($cart)
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Add to cart error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to add course to cart'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get cart items
+     */
+    public function getCartItems()
+    {
+        $cart = session()->get('cart', []);
+        
+        return response()->json([
+            'success' => true,
+            'data' => array_values($cart),
+            'total' => count($cart)
+        ]);
+    }
+
+    /**
+     * Remove from cart
+     */
+    public function removeFromCart($courseId)
+    {
+        try {
+            $cart = session()->get('cart', []);
+            
+            if (isset($cart[$courseId])) {
+                unset($cart[$courseId]);
+                session()->put('cart', $cart);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Course removed from cart',
+                'cart_count' => count($cart)
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Remove from cart error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to remove course from cart'
+            ], 500);
+        }
+    }
+
+    /**
+     * Apply coupon code
+     */
+    public function applyCoupon(Request $request)
+    {
+        try {
+            $request->validate([
+                'coupon_code' => 'required|string'
+            ]);
+
+            // Simulate coupon validation
+            $validCoupons = ['WELCOME10', 'STUDENT20', 'SUMMER25'];
+            
+            if (in_array(strtoupper($request->coupon_code), $validCoupons)) {
+                $discount = [
+                    'WELCOME10' => 10,
+                    'STUDENT20' => 20,
+                    'SUMMER25' => 25
+                ][strtoupper($request->coupon_code)];
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Coupon applied successfully',
+                    'discount' => $discount,
+                    'coupon_code' => $request->coupon_code
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid coupon code'
+            ], 400);
+
+        } catch (\Exception $e) {
+            Log::error('Apply coupon error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to apply coupon'
+            ], 500);
+        }
+    }
     public function updateCourse(Request $request, $courseId)
     {
         DB::beginTransaction();

@@ -19,6 +19,7 @@ export const translations = {
     'View Course': 'View Course',
     '159 Anabil, Dhopadighir Par (North), Jail Road, Sylhet, Sylhet 3100': '159 Anabil, Dhopadighir Par (North), Jail Road, Sylhet, Sylhet 3100',
     '+88 01842-485222': '+88 01842-485222',
+    'Announcements' : 'Announcements',
     '3999': '3999',
     // Home Page
     'Learning is What You Make of it. Make it Yours at Pathshala LMS.': 'Learning is What You Make of it. Make it Yours at Pathshala LMS.',
@@ -484,6 +485,7 @@ export const translations = {
     'View Course': 'কোর্স দেখুন',
     '159 Anabil, Dhopadighir Par (North), Jail Road, Sylhet, Sylhet 3100': '১৫৯ অনাবিল, ধোপাদিঘির পাড় (উত্তর), জেল রোড, সিলেট, সিলেট 3100',
     '+88 01842-485222': '+৮৮ ০১৮৪২-৪৮৫২২২',
+    'Announcements' : 'ঘোষণা',
     '3999' : '৩৯৯৯',
     // Home Page
     'Learning is What You Make of it. Make it Yours at Pathshala LMS.': 'শেখা হলো আপনার যা বানাতে চান। এটিকে আপনার নিজের করে নিন পাঠশালা LMS এ।',
