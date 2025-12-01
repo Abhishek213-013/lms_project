@@ -185,6 +185,17 @@
                             <i class="fas fa-book"></i>
                             <span class="dropdown-text">{{ t('My Courses') }}</span>
                           </button>
+                          
+                          <!-- ADDED: Payment History Link -->
+                          <Link 
+                            href="/student/payments" 
+                            class="dropdown-item"
+                            :class="{ 'active': $page.url === '/student/payments' }"
+                          >
+                            <i class="fas fa-receipt"></i>
+                            <span class="dropdown-text">{{ t('Payment History') }}</span>
+                          </Link>
+                          
                           <button @click="navigateToLearningProgress" class="dropdown-item">
                             <i class="fas fa-chart-line"></i>
                             <span class="dropdown-text">{{ t('Learning Progress') }}</span>
@@ -370,6 +381,10 @@
                       </li>
                       <li><button @click="navigateToProfileMobile" class="mobile-nav-btn"><i class="fas fa-user"></i>{{ t('My Profile') }}</button></li>
                       <li><button @click="navigateToMyCoursesMobile" class="mobile-nav-btn"><i class="fas fa-book"></i>{{ t('My Courses') }}</button></li>
+                      
+                      <!-- ADDED: Payment History in Mobile Menu -->
+                      <li><button @click="navigateToPaymentsMobile" class="mobile-nav-btn"><i class="fas fa-receipt"></i>{{ t('Payment History') }}</button></li>
+                      
                       <li><button @click="navigateToLearningProgressMobile" class="mobile-nav-btn"><i class="fas fa-chart-line"></i>{{ t('Learning Progress') }}</button></li>
                       <li><button @click="navigateToSettingsMobile" class="mobile-nav-btn"><i class="fas fa-cog"></i>{{ t('Settings') }}</button></li>
                       <li><button @click="logoutMobile" class="mobile-logout-btn" :disabled="isLoggingOut">
@@ -397,7 +412,6 @@
     </div>
   </header>
 </template>
-
 
 <script setup>
 import { Link, router, usePage } from '@inertiajs/vue3'
@@ -715,6 +729,12 @@ const navigateToProfile = () => {
 const navigateToMyCourses = () => {
   closeAll()
   navigateWithLanguage('/my-courses')
+}
+
+// ADDED: Payment History navigation
+const navigateToPaymentsMobile = () => {
+  closeAll()
+  navigateWithLanguage('/student/payments')
 }
 
 const navigateToLearningProgress = () => {
@@ -1735,6 +1755,7 @@ img {
 .lang-btn-mobile:hover {
   background: var(--bg-tertiary);
 }
+
 
 .mobile-menu-close {
   cursor: pointer;

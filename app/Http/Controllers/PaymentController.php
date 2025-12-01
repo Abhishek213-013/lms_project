@@ -6,7 +6,7 @@ use App\Models\Payment;
 use App\Models\ClassModel;
 use App\Models\Student;
 use App\Models\User;
-use App\Models\Announcement; // Add this import
+use App\Models\Announcement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -27,7 +27,7 @@ class PaymentController extends Controller
                 'payment_details' => 'required|array',
                 'payment_details.phoneNumber' => 'required|string',
                 'payment_details.transactionId' => 'required|string',
-                'additional_services' => 'array',
+                'additional_services' => 'array', // Changed to accept array
                 'coupon_code' => 'nullable|string'
             ]);
 
@@ -411,8 +411,6 @@ class PaymentController extends Controller
         return $date->format('d') . ' ' . $bengaliMonth . ' ' . $date->format('Y');
     }
 
-    // ... rest of your existing methods (getPaymentHistory, getPendingPayments, getPaymentStats)
-
     /**
      * Get payment history for student
      */
@@ -433,7 +431,31 @@ class PaymentController extends Controller
                 }])
                 ->where('student_id', $student->id)
                 ->orderBy('created_at', 'desc')
-                ->get();
+                ->get()
+                ->map(function ($payment) {
+                    return [
+                        'id' => $payment->id,
+                        'student_id' => $payment->student_id,
+                        'class_id' => $payment->class_id,
+                        'amount' => $payment->amount,
+                        'payment_method' => $payment->payment_method,
+                        'transaction_id' => $payment->transaction_id,
+                        'phone_number' => $payment->phone_number,
+                        'status' => $payment->status,
+                        'receipt_path' => $payment->receipt_path,
+                        'receipt_url' => $payment->receipt_url,
+                        'payment_details' => $payment->payment_details,
+                        'additional_services' => $payment->additional_services,
+                        'coupon_code' => $payment->coupon_code,
+                        'verified_at' => $payment->verified_at,
+                        'verified_by' => $payment->verified_by,
+                        'rejection_reason' => $payment->rejection_reason,
+                        'created_at' => $payment->created_at,
+                        'updated_at' => $payment->updated_at,
+                        'class' => $payment->class,
+                        'payment_method_name' => $this->getPaymentMethodName($payment->payment_method),
+                    ];
+                });
 
             return response()->json([
                 'success' => true,
@@ -446,6 +468,132 @@ class PaymentController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch payment history'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get student pending payments
+     */
+    public function getStudentPendingPayments(Request $request)
+    {
+        try {
+            $student = Student::where('user_id', auth()->id())->first();
+            
+            if (!$student) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Student not found'
+                ], 404);
+            }
+
+            $payments = Payment::with(['class' => function($query) {
+                    $query->select('id', 'name', 'subject', 'grade', 'type');
+                }])
+                ->where('student_id', $student->id)
+                ->where('status', 'pending')
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($payment) {
+                    return [
+                        'id' => $payment->id,
+                        'class' => $payment->class,
+                        'amount' => $payment->amount,
+                        'payment_method' => $payment->payment_method,
+                        'payment_method_name' => $this->getPaymentMethodName($payment->payment_method),
+                        'status' => $payment->status,
+                        'receipt_url' => $payment->receipt_url,
+                        'created_at' => $payment->created_at,
+                        'additional_services' => $payment->additional_services,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $payments
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Get student pending payments error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch student pending payments'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get student payment history (alias for getPaymentHistory)
+     */
+    public function getStudentPaymentHistory(Request $request)
+    {
+        return $this->getPaymentHistory($request);
+    }
+
+    /**
+     * Get payment status for a specific payment
+     */
+    public function getPaymentStatus($paymentId)
+    {
+        try {
+            $payment = Payment::with(['class', 'student.user'])
+                ->find($paymentId);
+
+            if (!$payment) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment not found'
+                ], 404);
+            }
+
+            // Check if the authenticated user owns this payment
+            $student = Student::where('user_id', auth()->id())->first();
+            if ($payment->student_id !== $student->id && !auth()->user()->hasRole(['admin', 'super_admin'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized to view this payment'
+                ], 403);
+            }
+
+            $paymentData = [
+                'id' => $payment->id,
+                'amount' => $payment->amount,
+                'payment_method' => $payment->payment_method,
+                'payment_method_name' => $this->getPaymentMethodName($payment->payment_method),
+                'status' => $payment->status,
+                'transaction_id' => $payment->transaction_id,
+                'phone_number' => $payment->phone_number,
+                'receipt_url' => $payment->receipt_url,
+                'additional_services' => $payment->additional_services,
+                'verified_at' => $payment->verified_at,
+                'rejection_reason' => $payment->rejection_reason,
+                'created_at' => $payment->created_at,
+                'class' => $payment->class ? [
+                    'id' => $payment->class->id,
+                    'name' => $payment->class->name,
+                    'subject' => $payment->class->subject,
+                    'grade' => $payment->class->grade,
+                    'type' => $payment->class->type
+                ] : null,
+                'student' => $payment->student ? [
+                    'id' => $payment->student->id,
+                    'name' => $payment->student->user->name,
+                    'email' => $payment->student->user->email
+                ] : null
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $paymentData
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Get payment status error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch payment status'
             ], 500);
         }
     }
@@ -503,6 +651,7 @@ class PaymentController extends Controller
                 ->count();
             $totalPendingAmount = Payment::where('status', 'pending')->sum('amount');
             $bankTransfers = Payment::where('payment_method', 'bank_transfer')->count();
+            $mobilePayments = Payment::whereIn('payment_method', ['bkash', 'nagad', 'rocket', 'upay'])->count();
 
             return response()->json([
                 'success' => true,
@@ -511,6 +660,8 @@ class PaymentController extends Controller
                     'verifiedToday' => $verifiedToday,
                     'totalPendingAmount' => $totalPendingAmount,
                     'bankTransfers' => $bankTransfers,
+                    'mobilePayments' => $mobilePayments,
+                    'totalPayments' => $pendingPayments + $verifiedToday,
                 ]
             ]);
 
@@ -521,6 +672,115 @@ class PaymentController extends Controller
                 'success' => false,
                 'message' => 'Failed to fetch payment stats'
             ], 500);
+        }
+    }
+
+    /**
+     * Helper method to get payment method name
+     */
+    private function getPaymentMethodName($method)
+    {
+        $methods = [
+            'bkash' => 'bKash',
+            'nagad' => 'Nagad',
+            'rocket' => 'Rocket',
+            'upay' => 'uPay',
+            'bank_transfer' => 'Bank Transfer'
+        ];
+
+        return $methods[$method] ?? $method;
+    }
+
+    /**
+     * Get all payments for admin (with filters)
+     */
+    public function getAllPayments(Request $request)
+    {
+        try {
+            $query = Payment::with(['student.user', 'class', 'verifiedBy']);
+
+            // Apply filters
+            if ($request->has('status') && $request->status !== 'all') {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->has('payment_method') && $request->payment_method !== 'all') {
+                $query->where('payment_method', $request->payment_method);
+            }
+
+            if ($request->has('date_from') && $request->date_from) {
+                $query->whereDate('created_at', '>=', $request->date_from);
+            }
+
+            if ($request->has('date_to') && $request->date_to) {
+                $query->whereDate('created_at', '<=', $request->date_to);
+            }
+
+            $payments = $query->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($payment) {
+                    return [
+                        'id' => $payment->id,
+                        'student_name' => $payment->student->user->name ?? 'N/A',
+                        'student_email' => $payment->student->user->email ?? 'N/A',
+                        'course_name' => $payment->class->name ?? 'N/A',
+                        'amount' => $payment->amount,
+                        'payment_method' => $payment->payment_method,
+                        'payment_method_name' => $this->getPaymentMethodName($payment->payment_method),
+                        'status' => $payment->status,
+                        'transaction_id' => $payment->transaction_id,
+                        'receipt_url' => $payment->receipt_url,
+                        'verified_at' => $payment->verified_at,
+                        'verified_by_name' => $payment->verifiedBy->name ?? 'N/A',
+                        'rejection_reason' => $payment->rejection_reason,
+                        'created_at' => $payment->created_at,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $payments
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Get all payments error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch payments'
+            ], 500);
+        }
+    }
+
+    /**
+     * Download payment receipt
+     */
+    public function downloadReceipt($paymentId)
+    {
+        try {
+            $payment = Payment::findOrFail($paymentId);
+            
+            // Check authorization
+            $student = Student::where('user_id', auth()->id())->first();
+            if ($payment->student_id !== $student->id && !auth()->user()->hasRole(['admin', 'super_admin'])) {
+                abort(403, 'Unauthorized to download this receipt');
+            }
+
+            if (!$payment->receipt_path) {
+                abort(404, 'Receipt not found');
+            }
+
+            $path = storage_path('app/public/' . $payment->receipt_path);
+            
+            if (!file_exists($path)) {
+                abort(404, 'Receipt file not found');
+            }
+
+            return response()->download($path, 'payment-receipt-' . $payment->id . '.' . pathinfo($path, PATHINFO_EXTENSION));
+
+        } catch (\Exception $e) {
+            Log::error('Download receipt error: ' . $e->getMessage());
+            abort(500, 'Failed to download receipt');
         }
     }
 }

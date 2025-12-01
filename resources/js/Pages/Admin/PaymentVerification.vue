@@ -242,7 +242,7 @@ const verifyPayment = async (paymentId) => {
   verifyingPayment.value = paymentId
   
   try {
-    const response = await fetch(`/api/payments/verify/${paymentId}`, {
+    const response = await fetch(`/api/payments/verify/${paymentId}`, { // FIXED: Correct endpoint
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -275,13 +275,18 @@ const rejectPayment = async (paymentId) => {
     return
   }
   
+  const reason = prompt('Please provide a reason for rejection:', 'Payment details could not be verified');
+  
+  if (reason === null) return; // User cancelled
+  
   try {
-    const response = await fetch(`/api/payments/reject/${paymentId}`, {
+    const response = await fetch(`/api/payments/reject/${paymentId}`, { // FIXED: Correct endpoint
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-      }
+      },
+      body: JSON.stringify({ reason })
     })
     
     const result = await response.json()
@@ -301,11 +306,10 @@ const rejectPayment = async (paymentId) => {
   }
 }
 
-// Fetch pending payments
 const fetchPendingPayments = async () => {
   try {
     loading.value = true
-    const response = await fetch('/api/payments/admin/pending-payments') // Updated endpoint
+    const response = await fetch('/api/payments/admin/pending-payments') // FIXED: Correct endpoint
     const result = await response.json()
     
     if (result.success) {
@@ -324,7 +328,7 @@ const fetchPendingPayments = async () => {
 // Fetch stats
 const fetchStats = async () => {
   try {
-    const response = await fetch('/api/payments/admin/payment-stats') // Updated endpoint
+    const response = await fetch('/api/payments/admin/payment-stats') // FIXED: Correct endpoint
     const result = await response.json()
     
     if (result.success) {

@@ -909,15 +909,26 @@ const processPayment = async () => {
   processingPayment.value = true;
   
   try {
-    // Prepare payment data
+    // Prepare additional services as array format
+    const servicesArray = [];
+    if (additionalServices.value.certificate) {
+      servicesArray.push('certificate');
+    }
+    if (additionalServices.value.consulting) {
+      servicesArray.push('consulting');
+    }
+
+    // Prepare payment data with proper additional_services format
     const paymentData = {
       course_id: enrolledCourse.value.id,
       amount: calculateTotal.value.replace(/,/g, ''), // Remove commas for numeric value
       payment_method: activePaymentTab.value === 'mobile' ? selectedPaymentMethod.value : 'bank_transfer',
       payment_details: paymentDetails.value,
-      additional_services: additionalServices.value,
+      additional_services: servicesArray, // Use array format instead of object
       coupon_code: appliedCoupon.value ? couponCode.value : null
     };
+    
+    console.log('Sending payment data:', paymentData); // Debug log
     
     // Process payment based on method
     if (activePaymentTab.value === 'mobile') {
@@ -936,13 +947,26 @@ const processPayment = async () => {
 
 const processMobilePayment = async (paymentData) => {
   try {
+    // Clean up payment_details object for API
+    const cleanPaymentDetails = {
+      phoneNumber: paymentData.payment_details.phoneNumber,
+      transactionId: paymentData.payment_details.transactionId
+    };
+    
+    const requestData = {
+      ...paymentData,
+      payment_details: cleanPaymentDetails
+    };
+    
+    console.log('Sending mobile payment request:', requestData);
+    
     const response = await fetch('/api/payments/process-mobile', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
       },
-      body: JSON.stringify(paymentData)
+      body: JSON.stringify(requestData)
     });
     
     const result = await response.json();
@@ -973,11 +997,27 @@ const processBankTransfer = async (paymentData) => {
     const formData = new FormData();
     formData.append('course_id', paymentData.course_id);
     formData.append('amount', paymentData.amount);
-    formData.append('additional_services', JSON.stringify(paymentData.additional_services));
+    
+    // Handle additional_services properly for FormData
+    if (paymentData.additional_services && paymentData.additional_services.length > 0) {
+      // Append each service as a separate field
+      paymentData.additional_services.forEach((service, index) => {
+        formData.append(`additional_services[${index}]`, service);
+      });
+    } else {
+      // Send empty array if no services selected
+      formData.append('additional_services[]', '');
+    }
+    
     formData.append('coupon_code', paymentData.coupon_code || '');
     
     if (paymentDetails.value.receiptFile) {
       formData.append('receipt', paymentDetails.value.receiptFile);
+    }
+    
+    console.log('FormData entries:'); // Debug log
+    for (let pair of formData.entries()) {
+      console.log(pair[0] + ': ' + pair[1]);
     }
     
     const response = await fetch('/api/payments/process-bank-transfer', {

@@ -463,6 +463,11 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/learning-progress', [LearningProgressController::class, 'index'])->name('learning-progress.new');
         Route::get('/settings', [SettingsController::class, 'index'])->name('settings.new');
         Route::get('/certificates', [CertificateController::class, 'index'])->name('certificates.new');
+        
+        // ============ ADDED: STUDENT PAYMENT STATUS PAGE ============
+        Route::get('/student/payments', function () {
+            return Inertia::render('Student/PaymentStatus');
+        })->name('student.payments');
     });
 
     // ============ STUDENT DASHBOARD ROUTES (under /student prefix) ============
